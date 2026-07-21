@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold
+name: Validate and deploy Pacefold 14
 
 on:
   push:
@@ -16,18 +16,26 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Reconstruct verified release
+        run: |
+          cat release/pacefold-v14.zip.b64.part-* | base64 --decode > /tmp/pacefold-v14.zip
+          echo "2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32  /tmp/pacefold-v14.zip" | sha256sum -c -
+          mkdir _release
+          unzip -q /tmp/pacefold-v14.zip -d _release
       - name: JavaScript syntax
         run: |
-          node --check site.js
-          node --check service-worker.js
-          node --check app/loader.js
-          node --check app/service-worker.js
-      - name: Static application audit
-        run: node scripts/validate.mjs
+          node --check _release/app/app.js
+          node --check _release/site.js
+          node --check _release/service-worker.js
+          node --check _release/app/service-worker.js
+      - name: Build and static audit
+        run: |
+          node _release/scripts/build.mjs _release
+          node _release/scripts/validate.mjs _release
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -40,26 +48,30 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Build clean Pages artifact
+      - name: Reconstruct verified release
         run: |
-          mkdir _site
-          rsync -a ./ _site/ \
+          cat release/pacefold-v14.zip.b64.part-* | base64 --decode > /tmp/pacefold-v14.zip
+          echo "2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32  /tmp/pacefold-v14.zip" | sha256sum -c -
+          mkdir _release _site
+          unzip -q /tmp/pacefold-v14.zip -d _release
+          node _release/scripts/build.mjs _release
+          node _release/scripts/validate.mjs _release
+          rsync -a _release/ _site/ \
             --exclude '.git/' \
             --exclude '.github/' \
             --exclude 'scripts/' \
             --exclude 'README.md' \
             --exclude 'CHANGELOG.md' \
             --exclude 'REPOSITORY_SETUP.md' \
-            --exclude 'SECURITY.md' \
-            --exclude '_site/'
-          node scripts/validate.mjs _site
+            --exclude 'SECURITY.md'
+          node _release/scripts/validate.mjs _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload static site
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site

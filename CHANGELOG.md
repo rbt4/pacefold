@@ -1,31 +1,23 @@
 # Changelog
 
-## 13.0.0 — Install, update, and reliability hardening
+## 14.0.0 — Profiles, routines, setup, and comfort
 
-- Moved installation to a root-scoped PWA so the landing page and app share one install identity.
-- Added a direct landing-page install button, compatibility indicators, and a guided setup dock inside the app.
-- Added automatic service-worker update checks at startup, every 30 minutes, on focus, visibility return, and reconnect.
-- Added automatic update activation with one controlled reload while preserving local records.
-- Added notification modes, actual browser-permission reporting, persistent deduplication, and an end-to-end test-notification control.
-- Added service-worker notification click handling that focuses or opens Pacefold.
-- Added app self-checks for interface, storage, manifest, offline engine, and prayer-clock calculations.
-- Added storage-health reporting and defensive preference repair.
-- Added a clean-source GitHub Pages workflow with pull-request validation.
-- Added static validation for manifest scope, icon dimensions, asset references, worker shell entries, DOM references, and external runtime dependencies.
-- Fixed a startup failure caused by storage health being initialized after the first save.
-- Fixed signal previews being hidden behind a real prayer/timer cue.
-- Fixed global keyboard shortcuts firing while controls had focus.
-- Added a legacy app-worker migration path and removed the obsolete nested manifest.
+- Integrated and reviewed the Claude 13.1 upgrade.
+- Restored a direct, validated `app/app.js` runtime and removed fragmented/gzip reconstruction.
+- Added nine rhythm profiles, including secular, mindfulness, major-faith, and custom choices.
+- Kept Pacefold Original—Muslim prayer schedule plus noodles—as the default developer preset.
+- Added editable personal moments for non-Islamic profiles.
+- Generalized noodle preparation into configurable routine presets and custom routines.
+- Rebuilt setup as a three-step wizard that works even when Edge does not fire its native install event.
+- Added interface comfort modes and optional distance-look reminders.
+- Added a user-initiated Windows Night light settings shortcut without claiming browser-level monitor control.
+- Expanded the public website to explain profiles, routine mixing, Andon cues, Kiroku logging, and privacy.
+- Added validation that guards the direct runtime, manifest, icons, worker shell, references, and DOM bindings.
 
-## 12.0.0 — Pacefold
+## 13.1.0 — Claude foundation
 
-- Rebranded the application from Deskline to Pacefold.
-- Added the Ma / Andon / Kiroku / Kaizen / Hansei product system.
-- Added a score-free Day Close.
-- Added one-at-a-time local Kaizen suggestions.
-- Added a new Japanese-minimal icon and visual palette.
-- Migrated existing Deskline local preferences.
+- Added location-aware prayer/Qibla calculations and consolidated application source.
 
-## 11.0.0
+## 13.0.0
 
-- Added prayer mini-break logging, desk meal versus away lunch, overlap-safe break accounting, and a private timeline.
+- Hardened installation, automatic updates, notification diagnostics, and GitHub Pages validation.
