@@ -1,0 +1,78 @@
+vityDate||v10.waterDate||''});
+    const v8=safeJSON(storageGet('desklinePrefsV8'));if(v8)return normalizePrefs({...v8,lunchMode:'desk',deskLunchMinutes:20,activityDate:v8.waterDate||''});
+    const v5=safeJSON(storageGet('desklinePrefsV5'));if(v5)return normalizePrefs({...v5,theme:v5.theme==='desk'?'auto':v5.theme,activityDate:v5.waterDate||''});
+    const v4=safeJSON(storageGet('quietClockPrefsV4'));if(v4)return normalizePrefs({...v4,waterSips:Math.max(0,Math.round((v4.waterOz||0)/1.5)),sipCadence:30,noodleDurationAtStart:v4.noodleMinutes||30});
+    const old=safeJSON(storageGet('quietClockPrefsV3'));if(old){const hours={'8-17':'08:00-17:00','8-18':'08:00-18:00','9-17':'09:00-17:00'}[old.workHours]||DEFAULTS.workHours;return normalizePrefs({...old,workHours:hours,noodleMinutes:old.lunchMinutes||30,noodleDurationAtStart:old.lunchMinutes||30,noodleStart:old.lunchStart||0,noodleDone:old.lunchDone||''});}
+    return normalizePrefs();
+  }
+  let prefs=loadPrefs();
+
+  const dayKey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const parseClock=s=>{const [h,m]=String(s).split(':').map(Number);return (h||0)+(m||0)/60;};
+  function workRange(){const [a,b]=prefs.workHours.split('-');return{start:parseClock(a),end:parseClock(b)};}
+  function displayClock(h){const H=Math.floor(h),m=Math.round((h-H)*60);return `${H%12||12}:${String(m).padStart(2,'0')} ${H>=12?'PM':'AM'}`;}
+  function isConfiguredWorkday(now){const day=now.getDay();return !prefs.workdaysOnly||(day>=1&&day<=5);}
+  const systemDark=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+  function resolvedTheme(now,h){
+    if(prefs.theme!=='auto')return prefs.theme;
+    const {start,end}=workRange(),sunrise=times&&Number.isFinite(times.sunrise)?times.sunrise:7,sunset=times&&Number.isFinite(times.sunset)?times.sunset:19;
+    if(h<sunrise-.35||h>sunset+.45)return 'dark';
+    if(h<start+.5||h>end-1.1)return 'paper';
+    if(systemDark&&systemDark.matches&&(h<start||h>end))return 'dark';
+    return 'desk';
+  }
+  function applyTheme(now,h){
+    const theme=resolvedTheme(now,h);document.body.dataset.theme=theme;
+    const colors={desk:'#eef2f6',paper:'#eeeae1',dark:'#0b1017'};
+    const meta=$('themeColor');if(meta)meta.setAttribute('content',colors[theme]||colors.desk);
+    return theme;
+  }
+  function currentAwaySummary(){
+    const sessions=Array.isArray(prefs.awaySessions)?prefs.awaySessions:[];
+    return{count:sessions.length,minutes:Math.round(sessions.reduce((sum,s)=>sum+(Number(s.minutes)||0),0))};
+  }
+  function currentPrayerSummary(){
+    const sessions=Array.isArray(prefs.prayerSessions)?prefs.prayerSessions:[];
+    return{count:sessions.length,minutes:Math.round(sessions.reduce((sum,s)=>sum+(Number(s.minutes)||0),0))};
+  }
+  function currentLunchSummary(){
+    const sessions=Array.isArray(prefs.lunchSessions)?prefs.lunchSessions:[];
+    const desk=sessions.filter(s=>s.mode!=='away'),away=sessions.filter(s=>s.mode==='away');
+    return{count:sessions.length,deskCount:desk.length,awayCount:away.length,deskMinutes:Math.round(desk.reduce((n,s)=>n+(s.minutes||0),0)),awayMinutes:Math.round(away.reduce((n,s)=>n+(s.minutes||0),0))};
+  }
+  function mergeMinutes(intervals){
+    const valid=intervals.filter(x=>x&&x.start&&x.end&&x.end>x.start).sort((a,b)=>a.start-b.start);if(!valid.length)return 0;
+    let start=valid[0].start,end=valid[0].end,total=0;for(let i=1;i<valid.length;i++){const x=valid[i];if(x.start<=end)end=Math.max(end,x.end);else{total+=end-start;start=x.start;end=x.end;}}total+=end-start;return Math.round(total/60000);
+  }
+  function workdayLedger(now=new Date()){
+    const end=now.getTime(),away=(prefs.awaySessions||[]).map(s=>({start:s.start,end:s.end,type:'away'})),prayer=(prefs.prayerSessions||[]).map(s=>({start:s.start,end:s.end,type:'prayer'})),awayLunch=(prefs.lunchSessions||[]).filter(s=>s.mode==='away').map(s=>({start:s.start,end:s.end,type:'lunch'}));
+    if(prefs.awayStart)away.push({start:prefs.awayStart,end,type:'away'});if(prefs.prayerBreakStart)prayer.push({start:prefs.prayerBreakStart,end,type:'prayer'});if(prefs.lunchStart&&prefs.lunchModeAtStart==='away')awayLunch.push({start:prefs.lunchStart,end,type:'lunch'});
+    return{uniqueBreakMinutes:mergeMinutes([...away,...prayer,...awayLunch]),prayer:currentPrayerSummary(),away:currentAwaySummary(),lunch:currentLunchSummary()};
+  }
+  function dayCloseSummary(now=new Date()){
+    const ledger=workdayLedger(now),plan=hydrationPlan(),sips=Math.min(plan.total,prefs.waterSips||0);
+    const pieces=[`${sips}/${plan.total} sip intervals`,`${ledger.prayer.count} prayer pause${ledger.prayer.count===1?'':'s'}`];
+    if(ledger.lunch.deskMinutes)pieces.push(`${ledger.lunch.deskMinutes}m desk meal`);
+    if(ledger.lunch.awayMinutes)pieces.push(`${ledger.lunch.awayMinutes}m away lunch`);
+    if(ledger.away.count)pieces.push(`${ledger.away.count} away pause${ledger.away.count===1?'':'s'}`);
+    return{title:`${now.toLocaleDateString(undefined,{weekday:'long'})}, quietly kept.`,line:pieces.join(' · '),offDesk:ledger.uniqueBreakMinutes};
+  }
+  function kaizenSuggestion(now=new Date()){
+    if(!prefs.kaizenEnabled||prefs.kaizenDismissed===dayKey(now))return null;
+    const desk=(prefs.lunchSessions||[]).filter(s=>s.mode!=='away');
+    if(desk.length){
+      const avg=Math.round(desk.reduce((n,s)=>n+(s.minutes||0),0)/desk.length),choices=[15,20,30],nearest=choices.reduce((a,b)=>Math.abs(b-avg)<Math.abs(a-avg)?b:a,20);
+      if(Math.abs(nearest-prefs.deskLunchMinutes)>=4)return{text:`Your desk meals are averaging about ${avg} minutes. Pacefold can match the default more closely.`,action:'kaizenDeskMeal',value:nearest,cta:`Use ${nearest}m`};
+    }
+    const plan=hydrationPlan(),{start,end}=workRange(),h=now.getHours()+now.getMinutes()/60;
+    if(h>start+(end-start)*.62&&plan.total>0&&(prefs.waterSips||0)/plan.total<.45&&prefs.sipCadence!==20)return{text:'The afternoon sip pace is regularly falling behind. A slightly shorter interval may fit the day better.',action:'kaizenSip',value:20,cta:'Try 20m'};
+    const prayer=(prefs.prayerSessions||[]);
+    if(prayer.length>=2){const avg=Math.round(prayer.reduce((n,s)=>n+(s.minutes||0),0)/prayer.length);if(avg>=4&&avg<=20)return{text:`Prayer pauses are averaging ${avg} minutes. No adjustment is needed; the safeguard remains only a safety net.`,action:'dismissKaizen',value:'',cta:'Keep as is'};}
+    return null;
+  }
+
+  function archiveWorkday(key){
+    if(!key)return;
+    const ledger=workdayLedger(new Date());
+    prefs.history={...(prefs.history||{}),[key]:{waterSips:prefs.waterSips||0,awayCount:ledger.away.count,awayMinutes:ledger.away.minutes,prayerCount:ledger.prayer.count,prayerMinutes:ledger.prayer.minutes,deskMealMinutes:ledger.lunch.deskMinutes,awayLunchMinutes:ledger.lunch.awayMinutes,uniqueBreakMinutes:ledger.uniqueBreakMinutes,noodles:prefs.noodleDone===key}};
+    const keys=Object.keys(prefs.history).sort().slice(-14),trimmed={};keys.

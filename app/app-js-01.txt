@@ -1,0 +1,74 @@
+(() => {
+  'use strict';
+
+  const LAT=43.62, LNG=-79.51;
+  const PRAYERS=[['fajr','Fajr','F'],['sunrise','Sunrise','S'],['dhuhr','Dhuhr','D'],['asr','Asr','A'],['maghrib','Maghrib','M'],['isha','Isha','I']];
+  const ALERTS=['fajr','dhuhr','asr','maghrib','isha'];
+  const APP_VERSION='13.0.0';
+  const STORAGE_KEY='pacefoldPrefsV13';
+  const SETUP_KEY='pacefoldSetupDismissedV13';
+  const DEFAULTS={
+    theme:'auto',privacy:true,timeFormat:'12',showSeconds:true,clarity:'discreet',edgeCue:true,taskbarBadge:true,
+    lead:10,dueWindow:18,snoozeMinutes:10,method:'15',asr:'hanafi',browserNotif:false,notificationDetail:'generic',notificationMode:'important',notified:{},
+    prayerBreakLogging:true,prayerMaxMinutes:45,prayerBreakStart:0,prayerBreakKey:'',prayerBreakName:'',prayerSessions:[],
+    workReminders:true,showWorkline:true,workdaysOnly:true,workHours:'08:30-16:30',
+    waterTarget:24,sipCadence:30,waterSips:0,waterDate:'',waterGraceUntil:0,
+    noodleMinutes:30,noodleDurationAtStart:0,noodlePrealert:2,noodleStart:0,noodleDone:'',
+    lunchMode:'desk',deskLunchMinutes:20,awayLunchMinutes:45,lunchModeAtStart:'desk',lunchDurationAtStart:0,lunchPrealert:5,lunchStart:0,lunchDone:'',lunchLoggedMinutes:0,lunchAutoStart:true,lunchSessions:[],
+    awayStart:0,awaySessions:[],activityDate:'',history:{},dayCloseEnabled:true,kaizenEnabled:true,kaizenDismissed:'',
+    offsets:{fajr:0,dhuhr:0,asr:0,maghrib:0,isha:0},acknowledged:{},snoozed:{}
+  };
+
+  const $=id=>document.getElementById(id);
+  const diagnostics=[];
+  let storageState='Local';
+  function reportError(error,context='runtime'){
+    try{diagnostics.push({at:new Date().toISOString(),context,message:String(error&&error.message||error)});if(diagnostics.length>12)diagnostics.shift();console.error('[Pacefold]',context,error);}catch(_){ }
+  }
+  window.addEventListener('error',e=>reportError(e.error||e.message,'window'));
+  window.addEventListener('unhandledrejection',e=>reportError(e.reason,'promise'));
+  const safeJSON=value=>{try{return JSON.parse(value||'null');}catch(error){reportError(error,'storage-parse');return null;}};
+  const storageGet=key=>{try{return localStorage.getItem(key);}catch(error){if(error&&error.name!=='SecurityError')reportError(error,'storage-read');return null;}};
+  const clamp=(value,min,max,fallback)=>{value=Number(value);return Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback;};
+  function normalizePrefs(raw={}){
+    const p={...DEFAULTS,...(raw||{})};
+    p.theme=['auto','desk','dark','paper'].includes(p.theme)?p.theme:'auto';
+    p.timeFormat=p.timeFormat==='24'?'24':'12';
+    p.clarity=p.clarity==='clear'?'clear':'discreet';
+    p.method=p.method==='18'?'18':'15';p.asr=p.asr==='std'?'std':'hanafi';p.notificationMode=p.notificationMode==='all'?'all':'important';
+    p.lead=clamp(p.lead,0,30,10);p.dueWindow=clamp(p.dueWindow,5,60,18);p.snoozeMinutes=clamp(p.snoozeMinutes,5,30,10);
+    p.prayerMaxMinutes=[30,45,60].includes(Number(p.prayerMaxMinutes))?Number(p.prayerMaxMinutes):45;
+    p.prayerBreakStart=clamp(p.prayerBreakStart,0,Number.MAX_SAFE_INTEGER,0);
+    p.prayerBreakKey=typeof p.prayerBreakKey==='string'?p.prayerBreakKey:'';p.prayerBreakName=typeof p.prayerBreakName==='string'?p.prayerBreakName:'';
+    p.prayerSessions=Array.isArray(p.prayerSessions)?p.prayerSessions.slice(-20).map(s=>({key:String(s&&s.key||''),name:String(s&&s.name||'Prayer'),start:clamp(s&&s.start,0,Number.MAX_SAFE_INTEGER,0),end:clamp(s&&s.end,0,Number.MAX_SAFE_INTEGER,0),minutes:clamp(s&&s.minutes,0,120,0)})).filter(s=>s.start&&s.end&&s.end>=s.start):[];
+    p.waterTarget=[16,24,32].includes(Number(p.waterTarget))?Number(p.waterTarget):24;
+    p.sipCadence=[20,30,40].includes(Number(p.sipCadence))?Number(p.sipCadence):30;
+    p.noodleMinutes=[30,45,60].includes(Number(p.noodleMinutes))?Number(p.noodleMinutes):30;
+    p.noodlePrealert=[0,2,3,5].includes(Number(p.noodlePrealert))?Number(p.noodlePrealert):2;
+    const inheritedDesk=raw.deskLunchMinutes??raw.lunchMinutes??20;
+    p.deskLunchMinutes=[15,20,30].includes(Number(inheritedDesk))?Number(inheritedDesk):20;
+    p.awayLunchMinutes=[30,45,60].includes(Number(p.awayLunchMinutes))?Number(p.awayLunchMinutes):45;
+    p.lunchMode=['desk','away'].includes(p.lunchMode)?p.lunchMode:'desk';p.lunchModeAtStart=['desk','away'].includes(p.lunchModeAtStart)?p.lunchModeAtStart:p.lunchMode;
+    p.lunchPrealert=[0,5,10].includes(Number(p.lunchPrealert))?Number(p.lunchPrealert):5;
+    p.waterSips=clamp(p.waterSips,0,50,0);p.waterGraceUntil=clamp(p.waterGraceUntil,0,Number.MAX_SAFE_INTEGER,0);
+    p.noodleStart=clamp(p.noodleStart,0,Number.MAX_SAFE_INTEGER,0);p.noodleDurationAtStart=clamp(p.noodleDurationAtStart,0,60,0);
+    p.lunchStart=clamp(p.lunchStart,0,Number.MAX_SAFE_INTEGER,0);p.lunchDurationAtStart=clamp(p.lunchDurationAtStart,0,120,0);p.lunchLoggedMinutes=clamp(p.lunchLoggedMinutes,0,240,0);
+    p.lunchSessions=Array.isArray(p.lunchSessions)?p.lunchSessions.slice(-10).map(s=>({mode:s&&s.mode==='away'?'away':'desk',start:clamp(s&&s.start,0,Number.MAX_SAFE_INTEGER,0),end:clamp(s&&s.end,0,Number.MAX_SAFE_INTEGER,0),minutes:clamp(s&&s.minutes,0,240,0)})).filter(s=>s.start&&s.end&&s.end>=s.start):[];
+    p.awayStart=clamp(p.awayStart,0,Number.MAX_SAFE_INTEGER,0);
+    p.awaySessions=Array.isArray(p.awaySessions)?p.awaySessions.slice(-20).map(s=>({start:clamp(s&&s.start,0,Number.MAX_SAFE_INTEGER,0),end:clamp(s&&s.end,0,Number.MAX_SAFE_INTEGER,0),minutes:clamp(s&&s.minutes,0,120,0)})).filter(s=>s.start&&s.end&&s.end>=s.start):[];
+    p.activityDate=typeof p.activityDate==='string'?p.activityDate:(p.waterDate||'');
+    p.history=p.history&&typeof p.history==='object'&&!Array.isArray(p.history)?p.history:{};
+    p.workHours=/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(String(p.workHours))?p.workHours:DEFAULTS.workHours;
+    ['privacy','showSeconds','edgeCue','taskbarBadge','browserNotif','workReminders','showWorkline','workdaysOnly','lunchAutoStart','prayerBreakLogging','dayCloseEnabled','kaizenEnabled'].forEach(k=>p[k]=Boolean(p[k]));
+    p.offsets={...DEFAULTS.offsets,...(p.offsets||{})};Object.keys(p.offsets).forEach(k=>p.offsets[k]=clamp(p.offsets[k],-15,15,0));
+    p.acknowledged=p.acknowledged&&typeof p.acknowledged==='object'?p.acknowledged:{};
+    p.snoozed=p.snoozed&&typeof p.snoozed==='object'?p.snoozed:{};
+    p.notified=p.notified&&typeof p.notified==='object'?p.notified:{};
+    return p;
+  }
+  function loadPrefs(){
+    const current=safeJSON(storageGet(STORAGE_KEY));if(current)return normalizePrefs(current);
+    const pace12=safeJSON(storageGet('pacefoldPrefsV12'));if(pace12)return normalizePrefs(pace12);
+    const pace11=safeJSON(storageGet('pacefoldPrefsV11'));if(pace11)return normalizePrefs(pace11);
+    const desk11=safeJSON(storageGet('desklinePrefsV11'));if(desk11)return normalizePrefs(desk11);
+    const v10=safeJSON(storageGet('desklinePrefsV10'));if(v10)return normalizePrefs({...v10,lunchMode:'desk',deskLunchMinutes:20,awayLunchMinutes:45,activityDate:v10.acti

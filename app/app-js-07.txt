@@ -1,0 +1,52 @@
+[0]===k)classes.push('next');const code=(PRAYERS.find(p=>p[0]===k)||[])[2]||'';return `<span class="${classes.join(' ')}" data-code="${code}" aria-label="${nameOf(k)}"></span>`;}).join('');
+  }
+  function renderWorkline(now,h,water,noodle,away,lunch){
+    const workline=$('workline'),waterBtn=$('waterBtn'),noodleBtn=$('noodleBtn'),awayBtn=$('awayBtn'),lunchBtn=$('lunchBtn'),waterText=$('waterText'),noodleText=$('noodleText'),awayText=$('awayText'),lunchText=$('lunchText'),segments=8;
+    const active=noodle.running||noodle.ready||away.active||lunch.running||lunch.ready,visible=prefs.workReminders&&prefs.showWorkline&&(water.within||noodle.within||away.within||lunch.within||active||['water','noodle','away','lunch','showcase'].includes(testRoutine));
+    workline.classList.toggle('hidden',!visible);
+
+    waterBtn.className='ritual water';if(water.due)waterBtn.classList.add('due');if(water.complete)waterBtn.classList.add('ok');if(water.paused)waterBtn.classList.add('paused');
+    const scaled=water.progress*segments;
+    $('waterMeter').innerHTML=Array.from({length:segments},(_,i)=>{const fill=Math.min(1,Math.max(0,scaled-i)),next=!water.complete&&i===Math.min(segments-1,Math.floor(scaled));return `<span class="water-seg${next?' next':''}" style="--fill:${fill.toFixed(3)}"></span>`;}).join('');
+    waterText.textContent=water.paused?'Sip pace paused':water.due?'Take 2–3 sips':water.complete?'Hydration pace met':`Sip ${water.sips} / ${water.total}`;
+    waterBtn.setAttribute('aria-label',water.complete?`Hydration pace met for the ${water.target}-ounce workday target`:`Take two to three sips, then click to log sip break ${Math.min(water.sips+1,water.total)} of ${water.total}`);
+
+    noodleBtn.className='ritual noodle';noodleBtn.classList.add(noodle.state==='done'?'ok':noodle.state);
+    $('noodleRing').style.setProperty('--timer-progress',noodle.progress.toFixed(4));
+    if(noodle.state==='running'||noodle.state==='pre')noodleText.textContent=mmss(noodle.remain);
+    else if(noodle.state==='ready')noodleText.textContent=noodle.age>10*60000?'Still waiting':'Go get it';
+    else if(noodle.state==='done')noodleText.textContent='Meal prepared';
+    else noodleText.textContent=`Prep ${prefs.noodleMinutes}m`;
+    noodleBtn.setAttribute('aria-label',noodle.state==='ready'?'Noodles ready, click after collecting them':noodle.running?`Noodle timer, ${mmss(noodle.remain)} remaining`:noodle.state==='done'?'Meal preparation complete':`Start ${prefs.noodleMinutes}-minute noodle timer; shift-click or right-click to change duration`);
+
+    awayBtn.className='ritual away';if(away.active)awayBtn.classList.add(away.long?'due':'active');else if(away.count)awayBtn.classList.add('ok');
+    awayText.textContent=away.active?`Away ${mmss(away.elapsed)}`:away.count?`${away.count} away · ${away.totalMinutes}m`:'Away break';
+    awayBtn.setAttribute('aria-label',away.active?`Away break active for ${mmss(away.elapsed)}; click when back`:`Start an away break; ${away.count} logged today`);
+
+    lunchBtn.className='ritual lunch';lunchBtn.classList.add(lunch.state==='done'?'ok':lunch.state);lunchBtn.dataset.mode=lunch.mode;
+    $('lunchMeter').style.setProperty('--lunch-progress',lunch.progress.toFixed(4));
+    if(lunch.running||lunch.pre)lunchText.textContent=mmss(lunch.remain);
+    else if(lunch.ready)lunchText.textContent=lunch.mode==='away'?(lunch.age>10*60000?'Return overdue':'Return due'):'Meal window done';
+    else if(lunch.state==='done')lunchText.textContent=`${lunch.mode==='away'?'Away lunch':'Desk meal'} ${Math.round(prefs.lunchLoggedMinutes||0)}m`;
+    else lunchText.textContent=`Desk meal ${prefs.deskLunchMinutes}m`;
+    lunchBtn.setAttribute('aria-label',lunch.ready?(lunch.mode==='away'?'Lunch away timer finished; click when back':'Desk meal window complete; click to close'):lunch.running?`${lunch.mode==='away'?'Away lunch':'Desk meal'}, ${mmss(lunch.remain)} remaining`:lunch.state==='done'?'Meal session complete':`Start a ${prefs.deskLunchMinutes}-minute desk meal; shift-click for a ${prefs.awayLunchMinutes}-minute away lunch`);
+  }
+  function updateAmbient(h){const {start,end}=workRange(),phase=Math.min(1,Math.max(0,(h-start)/Math.max(1,end-start)));document.documentElement.style.setProperty('--ambient-x',`${(30+phase*42).toFixed(1)}%`);}
+
+  function renderCore(){
+    const now=new Date();ensureWorkday(now);const nowKey=dayKey(now);
+    if(nowKey!==calculatedDay){times=computeTimes(now);calculatedDay=nowKey;sent.clear();}
+    const h=now.getHours()+now.getMinutes()/60+now.getSeconds()/3600,H=now.getHours(),m=now.getMinutes(),s=now.getSeconds();updateAmbient(h);
+    if(prefs.timeFormat==='24'){$('hour').textContent=String(H).padStart(2,'0');$('ampm').textContent='';}else{$('hour').textContent=H%12||12;$('ampm').textContent=H>=12?'PM':'AM';}
+    $('minute').textContent=String(m).padStart(2,'0');$('seconds').textContent=String(s).padStart(2,'0');$('date').textContent=now.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+    document.title=prefs.timeFormat==='24'?`${String(H).padStart(2,'0')}:${String(m).padStart(2,'0')}`:`${H%12||12}:${String(m).padStart(2,'0')} ${H>=12?'PM':'AM'}`;
+
+    const prayer=prayerState(now,h),water=waterState(now,h),noodle=noodleState(now,h),away=awayState(now,h),lunch=lunchState(now,h),attention=attentionFor(prayer,water,noodle,away,lunch),b={prev:prayer.prev,next:prayer.next};
+    document.body.dataset.signal=attention.signal;document.body.dataset.source=attention.source;document.body.dataset.prayerSignal=prayer.signal;applyTheme(now,h);document.body.dataset.clarity=prefs.clarity;document.body.dataset.edge=prefs.edgeCue?'on':'off';document.body.dataset.seconds=prefs.showSeconds?'on':'off';if(!prefs.privacy)document.body.classList.add('reveal');
+    $('favicon').href=iconData(attention.signal,attention.source);updateAppBadge(attention);
+
+    const nextMins=(b.next[1]-h)*60;
+    if(prayer.signal==='active'){$('statusWord').textContent='Paused';$('eventTime').textContent=new Date(prayer.startedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});$('relativeTime').textContent=`${Math.max(0,Math.floor(prayer.elapsed))}m`;$('eventName').textContent=`${nameOf(prayer.event)} break`;}
+    else if(prayer.signal==='due'){$('statusWord').textContent='Now';$('eventTime').textContent=fmt(b.prev[1]);$('relativeTime').textContent=`${Math.floor(prayer.elapsed)}m`;$('eventName').textContent=nameOf(prayer.event);notifyOnce(prayer.key,prefs.notificationDetail==='named'?`${nameOf(prayer.event)} reminder`:'Clock reminder');}
+    else if(prayer.signal==='pending'){$('statusWord').textContent='Next';$('eventTime').textContent=fmt(b.next[1]);$('relativeTime').textContent=duration(nextMins);$('eventName').textContent=`${nameOf(prayer.event)} pending`;}
+    else if(prayer.signal==='snoozed'){$('statusWord').textContent='Snoozed';$('eventTime').textContent=fmt(b.prev[1]);$('relativeTime').textContent=`${Math.ceil(prayer.remaining)}m`;$('eventName').textConte

@@ -1,21 +1,41 @@
-name: Deploy Pacefold to GitHub Pages
+name: Validate and deploy Pacefold
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: JavaScript syntax
+        run: |
+          node --check site.js
+          node --check service-worker.js
+          node --check app/loader.js
+          node --check app/service-worker.js
+      - name: Static application audit
+        run: node scripts/validate.mjs
+
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -24,23 +44,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Reassemble tested release
+      - name: Build clean Pages artifact
         run: |
-          cat pacefold-site.zip.part-* > pacefold-site.zip
-          echo "94ece9e124a256cd3416297389b2899af9cb95e8cec51146140df466bf299a24  pacefold-site.zip" | sha256sum -c -
-          unzip -q pacefold-site.zip -d _site
-      - name: Validate static application
-        run: |
-          test -f _site/index.html
-          test -f _site/privacy.html
-          test -f _site/app/index.html
-          test -f _site/app/app.css
-          test -f _site/app/app.js
-          test -f _site/app/service-worker.js
-          test -f _site/app/manifest.webmanifest
-          python -m json.tool _site/app/manifest.webmanifest > /dev/null
-          node --check _site/app/app.js
-          node --check _site/app/service-worker.js
+          mkdir _site
+          rsync -a ./ _site/ \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'scripts/' \
+            --exclude 'README.md' \
+            --exclude 'CHANGELOG.md' \
+            --exclude 'REPOSITORY_SETUP.md' \
+            --exclude 'SECURITY.md' \
+            --exclude '_site/'
+          node scripts/validate.mjs _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static site
