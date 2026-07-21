@@ -2,107 +2,50 @@
 
 **Your day, quietly kept.**
 
-Pacefold is a local-first Progressive Web App for a calm workday rhythm: prayer mini-breaks, hydration, noodle preparation, desk meals, away lunches, and brief away/bathroom sessions.
+Pacefold is a local-first, installable workday rhythm system. Version 14 expands the original Muslim/noodle workflow into a configurable product while preserving the developer profile as the default.
 
-## Pacefold 13
+## Pacefold 14
 
-Version 13 turns the project into a root-scoped, installable PWA with a guided setup surface, automatic update checks, notification diagnostics, offline recovery, and a CI validation gate.
+- **Nine rhythm profiles:** Pacefold Original, Everyday, Mindfulness, Muslim, Jewish, Christian, Hindu, Buddhist, and Custom.
+- **Editable personal moments:** non-Islamic profiles use user-editable reminders rather than claiming official denominational or legal schedules.
+- **Routine mixer:** noodles remain the default, with tea, coffee, food preparation, steep/brew, and custom routines.
+- **Three-step setup:** rhythm, preparation routine, then comfort/install/notification choices.
+- **Display comfort:** Auto, Neutral, Warm, and Dim interface modes, plus optional distance-look cues.
+- **System boundary:** a browser app cannot directly control monitor colour temperature; Pacefold can open Windows Night light settings through a user action.
+- **Private ledger:** prayer/meditation/moment pauses, hydration, meals, and away sessions stay in local browser storage.
+- **Automatic updates:** installed copies check for new service workers while open and activate verified releases automatically.
 
-### Install
+## Default developer profile
+
+The default preset remains:
+
+- Muslim calculated prayer schedule
+- Hanafi Asr
+- Toronto defaults with optional location-aware calculations
+- noodle preparation routine
+- desk-meal flow
+- hydration, away-break, and private day-close logging
+
+## Repository release format
+
+The exact tested source tree is stored as checksum-verified Base64 release parts under `release/`. GitHub Actions reconstructs the ZIP, verifies SHA-256, runs JavaScript and static audits, and only then deploys a clean Pages artifact.
+
+Release SHA-256:
+
+`2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32`
+
+## Install
 
 1. Open `https://rbt4.github.io/pacefold/` in Microsoft Edge.
-2. Select **Install Pacefold** on the landing page.
-3. Approve the Edge installation prompt.
-4. Pin Pacefold to the taskbar from Edge Apps when workplace policy permits.
-5. Open Pacefold or leave it minimized during work hours.
-
-The landing page reports whether the browser, install prompt, offline engine, and notifications are available. The direct app also includes a setup dock and system health panel.
-
-### Updates
-
-Pacefold checks for a new service worker:
-
-- shortly after startup;
-- every 30 minutes while open;
-- when the app regains focus;
-- when it becomes visible again;
-- when connectivity returns.
-
-A verified update activates automatically and reloads the app once. Local settings and daily records are preserved across updates.
-
-### Notifications
-
-Notifications are optional. Pacefold works with its in-app signals and taskbar codes even when notifications are disabled.
-
-- **Important only**: prayer, completed noodle timer, completed meal window, and unusually long away sessions.
-- **All cues**: important cues plus hydration reminders.
-- **Enable / test system notification** performs an immediate permission and delivery test.
-
-Windows or organizational Edge policy may block notifications, PWA installation, background activity, or taskbar badges. Pacefold reports the browser's actual permission state rather than claiming notifications are active when they are blocked.
-
-The app must remain open or minimized for JavaScript timers and scheduled cues to continue. A closed browser app cannot guarantee background reminders.
-
-## Design system
-
-Pacefold uses Japanese operating and spatial principles as product behaviour rather than decoration:
-
-- **Ma** — protect meaningful intervals instead of treating every pause as waste.
-- **Andon** — remain quiet and signal only the exception that needs attention.
-- **Kiroku** — keep an accurate private record on the device.
-- **Kaizen** — offer at most one optional, practical improvement at a time.
-- **Hansei** — close the day with a calm summary and no productivity score.
-
-## Workday model
-
-- Prayer acknowledgement can begin a mini-break timer; press Enter again when back.
-- Desk meal is the default because eating at the desk is not the same as leaving work.
-- Shift+L starts the less-common away lunch.
-- Collecting noodles can automatically begin a desk-meal window.
-- Hydration pauses during prayer, meal windows, or away sessions and resumes after a grace period.
-- Overlapping prayer, away, and away-lunch intervals are merged before off-desk time is totaled.
-- A private timeline and Day Close remain local.
-
-## Taskbar code language
-
-| Code | Meaning |
-|---|---|
-| 1 | Prayer / schedule |
-| 2 | Sip pace |
-| 3 | Meal preparation |
-| 4 | Away break |
-| 5 | Meal window |
-
-## Keyboard controls
-
-- **W** — log 2–3 sips
-- **N** — start or inspect noodle preparation
-- **B** — start or finish an away break
-- **L** — start a desk-meal window
-- **Shift+L** — start an away lunch
-- **P** — start or finish a prayer break
-- **Enter** — perform the highest-priority action
-- **S** — snooze or add five minutes
-- **R** — temporarily reveal labels
-- **H** — plain-clock cover
-- **,** — settings
-
-Global shortcuts are suppressed while a button, link, input, or editable control has focus.
-
-## Validation
-
-Pull requests and pushes to `main` run:
-
-- JavaScript syntax checks;
-- manifest and icon validation;
-- local asset-reference validation;
-- service-worker shell validation;
-- DOM ID/reference validation;
-- a clean Pages-artifact validation before deployment.
+2. Choose **Set up Pacefold** and complete the three steps.
+3. Use **Install Pacefold** when Edge exposes the native prompt.
+4. When it does not, use Edge **… → Apps → Install Pacefold**.
+5. Pin the installed app from `edge://apps` when workplace policy permits.
 
 ## Privacy
 
-No account, analytics, advertisements, or external runtime APIs. Activity records, notification deduplication, and suggestions remain in browser storage.
+No account, analytics, advertising, or external runtime APIs. Activity records and settings remain on the device.
 
 ## Version
 
-Pacefold 13.0.0
+Pacefold 14.0.0
