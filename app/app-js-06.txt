@@ -1,0 +1,78 @@
+
+    const halo=active ? `<circle cx="${spec.x}" cy="${spec.y}" r="${(spec.size*state.scale+2.5).toFixed(2)}" fill="${spec.glow}" fill-opacity="${state.halo.toFixed(2)}"/>` : '';
+
+    function premiumShape(shape){
+      const size=spec.size*state.scale, x=spec.x, y=spec.y, fill=spec.fill;
+      const common=`fill="${fill}" fill-opacity="${state.fill.toFixed(2)}"`;
+      const stroke=state.stroke?`stroke="${fill}" stroke-width="${state.stroke.toFixed(2)}"`:'';
+      const shineAlpha=state.shine.toFixed(2);
+      if(shape==='dot'){
+        return `${halo}<circle cx="${x}" cy="${y}" r="${size.toFixed(2)}" ${common} ${stroke}/><circle cx="${(x-.8).toFixed(2)}" cy="${(y-.95).toFixed(2)}" r="${(size*.42).toFixed(2)}" fill="#ffffff" fill-opacity="${shineAlpha}"/>`;
+      }
+      if(shape==='square'){
+        const side=(size*2).toFixed(2), left=(x-size).toFixed(2), top=(y-size).toFixed(2), radius=(size*.5).toFixed(2);
+        return `${halo}<rect x="${left}" y="${top}" width="${side}" height="${side}" rx="${radius}" ry="${radius}" ${common} ${stroke}/><rect x="${(x-size*.55).toFixed(2)}" y="${(y-size*.62).toFixed(2)}" width="${(size*.8).toFixed(2)}" height="${(size*.45).toFixed(2)}" rx="${(size*.24).toFixed(2)}" fill="#ffffff" fill-opacity="${shineAlpha}"/>`;
+      }
+      if(shape==='pill'){
+        const width=(size*1.45).toFixed(2),height=(size*2.2).toFixed(2),left=(x-size*.725).toFixed(2),top=(y-size*1.1).toFixed(2),radius=(size*.72).toFixed(2);
+        return `${halo}<rect x="${left}" y="${top}" width="${width}" height="${height}" rx="${radius}" ${common} ${stroke}/><circle cx="${(x-.35).toFixed(2)}" cy="${(y-size*.45).toFixed(2)}" r="${(size*.24).toFixed(2)}" fill="#ffffff" fill-opacity="${shineAlpha}"/>`;
+      }
+      if(shape==='bar'){
+        const width=(size*2.25).toFixed(2),height=(size*.9).toFixed(2),left=(x-size*1.125).toFixed(2),top=(y-size*.45).toFixed(2),radius=(size*.45).toFixed(2);
+        return `${halo}<rect x="${left}" y="${top}" width="${width}" height="${height}" rx="${radius}" ${common} ${stroke}/><rect x="${(x-size*.75).toFixed(2)}" y="${(y-size*.24).toFixed(2)}" width="${(size*.85).toFixed(2)}" height="${(size*.18).toFixed(2)}" rx="${(size*.09).toFixed(2)}" fill="#ffffff" fill-opacity="${shineAlpha}"/>`;
+      }
+      const pts=`${x},${(y-size).toFixed(2)} ${(x+size).toFixed(2)},${y} ${x},${(y+size).toFixed(2)} ${(x-size).toFixed(2)},${y}`;
+      const pts2=`${x},${(y-size*.42).toFixed(2)} ${(x+size*.42).toFixed(2)},${y} ${x},${(y+size*.42).toFixed(2)} ${(x-size*.42).toFixed(2)},${y}`;
+      return `${halo}<polygon points="${pts}" ${common} ${stroke} stroke-linejoin="round"/><polygon points="${pts2}" fill="#ffffff" fill-opacity="${shineAlpha}"/>`;
+    }
+
+    const badge=active?premiumShape(spec.shape):'';
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="10.5" fill="none" stroke="${baseStroke}" stroke-width="2"/><path d="M16 9.2v7l4.4 2.6" fill="none" stroke="${baseStroke}" stroke-width="2" stroke-linecap="round"/><path d="M12.2 5.9L19.7 26" stroke="#587894" stroke-width=".75" stroke-opacity=".48"/><rect x="25.7" y="25.7" width="2.1" height="2.1" rx=".4" fill="#b85b48" fill-opacity=".72"/>${badge}</svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+  function notificationPermission(){return !('Notification'in window)?'unsupported':Notification.permission;}
+  function notificationStatusText(){
+    const permission=notificationPermission();
+    if(permission==='unsupported')return'Unavailable';
+    if(permission==='denied')return'Blocked in Edge';
+    if(permission==='granted'&&prefs.browserNotif)return prefs.notificationMode==='all'?'On · all cues':'On · important only';
+    if(permission==='granted')return'Allowed · off';
+    return'Off · optional';
+  }
+  function notificationAllowed(source){return prefs.notificationMode==='all'||['prayer','noodle','lunch','away'].includes(source);}
+  async function showSystemNotification(key,text,source='prayer',test=false){
+    if(!test&&(!prefs.browserNotif||!notificationAllowed(source)))return false;
+    if(notificationPermission()!=='granted')return false;
+    if(!test&&(sent.has(key)||prefs.notified[key]))return false;
+    if(!test){sent.add(key);prefs.notified[key]=Date.now();save();}
+    const generic=prefs.notificationDetail==='generic';
+    const title=generic?'Pacefold':text;
+    const body=generic?'A quiet workday cue needs attention.':'Open Pacefold to respond.';
+    const options={body,silent:true,tag:`pacefold-${key}`,renotify:false,requireInteraction:['prayer','noodle','lunch'].includes(source),icon:new URL('./icons/icon-192.png',location.href).href,badge:new URL('./icons/icon-192.png',location.href).href,data:{url:new URL('./',location.href).href,source}};
+    try{
+      const registration=workerRegistration||await navigator.serviceWorker?.ready;
+      if(registration&&registration.showNotification){await registration.showNotification(title,options);return true;}
+      new Notification(title,options);return true;
+    }catch(error){
+      if(!test){sent.delete(key);delete prefs.notified[key];save();}
+      reportError(error,'notification-show');return false;
+    }
+  }
+  function notifyOnce(key,text,source='prayer'){void showSystemNotification(key,text,source,false);}
+  async function requestNotifications(test=false){
+    if(notificationPermission()==='unsupported'){toast('System notifications are unavailable here');return false;}
+    if(notificationPermission()==='denied'){prefs.browserNotif=false;save();toast('Notifications are blocked · use Edge site permissions');return false;}
+    try{
+      const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+      prefs.browserNotif=permission==='granted';save();
+      if(permission!=='granted'){toast('Notification permission was not enabled');return false;}
+      toast(test?'Sending a test notification':'Important notifications enabled');
+      if(test)await showSystemNotification(`test-${Date.now()}`,'Pacefold notification test','test',true);
+      renderSetupDock();return true;
+    }catch(error){reportError(error,'notification-permission');toast('Notifications could not be enabled');return false;}
+  }
+  function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').classList.add('on');toastTimer=setTimeout(()=>$('toast').classList.remove('on'),1900);}
+  function revealFor(ms=6500){clearTimeout(revealTimer);document.body.classList.add('reveal');revealTimer=setTimeout(()=>{if(prefs.privacy)document.body.classList.remove('reveal');},ms);}
+
+  function renderSequence(h,state){
+    $('sequence').innerHTML=ALERTS.map(k=>{const classes=['sequence-mark'];if(times[k]<h)classes.push('passed');if(state.event===k&&state.signal==='due')classes.push('due');else if(state.event===k&&state.signal==='active')classes.push('active');else if(state.event===k&&state.signal==='pending')classes.push('pending');else if(state.next&&state.next
