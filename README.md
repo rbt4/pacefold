@@ -36,7 +36,7 @@ Pacefold uses Japanese operating and spatial principles as product behaviour rat
 
 ## Deploy
 
-The repository contains a tested static release bundle, `pacefold-site.zip`, and a GitHub Pages workflow.
+The repository contains a tested static release bundle split into hash-verified Git objects and a GitHub Pages workflow.
 
 1. In **Settings → Pages**, choose **GitHub Actions** as the source.
 2. Push to `main` or run the workflow manually.
