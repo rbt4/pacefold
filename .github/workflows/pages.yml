@@ -24,11 +24,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Extract tested release
-        run: unzip -q pacefold-site.zip -d _site
+      - name: Reassemble tested release
+        run: |
+          cat pacefold-site.zip.part-* > pacefold-site.zip
+          echo "94ece9e124a256cd3416297389b2899af9cb95e8cec51146140df466bf299a24  pacefold-site.zip" | sha256sum -c -
+          unzip -q pacefold-site.zip -d _site
       - name: Validate static application
         run: |
           test -f _site/index.html
+          test -f _site/privacy.html
           test -f _site/app/index.html
           test -f _site/app/app.css
           test -f _site/app/app.js
