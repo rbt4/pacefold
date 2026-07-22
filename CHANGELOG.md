@@ -1,5 +1,15 @@
 # Changelog
 
+## 15.2.0 — Calm interaction reset
+
+- Replaced alarm-style system alerts with silent, non-persistent notifications carrying one contextual clear action; quiet essentials are the default and every-cue coverage is opt-in.
+- Kept the taskbar empty until attention is actually due, using a dot by default and retaining the next-cue countdown only as an explicit option.
+- Made clearing a Pacefold notification clear both sibling notifications and the taskbar indicator, while preserving durable exactly-once action logging.
+- Anchored hydration, distance-look and movement cadence to the current live work session instead of manufacturing a backlog from the beginning of the workday.
+- Added the missing distance-look system-notification path and made real meals, away periods and scheduled pauses reset eye timing as well as movement timing.
+- Reorganized the 4,700-pixel settings sheet into four focused views and reduced default pulse, glow and edge animation.
+- Expanded static, browser, upgrade and self-check gates for the calmer notification contract, session timing, taskbar modes and settings navigation.
+
 ## 15.1.8 — Permission-aware notification gate
 
 - Applied notification permission when creating the Playwright context, matching current Playwright guidance.

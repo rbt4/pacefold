@@ -4,12 +4,14 @@
 
 Pacefold is a local-first, installable workday rhythm system. Version 15 keeps the clock visually dominant while adding a quiet Capture, Care, Sound and OneNote layer.
 
-## Pacefold 15.1
+## Pacefold 15.2
 
-- **Functional taskbar surface:** the installed-app badge shows minutes to the next cue, then a dot when action is waiting.
-- **Notification actions:** context-aware Log, Done, Acknowledge, Start and Snooze controls work without focusing Pacefold.
+- **Calm taskbar surface:** the installed-app badge stays empty until action is waiting, then shows one dot; the live countdown remains opt-in.
+- **Quiet notifications:** alerts are silent, non-persistent and carry one context-aware Clear, Done or Log action without focusing Pacefold.
 - **Durable action queue:** notification clicks survive reloads and are deduplicated before changing local records.
 - **Better visual language:** distinct notification icons for moments, hydration, preparation, away time, meals, eye care, movement and diagnostics.
+- **No late-launch debt:** hydration, distance-look and movement cadence begin from the live session instead of creating an instant reminder backlog.
+- **Focused settings:** Today, Rhythm, Tools and App replace the previous 4,700-pixel single sheet.
 - **Right-click shortcuts:** Log / clear current cue, Capture, Care and Sound.
 - **Live clock surface:** the browser tab/app-window favicon renders the current time; Edge keeps pinned icon artwork static.
 - **Kiroku capture:** notes, follow-ups, incidents, inspections, JHSC, construction, notifications, meetings and resources save locally first.
@@ -31,7 +33,7 @@ The exact tested source tree is stored as a checksum-verified Base64 release und
 
 Release SHA-256:
 
-`b9caa6ed709871d602617d6027ecc50a9eda354294ab2e236bad962c108d0e9f`
+`9a45d8f9c89d18ff5595146ad8b9ac4a6df7cf2c255e6dd2c37c4c71c9f8a2a1`
 
 ## Install
 
@@ -46,4 +48,4 @@ No Pacefold account, analytics or advertising. Activity records, notification-ac
 
 ## Version
 
-Pacefold 15.1.8
+Pacefold 15.2.0
