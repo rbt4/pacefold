@@ -1,5 +1,10 @@
 # Changelog
 
+## 15.1.1 — Browser-gate compatibility
+
+- Corrected the notification-action browser audit to inspect the exact options Pacefold sends to Edge instead of relying on headless Chrome to expose operating-system notification metadata through `getNotifications()`.
+- Kept the durable service-worker queue, reload survival and exactly-once logging checks unchanged.
+
 ## 15.1.0 — Taskbar and notification control surface
 
 - Replaced cryptic taskbar source codes with a live minutes-to-next-cue badge and a dot when action is waiting.
