@@ -1,5 +1,16 @@
 # Changelog
 
+## 15.1.0 — Taskbar and notification control surface
+
+- Replaced cryptic taskbar source codes with a live minutes-to-next-cue badge and a dot when action is waiting.
+- Added a real-time clock favicon for browser-tab and installed-app window surfaces.
+- Added distinct notification artwork for moments, hydration, preparation, away time, meals, eye care, movement and diagnostics.
+- Added context-aware notification actions that record or snooze without opening Pacefold; clicking the notification body still opens it.
+- Added a durable, lease-protected and deduplicated service-worker action queue so a click is not lost or double-applied across focus changes and reloads.
+- Added right-click taskbar shortcuts for Log / clear current cue, Capture, Care and Sound, including launch-queue handling for an already-running app.
+- Added static, browser, offline and prior-release upgrade gates for the new icons, manifest shortcuts, action queue and exactly-once local logging.
+- Documented the Edge boundary around normal taskbar clicks and pinned icon artwork.
+
 ## 15.0.0 — Care, sound and Kiroku underneath
 
 - Added the quiet four-tool dock without turning Pacefold into a dashboard.
@@ -10,31 +21,12 @@
 
 ## 14.0.1 — Final reliability pass
 
-- Anchored the landing-page Andon card to the hero artwork and removed desktop horizontal overflow.
-- Prevented first-time service-worker activation from reloading onboarding and discarding in-progress setup choices.
-- Restored the complete responsive onboarding design, including readable option cards, sticky mobile actions and a real three-step progress indicator.
-- Bounded service-worker readiness during notification tests so workplace policy cannot leave setup waiting forever.
-- Added a direct page-notification fallback and now reports a failed test accurately instead of claiming delivery.
-- Added validation guards for the hero anchor, onboarding styles and bounded notification path.
+- Fixed landing overflow, first-activation reload, incomplete responsive onboarding and unbounded notification-worker waits.
 
 ## 14.0.0 — Profiles, routines, setup, and comfort
 
-- Integrated and reviewed the Claude 13.1 upgrade.
-- Restored a direct, validated `app/app.js` runtime and removed fragmented/gzip reconstruction.
-- Added nine rhythm profiles, including secular, mindfulness, major-faith, and custom choices.
-- Kept Pacefold Original—Muslim prayer schedule plus noodles—as the default developer preset.
-- Added editable personal moments for non-Islamic profiles.
-- Generalized noodle preparation into configurable routine presets and custom routines.
-- Rebuilt setup as a three-step wizard that works even when Edge does not fire its native install event.
-- Added interface comfort modes and optional distance-look reminders.
-- Added a user-initiated Windows Night light settings shortcut without claiming browser-level monitor control.
-- Expanded the public website to explain profiles, routine mixing, Andon cues, Kiroku logging, and privacy.
-- Added validation that guards the direct runtime, manifest, icons, worker shell, references, and DOM bindings.
+- Added nine rhythm profiles, configurable preparation routines, robust setup, display comfort and the direct validated runtime.
 
 ## 13.1.0 — Claude foundation
 
 - Added location-aware prayer/Qibla calculations and consolidated application source.
-
-## 13.0.0
-
-- Hardened installation, automatic updates, notification diagnostics, and GitHub Pages validation.

@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.0.0
+name: Validate and deploy Pacefold 15.1.0
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -25,7 +25,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "65f8bada8b589c1858343ade0f2e8f2c38b8e5b6506dc411e68ac2ba2c20e98d  /tmp/pacefold-v15.zip" | sha256sum -c -
+          echo "891d27d65ca08df8070545d658b5b61624718dd592c6417542c9767dd2230e93  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
       - name: Reconstruct previous release and require a version advance
@@ -53,7 +53,7 @@ jobs:
         run: |
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
-      - name: Browser application and installed-upgrade audit
+      - name: Browser application, action and installed-upgrade audit
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
@@ -77,7 +77,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "65f8bada8b589c1858343ade0f2e8f2c38b8e5b6506dc411e68ac2ba2c20e98d  /tmp/pacefold-v15.zip" | sha256sum -c -
+          echo "891d27d65ca08df8070545d658b5b61624718dd592c6417542c9767dd2230e93  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release _site
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
