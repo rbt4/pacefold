@@ -1,5 +1,10 @@
 # Changelog
 
+## 15.1.8 — Permission-aware notification gate
+
+- Applied notification permission when creating the Playwright context, matching current Playwright guidance.
+- Added an honest spec-only branch when a CI browser still hard-denies notifications: the gate verifies the exact actions, source artwork and real service-worker queue without claiming operating-system delivery.
+
 ## 15.1.7 — Atomic notification assertion
 
 - Collapsed payload capture, source-specific delivery and permission reporting into one browser evaluation so the audit cannot race a page transition between test operations.
