@@ -1,5 +1,9 @@
 # Changelog
 
+## 15.1.3 — Reload-safe notification audit
+
+- Preserved the captured notification payload across a first-activation reload so the browser gate can verify delivery, actions and source artwork without racing the service-worker lifecycle.
+
 ## 15.1.2 — Notification audit observability
 
 - Added a same-page notification event at the send boundary so browser tests can inspect the exact Edge action/icon payload while separately confirming that Chrome created the notification.
