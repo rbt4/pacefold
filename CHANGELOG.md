@@ -1,5 +1,10 @@
 # Changelog
 
+## 15.1.6 — Explicit notification-path audit
+
+- Added a permission-respecting notification preview hook so the browser gate exercises a real source-specific notification instead of an in-app signal preview.
+- Tightened delivery verification to require the created browser notification to carry the water-cue source.
+
 ## 15.1.5 — Navigation-stable payload bridge
 
 - Moved the test-only notification payload bridge to Playwright’s page-console channel, which remains attached while the service worker changes the page lifecycle.

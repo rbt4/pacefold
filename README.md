@@ -31,7 +31,7 @@ The exact tested source tree is stored as a checksum-verified Base64 release und
 
 Release SHA-256:
 
-`9dfa5f629b34b3b5386f2c1f87978cb648686f0e62d380e732573a71614e5cb3`
+`ceae7e8d0202cd1fb4e266668089ce811548b5d93b9f09ff53d6999d4edcff6f`
 
 ## Install
 
@@ -46,4 +46,4 @@ No Pacefold account, analytics or advertising. Activity records, notification-ac
 
 ## Version
 
-Pacefold 15.1.5
+Pacefold 15.1.6
