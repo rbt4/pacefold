@@ -1,5 +1,9 @@
 # Changelog
 
+## 15.1.5 — Navigation-stable payload bridge
+
+- Moved the test-only notification payload bridge to Playwright’s page-console channel, which remains attached while the service worker changes the page lifecycle.
+
 ## 15.1.4 — Direct notification payload capture
 
 - Handed the emitted notification payload directly to the Playwright runner before any service-worker lifecycle transition, eliminating page-memory races while retaining independent browser delivery verification.
