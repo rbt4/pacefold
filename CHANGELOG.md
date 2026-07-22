@@ -1,5 +1,10 @@
 # Changelog
 
+## 15.1.2 — Notification audit observability
+
+- Added a same-page notification event at the send boundary so browser tests can inspect the exact Edge action/icon payload while separately confirming that Chrome created the notification.
+- Preserved the durable service-worker queue, reload survival and exactly-once logging checks.
+
 ## 15.1.1 — Browser-gate compatibility
 
 - Corrected the notification-action browser audit to inspect the exact options Pacefold sends to Edge instead of relying on headless Chrome to expose operating-system notification metadata through `getNotifications()`.

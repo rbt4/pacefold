@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.1.1
+name: Validate and deploy Pacefold 15.1.2
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "cc846cfe8bf96685a8522801afebafa19c88b4913322aea4cdd6f5efe097ce23  /tmp/pacefold-v15.zip" | sha256sum -c -
+          echo "ba417bfc5f93871d4f57322842f5ea3f7f1cfb59c5ed237c582972ad71119c88  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
       - name: Reconstruct previous release and require a version advance
@@ -77,7 +77,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "cc846cfe8bf96685a8522801afebafa19c88b4913322aea4cdd6f5efe097ce23  /tmp/pacefold-v15.zip" | sha256sum -c -
+          echo "ba417bfc5f93871d4f57322842f5ea3f7f1cfb59c5ed237c582972ad71119c88  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release _site
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
