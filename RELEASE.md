@@ -1,10 +1,10 @@
-# Pacefold 14.0.1 verified release
+# Pacefold 15.0.0 verified release
 
-- Version: `14.0.1`
-- Archive: `Pacefold_v14.0.1_Repository_Backup.zip`
-- SHA-256: `2169d7650cd3cd2c3227acc068c2f2481dfe5719e3faa1e95f70baec38b214e8`
-- Release part: `release/pacefold-v14.zip.b64.part-00`
+- Version: `15.0.0`
+- Archive: `Pacefold_v15.0.0_Repository_Backup.zip`
+- SHA-256: `65f8bada8b589c1858343ade0f2e8f2c38b8e5b6506dc411e68ac2ba2c20e98d`
+- Release part: `release/pacefold-v15.zip.b64.part-00`
 
-GitHub Actions concatenates the parts in lexical order, decodes the archive, verifies the whole-file SHA-256, and then runs the build and validation scripts contained inside the release.
+GitHub Actions decodes the archive, verifies SHA-256, confirms that the release version advanced from the previous deployed archive, and runs the build, static and browser-upgrade audits contained inside the release.
 
-The archive contains the full static source tree, PWA manifest, service workers, icons, documentation, and test/build scripts used for local validation.
+The archive contains the full static source tree, PWA manifest, service workers, icons, local pinned MSAL runtime and license, documentation, and the test/build scripts used for release validation.

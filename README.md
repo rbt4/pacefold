@@ -2,18 +2,17 @@
 
 **Your day, quietly kept.**
 
-Pacefold is a local-first, installable workday rhythm system. Version 14 expands the original Muslim/noodle workflow into a configurable product while preserving the developer profile as the default.
+Pacefold is a local-first, installable workday rhythm system. Version 15 keeps the clock visually dominant while adding a quiet Capture, Care, Sound and OneNote layer.
 
-## Pacefold 14
+## Pacefold 15
 
-- **Nine rhythm profiles:** Pacefold Original, Everyday, Mindfulness, Muslim, Jewish, Christian, Hindu, Buddhist, and Custom.
-- **Editable personal moments:** non-Islamic profiles use user-editable reminders rather than claiming official denominational or legal schedules.
-- **Routine mixer:** noodles remain the default, with tea, coffee, food preparation, steep/brew, and custom routines.
-- **Three-step setup:** rhythm, preparation routine, then comfort/install/notification choices.
-- **Display comfort:** Auto, Neutral, Warm, and Dim interface modes, plus optional distance-look cues.
-- **System boundary:** a browser app cannot directly control monitor colour temperature; Pacefold can open Windows Night light settings through a user action.
-- **Private ledger:** prayer/meditation/moment pauses, hydration, meals, and away sessions stay in local browser storage.
-- **Automatic updates:** installed copies check for new service workers while open and activate verified releases automatically.
+- **Kiroku capture:** notes, follow-ups, incidents, inspections, JHSC, construction, notifications, meetings and resources save locally first.
+- **Optional Microsoft OneNote:** delegated `Notes.ReadWrite`, selected HSSys notebook/section, one dated page per day, offline queue and duplicate-safe retry.
+- **Care:** 20-20-20 distance looks plus break-aware guided position and movement resets.
+- **Sound:** generated offline brown hush, rain and fan layers, local/direct audio, media controls and cue ducking.
+- **Themes:** Sekkei, Washi, Sumi, Moss, Dusk and a custom palette.
+- **Original rhythm preserved:** nine profiles, configurable preparation routines, hydration, meals, personal pauses and the private ledger remain.
+- **Hardened updates:** installed-v14 upgrade, open-draft deferral, offline reload and storage migration are browser-tested in CI.
 
 ## Default developer profile
 
@@ -28,11 +27,11 @@ The default preset remains:
 
 ## Repository release format
 
-The exact tested source tree is stored as checksum-verified Base64 release parts under `release/`. GitHub Actions reconstructs the ZIP, verifies SHA-256, runs JavaScript and static audits, and only then deploys a clean Pages artifact.
+The exact tested source tree is stored as a checksum-verified Base64 release under `release/`. GitHub Actions reconstructs the ZIP, verifies SHA-256, rejects a non-advanced release version, runs syntax/static checks and a real browser upgrade audit, and only then deploys a clean Pages artifact.
 
 Release SHA-256:
 
-`2169d7650cd3cd2c3227acc068c2f2481dfe5719e3faa1e95f70baec38b214e8`
+`65f8bada8b589c1858343ade0f2e8f2c38b8e5b6506dc411e68ac2ba2c20e98d`
 
 ## Install
 
@@ -44,8 +43,8 @@ Release SHA-256:
 
 ## Privacy
 
-No account, analytics, advertising, or external runtime APIs. Activity records and settings remain on the device.
+No Pacefold account, analytics or advertising. Activity records and settings remain on the device. Microsoft Graph is contacted only after optional OneNote configuration and sign-in; only written captures are synchronized.
 
 ## Version
 
-Pacefold 14.0.1
+Pacefold 15.0.0

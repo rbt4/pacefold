@@ -1,5 +1,13 @@
 # Changelog
 
+## 15.0.0 — Care, sound and Kiroku underneath
+
+- Added the quiet four-tool dock without turning Pacefold into a dashboard.
+- Added local-first capture and optional Microsoft OneNote synchronization with offline queuing, dated pages and duplicate-safe recovery.
+- Added break-aware movement resets, expanded eye care, generated/local/direct audio, media controls, cue ducking and new themes.
+- Added update deferral for setup and capture, persisted unfinished capture text and v14-to-v15 migration.
+- Added checksum, version-advance, static, mocked Graph, installed-upgrade, offline and responsive browser gates before deployment.
+
 ## 14.0.1 — Final reliability pass
 
 - Anchored the landing-page Andon card to the hero artwork and removed desktop horizontal overflow.
