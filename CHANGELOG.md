@@ -1,5 +1,9 @@
 # Changelog
 
+## 15.1.4 — Direct notification payload capture
+
+- Handed the emitted notification payload directly to the Playwright runner before any service-worker lifecycle transition, eliminating page-memory races while retaining independent browser delivery verification.
+
 ## 15.1.3 — Reload-safe notification audit
 
 - Preserved the captured notification payload across a first-activation reload so the browser gate can verify delivery, actions and source artwork without racing the service-worker lifecycle.
