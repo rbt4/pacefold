@@ -1,5 +1,10 @@
 # Changelog
 
+## 15.2.1 — Upgrade-gate synchronization
+
+- Made the installed-version browser gate wait for the new worker and normalized 15.2 preference schema before asserting migration, eliminating a false failure against the still-running previous page.
+- Re-ran the full release archive against a checksum-verified installed 15.1.8 build, including automatic reload, profile/routine/theme preservation and calm-default migration.
+
 ## 15.2.0 — Calm interaction reset
 
 - Replaced alarm-style system alerts with silent, non-persistent notifications carrying one contextual clear action; quiet essentials are the default and every-cue coverage is opt-in.
