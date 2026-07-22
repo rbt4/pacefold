@@ -1,5 +1,9 @@
 # Changelog
 
+## 15.1.7 — Atomic notification assertion
+
+- Collapsed payload capture, source-specific delivery and permission reporting into one browser evaluation so the audit cannot race a page transition between test operations.
+
 ## 15.1.6 — Explicit notification-path audit
 
 - Added a permission-respecting notification preview hook so the browser gate exercises a real source-specific notification instead of an in-app signal preview.
