@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 14
+name: Validate and deploy Pacefold 14.0.1
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v14.zip.b64.part-* | base64 --decode > /tmp/pacefold-v14.zip
-          echo "2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32  /tmp/pacefold-v14.zip" | sha256sum -c -
+          echo "2169d7650cd3cd2c3227acc068c2f2481dfe5719e3faa1e95f70baec38b214e8  /tmp/pacefold-v14.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v14.zip -d _release
       - name: JavaScript syntax
@@ -55,7 +55,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v14.zip.b64.part-* | base64 --decode > /tmp/pacefold-v14.zip
-          echo "2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32  /tmp/pacefold-v14.zip" | sha256sum -c -
+          echo "2169d7650cd3cd2c3227acc068c2f2481dfe5719e3faa1e95f70baec38b214e8  /tmp/pacefold-v14.zip" | sha256sum -c -
           mkdir _release _site
           unzip -q /tmp/pacefold-v14.zip -d _release
           node _release/scripts/build.mjs _release

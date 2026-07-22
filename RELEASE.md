@@ -1,9 +1,9 @@
-# Pacefold 14 verified release
+# Pacefold 14.0.1 verified release
 
-- Version: `14.0.0`
-- Archive: `Pacefold_v14_Repository_Backup.zip`
-- SHA-256: `2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32`
-- Release parts: `release/pacefold-v14.zip.b64.part-00` through `part-09`, followed by `part-10-00` through `part-10-07`
+- Version: `14.0.1`
+- Archive: `Pacefold_v14.0.1_Repository_Backup.zip`
+- SHA-256: `2169d7650cd3cd2c3227acc068c2f2481dfe5719e3faa1e95f70baec38b214e8`
+- Release part: `release/pacefold-v14.zip.b64.part-00`
 
 GitHub Actions concatenates the parts in lexical order, decodes the archive, verifies the whole-file SHA-256, and then runs the build and validation scripts contained inside the release.
 

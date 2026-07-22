@@ -1,5 +1,14 @@
 # Changelog
 
+## 14.0.1 — Final reliability pass
+
+- Anchored the landing-page Andon card to the hero artwork and removed desktop horizontal overflow.
+- Prevented first-time service-worker activation from reloading onboarding and discarding in-progress setup choices.
+- Restored the complete responsive onboarding design, including readable option cards, sticky mobile actions and a real three-step progress indicator.
+- Bounded service-worker readiness during notification tests so workplace policy cannot leave setup waiting forever.
+- Added a direct page-notification fallback and now reports a failed test accurately instead of claiming delivery.
+- Added validation guards for the hero anchor, onboarding styles and bounded notification path.
+
 ## 14.0.0 — Profiles, routines, setup, and comfort
 
 - Integrated and reviewed the Claude 13.1 upgrade.

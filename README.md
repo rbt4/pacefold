@@ -32,7 +32,7 @@ The exact tested source tree is stored as checksum-verified Base64 release parts
 
 Release SHA-256:
 
-`2d038b43e42a30308a22cd329e59dec94310232ed0209c3c07132ef617746e32`
+`2169d7650cd3cd2c3227acc068c2f2481dfe5719e3faa1e95f70baec38b214e8`
 
 ## Install
 
@@ -48,4 +48,4 @@ No account, analytics, advertising, or external runtime APIs. Activity records a
 
 ## Version
 
-Pacefold 14.0.0
+Pacefold 14.0.1
