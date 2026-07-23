@@ -1,5 +1,17 @@
 # Changelog
 
+## 15.6.0 — Notebook corrective release
+
+- Fixed the setup regression by preventing the injected workspace from mounting over onboarding and making the guardian remove rather than resurrect the rail while setup is visible.
+- Added an IndexedDB recovery snapshot for configured Pacefold state so an unexpected localStorage loss does not silently force a configured installation back through setup.
+- Replaced the lightweight Fold Stack with a real dated HSSys notebook organized into Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources.
+- Added notebook search, date navigation, section tabs, editing, completion, deletion and migration of existing local captures.
+- Restored optional Microsoft OneNote delivery through an existing Pacefold adapter or already-connected MSAL session, with a retry-safe local queue, Windows Share and copy-page fallbacks.
+- Made the Amazon Music field editable and added strict parsing for official regional Amazon Music URLs, tracking-parameter cleanup and best-effort contained playback of the exact saved playlist, album, station or track URL.
+- Simplified the bottom layout to one compact rhythm/capture row and one lowest-edge music row; notebook, player, weather and diagnostics open only when requested.
+- Removed provider popup-escape permission, retained strict CSP/domain validation and added local-audio drag-and-drop.
+- Expanded CI to reject unknown/dead buttons, setup overlap, Amazon read-only behaviour, sandbox escape permission, invalid OneNote payloads, hostile provider URLs, duplicate cue handling, guardian failure and 390 px overflow.
+
 ## 15.5.0 — Origami embedded hub
 
 - Replaced external music-service launch buttons with a single Pacefold Player sheet that keeps local audio, official YouTube embeds, official Spotify embeds and an Amazon Music compatibility frame inside Pacefold.
@@ -81,7 +93,7 @@
 ## 15.1.1 — Browser-gate compatibility
 
 - Corrected the notification-action browser audit to inspect the exact options Pacefold sends to Edge instead of relying on headless Chrome to expose operating-system notification metadata through `getNotifications()`.
-- Kept the durable service-worker queue, reload survival and exactly-once logging checks unchanged.
+- Kept the durable service-worker queue, reload survival and exactly-once local logging checks unchanged.
 
 ## 15.1.0 — Taskbar and notification control surface
 
