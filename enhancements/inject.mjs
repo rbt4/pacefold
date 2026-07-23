@@ -62,6 +62,29 @@ async function materializeAsset(name, destination) {
   if (!source.includes(mountMarker)) throw new Error('Expected Pacefold Kanso mount marker was not found');
 
   const reliabilityFixes = `
+  // Prefer the explicit/newest live cue over stale host dialogs left in the DOM.
+  detectCue = () => {
+    const root = document.getElementById(ROOT_ID);
+    const candidates = [...document.querySelectorAll('[role="alert"],[role="dialog"],.notification,.toast,.cue,[data-active-cue]')]
+      .filter(element => !root?.contains(element) && visible(element))
+      .map((element, index) => ({
+        element,
+        index,
+        text: (element.textContent || '').trim()
+      }))
+      .filter(item => item.text && /(clear|done|log|drink|water|move|break|prayer|meal|lunch|eyes|look|prepare|noodle|away)/i.test(item.text))
+      .sort((left, right) => {
+        const score = item =>
+          (item.element.hasAttribute('data-active-cue') ? 10000 : 0) +
+          (item.element.getAttribute('role') === 'alert' ? 3000 : 0) +
+          (item.element.matches('.notification,.cue') ? 1500 : 0) +
+          item.index;
+        return score(right) - score(left);
+      });
+    state.currentCue = candidates[0]?.element || null;
+    renderCue();
+  };
+
   // Install the taskbar bridge without assuming the browser exposes a writable Navigator method.
   installBadgeBridge = () => {
     if (nativeBadge.set) {
