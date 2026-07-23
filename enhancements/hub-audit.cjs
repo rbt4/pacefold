@@ -142,12 +142,43 @@ async function main() {
     await delay(100);
     if (weatherRequests < 1 || radarRequests !== 1) throw new Error(`Unexpected weather loading contract: forecast=${weatherRequests}, radar=${radarRequests}`);
 
-    await page.evaluate(async () => navigator.setAppBadge(1));
+    await page.evaluate(() => {
+      window.__cueClicks = 0;
+      const cue = document.createElement('div');
+      cue.id = 'pf-audit-cue';
+      cue.setAttribute('role', 'alert');
+      cue.innerHTML = '<span>Drink water</span><button type="button">Done</button>';
+      cue.querySelector('button').addEventListener('click', () => {
+        window.__cueClicks += 1;
+        cue.remove();
+      });
+      document.body.append(cue);
+    });
     await page.waitForSelector('.pf-andon.is-waiting');
+    await page.evaluate(async () => navigator.setAppBadge(1));
+    await page.waitForFunction(() => {
+      const badge = JSON.parse(localStorage.getItem('pacefold.hub.badge.v1') || '{}');
+      return badge.waiting === true && badge.acknowledged === false;
+    });
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-    await page.waitForFunction(() => !document.querySelector('.pf-andon')?.classList.contains('is-waiting'));
-    const badgeEvents = await page.evaluate(() => window.__badgeEvents);
-    if (!badgeEvents.some(event => event[0] === 'set') || !badgeEvents.some(event => event[0] === 'clear')) throw new Error('Badge acknowledge bridge did not run');
+    await page.waitForFunction(() => {
+      const badge = JSON.parse(localStorage.getItem('pacefold.hub.badge.v1') || '{}');
+      return badge.acknowledged === true;
+    });
+    const focusContract = await page.evaluate(() => ({
+      cueClicks: window.__cueClicks,
+      cueStillVisible: Boolean(document.getElementById('pf-audit-cue')),
+      andonWaiting: document.querySelector('.pf-andon')?.classList.contains('is-waiting'),
+      badgeEvents: window.__badgeEvents
+    }));
+    if (focusContract.cueClicks !== 0 || !focusContract.cueStillVisible || !focusContract.andonWaiting) {
+      throw new Error(`Focusing Pacefold completed or hid a real cue: ${JSON.stringify(focusContract)}`);
+    }
+    if (!focusContract.badgeEvents.some(event => event[0] === 'set') || !focusContract.badgeEvents.some(event => event[0] === 'clear')) {
+      throw new Error('Badge acknowledge bridge did not run');
+    }
+    await page.locator('[data-pf-action="handle-cue"]').click();
+    await page.waitForFunction(() => window.__cueClicks === 1 && !document.getElementById('pf-audit-cue'));
 
     await page.evaluate(() => document.getElementById('pf-hub-root').remove());
     await page.waitForSelector('#pf-hub-root', { state: 'attached', timeout: 3000 });
