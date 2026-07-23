@@ -1,5 +1,17 @@
 # Changelog
 
+## 15.4.0 — Kanso corrective redesign
+
+- Removed the redundant three-card Hub, duplicate Pacefold branding and duplicate Capture/Care/Weather tab system introduced in 15.3.
+- Replaced the standalone Care destination with one Andon-style action that translates the live core cue into Hydrate, Look far, Move, Prayer, Meal, Prepare or Step away.
+- Rebuilt the persistent bottom surface around one always-open Kiroku capture field and one quiet media rail using scalable line icons, host-aware light/dark material and restrained contextual motion.
+- Kept OneNote available through Windows Share while retaining clipboard, Markdown export and optional OneDrive-synced folder filing; removed the redundant permanent OneNote mini-app/button.
+- Separated taskbar-badge acknowledgement from cue completion so focusing Pacefold clears the Windows indicator without silently completing the underlying action.
+- Added cached forecast loading, lazy radar, request timeouts and offline fallback so radar no longer loads during every Pacefold start.
+- Reduced mutation-observer work by ignoring Kanso-owned changes and coalescing host scans to animation frames; bounded guardian restoration work as well.
+- Removed Kanso injection from the public landing page and limited the interactive surface to `/app/`.
+- Added local diagnostics, drag-and-drop audio, Media Session controls, keyboard shortcuts and expanded browser gates for architecture, lazy weather, badges, guardian restoration and 390 px responsive layout.
+
 ## 15.3.0 — Persistent work hub
 
 - Added an always-visible capture strip and a bottom-edge mini-player so the most-used tools remain available without turning Pacefold into a full dashboard.

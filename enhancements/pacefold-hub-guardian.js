@@ -3,10 +3,10 @@
 
   const ROOT_ID = 'pf-hub-root';
   let preservedRoot = document.getElementById(ROOT_ID);
-  let restoreQueued = false;
+  let restoreFrame = 0;
 
   function restore() {
-    restoreQueued = false;
+    restoreFrame = 0;
     const current = document.getElementById(ROOT_ID);
     if (current) {
       preservedRoot = current;
@@ -18,13 +18,18 @@
     document.documentElement.classList.add('pf-hub-mounted');
   }
 
-  function queueRestore() {
-    if (restoreQueued) return;
-    restoreQueued = true;
-    queueMicrotask(restore);
+  function queueRestore(mutations = []) {
+    const current = document.getElementById(ROOT_ID);
+    if (current) {
+      preservedRoot = current;
+      document.documentElement.classList.add('pf-hub-mounted');
+      return;
+    }
+    if (mutations.length && preservedRoot && mutations.every(mutation => preservedRoot.contains(mutation.target))) return;
+    if (restoreFrame) return;
+    restoreFrame = requestAnimationFrame(restore);
   }
 
-  const observer = new MutationObserver(queueRestore);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  [0, 50, 200, 750, 2000, 5000].forEach(delay => setTimeout(restore, delay));
+  new MutationObserver(queueRestore).observe(document.documentElement, { childList: true, subtree: true });
+  [0, 80, 300, 1200].forEach(delay => setTimeout(restore, delay));
 })();

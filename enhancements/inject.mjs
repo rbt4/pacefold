@@ -2,51 +2,45 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const VERSION = '15.3.0';
-const MARKER = `pacefold-hub-${VERSION}`;
+const VERSION = '15.4.0';
+const MARKER = `pacefold-kanso-${VERSION}`;
 const targetRoot = path.resolve(process.argv[2] || '_site');
 const sourceRoot = path.dirname(fileURLToPath(import.meta.url));
+const appRoot = path.join(targetRoot, 'app');
+const appHtml = path.join(appRoot, 'index.html');
 
 const assets = [
-  { source: path.join(sourceRoot, 'pacefold-hub.css'), name: 'pacefold-hub.css' },
-  { source: path.join(sourceRoot, 'pacefold-hub.js'), name: 'pacefold-hub.js' },
-  { source: path.join(sourceRoot, 'pacefold-hub-guardian.js'), name: 'pacefold-hub-guardian.js' }
-];
-const htmlFiles = [
-  path.join(targetRoot, 'index.html'),
-  path.join(targetRoot, 'app', 'index.html')
+  'pacefold-hub.css',
+  'pacefold-hub.js',
+  'pacefold-hub-guardian.js'
 ];
 
-let injected = 0;
-for (const file of htmlFiles) {
-  if (!(await exists(file))) continue;
-  const directory = path.dirname(file);
-  for (const asset of assets) await materializeAsset(asset, path.join(directory, asset.name));
+if (!(await exists(appHtml))) throw new Error(`Pacefold app shell was not found at ${appHtml}`);
 
-  let html = extendContentSecurityPolicy(await fs.readFile(file, 'utf8'));
-  if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
-    const style = `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
-    const scripts = [
-      `<script src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
-      `<script async src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`
-    ].join('\n');
-    html = injectBefore(html, '</head>', style);
-    html = injectBefore(html, '</body>', scripts);
-  }
-  await fs.writeFile(file, html);
-  injected += 1;
+for (const name of assets) {
+  await materializeAsset(name, path.join(appRoot, name));
 }
 
-if (!injected) throw new Error(`No index.html found under ${targetRoot}`);
+let html = extendContentSecurityPolicy(await fs.readFile(appHtml, 'utf8'));
+if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
+  const style = `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
+  const scripts = [
+    `<script src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
+    `<script async src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`
+  ].join('\n');
+  html = injectBefore(html, '</head>', style);
+  html = injectBefore(html, '</body>', scripts);
+}
+await fs.writeFile(appHtml, html);
 
 for (const workerPath of [
   path.join(targetRoot, 'service-worker.js'),
-  path.join(targetRoot, 'app', 'service-worker.js')
+  path.join(appRoot, 'service-worker.js')
 ]) {
   if (!(await exists(workerPath))) continue;
   let worker = await fs.readFile(workerPath, 'utf8');
   if (worker.includes(MARKER)) continue;
-  worker += `\n\n// ${MARKER}: activate the shell containing the external Hub assets.\n`;
+  worker += `\n\n// ${MARKER}: activate the Kanso app shell and discard stale Pacefold caches.\n`;
   worker += `self.addEventListener('activate', event => {\n`;
   worker += `  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => /pacefold/i.test(key) && !key.includes('${MARKER}')).map(key => caches.delete(key)))).then(() => self.clients.claim()));\n`;
   worker += `});\n`;
@@ -54,23 +48,104 @@ for (const workerPath of [
 }
 
 await fs.writeFile(path.join(targetRoot, 'pacefold-hub-version.txt'), `${VERSION}\n`);
-console.log(`Installed resilient Pacefold Hub ${VERSION} assets into ${injected} application shell(s).`);
+console.log(`Installed Pacefold Kanso ${VERSION} into the application shell only.`);
 
-async function materializeAsset(asset, destination) {
-  if (asset.name !== 'pacefold-hub.js') {
-    await fs.copyFile(asset.source, destination);
+async function materializeAsset(name, destination) {
+  const sourcePath = path.join(sourceRoot, name);
+  if (name !== 'pacefold-hub.js') {
+    await fs.copyFile(sourcePath, destination);
     return;
   }
 
-  const source = await fs.readFile(asset.source, 'utf8');
-  const feedbackProne = "function markWaiting(waiting){const button=document.querySelector('[data-pf-action=clear-cue]'),label=document.querySelector('[data-pf-cue-label]');if(!button||!label)return;button.classList.toggle('is-alert',waiting);label.textContent=waiting?'1 waiting':'Clear cue';}";
-  const idempotent = "function markWaiting(waiting){const button=document.querySelector('[data-pf-action=clear-cue]'),label=document.querySelector('[data-pf-cue-label]');if(!button||!label)return;const nextLabel=waiting?'1 waiting':'Clear cue';if(button.classList.contains('is-alert')!==waiting)button.classList.toggle('is-alert',waiting);if(label.textContent!==nextLabel)label.textContent=nextLabel;}";
-  if (!source.includes(feedbackProne)) throw new Error('Expected Pacefold Hub cue-state implementation was not found');
-  await fs.writeFile(destination, source.replace(feedbackProne, idempotent));
+  let source = await fs.readFile(sourcePath, 'utf8');
+  const mountMarker = '\n  mount();\n})();';
+  if (!source.includes(mountMarker)) throw new Error('Expected Pacefold Kanso mount marker was not found');
+
+  const reliabilityFixes = `
+  // Prefer the explicit/newest live cue over stale host dialogs left in the DOM.
+  detectCue = () => {
+    const root = document.getElementById(ROOT_ID);
+    const candidates = [...document.querySelectorAll('[role="alert"],[role="dialog"],.notification,.toast,.cue,[data-active-cue]')]
+      .filter(element => !root?.contains(element) && visible(element))
+      .map((element, index) => ({
+        element,
+        index,
+        text: (element.textContent || '').trim()
+      }))
+      .filter(item => item.text && /(clear|done|log|drink|water|move|break|prayer|meal|lunch|eyes|look|prepare|noodle|away)/i.test(item.text))
+      .sort((left, right) => {
+        const score = item =>
+          (item.element.hasAttribute('data-active-cue') ? 10000 : 0) +
+          (item.element.getAttribute('role') === 'alert' ? 3000 : 0) +
+          (item.element.matches('.notification,.cue') ? 1500 : 0) +
+          item.index;
+        return score(right) - score(left);
+      });
+    state.currentCue = candidates[0]?.element || null;
+    renderCue();
+  };
+
+  // Install the taskbar bridge without assuming the browser exposes a writable Navigator method.
+  installBadgeBridge = () => {
+    if (nativeBadge.set) {
+      const wrappedSetAppBadge = async value => {
+        const normalized = value == null ? 1 : value;
+        writeJson(KEYS.badge, { waiting: true, acknowledged: false, value: normalized, at: new Date().toISOString() });
+        scheduleCueScan();
+        return nativeBadge.set(normalized);
+      };
+      try {
+        Object.defineProperty(navigator, 'setAppBadge', {
+          configurable: true,
+          writable: true,
+          value: wrappedSetAppBadge
+        });
+      } catch (error) {
+        try { navigator.setAppBadge = wrappedSetAppBadge; }
+        catch (fallbackError) { recordError('badge-bridge', fallbackError || error); }
+      }
+    }
+    acknowledgeTaskbarBadge();
+  };
+
+  // A quiet forecast may already be in flight when the user opens Weather.
+  // Upgrade that existing request to include radar instead of silently losing the user intent.
+  const refreshWeatherBase = refreshWeather;
+  refreshWeather = async options => {
+    const request = options || {};
+    if (request.includeRadar && state.weatherRequest) {
+      await state.weatherRequest;
+      if (request.force || !state.radar) {
+        if (!state.radarRequest) {
+          state.radarRequest = loadRadar()
+            .then(radar => {
+              state.radar = radar;
+              if (radar) writeCache(KEYS.radar, radar);
+              return radar;
+            })
+            .catch(error => {
+              recordError('radar', error);
+              return state.radar;
+            })
+            .finally(() => { state.radarRequest = null; });
+        }
+        await state.radarRequest;
+      }
+      renderWeatherPill();
+      if (state.drawer === 'weather') renderDrawer();
+      if (!request.quiet) toast('Weather refreshed.');
+      return;
+    }
+    return refreshWeatherBase(request);
+  };
+`;
+
+  source = source.replace(mountMarker, `${reliabilityFixes}${mountMarker}`);
+  await fs.writeFile(destination, source);
 }
 
-function extendContentSecurityPolicy(html) {
-  return html.replace(/<meta\b[^>]*http-equiv\s*=\s*(["'])Content-Security-Policy\1[^>]*>/i, tag => {
+function extendContentSecurityPolicy(source) {
+  return source.replace(/<meta\b[^>]*http-equiv\s*=\s*(["'])Content-Security-Policy\1[^>]*>/i, tag => {
     return tag.replace(/content\s*=\s*(["'])([\s\S]*?)\1/i, (_match, quote, policy) => {
       let next = addSources(policy, 'connect-src', [
         'https://api.open-meteo.com',
