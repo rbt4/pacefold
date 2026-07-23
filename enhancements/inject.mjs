@@ -25,7 +25,7 @@ for (const file of htmlFiles) {
   let html = await fs.readFile(file, 'utf8');
   if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
     const style = `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
-    const script = `<script defer src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`;
+    const script = `<script src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`;
     html = injectBefore(html, '</head>', style);
     html = injectBefore(html, '</body>', script);
     await fs.writeFile(file, html);
