@@ -29,10 +29,7 @@ const server = http.createServer((request, response) => {
 server.keepAliveTimeout = 100;
 server.headersTimeout = 1000;
 
-async function closeServer() {
-  server.closeAllConnections?.();
-  await new Promise(resolve => server.close(resolve));
-}
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function main() {
   let browser;
@@ -133,8 +130,9 @@ async function main() {
 
     console.log(`Pacefold Hub browser smoke passed on /app/. Assets: ${assetTraffic.join(' | ')}`);
   } finally {
-    await browser?.close().catch(() => {});
-    await closeServer().catch(() => {});
+    if (browser) await Promise.race([browser.close().catch(() => {}), delay(2500)]);
+    server.closeAllConnections?.();
+    server.close(() => {});
   }
 }
 
