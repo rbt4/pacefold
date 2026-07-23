@@ -113,10 +113,14 @@ function addSources(policy, directive, sources) {
 }
 
 function ensureThemeColor(source) {
-  if (/<meta\b[^>]*name=["']theme-color["']/i.test(source)) {
-    return source.replace(/<meta\b([^>]*name=["']theme-color["'][^>]*)>/i, '<meta$1 content="#0a0e11">');
-  }
-  return injectBefore(source, '</head>', '<meta name="theme-color" content="#0a0e11">');
+  const themeColorPattern = /<meta\b[^>]*name\s*=\s*(["'])theme-color\1[^>]*>/i;
+  if (!themeColorPattern.test(source)) return injectBefore(source, '</head>', '<meta name="theme-color" content="#0a0e11">');
+  return source.replace(themeColorPattern, tag => {
+    if (/\bcontent\s*=\s*(["'])[^"']*\1/i.test(tag)) {
+      return tag.replace(/\bcontent\s*=\s*(["'])[^"']*\1/i, 'content="#0a0e11"');
+    }
+    return tag.replace(/\s*\/>$/, ' content="#0a0e11">').replace(/>$/, ' content="#0a0e11">');
+  });
 }
 
 function injectBefore(source, needle, addition) {
