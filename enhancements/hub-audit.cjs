@@ -41,18 +41,25 @@ async function main() {
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     const hubErrors = [];
+    const consoleErrors = [];
+    const assetTraffic = [];
     page.on('pageerror', error => {
       const detail = `${error.message || ''}\n${error.stack || ''}`;
       if (/pacefold-hub|pf-hub/i.test(detail)) hubErrors.push(error.message);
-      else console.warn(`Non-Hub page error ignored by the Hub gate: ${error.message}`);
+      else consoleErrors.push(`pageerror: ${error.message}`);
     });
     page.on('console', message => {
       if (message.type() !== 'error') return;
       const location = message.location()?.url || '';
-      if (/pacefold-hub/i.test(location) || /pacefold hub|pf-hub/i.test(message.text())) hubErrors.push(message.text());
+      const detail = `console: ${message.text()} @ ${location || 'unknown'}`;
+      consoleErrors.push(detail);
+      if (/pacefold-hub/i.test(location) || /pacefold hub|pf-hub/i.test(message.text())) hubErrors.push(detail);
     });
     page.on('requestfailed', request => {
-      if (/pacefold-hub/i.test(request.url())) hubErrors.push(`Failed to load ${request.url()}: ${request.failure()?.errorText || 'unknown error'}`);
+      if (/pacefold-hub/i.test(request.url())) assetTraffic.push(`FAILED ${request.url()}: ${request.failure()?.errorText || 'unknown error'}`);
+    });
+    page.on('response', response => {
+      if (/pacefold-hub/i.test(response.url())) assetTraffic.push(`${response.status()} ${response.url()}`);
     });
 
     await page.route('https://api.open-meteo.com/**', route => route.fulfill({
@@ -77,7 +84,29 @@ async function main() {
     }));
 
     await page.goto(`http://127.0.0.1:${port}/app/`, { waitUntil: 'commit', timeout: 15000 });
-    await page.waitForSelector('#pf-hub-root', { state: 'attached', timeout: 15000 });
+    try {
+      await page.waitForSelector('#pf-hub-root', { state: 'attached', timeout: 15000 });
+    } catch (error) {
+      const documentDiagnostics = await page.evaluate(() => ({
+        href: location.href,
+        readyState: document.readyState,
+        title: document.title,
+        hasBody: Boolean(document.body),
+        hubScript: document.querySelector('script[src*="pacefold-hub.js"]')?.outerHTML || null,
+        hubStyle: document.querySelector('link[href*="pacefold-hub.css"]')?.outerHTML || null,
+        csp: document.querySelector('meta[http-equiv="Content-Security-Policy" i]')?.content || null,
+        scriptSources: [...document.scripts].map(script => script.src || '[inline]').slice(-12),
+        bodyTail: document.body?.innerHTML.slice(-1200) || null
+      })).catch(evaluateError => ({ evaluateError: evaluateError.message }));
+      throw new Error([
+        `Hub did not mount: ${error.message}`,
+        `Asset traffic: ${assetTraffic.join(' | ') || 'none observed'}`,
+        `Hub errors: ${hubErrors.join(' | ') || 'none observed'}`,
+        `Console errors: ${consoleErrors.slice(-12).join(' | ') || 'none observed'}`,
+        `Document: ${JSON.stringify(documentDiagnostics)}`
+      ].join('\n'));
+    }
+
     await page.waitForFunction(() => document.documentElement.classList.contains('pf-hub-mounted'), null, { timeout: 10000 });
     const externalAssetsLoaded = await page.evaluate(() => Boolean(
       document.querySelector('script[src*="pacefold-hub.js"]') &&
@@ -102,7 +131,7 @@ async function main() {
     if (!playerVisible || !captureVisible || !careVisible) throw new Error('Persistent Hub surfaces are not visible');
     if (hubErrors.length) throw new Error(`Hub-originated page errors: ${hubErrors.join(' | ')}`);
 
-    console.log('Pacefold Hub browser smoke passed on /app/.');
+    console.log(`Pacefold Hub browser smoke passed on /app/. Assets: ${assetTraffic.join(' | ')}`);
   } finally {
     await browser?.close().catch(() => {});
     await closeServer().catch(() => {});
