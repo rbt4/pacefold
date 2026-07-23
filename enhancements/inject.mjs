@@ -117,7 +117,21 @@ function injectBefore(source,needle,addition){
 
 async function materializeCompressed(name,destination){
   const encoded=(await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
-  const output=gunzipSync(Buffer.from(encoded,'base64'));
+  let output=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
+  if(name.endsWith('.js.gz.b64')) output=hardenPlayerRuntime(output);
+  if(name.endsWith('.css.gz.b64')) output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
   await fs.writeFile(destination,output);
+}
+function hardenPlayerRuntime(source){
+  let next=source.replace('allow-scripts allow-same-origin allow-forms allow-presentation allow-popups-to-escape-sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
+  const bindNeedle="  root.querySelector('[data-pf-progress]').addEventListener('input', seekAudio);\n  const player = audio();";
+  const bindReplacement="  root.querySelector('[data-pf-progress]').addEventListener('input', seekAudio);\n  const playerRow=root.querySelector('.pf-player-row');\n  playerRow?.addEventListener('dragover',event=>{ event.preventDefault(); playerRow.classList.add('is-drop-target'); });\n  playerRow?.addEventListener('dragleave',()=>playerRow.classList.remove('is-drop-target'));\n  playerRow?.addEventListener('drop',event=>{ event.preventDefault(); playerRow.classList.remove('is-drop-target'); const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('audio/')); if(file) loadAudioFile(file); });\n  const player = audio();";
+  if(!next.includes(bindNeedle)) throw new Error('Pacefold player bind marker missing');
+  next=next.replace(bindNeedle,bindReplacement);
+  const audioNeedle="function chooseAudio(event) {\n  const file=event.target.files?.[0];\n  if (!file||!file.type.startsWith('audio/')) return;\n";
+  const audioReplacement="function chooseAudio(event) {\n  const file=event.target.files?.[0];\n  if(file) loadAudioFile(file);\n}\nfunction loadAudioFile(file) {\n  if (!file||!file.type.startsWith('audio/')) return toast('Choose an audio file.');\n";
+  if(!next.includes(audioNeedle)) throw new Error('Pacefold local-audio marker missing');
+  next=next.replace(audioNeedle,audioReplacement);
+  return next;
 }
 async function exists(file){try{await fs.access(file);return true;}catch{return false;}}
