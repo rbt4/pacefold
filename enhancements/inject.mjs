@@ -2,26 +2,24 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const VERSION = '15.4.0';
-const MARKER = `pacefold-kanso-${VERSION}`;
+const VERSION = '15.5.0';
+const MARKER = `pacefold-origami-${VERSION}`;
 const targetRoot = path.resolve(process.argv[2] || '_site');
 const sourceRoot = path.dirname(fileURLToPath(import.meta.url));
 const appRoot = path.join(targetRoot, 'app');
 const appHtml = path.join(appRoot, 'index.html');
+const iconSource = path.join(sourceRoot, 'icons');
+const iconTarget = path.join(appRoot, 'icons');
 
-const assets = [
-  'pacefold-hub.css',
-  'pacefold-hub.js',
-  'pacefold-hub-guardian.js'
-];
-
+const assets = ['pacefold-hub.css', 'pacefold-hub.js', 'pacefold-hub-guardian.js'];
 if (!(await exists(appHtml))) throw new Error(`Pacefold app shell was not found at ${appHtml}`);
 
-for (const name of assets) {
-  await materializeAsset(name, path.join(appRoot, name));
-}
+for (const name of assets) await fs.copyFile(path.join(sourceRoot, name), path.join(appRoot, name));
+await fs.mkdir(iconTarget, { recursive: true });
+await fs.cp(iconSource, iconTarget, { recursive: true });
 
 let html = extendContentSecurityPolicy(await fs.readFile(appHtml, 'utf8'));
+html = ensureThemeColor(html);
 if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
   const style = `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
   const scripts = [
@@ -33,127 +31,72 @@ if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
 }
 await fs.writeFile(appHtml, html);
 
-for (const workerPath of [
-  path.join(targetRoot, 'service-worker.js'),
-  path.join(appRoot, 'service-worker.js')
-]) {
+for (const workerPath of [path.join(targetRoot, 'service-worker.js'), path.join(appRoot, 'service-worker.js')]) {
   if (!(await exists(workerPath))) continue;
   let worker = await fs.readFile(workerPath, 'utf8');
-  if (worker.includes(MARKER)) continue;
-  worker += `\n\n// ${MARKER}: activate the Kanso app shell and discard stale Pacefold caches.\n`;
-  worker += `self.addEventListener('activate', event => {\n`;
-  worker += `  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => /pacefold/i.test(key) && !key.includes('${MARKER}')).map(key => caches.delete(key)))).then(() => self.clients.claim()));\n`;
-  worker += `});\n`;
+  if (!worker.includes(MARKER)) worker += notificationArtworkPatch(workerPath.includes(`${path.sep}app${path.sep}`));
   await fs.writeFile(workerPath, worker);
 }
 
 await fs.writeFile(path.join(targetRoot, 'pacefold-hub-version.txt'), `${VERSION}\n`);
-console.log(`Installed Pacefold Kanso ${VERSION} into the application shell only.`);
+console.log(`Installed Pacefold Origami ${VERSION} with embedded players and source-specific notification artwork.`);
 
-async function materializeAsset(name, destination) {
-  const sourcePath = path.join(sourceRoot, name);
-  if (name !== 'pacefold-hub.js') {
-    await fs.copyFile(sourcePath, destination);
-    return;
+function notificationArtworkPatch(isAppWorker) {
+  const prefix = isAppWorker ? './icons/' : './app/icons/';
+  return `
+
+// ${MARKER}: source-specific origami notification artwork and cache activation.
+(() => {
+  const pfIconBase = ${JSON.stringify(prefix)};
+  const pfChooseNotificationIcon = (title, options = {}) => {
+    const text = (String(title || '') + ' ' + String(options.body || '') + ' ' + String(options.tag || '') + ' ' + String(options.data?.source || '')).toLowerCase();
+    if (/water|drink|hydrate|sip/.test(text)) return pfIconBase + 'notify-water.svg';
+    if (/eye|look far|distance/.test(text)) return pfIconBase + 'notify-eyes.svg';
+    if (/move|stretch|posture|ergonomic/.test(text)) return pfIconBase + 'notify-move.svg';
+    if (/prayer|fajr|dhuhr|asr|maghrib|isha/.test(text)) return pfIconBase + 'notify-prayer.svg';
+    if (/meal|lunch|eat/.test(text)) return pfIconBase + 'notify-meal.svg';
+    if (/prepare|noodle|ready/.test(text)) return pfIconBase + 'notify-prepare.svg';
+    if (/away|break|step away/.test(text)) return pfIconBase + 'notify-away.svg';
+    return pfIconBase + 'fold-mark.svg';
+  };
+  const registration = self.registration;
+  if (registration && typeof registration.showNotification === 'function') {
+    const original = registration.showNotification.bind(registration);
+    const wrapped = (title, options = {}) => original(title, {
+      ...options,
+      icon: pfChooseNotificationIcon(title, options),
+      badge: pfIconBase + 'fold-mark.svg'
+    });
+    try {
+      Object.defineProperty(registration, 'showNotification', { configurable: true, writable: true, value: wrapped });
+    } catch {
+      try { registration.showNotification = wrapped; } catch {}
+    }
   }
-
-  let source = await fs.readFile(sourcePath, 'utf8');
-  const mountMarker = '\n  mount();\n})();';
-  if (!source.includes(mountMarker)) throw new Error('Expected Pacefold Kanso mount marker was not found');
-
-  const reliabilityFixes = `
-  // Prefer the explicit/newest live cue over stale host dialogs left in the DOM.
-  detectCue = () => {
-    const root = document.getElementById(ROOT_ID);
-    const candidates = [...document.querySelectorAll('[role="alert"],[role="dialog"],.notification,.toast,.cue,[data-active-cue]')]
-      .filter(element => !root?.contains(element) && visible(element))
-      .map((element, index) => ({
-        element,
-        index,
-        text: (element.textContent || '').trim()
-      }))
-      .filter(item => item.text && /(clear|done|log|drink|water|move|break|prayer|meal|lunch|eyes|look|prepare|noodle|away)/i.test(item.text))
-      .sort((left, right) => {
-        const score = item =>
-          (item.element.hasAttribute('data-active-cue') ? 10000 : 0) +
-          (item.element.getAttribute('role') === 'alert' ? 3000 : 0) +
-          (item.element.matches('.notification,.cue') ? 1500 : 0) +
-          item.index;
-        return score(right) - score(left);
-      });
-    state.currentCue = candidates[0]?.element || null;
-    renderCue();
-  };
-
-  // Install the taskbar bridge without assuming the browser exposes a writable Navigator method.
-  installBadgeBridge = () => {
-    if (nativeBadge.set) {
-      const wrappedSetAppBadge = async value => {
-        const normalized = value == null ? 1 : value;
-        writeJson(KEYS.badge, { waiting: true, acknowledged: false, value: normalized, at: new Date().toISOString() });
-        scheduleCueScan();
-        return nativeBadge.set(normalized);
-      };
-      try {
-        Object.defineProperty(navigator, 'setAppBadge', {
-          configurable: true,
-          writable: true,
-          value: wrappedSetAppBadge
-        });
-      } catch (error) {
-        try { navigator.setAppBadge = wrappedSetAppBadge; }
-        catch (fallbackError) { recordError('badge-bridge', fallbackError || error); }
-      }
-    }
-    acknowledgeTaskbarBadge();
-  };
-
-  // A quiet forecast may already be in flight when the user opens Weather.
-  // Upgrade that existing request to include radar instead of silently losing the user intent.
-  const refreshWeatherBase = refreshWeather;
-  refreshWeather = async options => {
-    const request = options || {};
-    if (request.includeRadar && state.weatherRequest) {
-      await state.weatherRequest;
-      if (request.force || !state.radar) {
-        if (!state.radarRequest) {
-          state.radarRequest = loadRadar()
-            .then(radar => {
-              state.radar = radar;
-              if (radar) writeCache(KEYS.radar, radar);
-              return radar;
-            })
-            .catch(error => {
-              recordError('radar', error);
-              return state.radar;
-            })
-            .finally(() => { state.radarRequest = null; });
-        }
-        await state.radarRequest;
-      }
-      renderWeatherPill();
-      if (state.drawer === 'weather') renderDrawer();
-      if (!request.quiet) toast('Weather refreshed.');
-      return;
-    }
-    return refreshWeatherBase(request);
-  };
+})();
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => /pacefold/i.test(key) && !key.includes('${MARKER}')).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+});
 `;
-
-  source = source.replace(mountMarker, `${reliabilityFixes}${mountMarker}`);
-  await fs.writeFile(destination, source);
 }
 
 function extendContentSecurityPolicy(source) {
   return source.replace(/<meta\b[^>]*http-equiv\s*=\s*(["'])Content-Security-Policy\1[^>]*>/i, tag => {
     return tag.replace(/content\s*=\s*(["'])([\s\S]*?)\1/i, (_match, quote, policy) => {
-      let next = addSources(policy, 'connect-src', [
-        'https://api.open-meteo.com',
-        'https://api.rainviewer.com'
+      let next = addSources(policy, 'connect-src', ['https://api.open-meteo.com']);
+      next = addSources(next, 'frame-src', [
+        'https://www.youtube-nocookie.com',
+        'https://open.spotify.com',
+        'https://music.amazon.ca',
+        'https://music.amazon.com'
       ]);
-      next = addSources(next, 'img-src', [
-        'https://*.rainviewer.com'
+      next = addSources(next, 'child-src', [
+        'https://www.youtube-nocookie.com',
+        'https://open.spotify.com',
+        'https://music.amazon.ca',
+        'https://music.amazon.com'
       ]);
+      next = addSources(next, 'img-src', ['data:']);
       return `content=${quote}${next}${quote}`;
     });
   });
@@ -166,8 +109,14 @@ function addSources(policy, directive, sources) {
   const existing = match[2].trim().split(/\s+/).filter(Boolean);
   const missing = sources.filter(source => !existing.includes(source));
   if (!missing.length) return policy;
-  const replacement = `${match[1]}${directive} ${[...existing, ...missing].join(' ')}`;
-  return policy.replace(pattern, replacement);
+  return policy.replace(pattern, `${match[1]}${directive} ${[...existing, ...missing].join(' ')}`);
+}
+
+function ensureThemeColor(source) {
+  if (/<meta\b[^>]*name=["']theme-color["']/i.test(source)) {
+    return source.replace(/<meta\b([^>]*name=["']theme-color["'][^>]*)>/i, '<meta$1 content="#0a0e11">');
+  }
+  return injectBefore(source, '</head>', '<meta name="theme-color" content="#0a0e11">');
 }
 
 function injectBefore(source, needle, addition) {
@@ -177,10 +126,6 @@ function injectBefore(source, needle, addition) {
 }
 
 async function exists(file) {
-  try {
-    await fs.access(file);
-    return true;
-  } catch {
-    return false;
-  }
+  try { await fs.access(file); return true; }
+  catch { return false; }
 }
