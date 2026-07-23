@@ -21,7 +21,7 @@ let injected = 0;
 for (const file of htmlFiles) {
   if (!(await exists(file))) continue;
   const directory = path.dirname(file);
-  for (const asset of assets) await fs.copyFile(asset.source, path.join(directory, asset.name));
+  for (const asset of assets) await materializeAsset(asset, path.join(directory, asset.name));
 
   let html = extendContentSecurityPolicy(await fs.readFile(file, 'utf8'));
   if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
@@ -55,6 +55,19 @@ for (const workerPath of [
 
 await fs.writeFile(path.join(targetRoot, 'pacefold-hub-version.txt'), `${VERSION}\n`);
 console.log(`Installed resilient Pacefold Hub ${VERSION} assets into ${injected} application shell(s).`);
+
+async function materializeAsset(asset, destination) {
+  if (asset.name !== 'pacefold-hub.js') {
+    await fs.copyFile(asset.source, destination);
+    return;
+  }
+
+  const source = await fs.readFile(asset.source, 'utf8');
+  const feedbackProne = "function markWaiting(waiting){const button=document.querySelector('[data-pf-action=clear-cue]'),label=document.querySelector('[data-pf-cue-label]');if(!button||!label)return;button.classList.toggle('is-alert',waiting);label.textContent=waiting?'1 waiting':'Clear cue';}";
+  const idempotent = "function markWaiting(waiting){const button=document.querySelector('[data-pf-action=clear-cue]'),label=document.querySelector('[data-pf-cue-label]');if(!button||!label)return;const nextLabel=waiting?'1 waiting':'Clear cue';if(button.classList.contains('is-alert')!==waiting)button.classList.toggle('is-alert',waiting);if(label.textContent!==nextLabel)label.textContent=nextLabel;}";
+  if (!source.includes(feedbackProne)) throw new Error('Expected Pacefold Hub cue-state implementation was not found');
+  await fs.writeFile(destination, source.replace(feedbackProne, idempotent));
+}
 
 function extendContentSecurityPolicy(html) {
   return html.replace(/<meta\b[^>]*http-equiv\s*=\s*(["'])Content-Security-Policy\1[^>]*>/i, tag => {
