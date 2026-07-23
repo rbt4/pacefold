@@ -61,7 +61,30 @@ async function materializeAsset(name, destination) {
   const mountMarker = '\n  mount();\n})();';
   if (!source.includes(mountMarker)) throw new Error('Expected Pacefold Kanso mount marker was not found');
 
-  const concurrencyFix = `
+  const reliabilityFixes = `
+  // Install the taskbar bridge without assuming the browser exposes a writable Navigator method.
+  installBadgeBridge = () => {
+    if (nativeBadge.set) {
+      const wrappedSetAppBadge = async value => {
+        const normalized = value == null ? 1 : value;
+        writeJson(KEYS.badge, { waiting: true, acknowledged: false, value: normalized, at: new Date().toISOString() });
+        scheduleCueScan();
+        return nativeBadge.set(normalized);
+      };
+      try {
+        Object.defineProperty(navigator, 'setAppBadge', {
+          configurable: true,
+          writable: true,
+          value: wrappedSetAppBadge
+        });
+      } catch (error) {
+        try { navigator.setAppBadge = wrappedSetAppBadge; }
+        catch (fallbackError) { recordError('badge-bridge', fallbackError || error); }
+      }
+    }
+    acknowledgeTaskbarBadge();
+  };
+
   // A quiet forecast may already be in flight when the user opens Weather.
   // Upgrade that existing request to include radar instead of silently losing the user intent.
   const refreshWeatherBase = refreshWeather;
@@ -94,7 +117,7 @@ async function materializeAsset(name, destination) {
   };
 `;
 
-  source = source.replace(mountMarker, `${concurrencyFix}${mountMarker}`);
+  source = source.replace(mountMarker, `${reliabilityFixes}${mountMarker}`);
   await fs.writeFile(destination, source);
 }
 
