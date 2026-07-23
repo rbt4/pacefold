@@ -73,12 +73,13 @@ async function main() {
       body: JSON.stringify({ host: '', radar: { past: [], nowcast: [] } })
     }));
 
-    await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    await page.waitForSelector('#pf-hub-root', { timeout: 10000 });
+    await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'commit', timeout: 15000 });
+    await page.waitForSelector('#pf-hub-root', { state: 'attached', timeout: 15000 });
+    await page.waitForFunction(() => document.documentElement.classList.contains('pf-hub-mounted'), null, { timeout: 10000 });
     const externalAssetsLoaded = await page.evaluate(() => Boolean(
       document.querySelector('script[src*="pacefold-hub.js"]') &&
       document.querySelector('link[href*="pacefold-hub.css"]') &&
-      document.documentElement.classList.contains('pf-hub-mounted')
+      document.getElementById('pf-hub-root')
     ));
     if (!externalAssetsLoaded) throw new Error('Hub external assets did not load and mount');
 
