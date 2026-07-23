@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 concurrency:
   group: pages-${{ github.ref }}
@@ -32,7 +30,6 @@ jobs:
           unzip -q /tmp/pacefold-v15.zip -d _release
       - name: Require a core or Hub version advance
         env:
-          EVENT_NAME: ${{ github.event_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
@@ -69,6 +66,7 @@ jobs:
           node --check _release/app/service-worker.js
           node --check _release/scripts/browser-audit.cjs
           node --check enhancements/pacefold-hub.js
+          node --check enhancements/pacefold-hub-guardian.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
       - name: Build and static audit
@@ -81,51 +79,20 @@ jobs:
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
       - name: Inject and audit Hub surface
-        id: hub_audit
-        continue-on-error: true
         run: |
-          log=/tmp/pacefold-hub-audit.log
-          : > "$log"
-          status=0
-          run_step() {
-            if [ "$status" -eq 0 ]; then
-              "$@" >> "$log" 2>&1 || status=$?
-            fi
-          }
-          run_step node enhancements/inject.mjs _release
-          run_step test "$(cat _release/pacefold-hub-version.txt 2>/dev/null)" = "$(cat enhancements/VERSION)"
-          run_step grep -q 'data-pacefold-hub="15.3.0"' _release/index.html
-          run_step grep -q 'data-pacefold-hub="15.3.0"' _release/app/index.html
-          run_step env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
-          run_step node --check _release/service-worker.js
-          run_step node --check _release/app/service-worker.js
-          cat "$log"
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit "$status"
-      - name: Publish Hub audit diagnostic
-        if: always() && github.event_name == 'pull_request'
-        uses: actions/github-script@v8
-        env:
-          HUB_STATUS: ${{ steps.hub_audit.outputs.status }}
-        with:
-          script: |
-            const fs = require('node:fs');
-            const marker = '<!-- pacefold-hub-audit -->';
-            const status = process.env.HUB_STATUS || 'unknown';
-            const outcome = status === '0' ? 'success' : 'failure';
-            let log = '';
-            try { log = fs.readFileSync('/tmp/pacefold-hub-audit.log', 'utf8'); } catch {}
-            const tail = log.slice(-7000).replace(/```/g, '``\\`');
-            const body = `${marker}\n### Pacefold Hub audit: ${outcome}\n\n\`\`\`text\n${tail || 'No Hub audit output was captured.'}\n\`\`\``;
-            const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
-            const existing = comments.find(comment => comment.body?.includes(marker));
-            if (existing) await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
-            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
-      - name: Require Hub audit success
-        if: steps.hub_audit.outputs.status != '0'
-        run: exit 1
+          node enhancements/inject.mjs _release
+          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          grep -q 'data-pacefold-hub="15.3.0"' _release/index.html
+          grep -q 'data-pacefold-hub="15.3.0"' _release/app/index.html
+          grep -q 'https://api.open-meteo.com' _release/app/index.html
+          grep -q 'https://api.rainviewer.com' _release/app/index.html
+          node --check _release/pacefold-hub.js
+          node --check _release/pacefold-hub-guardian.js
+          node --check _release/app/pacefold-hub.js
+          node --check _release/app/pacefold-hub-guardian.js
+          node --check _release/service-worker.js
+          node --check _release/app/service-worker.js
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -162,6 +129,10 @@ jobs:
           test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           grep -q 'data-pacefold-hub="15.3.0"' _site/index.html
           grep -q 'data-pacefold-hub="15.3.0"' _site/app/index.html
+          node --check _site/pacefold-hub.js
+          node --check _site/pacefold-hub-guardian.js
+          node --check _site/app/pacefold-hub.js
+          node --check _site/app/pacefold-hub-guardian.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
       - name: Configure Pages
