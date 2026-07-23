@@ -66,7 +66,14 @@ jobs:
           node --check enhancements/pacefold-hub-guardian.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
-          node -e "const fs=require('fs'),z=require('zlib'),p='enhancements/';const encoded=fs.readdirSync(p).filter(n=>n.startsWith('pacefold-hub.js.gz.b64.part-')).sort().map(n=>fs.readFileSync(p+n,'utf8')).join('').replace(/\\s+/g,'');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(encoded,'base64')))"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01b)" = "218fbe2ab562da27c9bd8cc1867d0749ee989566"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01c)" = "fc9b50bc875cc1bd2a5d8c8bf19e0f2775cbfe4a"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01d)" = "b1241ec0538977f91a97d7e7f74f2d10c4391d99"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-02)" = "2fed7d603cd98dc9ead13d3fa31041c785d08992"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-03)" = "11475bc120387ecf1cbf16dc8038aa5401d7db72"
+          node -e "const fs=require('fs'),z=require('zlib'),p='enhancements/';const names=['pacefold-hub.js.gz.b64.part-00','pacefold-hub.js.gz.b64.part-01a','pacefold-hub.js.gz.b64.part-01b','pacefold-hub.js.gz.b64.part-01c','pacefold-hub.js.gz.b64.part-01d','pacefold-hub.js.gz.b64.part-02','pacefold-hub.js.gz.b64.part-03'];const encoded=names.map(n=>fs.readFileSync(p+n,'utf8')).join('').replace(/\\s+/g,'');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(encoded,'base64')))"
           node --check /tmp/pacefold-notebook.js
           node -e "const fs=require('fs'),z=require('zlib');const css=z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.css.gz.b64','utf8').replace(/\\s+/g,''),'base64'));if(!css.length)process.exit(1)"
       - name: Build and static audit
