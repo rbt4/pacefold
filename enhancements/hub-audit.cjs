@@ -12,6 +12,10 @@ let phase='startup';
 const mark=name=>{phase=name;console.log(`PACEFOLD_AUDIT_PHASE ${name}`);};
 const server=http.createServer((request,response)=>{
   const requestPath=decodeURIComponent((request.url||'/').split('?')[0]);
+  if(requestPath==='/__pacefold_audit_host'){
+    response.setHeader('Content-Type','text/html');
+    return response.end(`<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.open-meteo.com https://graph.microsoft.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com https://open.spotify.com https://music.amazon.ca https://music.amazon.com"><link rel="stylesheet" href="/app/pacefold-hub.css"></head><body><main style="min-height:100vh">Today</main><script src="/app/pacefold-hub-guardian.js"></script><script src="/app/pacefold-hub.js"></script></body></html>`);
+  }
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/+/, '');
   let file=path.join(root,relative);
   if(!file.startsWith(root))return response.writeHead(403).end('Forbidden');
@@ -71,8 +75,16 @@ async function main(){
     await page.route('https://open.spotify.com/**',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Spotify embed</title>'}));
     await page.route(/https:\/\/music\.amazon\..*/,route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Amazon Music frame</title>'}));
 
-    mark('initial-mount');
-    await page.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'commit',timeout:15000});
+    mark('real-core-setup-isolation');
+    const setupPage=await context.newPage();
+    await setupPage.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'commit',timeout:15000});
+    await setupPage.waitForSelector('[data-onboard-profile],.onboarding-option,[data-view="setup"],.setup-wizard',{timeout:10000});
+    await setupPage.waitForTimeout(350);
+    if(await setupPage.locator('#pf-hub-root').count()) throw new Error('Pacefold workspace mounted over the verified core setup');
+    await setupPage.close();
+
+    mark('isolated-feature-host');
+    await page.goto(`http://127.0.0.1:${port}/__pacefold_audit_host`,{waitUntil:'commit',timeout:15000});
     await page.waitForSelector('#pf-hub-root');
     await page.waitForFunction(()=>document.getElementById('pf-hub-root')?.dataset.version==='15.6.0');
 
@@ -156,7 +168,7 @@ async function main(){
     mark('mobile-layout');
     const mobile=await context.newPage();
     await mobile.setViewportSize({width:390,height:780});
-    await mobile.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'commit',timeout:15000});
+    await mobile.goto(`http://127.0.0.1:${port}/__pacefold_audit_host`,{waitUntil:'commit',timeout:15000});
     await mobile.waitForSelector('#pf-hub-root');
     await mobile.locator('[data-pf-action="open-notebook"]').first().click();
     const mobileState=await mobile.evaluate(()=>({
