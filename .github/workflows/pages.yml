@@ -84,17 +84,22 @@ jobs:
         id: hub_audit
         continue-on-error: true
         run: |
+          log=/tmp/pacefold-hub-audit.log
+          : > "$log"
           status=0
-          (
-            set -euo pipefail
-            node enhancements/inject.mjs _release
-            test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
-            grep -q 'data-pacefold-hub="15.3.0"' _release/index.html
-            NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
-            node --check _release/service-worker.js
-            node --check _release/app/service-worker.js
-          ) > /tmp/pacefold-hub-audit.log 2>&1 || status=$?
-          cat /tmp/pacefold-hub-audit.log
+          run_step() {
+            if [ "$status" -eq 0 ]; then
+              "$@" >> "$log" 2>&1 || status=$?
+            fi
+          }
+          run_step node enhancements/inject.mjs _release
+          run_step test "$(cat _release/pacefold-hub-version.txt 2>/dev/null)" = "$(cat enhancements/VERSION)"
+          run_step grep -q 'data-pacefold-hub="15.3.0"' _release/index.html
+          run_step grep -q 'data-pacefold-hub="15.3.0"' _release/app/index.html
+          run_step env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+          run_step node --check _release/service-worker.js
+          run_step node --check _release/app/service-worker.js
+          cat "$log"
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit "$status"
       - name: Publish Hub audit diagnostic
@@ -156,6 +161,7 @@ jobs:
           node enhancements/inject.mjs _site
           test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           grep -q 'data-pacefold-hub="15.3.0"' _site/index.html
+          grep -q 'data-pacefold-hub="15.3.0"' _site/app/index.html
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
       - name: Configure Pages
