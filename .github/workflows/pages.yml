@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.5.0
+name: Validate and deploy Pacefold 15.6.0
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-      - name: Require a core or Origami version advance
+      - name: Require a core or Notebook version advance
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -50,11 +50,11 @@ jobs:
           test -n "$current_surface"
           if [ "$current_core" = "$previous_core" ]; then
             test "$current_surface" != "$previous_surface"
-            echo "Origami version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
+            echo "Notebook version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
           else
-            echo "Core version advanced: $previous_core -> $current_core; Origami $current_surface"
+            echo "Core version advanced: $previous_core -> $current_core; Notebook $current_surface"
           fi
-      - name: JavaScript syntax
+      - name: JavaScript and compressed-source syntax
         run: |
           node --check _release/app/app.js
           node --check _release/app/auth.js
@@ -66,6 +66,9 @@ jobs:
           node --check enhancements/pacefold-hub-guardian.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
+          node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.js.gz.b64','utf8').replace(/\\s+/g,''),'base64')))"
+          node --check /tmp/pacefold-notebook.js
+          node -e "const fs=require('fs'),z=require('zlib');const css=z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.css.gz.b64','utf8').replace(/\\s+/g,''),'base64'));if(!css.length)process.exit(1)"
       - name: Build and static audit
         run: |
           node _release/scripts/build.mjs _release
@@ -75,13 +78,14 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
-      - name: Inject and audit Origami surface
+      - name: Inject and audit Notebook surface
         run: |
           node enhancements/inject.mjs _release
           test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _release/index.html
-          grep -q 'data-pacefold-hub="15.5.0"' _release/app/index.html
+          grep -q 'data-pacefold-hub="15.6.0"' _release/app/index.html
           grep -q 'https://api.open-meteo.com' _release/app/index.html
+          grep -q 'https://graph.microsoft.com' _release/app/index.html
           grep -q 'https://www.youtube-nocookie.com' _release/app/index.html
           grep -q 'https://open.spotify.com' _release/app/index.html
           grep -q 'https://music.amazon.ca' _release/app/index.html
@@ -89,6 +93,7 @@ jobs:
           test -f _release/app/icons/notify-water.svg
           test ! -e _release/pacefold-hub.js
           node --check _release/app/pacefold-hub.js
+          ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
           node --check _release/app/pacefold-hub-guardian.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
@@ -109,7 +114,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Reconstruct verified release and install Origami
+      - name: Reconstruct verified release and install Notebook surface
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
@@ -128,11 +133,13 @@ jobs:
           node enhancements/inject.mjs _site
           test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _site/index.html
-          grep -q 'data-pacefold-hub="15.5.0"' _site/app/index.html
+          grep -q 'data-pacefold-hub="15.6.0"' _site/app/index.html
+          grep -q 'https://graph.microsoft.com' _site/app/index.html
           test -f _site/app/icons/fold-mark.svg
           test -f _site/app/icons/notify-water.svg
           test ! -e _site/pacefold-hub.js
           node --check _site/app/pacefold-hub.js
+          ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js
           node --check _site/app/pacefold-hub-guardian.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
