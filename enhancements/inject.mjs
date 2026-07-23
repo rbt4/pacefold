@@ -116,7 +116,8 @@ function injectBefore(source,needle,addition){
 }
 
 async function materializeCompressed(name,destination){
-  const encoded=(await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
+  const partNames=(await fs.readdir(sourceRoot)).filter(item=>item.startsWith(`${name}.part-`)).sort();
+  const encoded=(partNames.length ? (await Promise.all(partNames.map(item=>fs.readFile(path.join(sourceRoot,item),'utf8')))).join('') : await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
   let output=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
   if(name.endsWith('.js.gz.b64')) output=hardenPlayerRuntime(output);
   if(name.endsWith('.css.gz.b64')) output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
