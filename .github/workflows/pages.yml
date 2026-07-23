@@ -84,16 +84,16 @@ jobs:
         id: hub_audit
         continue-on-error: true
         run: |
-          set +e
-          {
+          status=0
+          (
+            set -euo pipefail
             node enhancements/inject.mjs _release
             test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
             grep -q 'data-pacefold-hub="15.3.0"' _release/index.html
             NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
             node --check _release/service-worker.js
             node --check _release/app/service-worker.js
-          } > /tmp/pacefold-hub-audit.log 2>&1
-          status=$?
+          ) > /tmp/pacefold-hub-audit.log 2>&1 || status=$?
           cat /tmp/pacefold-hub-audit.log
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit "$status"
@@ -101,12 +101,13 @@ jobs:
         if: always() && github.event_name == 'pull_request'
         uses: actions/github-script@v8
         env:
-          HUB_OUTCOME: ${{ steps.hub_audit.outcome }}
+          HUB_STATUS: ${{ steps.hub_audit.outputs.status }}
         with:
           script: |
             const fs = require('node:fs');
             const marker = '<!-- pacefold-hub-audit -->';
-            const outcome = process.env.HUB_OUTCOME || 'unknown';
+            const status = process.env.HUB_STATUS || 'unknown';
+            const outcome = status === '0' ? 'success' : 'failure';
             let log = '';
             try { log = fs.readFileSync('/tmp/pacefold-hub-audit.log', 'utf8'); } catch {}
             const tail = log.slice(-7000).replace(/```/g, '``\\`');
@@ -118,7 +119,7 @@ jobs:
             if (existing) await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
             else await github.rest.issues.createComment({ owner, repo, issue_number, body });
       - name: Require Hub audit success
-        if: steps.hub_audit.outcome == 'failure'
+        if: steps.hub_audit.outputs.status != '0'
         run: exit 1
 
   deploy:
