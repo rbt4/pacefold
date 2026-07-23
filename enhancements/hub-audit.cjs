@@ -21,7 +21,7 @@ const server = http.createServer((request, response) => {
     return;
   }
   const ext = path.extname(file);
-  const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml' };
+  const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
   response.setHeader('Content-Type', types[ext] || 'application/octet-stream');
   response.setHeader('Connection', 'close');
   response.end(fs.readFileSync(file));
@@ -49,7 +49,10 @@ async function main() {
     page.on('console', message => {
       if (message.type() !== 'error') return;
       const location = message.location()?.url || '';
-      if (/pacefold-hub/i.test(location)) hubErrors.push(message.text());
+      if (/pacefold-hub/i.test(location) || /pacefold hub|pf-hub/i.test(message.text())) hubErrors.push(message.text());
+    });
+    page.on('requestfailed', request => {
+      if (/pacefold-hub/i.test(request.url())) hubErrors.push(`Failed to load ${request.url()}: ${request.failure()?.errorText || 'unknown error'}`);
     });
 
     await page.route('https://api.open-meteo.com/**', route => route.fulfill({
@@ -73,7 +76,7 @@ async function main() {
       body: JSON.stringify({ host: '', radar: { past: [], nowcast: [] } })
     }));
 
-    await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'commit', timeout: 15000 });
+    await page.goto(`http://127.0.0.1:${port}/app/`, { waitUntil: 'commit', timeout: 15000 });
     await page.waitForSelector('#pf-hub-root', { state: 'attached', timeout: 15000 });
     await page.waitForFunction(() => document.documentElement.classList.contains('pf-hub-mounted'), null, { timeout: 10000 });
     const externalAssetsLoaded = await page.evaluate(() => Boolean(
@@ -99,7 +102,7 @@ async function main() {
     if (!playerVisible || !captureVisible || !careVisible) throw new Error('Persistent Hub surfaces are not visible');
     if (hubErrors.length) throw new Error(`Hub-originated page errors: ${hubErrors.join(' | ')}`);
 
-    console.log('Pacefold Hub browser smoke passed.');
+    console.log('Pacefold Hub browser smoke passed on /app/.');
   } finally {
     await browser?.close().catch(() => {});
     await closeServer().catch(() => {});
