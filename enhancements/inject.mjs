@@ -27,8 +27,8 @@ for (const file of htmlFiles) {
   if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
     const style = `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
     const scripts = [
-      `<script src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`,
-      `<script src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`
+      `<script src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
+      `<script async src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`
     ].join('\n');
     html = injectBefore(html, '</head>', style);
     html = injectBefore(html, '</body>', scripts);
