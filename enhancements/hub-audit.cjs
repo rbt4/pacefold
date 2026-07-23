@@ -110,7 +110,7 @@ async function main(){
     if(!await page.getByText('Audit incident note').isVisible())throw new Error('Notebook entry was not rendered');
 
     mark('notebook-edit');
-    await page.getByRole('button',{name:'Edit'}).click();
+    await page.locator('[data-pf-action="edit-entry"]').click();
     await page.locator('[data-pf-edit-body]').fill('Audit incident note edited');
     await page.locator('[data-pf-action="save-edit"]').click();
     if(!await page.getByText('Audit incident note edited').isVisible())throw new Error('Notebook edit did not save');
