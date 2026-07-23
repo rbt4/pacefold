@@ -66,7 +66,7 @@ jobs:
           node --check enhancements/pacefold-hub-guardian.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
-          node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.js.gz.b64','utf8').replace(/\\s+/g,''),'base64')))"
+          node -e "const fs=require('fs'),z=require('zlib'),p='enhancements/';const encoded=fs.readdirSync(p).filter(n=>n.startsWith('pacefold-hub.js.gz.b64.part-')).sort().map(n=>fs.readFileSync(p+n,'utf8')).join('').replace(/\\s+/g,'');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(encoded,'base64')))"
           node --check /tmp/pacefold-notebook.js
           node -e "const fs=require('fs'),z=require('zlib');const css=z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.css.gz.b64','utf8').replace(/\\s+/g,''),'base64'));if(!css.length)process.exit(1)"
       - name: Build and static audit
