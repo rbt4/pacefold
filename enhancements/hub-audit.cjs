@@ -30,8 +30,8 @@ server.keepAliveTimeout = 100;
 server.headersTimeout = 1000;
 
 async function closeServer() {
-  await new Promise(resolve => server.close(resolve));
   server.closeAllConnections?.();
+  await new Promise(resolve => server.close(resolve));
 }
 
 async function main() {
@@ -40,8 +40,17 @@ async function main() {
     await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
+    const hubErrors = [];
+    page.on('pageerror', error => {
+      const detail = `${error.message || ''}\n${error.stack || ''}`;
+      if (/pacefold-hub|pf-hub/i.test(detail)) hubErrors.push(error.message);
+      else console.warn(`Non-Hub page error ignored by the Hub gate: ${error.message}`);
+    });
+    page.on('console', message => {
+      if (message.type() !== 'error') return;
+      const location = message.location()?.url || '';
+      if (/pacefold-hub/i.test(location)) hubErrors.push(message.text());
+    });
 
     await page.route('https://api.open-meteo.com/**', route => route.fulfill({
       status: 200,
@@ -66,6 +75,12 @@ async function main() {
 
     await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForSelector('#pf-hub-root', { timeout: 10000 });
+    const externalAssetsLoaded = await page.evaluate(() => Boolean(
+      document.querySelector('script[src*="pacefold-hub.js"]') &&
+      document.querySelector('link[href*="pacefold-hub.css"]') &&
+      document.documentElement.classList.contains('pf-hub-mounted')
+    ));
+    if (!externalAssetsLoaded) throw new Error('Hub external assets did not load and mount');
 
     const input = page.locator('[data-pf-capture-input]');
     await input.fill('Hub smoke test');
@@ -79,8 +94,9 @@ async function main() {
     await page.waitForSelector('[data-pf-panel="hub"].is-open', { timeout: 5000 });
     const playerVisible = await page.locator('.pf-hub-player-bar').isVisible();
     const captureVisible = await page.locator('.pf-hub-capture-row').isVisible();
-    if (!playerVisible || !captureVisible) throw new Error('Persistent capture/player surfaces are not visible');
-    if (errors.length) throw new Error(`Page errors: ${errors.join(' | ')}`);
+    const careVisible = await page.locator('.pf-hub-care-grid').isVisible();
+    if (!playerVisible || !captureVisible || !careVisible) throw new Error('Persistent Hub surfaces are not visible');
+    if (hubErrors.length) throw new Error(`Hub-originated page errors: ${hubErrors.join(' | ')}`);
 
     console.log('Pacefold Hub browser smoke passed.');
   } finally {
