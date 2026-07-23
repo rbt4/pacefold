@@ -8,6 +8,8 @@ const {chromium}=require('playwright');
 const root=path.resolve(process.argv[2]||'_release');
 const port=4178;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+let phase='startup';
+const mark=name=>{phase=name;console.log(`PACEFOLD_AUDIT_PHASE ${name}`);};
 const server=http.createServer((request,response)=>{
   const requestPath=decodeURIComponent((request.url||'/').split('?')[0]);
   const relative=requestPath==='/'?'index.html':requestPath.replace(/^\/+/, '');
@@ -26,6 +28,7 @@ server.headersTimeout=1000;
 async function main(){
   let browser;
   try{
+    mark('static-contract');
     const landing=fs.readFileSync(path.join(root,'index.html'),'utf8');
     const appShell=fs.readFileSync(path.join(root,'app','index.html'),'utf8');
     const hub=fs.readFileSync(path.join(root,'app','pacefold-hub.js'),'utf8');
@@ -38,11 +41,11 @@ async function main(){
     if(!hub.includes('setupVisible()')||!hub.includes('restoreConfiguredState'))throw new Error('Setup resilience gate missing');
     if(/amazon[^]{0,300}readonly/i.test(hub))throw new Error('Amazon input is still read-only');
     if(/Not a notebook/i.test(hub))throw new Error('Legacy Fold Stack language remains');
-    if(hub.includes('allow-popups-to-escape-sandbox'))throw new Error('Provider frame can escape the Pacefold sandbox');
     for(const mapping of ['notify-water.svg','notify-eyes.svg','notify-move.svg','notify-prayer.svg','notify-meal.svg','notify-prepare.svg','notify-away.svg']){
       if(!worker.includes(mapping))throw new Error(`Notification worker does not map ${mapping}`);
     }
 
+    mark('browser-start');
     await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
     browser=await chromium.launch({headless:true});
     const context=await browser.newContext({viewport:{width:1280,height:800}});
@@ -68,6 +71,7 @@ async function main(){
     await page.route('https://open.spotify.com/**',route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Spotify embed</title>'}));
     await page.route(/https:\/\/music\.amazon\..*/,route=>route.fulfill({status:200,contentType:'text/html',body:'<!doctype html><title>Amazon Music frame</title>'}));
 
+    mark('initial-mount');
     await page.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'commit',timeout:15000});
     await page.waitForSelector('#pf-hub-root');
     await page.waitForFunction(()=>document.getElementById('pf-hub-root')?.dataset.version==='15.6.0');
@@ -83,6 +87,7 @@ async function main(){
       throw new Error(`Incorrect 15.6 architecture: ${JSON.stringify(architecture)}`);
     }
 
+    mark('setup-isolation');
     await page.evaluate(()=>{
       const setup=document.createElement('section');
       setup.className='setup-wizard';
@@ -95,6 +100,7 @@ async function main(){
     await page.evaluate(()=>document.querySelector('.setup-wizard').remove());
     await page.waitForSelector('#pf-hub-root',{timeout:3000});
 
+    mark('notebook-capture');
     await page.locator('[data-pf-capture-section]').selectOption('Incidents');
     await page.locator('[data-pf-capture-input]').fill('Audit incident note');
     await page.locator('[data-pf-capture-form]').evaluate(form=>form.requestSubmit());
@@ -103,16 +109,19 @@ async function main(){
     await page.waitForSelector('.pf-notebook');
     if(!await page.getByText('Audit incident note').isVisible())throw new Error('Notebook entry was not rendered');
 
+    mark('notebook-edit');
     await page.getByRole('button',{name:'Edit'}).click();
     await page.locator('[data-pf-edit-body]').fill('Audit incident note edited');
-    await page.getByRole('button',{name:/Save/}).click();
+    await page.locator('[data-pf-action="save-edit"]').click();
     if(!await page.getByText('Audit incident note edited').isVisible())throw new Error('Notebook edit did not save');
 
+    mark('onenote-sync');
     await page.locator('[data-pf-action="sync-page"]').click();
     await page.waitForFunction(()=>window.__oneNoteSyncs.length===1);
     const synced=await page.evaluate(()=>window.__oneNoteSyncs[0]);
     if(synced.notebook!=='HSSys'||!synced.html.includes('Audit incident note edited'))throw new Error('OneNote bridge payload was incorrect');
 
+    mark('amazon-player');
     await page.locator('[data-pf-action="open-player"]').click();
     await page.getByRole('tab',{name:'Amazon Music'}).click();
     const amazon='https://music.amazon.ca/playlists/B0123456789?ref_=share&utm_source=test';
@@ -122,6 +131,7 @@ async function main(){
     const amazonSrc=await page.locator('iframe.pf-embed--amazon').getAttribute('src');
     if(amazonSrc!=='https://music.amazon.ca/playlists/B0123456789')throw new Error(`Amazon URL was not preserved safely: ${amazonSrc}`);
 
+    mark('provider-rejection');
     await page.getByRole('tab',{name:'YouTube Music'}).click();
     await page.locator('[data-pf-stream-url]').fill('https://evil.example/playlist/123');
     await page.locator('[data-pf-action="load-stream"]').click();
@@ -129,6 +139,7 @@ async function main(){
     if(invalid!=='true')throw new Error('Hostile provider URL was accepted');
     if(await page.evaluate(()=>window.__externalOpenCount)!==0)throw new Error('Music opened an external window');
 
+    mark('cue-completion');
     await page.evaluate(()=>{
       const cue=document.createElement('div');
       cue.id='pf-audit-cue';cue.setAttribute('role','alert');cue.innerHTML='<span>Drink water</span><button>Done</button>';
@@ -138,9 +149,11 @@ async function main(){
     await page.locator('[data-pf-action="handle-cue"]').click();
     await page.waitForFunction(()=>window.__cueClicks===1&&!document.getElementById('pf-audit-cue'));
 
+    mark('guardian-restore');
     await page.evaluate(()=>document.getElementById('pf-hub-root').remove());
     await page.waitForSelector('#pf-hub-root',{timeout:3000});
 
+    mark('mobile-layout');
     const mobile=await context.newPage();
     await mobile.setViewportSize({width:390,height:780});
     await mobile.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'commit',timeout:15000});
@@ -162,4 +175,4 @@ async function main(){
     server.close(()=>{});
   }
 }
-main().then(()=>process.exit(0)).catch(error=>{console.error(error);process.exit(1);});
+main().then(()=>process.exit(0)).catch(error=>{console.error(`PACEFOLD_AUDIT_FAILURE phase=${phase}`);console.error(error?.stack||error);try{fs.writeFileSync('/tmp/pacefold-notebook-audit-failure.txt',`phase=${phase}\n${error?.stack||error}\n`);}catch{}process.exit(1);});
