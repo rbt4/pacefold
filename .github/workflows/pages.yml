@@ -98,6 +98,14 @@ jobs:
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+      - name: Upload Notebook failure detail
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-notebook-failure
+          path: /tmp/pacefold-notebook-audit-failure.txt
+          if-no-files-found: ignore
+          retention-days: 1
 
   deploy:
     if: github.event_name != 'pull_request'
