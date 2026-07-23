@@ -1,5 +1,19 @@
 # Changelog
 
+## 16.0.0 — Origami identity and contained media
+
+- Replaced the generic Kanso surface with a Pacefold-specific folded-P identity across the installed app, maskable icon, favicon, shortcuts, notification artwork and in-app rail.
+- Added Media Fold with contained official Spotify embeds, privacy-enhanced YouTube/YouTube Music embeds and persistent local-audio controls; streaming services no longer open external pages.
+- Deliberately excluded Amazon Music rather than iframe an unsupported full site or claim access to a generally unavailable playback integration.
+- Retired the notebook/export/folder capture model and replaced it with Foldstream: one chronological stream, slash-command classification, pin/complete/delete controls and automatic legacy migration.
+- Added transactional checksummed Foldstream storage with primary/backup recovery and integrity-checked import/export.
+- Added optional Private Fold AES-GCM encryption using PBKDF2-SHA-256, random salt/IV, a memory-only key, plaintext cleanup after successful encryption and temporary throttling after repeated unlock failures.
+- Removed Microsoft Graph/login origins from the generated Origami shell and added user-confirmed cleanup for retired local OneNote/Graph/MSAL configuration.
+- Hardened media security with exact host/type/identifier allowlists, canonical embed construction, discarded tracking parameters, sandboxed frames, strict referrer policy and no remote JavaScript SDKs.
+- Rebuilt the notification pipeline so the injector generates source-specific folded artwork, patches actual generated app/service-worker references, updates the manifest/shortcuts and fails when replacement cannot be proven.
+- Preserved taskbar acknowledgement versus cue completion, improved live-cue arbitration and retained lazy cached weather/radar.
+- Expanded CI to verify hostile-URL rejection, media containment, notification reference replacement, storage transactions, encryption-at-rest, lock/unlock, guardian recovery and 390-pixel layout in addition to the unchanged core audit.
+
 ## 15.4.0 — Kanso corrective redesign
 
 - Removed the redundant three-card Hub, duplicate Pacefold branding and duplicate Capture/Care/Weather tab system introduced in 15.3.
@@ -71,7 +85,7 @@
 ## 15.1.1 — Browser-gate compatibility
 
 - Corrected the notification-action browser audit to inspect the exact options Pacefold sends to Edge instead of relying on headless Chrome to expose operating-system notification metadata through `getNotifications()`.
-- Kept the durable service-worker queue, reload survival and exactly-once logging checks unchanged.
+- Kept the durable service-worker queue, reload survival and exactly-once local logging checks unchanged.
 
 ## 15.1.0 — Taskbar and notification control surface
 
