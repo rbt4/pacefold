@@ -9,7 +9,8 @@ const sourceRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const assets = [
   { source: path.join(sourceRoot, 'pacefold-hub.css'), name: 'pacefold-hub.css' },
-  { source: path.join(sourceRoot, 'pacefold-hub.js'), name: 'pacefold-hub.js' }
+  { source: path.join(sourceRoot, 'pacefold-hub.js'), name: 'pacefold-hub.js' },
+  { source: path.join(sourceRoot, 'pacefold-hub-guardian.js'), name: 'pacefold-hub-guardian.js' }
 ];
 const htmlFiles = [
   path.join(targetRoot, 'index.html'),
@@ -22,14 +23,17 @@ for (const file of htmlFiles) {
   const directory = path.dirname(file);
   for (const asset of assets) await fs.copyFile(asset.source, path.join(directory, asset.name));
 
-  let html = await fs.readFile(file, 'utf8');
+  let html = extendContentSecurityPolicy(await fs.readFile(file, 'utf8'));
   if (!html.includes(`data-pacefold-hub="${VERSION}"`)) {
     const style = `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
-    const script = `<script src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`;
+    const scripts = [
+      `<script src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`,
+      `<script src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`
+    ].join('\n');
     html = injectBefore(html, '</head>', style);
-    html = injectBefore(html, '</body>', script);
-    await fs.writeFile(file, html);
+    html = injectBefore(html, '</body>', scripts);
   }
+  await fs.writeFile(file, html);
   injected += 1;
 }
 
@@ -50,7 +54,33 @@ for (const workerPath of [
 }
 
 await fs.writeFile(path.join(targetRoot, 'pacefold-hub-version.txt'), `${VERSION}\n`);
-console.log(`Installed CSP-safe Pacefold Hub ${VERSION} assets into ${injected} application shell(s).`);
+console.log(`Installed resilient Pacefold Hub ${VERSION} assets into ${injected} application shell(s).`);
+
+function extendContentSecurityPolicy(html) {
+  return html.replace(/<meta\b[^>]*http-equiv\s*=\s*(["'])Content-Security-Policy\1[^>]*>/i, tag => {
+    return tag.replace(/content\s*=\s*(["'])([\s\S]*?)\1/i, (_match, quote, policy) => {
+      let next = addSources(policy, 'connect-src', [
+        'https://api.open-meteo.com',
+        'https://api.rainviewer.com'
+      ]);
+      next = addSources(next, 'img-src', [
+        'https://*.rainviewer.com'
+      ]);
+      return `content=${quote}${next}${quote}`;
+    });
+  });
+}
+
+function addSources(policy, directive, sources) {
+  const pattern = new RegExp(`(^|;\\s*)${directive}\\s+([^;]*)`, 'i');
+  const match = policy.match(pattern);
+  if (!match) return `${policy.replace(/;?\s*$/, '')}; ${directive} ${sources.join(' ')}`;
+  const existing = match[2].trim().split(/\s+/).filter(Boolean);
+  const missing = sources.filter(source => !existing.includes(source));
+  if (!missing.length) return policy;
+  const replacement = `${match[1]}${directive} ${[...existing, ...missing].join(' ')}`;
+  return policy.replace(pattern, replacement);
+}
 
 function injectBefore(source, needle, addition) {
   const index = source.toLowerCase().lastIndexOf(needle);
