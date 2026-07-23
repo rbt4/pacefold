@@ -80,7 +80,7 @@ async function main(){
     await setupPage.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'commit',timeout:15000});
     await setupPage.waitForSelector('[data-onboard-profile],.onboarding-option,[data-view="setup"],.setup-wizard',{timeout:10000});
     await setupPage.waitForTimeout(350);
-    if(await setupPage.locator('#pf-hub-root').count()) throw new Error('Pacefold workspace mounted over the verified core setup');
+    if(await setupPage.locator('#pf-hub-root').count())throw new Error('Pacefold workspace mounted over the verified core setup');
     await setupPage.close();
 
     mark('isolated-feature-host');
@@ -134,7 +134,7 @@ async function main(){
     if(synced.notebook!=='HSSys'||!synced.html.includes('Audit incident note edited'))throw new Error('OneNote bridge payload was incorrect');
 
     mark('amazon-player');
-    await page.locator('[data-pf-action="open-player"]').click();
+    await page.locator('.pf-player-button[data-pf-action="open-player"]').click();
     await page.getByRole('tab',{name:'Amazon Music'}).click();
     const amazon='https://music.amazon.ca/playlists/B0123456789?ref_=share&utm_source=test';
     await page.locator('[data-pf-stream-url]').fill(amazon);
