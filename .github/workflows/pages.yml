@@ -77,29 +77,18 @@ jobs:
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
       - name: Inject and audit Kanso surface
         run: |
-          set -o pipefail
-          {
-            node enhancements/inject.mjs _release
-            test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
-            ! grep -q 'data-pacefold-hub=' _release/index.html
-            grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
-            grep -q 'https://api.open-meteo.com' _release/app/index.html
-            grep -q 'https://api.rainviewer.com' _release/app/index.html
-            test ! -e _release/pacefold-hub.js
-            node --check _release/app/pacefold-hub.js
-            node --check _release/app/pacefold-hub-guardian.js
-            node --check _release/service-worker.js
-            node --check _release/app/service-worker.js
-            NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
-          } 2>&1 | tee /tmp/pacefold-kanso-audit.log
-      - name: Upload Kanso diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pacefold-kanso-audit
-          path: /tmp/pacefold-kanso-audit.log
-          if-no-files-found: error
-          retention-days: 1
+          node enhancements/inject.mjs _release
+          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          ! grep -q 'data-pacefold-hub=' _release/index.html
+          grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
+          grep -q 'https://api.open-meteo.com' _release/app/index.html
+          grep -q 'https://api.rainviewer.com' _release/app/index.html
+          test ! -e _release/pacefold-hub.js
+          node --check _release/app/pacefold-hub.js
+          node --check _release/app/pacefold-hub-guardian.js
+          node --check _release/service-worker.js
+          node --check _release/app/service-worker.js
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
 
   deploy:
     if: github.event_name != 'pull_request'
