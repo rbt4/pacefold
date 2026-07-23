@@ -18,7 +18,7 @@ const assets = [
 if (!(await exists(appHtml))) throw new Error(`Pacefold app shell was not found at ${appHtml}`);
 
 for (const name of assets) {
-  await fs.copyFile(path.join(sourceRoot, name), path.join(appRoot, name));
+  await materializeAsset(name, path.join(appRoot, name));
 }
 
 let html = extendContentSecurityPolicy(await fs.readFile(appHtml, 'utf8'));
@@ -49,6 +49,54 @@ for (const workerPath of [
 
 await fs.writeFile(path.join(targetRoot, 'pacefold-hub-version.txt'), `${VERSION}\n`);
 console.log(`Installed Pacefold Kanso ${VERSION} into the application shell only.`);
+
+async function materializeAsset(name, destination) {
+  const sourcePath = path.join(sourceRoot, name);
+  if (name !== 'pacefold-hub.js') {
+    await fs.copyFile(sourcePath, destination);
+    return;
+  }
+
+  let source = await fs.readFile(sourcePath, 'utf8');
+  const mountMarker = '\n  mount();\n})();';
+  if (!source.includes(mountMarker)) throw new Error('Expected Pacefold Kanso mount marker was not found');
+
+  const concurrencyFix = `
+  // A quiet forecast may already be in flight when the user opens Weather.
+  // Upgrade that existing request to include radar instead of silently losing the user intent.
+  const refreshWeatherBase = refreshWeather;
+  refreshWeather = async options => {
+    const request = options || {};
+    if (request.includeRadar && state.weatherRequest) {
+      await state.weatherRequest;
+      if (request.force || !state.radar) {
+        if (!state.radarRequest) {
+          state.radarRequest = loadRadar()
+            .then(radar => {
+              state.radar = radar;
+              if (radar) writeCache(KEYS.radar, radar);
+              return radar;
+            })
+            .catch(error => {
+              recordError('radar', error);
+              return state.radar;
+            })
+            .finally(() => { state.radarRequest = null; });
+        }
+        await state.radarRequest;
+      }
+      renderWeatherPill();
+      if (state.drawer === 'weather') renderDrawer();
+      if (!request.quiet) toast('Weather refreshed.');
+      return;
+    }
+    return refreshWeatherBase(request);
+  };
+`;
+
+  source = source.replace(mountMarker, `${concurrencyFix}${mountMarker}`);
+  await fs.writeFile(destination, source);
+}
 
 function extendContentSecurityPolicy(source) {
   return source.replace(/<meta\b[^>]*http-equiv\s*=\s*(["'])Content-Security-Policy\1[^>]*>/i, tag => {
