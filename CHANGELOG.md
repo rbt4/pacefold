@@ -1,5 +1,15 @@
 # Changelog
 
+## 15.5.0 — Origami embedded hub
+
+- Replaced external music-service launch buttons with a single Pacefold Player sheet that keeps local audio, official YouTube embeds, official Spotify embeds and an Amazon Music compatibility frame inside Pacefold.
+- Added strict provider URL parsing, official-domain allowlists, sandboxed iframes, `no-referrer`, and CSP frame restrictions; Pacefold stores no provider passwords, cookies, OAuth tokens or access tokens.
+- Removed the OneNote/Graph/OneDrive-folder/export notebook workflow from the user experience and replaced it with lightweight local “Folds” that can be completed or deleted.
+- Added a custom Pacefold origami mark throughout the persistent strip, expanded surfaces and fallback artwork.
+- Added source-specific notification artwork for hydration, eye care, movement, prayer, meals, preparation and away time, applied at the service-worker notification boundary.
+- Preserved one Andon action, badge acknowledgement without false completion, current-cue arbitration, cached weather, local diagnostics and guardian restoration.
+- Added browser gates proving that no music action opens an external window, only approved iframe origins load, notebook language is absent, Folds persist, notification mappings exist and the surface remains responsive at 390 px.
+
 ## 15.4.0 — Kanso corrective redesign
 
 - Removed the redundant three-card Hub, duplicate Pacefold branding and duplicate Capture/Care/Weather tab system introduced in 15.3.
