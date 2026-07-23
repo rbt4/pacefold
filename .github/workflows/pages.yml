@@ -36,18 +36,15 @@ jobs:
           base_sha="$PR_BASE_SHA"
           if [ -z "$base_sha" ] || [ "$base_sha" = "null" ]; then base_sha="$PUSH_BEFORE_SHA"; fi
           if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then base_sha=$(git rev-parse HEAD^); fi
-
           git ls-tree -r --name-only "$base_sha" release | grep '\.zip\.b64\.part-' | sort > /tmp/previous-parts.txt
           test -s /tmp/previous-parts.txt
           while IFS= read -r part; do git show "${base_sha}:${part}"; done < /tmp/previous-parts.txt | base64 --decode > /tmp/pacefold-previous.zip
           mkdir _previous
           unzip -q /tmp/pacefold-previous.zip -d _previous
-
           current_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _release/app/app.js | head -n 1)
           previous_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _previous/app/app.js | head -n 1)
           current_surface=$(cat enhancements/VERSION)
           previous_surface=$(git show "${base_sha}:enhancements/VERSION" 2>/dev/null || true)
-
           test -n "$current_core"
           test -n "$previous_core"
           test -n "$current_surface"
@@ -80,18 +77,29 @@ jobs:
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
       - name: Inject and audit Kanso surface
         run: |
-          node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
-          ! grep -q 'data-pacefold-hub=' _release/index.html
-          grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
-          grep -q 'https://api.open-meteo.com' _release/app/index.html
-          grep -q 'https://api.rainviewer.com' _release/app/index.html
-          test ! -e _release/pacefold-hub.js
-          node --check _release/app/pacefold-hub.js
-          node --check _release/app/pacefold-hub-guardian.js
-          node --check _release/service-worker.js
-          node --check _release/app/service-worker.js
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+          set -o pipefail
+          {
+            node enhancements/inject.mjs _release
+            test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+            ! grep -q 'data-pacefold-hub=' _release/index.html
+            grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
+            grep -q 'https://api.open-meteo.com' _release/app/index.html
+            grep -q 'https://api.rainviewer.com' _release/app/index.html
+            test ! -e _release/pacefold-hub.js
+            node --check _release/app/pacefold-hub.js
+            node --check _release/app/pacefold-hub-guardian.js
+            node --check _release/service-worker.js
+            node --check _release/app/service-worker.js
+            NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+          } 2>&1 | tee /tmp/pacefold-kanso-audit.log
+      - name: Upload Kanso diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-kanso-audit
+          path: /tmp/pacefold-kanso-audit.log
+          if-no-files-found: error
+          retention-days: 1
 
   deploy:
     if: github.event_name != 'pull_request'
