@@ -84,7 +84,7 @@ async function main() {
     try {
       await page.waitForSelector('#pf-hub-root', { state: 'attached', timeout: 15000 });
     } catch (error) {
-      const documentDiagnostics = await page.evaluate(() => ({
+      const diagnosticRead = page.evaluate(() => ({
         href: location.href,
         readyState: document.readyState,
         title: document.title,
@@ -95,6 +95,10 @@ async function main() {
         scriptSources: [...document.scripts].map(script => script.src || '[inline]').slice(-12),
         bodyTail: document.body?.innerHTML.slice(-1200) || null
       })).catch(evaluateError => ({ evaluateError: evaluateError.message }));
+      const documentDiagnostics = await Promise.race([
+        diagnosticRead,
+        delay(3000).then(() => ({ evaluateTimeout: true }))
+      ]);
       throw new Error([
         `Hub did not mount: ${error.message}`,
         `Asset traffic: ${assetTraffic.join(' | ') || 'none observed'}`,
