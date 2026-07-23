@@ -79,19 +79,44 @@ jobs:
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
       - name: Inject and audit Kanso surface
+        id: kanso_audit
+        continue-on-error: true
         run: |
-          node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
-          ! grep -q 'data-pacefold-hub=' _release/index.html
-          grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
-          grep -q 'https://api.open-meteo.com' _release/app/index.html
-          grep -q 'https://api.rainviewer.com' _release/app/index.html
-          test ! -e _release/pacefold-hub.js
-          node --check _release/app/pacefold-hub.js
-          node --check _release/app/pacefold-hub-guardian.js
-          node --check _release/service-worker.js
-          node --check _release/app/service-worker.js
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+          log=/tmp/pacefold-kanso-audit.log
+          : > "$log"
+          status=0
+          run_step() {
+            if [ "$status" -eq 0 ]; then
+              echo "+ $*" >> "$log"
+              "$@" >> "$log" 2>&1 || status=$?
+            fi
+          }
+          run_step node enhancements/inject.mjs _release
+          run_step test "$(cat _release/pacefold-hub-version.txt 2>/dev/null)" = "$(cat enhancements/VERSION)"
+          run_step bash -c "! grep -q 'data-pacefold-hub=' _release/index.html"
+          run_step grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
+          run_step grep -q 'https://api.open-meteo.com' _release/app/index.html
+          run_step grep -q 'https://api.rainviewer.com' _release/app/index.html
+          run_step test ! -e _release/pacefold-hub.js
+          run_step node --check _release/app/pacefold-hub.js
+          run_step node --check _release/app/pacefold-hub-guardian.js
+          run_step node --check _release/service-worker.js
+          run_step node --check _release/app/service-worker.js
+          run_step env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+          cat "$log"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Upload Kanso audit diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-kanso-audit
+          path: /tmp/pacefold-kanso-audit.log
+          if-no-files-found: error
+          retention-days: 1
+      - name: Require Kanso audit success
+        if: steps.kanso_audit.outputs.status != '0'
+        run: exit 1
 
   deploy:
     if: github.event_name != 'pull_request'
