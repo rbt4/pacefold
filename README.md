@@ -2,71 +2,117 @@
 
 **Your day, quietly kept.**
 
-Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold Kanso 15.4 removes the redundant Hub/dashboard layer and adds one restrained work strip underneath the core.
+Pacefold is a local-first, installable workday rhythm system. Its verified core keeps the clock, schedule, prayer/rhythm profile and one next useful action primary. Pacefold 16 adds an Origami layer that folds capture, media, weather and notification state into that rhythm instead of opening separate mini-apps.
 
-## Pacefold Kanso 15.4
+## Pacefold 16 — Origami
 
-- **One surface, not several mini-apps:** the old three-card Hub and duplicate Capture/Care/Weather tabs are gone. Capture and audio remain persistent; everything else opens in one contextual drawer.
-- **Andon action:** one large readable state translates the live core cue into Hydrate, Look far, Move, Prayer, Meal, Prepare or Step away. Animation appears only while a real action is waiting.
-- **Always-open Kiroku capture:** notes, follow-ups, incidents, meetings and resources save locally without leaving the clock. `Ctrl+Shift+Space` focuses capture from anywhere in the app.
-- **OneNote without fragile Graph dependence:** Windows Share can send the daily Markdown to OneNote, while clipboard, dated Markdown export and an optional OneDrive-synced folder remain available. There is no redundant OneNote mini-app or permanent OneNote button.
-- **Quiet media rail:** local audio, drag-and-drop, progress, volume and Media Session controls remain at the lowest edge. YouTube Music, Spotify and Amazon Music are honest external launch options rather than pretend embedded players.
-- **Weather as context:** a small cached temperature glance stays visible. The three-day forecast and radar open only when requested; radar no longer loads during every Pacefold start.
-- **Behavioural Japanese influence:** Ma preserves space, Kanso removes duplication, Andon communicates one exception, and Kaizen records small useful actions without punitive backlog. There is no fake decorative Japan theme.
-- **Host-aware visual system:** the surface adapts to light/dark host themes, time of day and broad weather state using restrained material, larger custom line icons and contextual motion.
-- **Local diagnostics only when needed:** storage, secure context, folder bridge, service worker, notifications and surface errors are available behind a warning indicator that remains hidden when healthy.
+### One identity
 
-## Corrective reliability work
+A folded **P** is now the Pacefold identity across the installed-app icon, maskable icon, browser favicon, shortcuts, notification artwork and the in-app rail. Hydration, eye distance, movement, prayer, meals, preparation, away time and diagnostics receive distinct folded notification glyphs while remaining visibly part of one family.
 
-- Landing-page injection was removed; Kanso loads only in `/app/`.
-- Badge acknowledgement is separated from cue completion: focusing Pacefold clears the Windows badge but does not silently complete the live action.
-- The document observer ignores Kanso-owned mutations and coalesces cue/legacy scans to one animation frame.
-- Forecast uses a 20-minute local cache; radar is lazy, cached separately and timeout-bounded.
-- Redundant compact legacy Capture/Care/Sound/OneNote dock controls are suppressed only when they are clearly edge/dock shortcuts. Settings remain accessible.
-- The guardian restores the surface after legacy body replacement without reacting to every internal surface update.
-- Existing 15.3 capture, folder and volume data are preserved.
+The installed taskbar icon is the static folded P. Windows taskbar badges remain a dot or number because a web app cannot redraw the pinned icon for every cue.
 
-The detailed fault analysis is in [`AUDIT_15_4.md`](AUDIT_15_4.md).
+### Media Fold
 
-## Core 15.2 reliability retained
+Streaming no longer launches external service pages.
 
-- Quiet, non-persistent notifications with contextual Clear, Done or Log actions.
-- Durable, deduplicated service-worker action queue.
-- Live-session hydration, distance-look and movement cadence without late-launch backlog.
-- Focused Today, Rhythm, Tools and App settings.
-- Nine profiles, preparation routines, prayer calculations, meals, personal pauses and the private ledger.
+- **Spotify:** paste a Spotify track, album, playlist, artist, show or episode link. Pacefold validates it, removes tracking parameters and loads the official Spotify embed inside a sandboxed Media Fold.
+- **YouTube:** paste a YouTube or YouTube Music video/playlist link. Pacefold converts it to a privacy-enhanced `youtube-nocookie.com` embed that stays inside Pacefold and respects the required embedded-player dimensions.
+- **Local audio:** choose or drag an audio file into Pacefold. Playback, progress, volume and Media Session controls remain in the persistent bottom rail.
+- **Amazon Music:** deliberately unavailable in the in-app player until Amazon provides a generally available secure playback integration. Pacefold does not iframe the full Amazon site or pretend that an unsupported player is reliable.
+
+Remote players are never restored automatically after restart. A user must submit a service link for the current session, limiting unexpected network activity and stale third-party state.
+
+### Foldstream, not a notebook
+
+The previous notebook/export/folder concept is retired. Capture is now one chronological stream of small folded cards.
+
+- Type naturally for a thought.
+- Use `/task`, `/followup`, `/meeting`, `/incident`, `/link` or `/note` when a category matters.
+- Pin, complete or delete directly in the stream.
+- Today and earlier entries are separated without creating pages, sections, notebooks or synchronization setup.
+- Existing 15.3/15.4 local captures migrate automatically.
+
+`Ctrl+Shift+Space` focuses capture. `Alt+P` controls local audio.
+
+### Private Fold
+
+Capture remains local by default. Private Fold optionally encrypts Foldstream with AES-GCM using a key derived from a passphrase through PBKDF2-SHA-256 with 310,000 iterations.
+
+- The passphrase and derived key are never stored.
+- The key exists only in memory until Pacefold is locked or closed.
+- After encryption succeeds, plaintext Foldstream and legacy capture keys are removed.
+- Five failed unlock attempts create a temporary in-memory pause.
+- Encrypted and unencrypted backups include integrity verification before replacement.
+- Local writes are transactional: a checksummed primary copy and backup copy are maintained.
+
+Private Fold protects stored capture text from casual local inspection. It does not claim to protect text while the app is unlocked, against a compromised browser/device, or against screen/keyboard monitoring.
+
+### Weather Fold
+
+A cached temperature glance stays in the rail. Forecast and radar remain inside Pacefold; radar loads only when Weather Fold is opened. Weather requests omit credentials and send only configured coordinates.
+
+### Notification and taskbar repair
+
+The release injector scans the generated core application and service workers for the actual notification icon references, replaces them with generated Origami artwork, updates the PWA manifest and shortcuts, and fails the build if it cannot prove that multiple source-specific references changed.
+
+Focusing Pacefold acknowledges the Windows badge but does not silently complete the underlying cue. The folded-P action remains visible until Clear, Done, Log, Start or Acknowledge is applied exactly once.
+
+## Security boundaries
+
+- No Pacefold account, server, analytics, advertisements or remote JavaScript SDK.
+- Content Security Policy permits only the required weather endpoints and sandboxed Spotify/YouTube frames.
+- Microsoft Graph and Microsoft login origins are removed from the generated Origami application policy.
+- Retired local OneNote/Graph/MSAL configuration can be removed through a user-confirmed cleanup action. This does not delete notes stored in Microsoft OneNote.
+- Submitted streaming URLs are parsed against strict host, path and identifier allowlists. Arbitrary iframe URLs are rejected.
+- Embedded players receive only the permissions needed for media playback; no camera, microphone or location permission is granted.
+- Object embedding is disabled and the document base is restricted to self.
+
+The complete design, threat and regression analysis is in [`AUDIT_16.md`](AUDIT_16.md). Security details are in [`SECURITY.md`](SECURITY.md).
+
+## Verified core retained
+
+Pacefold core 15.2.1 still provides:
+
+- quiet notification actions and the durable exactly-once worker queue;
+- profiles for secular, mindfulness, major-faith and custom rhythms;
+- the default Muslim calculated-prayer/Hanafi/Toronto profile;
+- preparation routines, hydration, meals, personal pauses and private day-close records;
+- late-launch protection for hydration, eye-distance and movement cadence;
+- installed-version migration and offline recovery.
 
 ## Honest Windows boundary
 
-Microsoft Edge PWAs support taskbar badges, notification actions and right-click shortcuts. Windows does not let a website intercept a normal pinned-icon click before opening/focusing the app, distinguish single from double taskbar clicks, or continuously redraw the pinned icon face. Pacefold therefore clears the badge when the app receives focus and keeps the real action visible in the Andon surface until it is handled. Exact pre-focus single-click/double-click/live-icon behaviour requires a native Windows tray companion.
-
-## Default developer profile
-
-The default preset remains Muslim calculated prayer times, Hanafi Asr, Toronto defaults, noodle preparation, desk-meal flow, hydration, away-break and private day-close logging.
+Microsoft Edge PWAs support static app artwork, taskbar badges, notification artwork/actions and right-click shortcuts. Windows does not let a website intercept a normal pinned-icon click before focus, distinguish single from double taskbar clicks, or continuously redraw the pinned icon face. Exact pre-focus custom click behaviour or a truly live icon requires a native Windows companion.
 
 ## Repository release format
 
-The tested core source tree remains stored as a checksum-verified Base64 release under `release/`. GitHub Actions reconstructs it, verifies SHA-256, runs the existing syntax/static/notification/offline/installed-upgrade browser suite, injects Kanso from `enhancements/`, and then runs a dedicated browser audit for architecture, capture, lazy weather, badge acknowledgement, guardian restoration and responsive layout.
+The tested core source tree remains a checksum-verified Base64 archive under `release/`. Origami source is independently compressed and reconstructed from `enhancements/origami-source/`. GitHub Actions:
 
-Core release SHA-256:
+1. verifies and reconstructs the reviewed core;
+2. runs core syntax, static, notification, offline and installed-upgrade tests;
+3. reconstructs and injects Origami;
+4. generates and validates the complete icon family;
+5. proves source-specific notification references were replaced;
+6. runs browser tests for media containment, hostile-URL rejection, Foldstream transactions, encryption, lazy radar, taskbar semantics, guardian recovery and 390 px layout;
+7. deploys only after every gate succeeds.
+
+Core SHA-256:
 
 `50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7`
 
-Kanso version:
+Origami version:
 
-`15.4.0`
+`16.0.0`
 
-## Install
+## Install and update
 
-1. Open `https://rbt4.github.io/pacefold/` in Microsoft Edge.
-2. Complete setup and install Pacefold through Edge **… → Apps → Install Pacefold** when needed.
+1. Open the Pacefold GitHub Pages site in Microsoft Edge.
+2. Complete setup and use **… → Apps → Install Pacefold** when needed.
 3. Pin the installed app.
-4. Fully close and reopen the installed app once after the 15.4 deployment so the service worker activates the new shell. Reinstall only if Edge still serves the older shell after a full close and reopen.
-
-## Privacy
-
-No Pacefold account, analytics or advertising. Activity records, captures, notification-action history, preferences and diagnostics remain on the device. Weather requests contain only the configured forecast coordinates. Folder synchronization starts only after the user selects a folder and grants write access; Pacefold writes dated Markdown files there and does not receive access to the rest of OneDrive.
+4. After a 16.0 deployment, fully close every Pacefold window and reopen it once so the new service worker, manifest and icon shell activate.
+5. Reinstall only if Edge still shows the previous icon or manifest after a full close/reopen and an Edge restart.
 
 ## Version
 
-Pacefold Kanso 15.4.0 over Pacefold core 15.2.1
+Pacefold Origami 16.0.0 over verified Pacefold core 15.2.1
