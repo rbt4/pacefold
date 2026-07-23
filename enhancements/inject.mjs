@@ -116,11 +116,22 @@ function injectBefore(source,needle,addition){
 }
 
 async function materializeCompressed(name,destination){
-  const partNames=(await fs.readdir(sourceRoot)).filter(item=>item.startsWith(`${name}.part-`)).sort();
-  const encoded=(partNames.length ? (await Promise.all(partNames.map(item=>fs.readFile(path.join(sourceRoot,item),'utf8')))).join('') : await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
+  const available=new Set(await fs.readdir(sourceRoot));
+  const runtimeParts=[
+    `${name}.part-00`,`${name}.part-01a`,`${name}.part-01b`,`${name}.part-01c`,`${name}.part-01d`,`${name}.part-02`,`${name}.part-03`
+  ];
+  const partNames=name.endsWith('.js.gz.b64')
+    ? runtimeParts.filter(item=>available.has(item))
+    : [...available].filter(item=>item.startsWith(`${name}.part-`)).sort();
+  if(name.endsWith('.js.gz.b64')&&partNames.length!==runtimeParts.length){
+    throw new Error(`Pacefold runtime source is incomplete: ${partNames.length}/${runtimeParts.length} verified segments found`);
+  }
+  const encoded=(partNames.length
+    ? (await Promise.all(partNames.map(item=>fs.readFile(path.join(sourceRoot,item),'utf8')))).join('')
+    : await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
   let output=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
-  if(name.endsWith('.js.gz.b64')) output=hardenPlayerRuntime(output);
-  if(name.endsWith('.css.gz.b64')) output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
+  if(name.endsWith('.js.gz.b64'))output=hardenPlayerRuntime(output);
+  if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
   await fs.writeFile(destination,output);
 }
 function hardenPlayerRuntime(source){
@@ -128,13 +139,13 @@ function hardenPlayerRuntime(source){
   const hasDropPath=next.includes("playerRow?.addEventListener('drop'")&&next.includes('loadAudioFile(file)');
   if(!hasDropPath){
     const bindPattern=/(root\.querySelector\('\[data-pf-progress\]'\)\.addEventListener\('input',\s*seekAudio\);\s*)(const player\s*=\s*audio\(\);)/;
-    if(!bindPattern.test(next)) throw new Error('Pacefold player bind structure missing');
-    next=next.replace(bindPattern, `$1const playerRow=root.querySelector('.pf-player-row');\n  playerRow?.addEventListener('dragover',event=>{ event.preventDefault(); playerRow.classList.add('is-drop-target'); });\n  playerRow?.addEventListener('dragleave',()=>playerRow.classList.remove('is-drop-target'));\n  playerRow?.addEventListener('drop',event=>{ event.preventDefault(); playerRow.classList.remove('is-drop-target'); const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('audio/')); if(file) loadAudioFile(file); });\n  $2`);
+    if(!bindPattern.test(next))throw new Error('Pacefold player bind structure missing');
+    next=next.replace(bindPattern,`$1const playerRow=root.querySelector('.pf-player-row');\n  playerRow?.addEventListener('dragover',event=>{ event.preventDefault(); playerRow.classList.add('is-drop-target'); });\n  playerRow?.addEventListener('dragleave',()=>playerRow.classList.remove('is-drop-target'));\n  playerRow?.addEventListener('drop',event=>{ event.preventDefault(); playerRow.classList.remove('is-drop-target'); const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('audio/')); if(file) loadAudioFile(file); });\n  $2`);
   }
   const hasLoadHelper=/function\s+loadAudioFile\s*\(file\)/.test(next);
   if(!hasLoadHelper){
     const audioPattern=/function\s+chooseAudio\s*\(event\)\s*\{\s*const file\s*=\s*event\.target\.files\?\.\[0\];\s*if\s*\(!file\|\|!file\.type\.startsWith\('audio\/'\)\)\s*return;\s*/;
-    if(!audioPattern.test(next)) throw new Error('Pacefold local-audio structure missing');
+    if(!audioPattern.test(next))throw new Error('Pacefold local-audio structure missing');
     next=next.replace(audioPattern,"function chooseAudio(event) {\n  const file=event.target.files?.[0];\n  if(file) loadAudioFile(file);\n}\nfunction loadAudioFile(file) {\n  if (!file||!file.type.startsWith('audio/')) return toast('Choose an audio file.');\n");
   }
   return next;
