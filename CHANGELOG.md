@@ -1,5 +1,15 @@
 # Changelog
 
+## 15.3.0 — Persistent work hub
+
+- Added an always-visible capture strip and a bottom-edge mini-player so the most-used tools remain available without turning Pacefold into a full dashboard.
+- Replaced the OneNote-only synchronization path with a local-first Capture Bridge: optional OneDrive-synced Markdown folder append, Windows Share, clipboard copy and dated Markdown export.
+- Reduced ergonomics to three explicit, large care resets—distance look, movement and posture—with no stacked missed-break debt.
+- Added a compact three-day forecast and latest-radar glance, plus a direct route to the full MSN Weather experience.
+- Replaced cryptic miniature action icons with larger labeled controls and contextual animation only while attention is genuinely required.
+- Added focus-based app-badge clearing and a visible waiting action that attempts to clear or log the current Pacefold cue before clearing the taskbar state.
+- Preserved the checksum-verified 15.2.1 rhythm core and added a separate Hub version gate, injection step and Playwright smoke audit before deployment.
+
 ## 15.2.1 — Upgrade-gate synchronization
 
 - Made the installed-version browser gate wait for the new worker and normalized 15.2 preference schema before asserting migration, eliminating a false failure against the still-running previous page.

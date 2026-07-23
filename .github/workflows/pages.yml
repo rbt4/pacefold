@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.2.1
+name: Validate and deploy Pacefold 15.3.0
 
 on:
   push:
@@ -21,26 +21,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-      - name: Reconstruct previous release and require a version advance
+      - name: Require a core or Hub version advance
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
-          git ls-tree -r --name-only HEAD^ release | grep '\.zip\.b64\.part-' | sort > /tmp/previous-parts.txt
+          base_sha="$PR_BASE_SHA"
+          if [ -z "$base_sha" ] || [ "$base_sha" = "null" ]; then base_sha="$PUSH_BEFORE_SHA"; fi
+          if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then base_sha=$(git rev-parse HEAD^); fi
+
+          git ls-tree -r --name-only "$base_sha" release | grep '\.zip\.b64\.part-' | sort > /tmp/previous-parts.txt
           test -s /tmp/previous-parts.txt
-          while IFS= read -r part; do git show "HEAD^:${part}"; done < /tmp/previous-parts.txt | base64 --decode > /tmp/pacefold-previous.zip
+          while IFS= read -r part; do git show "${base_sha}:${part}"; done < /tmp/previous-parts.txt | base64 --decode > /tmp/pacefold-previous.zip
           mkdir _previous
           unzip -q /tmp/pacefold-previous.zip -d _previous
-          current_version=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _release/app/app.js | head -n 1)
-          previous_version=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _previous/app/app.js | head -n 1)
-          test -n "$current_version"
-          test -n "$previous_version"
-          test "$current_version" != "$previous_version"
-          echo "Release version advanced: $previous_version -> $current_version"
+
+          current_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _release/app/app.js | head -n 1)
+          previous_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _previous/app/app.js | head -n 1)
+          current_hub=$(cat enhancements/VERSION)
+          previous_hub=$(git show "${base_sha}:enhancements/VERSION" 2>/dev/null || true)
+
+          test -n "$current_core"
+          test -n "$previous_core"
+          test -n "$current_hub"
+          if [ "$current_core" = "$previous_core" ]; then
+            test "$current_hub" != "$previous_hub"
+            echo "Hub version advanced: ${previous_hub:-none} -> $current_hub (core remains $current_core)"
+          else
+            echo "Core version advanced: $previous_core -> $current_core; Hub $current_hub"
+          fi
       - name: JavaScript syntax
         run: |
           node --check _release/app/app.js
@@ -49,6 +65,10 @@ jobs:
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
           node --check _release/scripts/browser-audit.cjs
+          node --check enhancements/pacefold-hub.js
+          node --check enhancements/pacefold-hub-guardian.js
+          node --check enhancements/inject.mjs
+          node --check enhancements/hub-audit.cjs
       - name: Build and static audit
         run: |
           node _release/scripts/build.mjs _release
@@ -58,6 +78,21 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
+      - name: Inject and audit Hub surface
+        run: |
+          node enhancements/inject.mjs _release
+          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          grep -q 'data-pacefold-hub="15.3.0"' _release/index.html
+          grep -q 'data-pacefold-hub="15.3.0"' _release/app/index.html
+          grep -q 'https://api.open-meteo.com' _release/app/index.html
+          grep -q 'https://api.rainviewer.com' _release/app/index.html
+          node --check _release/pacefold-hub.js
+          node --check _release/pacefold-hub-guardian.js
+          node --check _release/app/pacefold-hub.js
+          node --check _release/app/pacefold-hub-guardian.js
+          node --check _release/service-worker.js
+          node --check _release/app/service-worker.js
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -74,7 +109,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Reconstruct verified release
+      - name: Reconstruct verified release and install Hub
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
@@ -90,7 +125,16 @@ jobs:
             --exclude 'CHANGELOG.md' \
             --exclude 'REPOSITORY_SETUP.md' \
             --exclude 'SECURITY.md'
-          node _release/scripts/validate.mjs _site
+          node enhancements/inject.mjs _site
+          test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          grep -q 'data-pacefold-hub="15.3.0"' _site/index.html
+          grep -q 'data-pacefold-hub="15.3.0"' _site/app/index.html
+          node --check _site/pacefold-hub.js
+          node --check _site/pacefold-hub-guardian.js
+          node --check _site/app/pacefold-hub.js
+          node --check _site/app/pacefold-hub-guardian.js
+          node --check _site/service-worker.js
+          node --check _site/app/service-worker.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
