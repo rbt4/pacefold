@@ -1,0 +1,149 @@
+(() => {
+  'use strict';
+
+  const VERSION = '15.3.0';
+  const ROOT_ID = 'pf-hub-root';
+  const CAPTURE_KEY = 'pacefold.hub.captures.v1';
+  const CARE_KEY = 'pacefold.hub.care.v1';
+  const PREF_KEY = 'pacefold.hub.preferences.v1';
+  const BADGE_KEY = 'pacefold.hub.badge.v1';
+  const DB_NAME = 'pacefold-hub';
+  const DB_STORE = 'handles';
+  const FOLDER_KEY = 'capture-folder';
+  if (document.getElementById(ROOT_ID)) return;
+
+  const state = {
+    captures: readJson(CAPTURE_KEY, []),
+    care: readJson(CARE_KEY, {}),
+    prefs: readJson(PREF_KEY, { latitude: 43.6532, longitude: -79.3832, locationLabel: 'Toronto', volume: .62 }),
+    weather: null,
+    radar: null,
+    folderHandle: null,
+    audioUrl: '',
+    currentCue: null,
+    toastTimer: 0
+  };
+
+  const icons = { note:'✎', task:'✓', incident:'!', meeting:'▦', resource:'↗', capture:'＋', hub:'⌃', care:'◉', weather:'☁', cue:'●', play:'▶', pause:'Ⅱ', folder:'▣', share:'↥', copy:'⧉', export:'⇩', oneNote:'N', eyes:'◌', move:'↟', posture:'⌁', source:'♫', clear:'×' };
+  const types = {
+    note:{label:'Note',icon:icons.note}, task:{label:'Follow-up',icon:icons.task}, incident:{label:'Incident',icon:icons.incident},
+    meeting:{label:'Meeting',icon:icons.meeting}, resource:{label:'Resource',icon:icons.resource}
+  };
+  const codes = {
+    0:['Clear','☀'],1:['Mostly clear','🌤'],2:['Partly cloudy','⛅'],3:['Cloudy','☁'],45:['Fog','🌫'],48:['Rime fog','🌫'],
+    51:['Light drizzle','🌦'],53:['Drizzle','🌦'],55:['Heavy drizzle','🌧'],56:['Freezing drizzle','🌧'],57:['Freezing drizzle','🌧'],
+    61:['Light rain','🌦'],63:['Rain','🌧'],65:['Heavy rain','🌧'],66:['Freezing rain','🌧'],67:['Freezing rain','🌧'],
+    71:['Light snow','🌨'],73:['Snow','❄'],75:['Heavy snow','❄'],77:['Snow grains','🌨'],80:['Rain showers','🌦'],81:['Rain showers','🌧'],
+    82:['Heavy showers','⛈'],85:['Snow showers','🌨'],86:['Heavy snow showers','❄'],95:['Thunderstorm','⛈'],96:['Storm with hail','⛈'],99:['Storm with hail','⛈']
+  };
+  const nativeBadge = {
+    set: typeof navigator.setAppBadge === 'function' ? navigator.setAppBadge.bind(navigator) : null,
+    clear: typeof navigator.clearAppBadge === 'function' ? navigator.clearAppBadge.bind(navigator) : null
+  };
+
+  function readJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
+  function writeJson(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+  function esc(value) { return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+  function time(value) { return new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(new Date(value)); }
+  function day(value) { return new Intl.DateTimeFormat(undefined,{weekday:'short'}).format(new Date(`${value}T12:00:00`)); }
+  function visible(el) { if (!el?.isConnected) return false; const s=getComputedStyle(el),r=el.getBoundingClientRect(); return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0; }
+  function weatherInfo(code) { return codes[code] || ['Mixed conditions','🌡']; }
+  function audio() { return document.querySelector('[data-pf-audio]'); }
+
+  function toast(message) {
+    document.querySelector('.pf-hub-toast')?.remove();
+    const el=document.createElement('div'); el.className='pf-hub-toast'; el.role='status'; el.textContent=message;
+    document.getElementById(ROOT_ID)?.append(el); clearTimeout(state.toastTimer); state.toastTimer=setTimeout(()=>el.remove(),3200);
+  }
+
+  function mount() {
+    if (!document.body) return document.addEventListener('DOMContentLoaded',mount,{once:true});
+    const root=document.createElement('aside'); root.id=ROOT_ID; root.setAttribute('aria-label',`Pacefold Hub ${VERSION}`);
+    root.innerHTML=`<div class="pf-hub-shell">
+      <section class="pf-hub-panel" data-pf-panel="hub" aria-label="Pacefold hub panel"><div class="pf-hub-panel-grid">
+        <article class="pf-hub-card pf-hub-card--capture"><div class="pf-hub-card-head"><div><h2 class="pf-hub-card-title">Capture bridge</h2><p class="pf-hub-card-subtitle">Local first. Optional OneDrive-folder, Windows Share, clipboard or Markdown bridge—no Graph sign-in.</p></div><span class="pf-hub-chip" data-pf-capture-count>0 saved</span></div><div class="pf-hub-list" data-pf-capture-list></div><div class="pf-hub-card-actions"><button class="pf-hub-button" data-pf-action="copy-day">${icons.copy} Copy today</button><button class="pf-hub-button" data-pf-action="share-day">${icons.share} Share</button><button class="pf-hub-button" data-pf-action="export-day">${icons.export} Markdown</button><button class="pf-hub-button" data-pf-action="choose-folder">${icons.folder} OneDrive folder</button><button class="pf-hub-button" data-pf-action="open-onenote">${icons.oneNote} Open OneNote</button><button class="pf-hub-button" data-pf-action="clear-captures">${icons.clear} Clear list</button></div></article>
+        <article class="pf-hub-card"><div class="pf-hub-card-head"><div><h2 class="pf-hub-card-title">Care, simplified</h2><p class="pf-hub-card-subtitle">Three useful resets. No bloated ergonomics dashboard.</p></div><span class="pf-hub-chip" data-pf-care-chip>Ready</span></div><div class="pf-hub-care-grid"><button class="pf-hub-icon-button pf-hub-care-button" data-pf-action="care" data-kind="eyes"><span class="pf-hub-glyph">${icons.eyes}</span><span class="pf-hub-label">Look far · 20 sec</span></button><button class="pf-hub-icon-button pf-hub-care-button" data-pf-action="care" data-kind="move"><span class="pf-hub-glyph">${icons.move}</span><span class="pf-hub-label">Move · 60 sec</span></button><button class="pf-hub-icon-button pf-hub-care-button" data-pf-action="care" data-kind="posture"><span class="pf-hub-glyph">${icons.posture}</span><span class="pf-hub-label">Reset posture</span></button></div><p class="pf-hub-care-status" data-pf-care-status>Nothing overdue. Use a reset when it is genuinely useful.</p></article>
+        <article class="pf-hub-card"><div class="pf-hub-card-head"><div><h2 class="pf-hub-card-title">Weather glance</h2><p class="pf-hub-card-subtitle">Compact forecast and radar; full detail opens in MSN Weather.</p></div><span class="pf-hub-chip" data-pf-location>${esc(state.prefs.locationLabel)}</span></div><div data-pf-weather-content><div class="pf-hub-empty">Loading forecast…</div></div><div class="pf-hub-card-actions"><button class="pf-hub-button" data-pf-action="refresh-weather">Refresh</button><button class="pf-hub-button" data-pf-action="use-location">Use my location</button><button class="pf-hub-button" data-pf-action="open-msn">Open MSN Weather</button></div></article>
+      </div></section>
+      <div class="pf-hub-capture-row"><div class="pf-hub-brand" title="Pacefold Hub ${VERSION}"><span class="pf-hub-brand-mark">◫</span><span class="pf-hub-brand-copy"><span class="pf-hub-brand-title">Pacefold</span><span class="pf-hub-brand-subtitle">Your day, quietly kept</span></span></div><form class="pf-hub-capture" data-pf-capture-form><label class="pf-hub-visually-hidden" for="pf-hub-capture-type">Capture type</label><select class="pf-hub-select" id="pf-hub-capture-type" data-pf-capture-type>${Object.entries(types).map(([key,item])=>`<option value="${key}">${item.icon} ${item.label}</option>`).join('')}</select><label class="pf-hub-visually-hidden" for="pf-hub-capture-input">Quick capture</label><input class="pf-hub-input" id="pf-hub-capture-input" data-pf-capture-input autocomplete="off" maxlength="900" placeholder="Capture a note, follow-up, incident…"><button class="pf-hub-button pf-hub-button--primary" type="submit">Save</button></form><div class="pf-hub-quick-actions"><button class="pf-hub-icon-button" data-pf-action="clear-cue" title="Clear waiting cue and taskbar badge"><span class="pf-hub-glyph">${icons.cue}</span><span class="pf-hub-label" data-pf-cue-label>Clear cue</span></button><button class="pf-hub-icon-button" data-pf-action="toggle-hub" title="Open Pacefold hub" aria-expanded="false"><span class="pf-hub-glyph">${icons.hub}</span><span class="pf-hub-label">Hub</span></button></div></div>
+      <div class="pf-hub-player-bar" aria-label="Always-available mini player"><button class="pf-hub-icon-button pf-hub-play" data-pf-action="play" title="Play or pause">${icons.play}</button><div class="pf-hub-track"><span class="pf-hub-track-title" data-pf-track-title>Choose local audio or open a music service</span><span class="pf-hub-track-meta" data-pf-track-meta>Mini player stays available without taking over Pacefold</span></div><input class="pf-hub-range" data-pf-progress type="range" min="0" max="1000" value="0" aria-label="Track position"><div class="pf-hub-player-actions"><button class="pf-hub-icon-button" data-pf-action="choose-audio" title="Choose local audio">${icons.source}</button><button class="pf-hub-icon-button" data-pf-action="music-menu" title="Open a music service">↗</button><button class="pf-hub-icon-button" data-pf-action="volume" title="Change volume">◖</button></div><div class="pf-hub-tabs"><button class="pf-hub-tab" data-pf-action="focus-capture" title="Focus capture"><span class="pf-hub-glyph">${icons.capture}</span><span class="pf-hub-label">Capture</span></button><button class="pf-hub-tab" data-pf-action="toggle-hub" title="Care"><span class="pf-hub-glyph">${icons.care}</span><span class="pf-hub-label">Care</span></button><button class="pf-hub-tab" data-pf-action="toggle-hub" title="Weather"><span class="pf-hub-glyph">${icons.weather}</span><span class="pf-hub-label">Weather</span></button></div><input class="pf-hub-visually-hidden" data-pf-audio-input type="file" accept="audio/*"><audio data-pf-audio preload="metadata"></audio></div>
+    </div>`;
+    document.body.append(root); document.documentElement.classList.add('pf-hub-mounted'); bind(root); renderCaptures(); updateCare(); repairBadge(); restoreFolder(); refreshWeather(false); detectCue(); bridgeLegacyCapture(); console.info(`[Pacefold Hub ${VERSION}] mounted`);
+  }
+
+  function bind(root) {
+    root.querySelector('[data-pf-capture-form]').addEventListener('submit',saveCapture);
+    root.addEventListener('click',event=>{ const b=event.target.closest('[data-pf-action]'); if(!b)return; const a=b.dataset.pfAction;
+      if(a==='toggle-hub')toggleHub(); else if(a==='focus-capture')focusCapture(); else if(a==='clear-cue')clearSignal(true);
+      else if(a==='copy-day')copyDay(); else if(a==='share-day')shareDay(); else if(a==='export-day')exportDay(); else if(a==='choose-folder')chooseFolder();
+      else if(a==='open-onenote')openExternal('https://www.onenote.com/notebooks','OneNote'); else if(a==='clear-captures')clearCaptures();
+      else if(a==='care')logCare(b.dataset.kind,b); else if(a==='refresh-weather')refreshWeather(true); else if(a==='use-location')useLocation();
+      else if(a==='open-msn')openExternal('https://www.msn.com/en-ca/weather/forecast/in-Toronto,Ontario','MSN Weather'); else if(a==='play')togglePlay();
+      else if(a==='choose-audio')root.querySelector('[data-pf-audio-input]').click(); else if(a==='music-menu')musicMenu(b); else if(a==='volume')cycleVolume();
+      else if(a==='delete-capture')deleteCapture(b.dataset.id);
+    });
+    const player=audio(); player.volume=Number.isFinite(state.prefs.volume)?state.prefs.volume:.62;
+    ['play','pause','timeupdate','loadedmetadata','ended'].forEach(name=>player.addEventListener(name,updatePlayer));
+    root.querySelector('[data-pf-progress]').addEventListener('input',e=>{if(Number.isFinite(player.duration)&&player.duration>0)player.currentTime=Number(e.target.value)/1000*player.duration;});
+    root.querySelector('[data-pf-audio-input]').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(state.audioUrl)URL.revokeObjectURL(state.audioUrl);state.audioUrl=URL.createObjectURL(file);player.src=state.audioUrl;player.dataset.trackTitle=file.name.replace(/\.[^.]+$/,'');player.dataset.trackMeta=`${Math.round(file.size/104857.6)/10} MB · local file`;player.play().catch(()=>toast('Press play to start the selected audio.'));updatePlayer();});
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')clearSignal(false,true);}); window.addEventListener('focus',()=>clearSignal(false,true));
+    new MutationObserver(()=>detectCue()).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','aria-hidden']});
+  }
+
+  async function saveCapture(event) {
+    event.preventDefault(); const input=document.querySelector('[data-pf-capture-input]'),select=document.querySelector('[data-pf-capture-type]'),text=input.value.trim(); if(!text)return input.focus();
+    const item={id:`${Date.now()}-${Math.random().toString(36).slice(2,8)}`,type:types[select.value]?select.value:'note',text,createdAt:new Date().toISOString(),syncedToFolder:false};
+    state.captures.unshift(item); state.captures=state.captures.slice(0,300); writeJson(CAPTURE_KEY,state.captures); input.value=''; renderCaptures();
+    if(await appendFolder(item)){item.syncedToFolder=true;writeJson(CAPTURE_KEY,state.captures);renderCaptures();toast('Saved locally and appended to your daily Markdown file.');}else toast('Saved locally. Use Share, Markdown or a OneDrive folder when needed.');
+  }
+
+  function renderCaptures() {
+    const list=document.querySelector('[data-pf-capture-list]'),count=document.querySelector('[data-pf-capture-count]'); if(!list||!count)return; count.textContent=`${state.captures.length} saved`;
+    if(!state.captures.length){list.innerHTML='<div class="pf-hub-empty">Your always-open capture row is ready. Notes stay local until you choose a bridge.</div>';return;}
+    list.innerHTML=state.captures.slice(0,6).map(item=>{const type=types[item.type]||types.note;return `<div class="pf-hub-capture-item"><span class="pf-hub-capture-item-type">${type.icon}</span><p class="pf-hub-capture-item-text">${esc(item.text)}<span class="pf-hub-capture-item-meta">${esc(type.label)} · ${time(item.createdAt)}${item.syncedToFolder?' · folder synced':''}</span></p><button class="pf-hub-icon-button" data-pf-action="delete-capture" data-id="${esc(item.id)}" title="Delete capture">${icons.clear}</button></div>`;}).join('');
+  }
+
+  function markdown() { const today=new Date().toISOString().slice(0,10),items=state.captures.filter(i=>i.createdAt.slice(0,10)===today).slice().reverse(),lines=[`# Pacefold Inbox — ${today}`,'',`Generated by Pacefold Hub ${VERSION}.`,'']; if(!items.length)lines.push('_No captures yet._'); for(const item of items){const type=types[item.type]||types.note;lines.push(`- **${type.label} · ${time(item.createdAt)}** — ${item.text.replace(/\s+/g,' ').trim()}`);} return `${lines.join('\n')}\n`; }
+  async function copyText(text){try{await navigator.clipboard.writeText(text);return true;}catch{const area=document.createElement('textarea');area.value=text;area.style.cssText='position:fixed;opacity:0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();return ok;}}
+  async function copyDay(){toast(await copyText(markdown())?'Today’s captures copied as Markdown.':'Copy failed. Export Markdown instead.');}
+  async function shareDay(){if(navigator.share){try{await navigator.share({title:`Pacefold Inbox ${new Date().toISOString().slice(0,10)}`,text:markdown()});return toast('Shared through Windows. Choose OneNote when it appears as a share target.');}catch(error){if(error?.name==='AbortError')return;}}toast(await copyText(markdown())?'Windows Share was unavailable, so the Markdown was copied.':'Share unavailable. Export Markdown instead.');}
+  function exportDay(){const date=new Date().toISOString().slice(0,10),url=URL.createObjectURL(new Blob([markdown()],{type:'text/markdown;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`Pacefold-Inbox-${date}.md`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast('Daily Markdown exported.');}
+  function clearCaptures(){if(!state.captures.length||!confirm('Clear the local Pacefold Hub capture list? Folder exports are not deleted.'))return;state.captures=[];writeJson(CAPTURE_KEY,[]);renderCaptures();toast('Local capture list cleared.');}
+  function deleteCapture(id){state.captures=state.captures.filter(i=>i.id!==id);writeJson(CAPTURE_KEY,state.captures);renderCaptures();}
+  function toggleHub(){const panel=document.querySelector('[data-pf-panel=hub]'),open=!panel.classList.contains('is-open');panel.classList.toggle('is-open',open);document.querySelectorAll('[data-pf-action=toggle-hub]').forEach(b=>b.setAttribute('aria-expanded',String(open)));if(open)refreshWeather(false);}
+  function focusCapture(){document.querySelector('[data-pf-capture-input]')?.focus();}
+
+  function logCare(kind,button){const labels={eyes:'20-second distance look logged',move:'60-second movement reset logged',posture:'Posture reset logged'};state.care[kind]=new Date().toISOString();writeJson(CARE_KEY,state.care);button.classList.add('is-active');setTimeout(()=>button.classList.remove('is-active'),1000);updateCare();toast(labels[kind]||'Care reset logged');}
+  function updateCare(){const status=document.querySelector('[data-pf-care-status]'),chip=document.querySelector('[data-pf-care-chip]');if(!status||!chip)return;const entries=Object.entries(state.care).filter(([,v])=>v).sort((a,b)=>new Date(b[1])-new Date(a[1]));if(!entries.length){status.textContent='Nothing overdue. Use a reset when it is genuinely useful.';chip.textContent='Ready';return;}const[kind,at]=entries[0],label=kind==='eyes'?'distance look':kind==='move'?'movement':'posture reset';status.textContent=`Last ${label}: ${time(at)}. Pacefold will not nag or stack missed resets.`;chip.textContent='Calm mode';}
+
+  async function togglePlay(){const p=audio();if(!p.src)return document.querySelector('[data-pf-audio-input]')?.click();if(p.paused){try{await p.play();}catch{toast('Audio could not start. Choose the file again.');}}else p.pause();updatePlayer();}
+  function updatePlayer(){const p=audio(),play=document.querySelector('[data-pf-action=play]'),title=document.querySelector('[data-pf-track-title]'),meta=document.querySelector('[data-pf-track-meta]'),range=document.querySelector('[data-pf-progress]');if(!p||!play)return;play.textContent=p.paused?icons.play:icons.pause;play.classList.toggle('is-active',!p.paused);title.textContent=p.dataset.trackTitle||'Choose local audio or open a music service';if(Number.isFinite(p.duration)&&p.duration>0){range.value=String(Math.round(p.currentTime/p.duration*1000));meta.textContent=`${duration(p.currentTime)} / ${duration(p.duration)} · ${p.dataset.trackMeta||'local audio'}`;}else{range.value='0';meta.textContent=p.dataset.trackMeta||'Mini player stays available without taking over Pacefold';}}
+  function duration(seconds){if(!Number.isFinite(seconds))return'0:00';return`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;}
+  function cycleVolume(){const p=audio(),steps=[0,.35,.62,1],next=steps.find(v=>v>p.volume+.01)??0;p.volume=next;state.prefs.volume=next;writeJson(PREF_KEY,state.prefs);document.querySelector('[data-pf-action=volume]').textContent=next===0?'×':next<.5?'◔':next<.9?'◖':'◕';toast(next===0?'Player muted.':`Player volume ${Math.round(next*100)}%.`);}
+  function musicMenu(button){const old=document.querySelector('[data-pf-music-menu]');if(old)return old.remove();const menu=document.createElement('div');menu.dataset.pfMusicMenu='true';menu.className='pf-hub-toast';menu.style.pointerEvents='auto';menu.innerHTML='<strong style="display:block;margin-bottom:8px">Open music</strong><div class="pf-hub-card-actions" style="margin:0"><button class="pf-hub-button" data-url="https://music.youtube.com/">YouTube Music</button><button class="pf-hub-button" data-url="https://open.spotify.com/">Spotify</button><button class="pf-hub-button" data-url="https://music.amazon.ca/">Amazon Music</button></div>';menu.addEventListener('click',e=>{const target=e.target.closest('[data-url]');if(target){openExternal(target.dataset.url,'music service');menu.remove();}});document.getElementById(ROOT_ID).append(menu);setTimeout(()=>{const close=e=>{if(!menu.contains(e.target)&&e.target!==button){menu.remove();document.removeEventListener('pointerdown',close,true);}};document.addEventListener('pointerdown',close,true);},0);}
+
+  async function refreshWeather(notify){const content=document.querySelector('[data-pf-weather-content]');if(!content)return;if(notify)content.innerHTML='<div class="pf-hub-empty">Refreshing forecast…</div>';const q=new URLSearchParams({latitude:String(state.prefs.latitude),longitude:String(state.prefs.longitude),current:'temperature_2m,apparent_temperature,weather_code,precipitation,wind_speed_10m',hourly:'precipitation_probability',daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',timezone:'auto',forecast_days:'3'});try{const [weather,radar]=await Promise.all([fetch(`https://api.open-meteo.com/v1/forecast?${q}`,{cache:'no-store'}).then(ok).then(r=>r.json()),loadRadar().catch(()=>null)]);state.weather=weather;state.radar=radar;renderWeather();if(notify)toast('Weather refreshed.');}catch{content.innerHTML='<div class="pf-hub-empty">Forecast is temporarily unavailable. Pacefold remains fully usable offline.</div>';if(notify)toast('Weather could not refresh.');}}
+  function ok(response){if(!response.ok)throw new Error(`HTTP ${response.status}`);return response;}
+  async function loadRadar(){const data=await fetch('https://api.rainviewer.com/public/weather-maps.json',{cache:'no-store'}).then(ok).then(r=>r.json()),frames=[...(data.radar?.past||[]),...(data.radar?.nowcast||[])],frame=frames.at(-1);return frame&&data.host?{host:data.host,path:frame.path,time:frame.time}:null;}
+  function renderWeather(){const content=document.querySelector('[data-pf-weather-content]'),location=document.querySelector('[data-pf-location]');if(!content||!state.weather)return;if(location)location.textContent=state.prefs.locationLabel;const current=state.weather.current||{},[description,symbol]=weatherInfo(current.weather_code),daily=state.weather.daily||{},rain=nextRain(),tiles=state.radar?radarUrls(state.prefs.latitude,state.prefs.longitude,state.radar):[];content.innerHTML=`<div class="pf-hub-weather-current"><div class="pf-hub-weather-icon">${symbol}</div><div><div class="pf-hub-weather-temp">${Math.round(current.temperature_2m??0)}°</div><div class="pf-hub-weather-detail">${esc(description)} · feels ${Math.round(current.apparent_temperature??current.temperature_2m??0)}° · ${Math.round(current.wind_speed_10m??0)} km/h${rain?` · rain ${rain}`:''}</div></div></div><div class="pf-hub-weather-days">${(daily.time||[]).slice(0,3).map((d,i)=>{const[,icon]=weatherInfo(daily.weather_code?.[i]);return`<div class="pf-hub-weather-day"><strong>${day(d)} ${icon}</strong><span>${Math.round(daily.temperature_2m_max?.[i]??0)}° / ${Math.round(daily.temperature_2m_min?.[i]??0)}° · ${Math.round(daily.precipitation_probability_max?.[i]??0)}%</span></div>`;}).join('')}</div><button class="pf-hub-radar" data-pf-action="open-msn" title="Open full weather map in MSN Weather" style="width:100%;padding:0;cursor:pointer">${tiles.length?`<span class="pf-hub-radar-grid">${tiles.map(url=>`<img alt="" src="${esc(url)}" loading="lazy">`).join('')}</span>`:''}<span class="pf-hub-radar-label">${tiles.length?'Latest radar · tap for MSN':'Radar unavailable · tap for MSN'}</span></button>`;}
+  function nextRain(){const times=state.weather?.hourly?.time||[],values=state.weather?.hourly?.precipitation_probability||[],now=Date.now();for(let i=0;i<times.length;i++){const at=new Date(times[i]).getTime();if(at>=now&&Number(values[i])>=35)return`${Math.round(values[i])}% around ${time(at)}`;}return'';}
+  function radarUrls(lat,lon,radar){const z=6,x=Math.floor((lon+180)/360*2**z),latRad=lat*Math.PI/180,y=Math.floor((1-Math.asinh(Math.tan(latRad))/Math.PI)/2*2**z),coords=[[x-1,y-1],[x,y-1],[x+1,y-1],[x-1,y],[x,y],[x+1,y]];return coords.map(([tx,ty])=>`${radar.host}${radar.path}/256/${z}/${tx}/${ty}/2/1_1.png`);}
+  function useLocation(){if(!navigator.geolocation)return toast('Location is unavailable in this browser.');navigator.geolocation.getCurrentPosition(pos=>{state.prefs.latitude=Number(pos.coords.latitude.toFixed(4));state.prefs.longitude=Number(pos.coords.longitude.toFixed(4));state.prefs.locationLabel='Current location';writeJson(PREF_KEY,state.prefs);refreshWeather(true);},()=>toast('Location permission was not granted. Toronto remains the default.'),{maximumAge:1800000,timeout:8000});}
+
+  function repairBadge(){if(nativeBadge.set){try{navigator.setAppBadge=async value=>{const normalized=value==null?1:value;writeJson(BADGE_KEY,{waiting:true,value:normalized,at:new Date().toISOString()});markWaiting(true);return nativeBadge.set(normalized);};}catch{}}clearSignal(false,true);}
+  function detectCue(){const root=document.getElementById(ROOT_ID),candidates=[...document.querySelectorAll('[role=alert],[role=dialog],.notification,.toast,.cue,[data-active-cue]')].filter(el=>!root?.contains(el)&&visible(el));state.currentCue=candidates.find(el=>{const text=(el.textContent||'').trim();return text&&/(clear|done|log|drink|water|move|break|prayer|meal|lunch|eyes|look|prepare|noodle|away)/i.test(text);})||null;markWaiting(Boolean(state.currentCue||readJson(BADGE_KEY,null)?.waiting));}
+  function markWaiting(waiting){const button=document.querySelector('[data-pf-action=clear-cue]'),label=document.querySelector('[data-pf-cue-label]');if(!button||!label)return;button.classList.toggle('is-alert',waiting);label.textContent=waiting?'1 waiting':'Clear cue';}
+  function clearSignal(clickCue,quiet=false){try{nativeBadge.clear?.();}catch{}writeJson(BADGE_KEY,{waiting:false,at:new Date().toISOString()});try{navigator.serviceWorker?.controller?.postMessage({type:'CLEAR_BADGE',source:'pacefold-hub'});}catch{}const clicked=clickCue&&clickCueAction();markWaiting(false);if(!quiet)toast(clicked?'Current Pacefold cue handled and taskbar badge cleared.':'Taskbar badge cleared.');}
+  function clickCueAction(){const root=document.getElementById(ROOT_ID),scope=state.currentCue||document,buttons=[...scope.querySelectorAll('button,[role=button]')].filter(b=>!root?.contains(b)&&visible(b)),preferred=buttons.find(b=>/^(clear|done|log|dismiss|complete|acknowledge)$/i.test((b.textContent||b.getAttribute('aria-label')||'').trim()));if(preferred){preferred.click();return true;}return false;}
+
+  function openDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains(DB_STORE))request.result.createObjectStore(DB_STORE);};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
+  async function dbGet(key){const db=await openDb();return new Promise((resolve,reject)=>{const req=db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).get(key);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);});}
+  async function dbSet(key,value){const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
+  async function restoreFolder(){if(!('showDirectoryPicker'in window)||!window.indexedDB)return;try{state.folderHandle=await dbGet(FOLDER_KEY);if(state.folderHandle&&await state.folderHandle.queryPermission({mode:'readwrite'})==='granted')document.querySelector('[data-pf-action=choose-folder]').textContent=`${icons.folder} Folder connected`;}catch{}}
+  async function chooseFolder(){if(!('showDirectoryPicker'in window))return toast('Folder sync needs the installed Pacefold app in Microsoft Edge. Markdown export still works everywhere.');try{const handle=await showDirectoryPicker({id:'pacefold-capture-folder',mode:'readwrite'});if(await handle.requestPermission({mode:'readwrite'})!=='granted')throw new Error('permission');state.folderHandle=handle;await dbSet(FOLDER_KEY,handle);document.querySelector('[data-pf-action=choose-folder]').textContent=`${icons.folder} Folder connected`;toast('Folder connected. Choose a OneDrive-synced folder for silent Markdown backup.');}catch(error){if(error?.name!=='AbortError')toast('Folder was not connected. Local capture remains active.');}}
+  async function appendFolder(item){if(!state.folderHandle)return false;try{let permission=await state.folderHandle.queryPermission({mode:'readwrite'});if(permission!=='granted')permission=await state.folderHandle.requestPermission({mode:'readwrite'});if(permission!=='granted')return false;const date=item.createdAt.slice(0,10),dir=await state.folderHandle.getDirectoryHandle('Pacefold Inbox',{create:true}),handle=await dir.getFileHandle(`${date}.md`,{create:true}),file=await handle.getFile(),existing=await file.text(),type=types[item.type]||types.note,header=existing?'':`# Pacefold Inbox — ${date}\n\n`,line=`- **${type.label} · ${time(item.createdAt)}** — ${item.text.replace(/\s+/g,' ').trim()}\n`,writer=await handle.createWritable();await writer.write(`${existing}${header}${line}`);await writer.close();return true;}catch{return false;}}
+
+  function openExternal(url,label){const opened=window.open(url,'_blank','noopener,noreferrer');if(!opened)toast(`Allow pop-ups to open ${label}.`);}
+  function bridgeLegacyCapture(){document.addEventListener('click',event=>{const target=event.target.closest('button,[role=button],a');if(!target||document.getElementById(ROOT_ID)?.contains(target))return;const label=(target.textContent||target.getAttribute('aria-label')||'').trim();if(/^capture$/i.test(label)){event.preventDefault();focusCapture();}},true);}
+  mount();
+})();
