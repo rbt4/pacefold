@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.4.0
+name: Validate and deploy Pacefold 16.0.0
 
 on:
   push:
@@ -16,19 +16,19 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 28
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Reconstruct verified release
+      - name: Reconstruct verified core release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-      - name: Require a core or Kanso version advance
+      - name: Require a core or Origami version advance
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -50,11 +50,18 @@ jobs:
           test -n "$current_surface"
           if [ "$current_core" = "$previous_core" ]; then
             test "$current_surface" != "$previous_surface"
-            echo "Kanso version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
+            echo "Origami advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
           else
-            echo "Core version advanced: $previous_core -> $current_core; Kanso $current_surface"
+            echo "Core advanced: $previous_core -> $current_core; Origami $current_surface"
           fi
-      - name: JavaScript syntax
+      - name: Repository loader syntax
+        run: |
+          node --check enhancements/inject.mjs
+          node --check enhancements/origami-loader.mjs
+          node --check enhancements/hub-audit.cjs
+          node --check enhancements/origami-audit-loader.cjs
+          node --check enhancements/pacefold-hub-guardian.js
+      - name: Core JavaScript syntax
         run: |
           node --check _release/app/app.js
           node --check _release/app/auth.js
@@ -62,11 +69,7 @@ jobs:
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
           node --check _release/scripts/browser-audit.cjs
-          node --check enhancements/pacefold-hub.js
-          node --check enhancements/pacefold-hub-guardian.js
-          node --check enhancements/inject.mjs
-          node --check enhancements/hub-audit.cjs
-      - name: Build and static audit
+      - name: Build and static core audit
         run: |
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
@@ -75,19 +78,21 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
-      - name: Inject and audit Kanso surface
+      - name: Inject and audit Pacefold Origami
         run: |
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          test "$(cat _release/pacefold-hub-version.txt)" = "16.0.0"
           ! grep -q 'data-pacefold-hub=' _release/index.html
-          grep -q 'data-pacefold-hub="15.4.0"' _release/app/index.html
-          grep -q 'https://api.open-meteo.com' _release/app/index.html
-          grep -q 'https://api.rainviewer.com' _release/app/index.html
-          test ! -e _release/pacefold-hub.js
+          grep -q 'data-pacefold-hub="16.0.0"' _release/app/index.html
+          grep -q 'frame-src[^;]*https://open.spotify.com' _release/app/index.html
+          grep -q 'frame-src[^;]*https://www.youtube-nocookie.com' _release/app/index.html
+          ! grep -q 'graph.microsoft.com' _release/app/index.html
+          ! grep -q 'login.microsoftonline.com' _release/app/index.html
           node --check _release/app/pacefold-hub.js
           node --check _release/app/pacefold-hub-guardian.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
+          node -e "const r=require('./_release/pacefold-origami-report.json'); if(r.version!=='16.0.0'||r.notificationReport.replacements<3||r.generatedIcons.length<12) process.exit(1)"
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
 
   deploy:
@@ -101,11 +106,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 14
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Reconstruct verified release and install Kanso
+      - name: Reconstruct verified core and install Origami
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
@@ -122,14 +127,14 @@ jobs:
             --exclude 'REPOSITORY_SETUP.md' \
             --exclude 'SECURITY.md'
           node enhancements/inject.mjs _site
-          test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          test "$(cat _site/pacefold-hub-version.txt)" = "16.0.0"
           ! grep -q 'data-pacefold-hub=' _site/index.html
-          grep -q 'data-pacefold-hub="15.4.0"' _site/app/index.html
-          test ! -e _site/pacefold-hub.js
+          grep -q 'data-pacefold-hub="16.0.0"' _site/app/index.html
           node --check _site/app/pacefold-hub.js
           node --check _site/app/pacefold-hub-guardian.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
+          node -e "const r=require('./_site/pacefold-origami-report.json'); if(r.version!=='16.0.0'||r.notificationReport.replacements<3||r.generatedIcons.length<12) process.exit(1)"
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
