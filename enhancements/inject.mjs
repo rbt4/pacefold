@@ -124,15 +124,19 @@ async function materializeCompressed(name,destination){
   await fs.writeFile(destination,output);
 }
 function hardenPlayerRuntime(source){
-  let next=source.replace('allow-scripts allow-same-origin allow-forms allow-presentation allow-popups-to-escape-sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
-  const bindNeedle="  root.querySelector('[data-pf-progress]').addEventListener('input', seekAudio);\n  const player = audio();";
-  const bindReplacement="  root.querySelector('[data-pf-progress]').addEventListener('input', seekAudio);\n  const playerRow=root.querySelector('.pf-player-row');\n  playerRow?.addEventListener('dragover',event=>{ event.preventDefault(); playerRow.classList.add('is-drop-target'); });\n  playerRow?.addEventListener('dragleave',()=>playerRow.classList.remove('is-drop-target'));\n  playerRow?.addEventListener('drop',event=>{ event.preventDefault(); playerRow.classList.remove('is-drop-target'); const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('audio/')); if(file) loadAudioFile(file); });\n  const player = audio();";
-  if(!next.includes(bindNeedle)) throw new Error('Pacefold player bind marker missing');
-  next=next.replace(bindNeedle,bindReplacement);
-  const audioNeedle="function chooseAudio(event) {\n  const file=event.target.files?.[0];\n  if (!file||!file.type.startsWith('audio/')) return;\n";
-  const audioReplacement="function chooseAudio(event) {\n  const file=event.target.files?.[0];\n  if(file) loadAudioFile(file);\n}\nfunction loadAudioFile(file) {\n  if (!file||!file.type.startsWith('audio/')) return toast('Choose an audio file.');\n";
-  if(!next.includes(audioNeedle)) throw new Error('Pacefold local-audio marker missing');
-  next=next.replace(audioNeedle,audioReplacement);
+  let next=source.replaceAll('allow-popups-to-escape-sandbox','');
+  const hasDropPath=next.includes("playerRow?.addEventListener('drop'")&&next.includes('loadAudioFile(file)');
+  if(!hasDropPath){
+    const bindPattern=/(root\.querySelector\('\[data-pf-progress\]'\)\.addEventListener\('input',\s*seekAudio\);\s*)(const player\s*=\s*audio\(\);)/;
+    if(!bindPattern.test(next)) throw new Error('Pacefold player bind structure missing');
+    next=next.replace(bindPattern, `$1const playerRow=root.querySelector('.pf-player-row');\n  playerRow?.addEventListener('dragover',event=>{ event.preventDefault(); playerRow.classList.add('is-drop-target'); });\n  playerRow?.addEventListener('dragleave',()=>playerRow.classList.remove('is-drop-target'));\n  playerRow?.addEventListener('drop',event=>{ event.preventDefault(); playerRow.classList.remove('is-drop-target'); const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('audio/')); if(file) loadAudioFile(file); });\n  $2`);
+  }
+  const hasLoadHelper=/function\s+loadAudioFile\s*\(file\)/.test(next);
+  if(!hasLoadHelper){
+    const audioPattern=/function\s+chooseAudio\s*\(event\)\s*\{\s*const file\s*=\s*event\.target\.files\?\.\[0\];\s*if\s*\(!file\|\|!file\.type\.startsWith\('audio\/'\)\)\s*return;\s*/;
+    if(!audioPattern.test(next)) throw new Error('Pacefold local-audio structure missing');
+    next=next.replace(audioPattern,"function chooseAudio(event) {\n  const file=event.target.files?.[0];\n  if(file) loadAudioFile(file);\n}\nfunction loadAudioFile(file) {\n  if (!file||!file.type.startsWith('audio/')) return toast('Choose an audio file.');\n");
+  }
   return next;
 }
 async function exists(file){try{await fs.access(file);return true;}catch{return false;}}
