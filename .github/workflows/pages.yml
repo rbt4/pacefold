@@ -60,13 +60,14 @@ jobs:
       - name: Harden core, injector and repository
         run: |
           set +e
-          {
+          (
+            set -e
             node scripts/harden-core.mjs _agent_core 15.2.1 15.2.2
             node scripts/harden-repo.mjs .
             node --check _agent_core/app/app.js
             node --check _agent_core/service-worker.js
             node --check enhancements/inject.mjs
-          } 2>&1 | tee /tmp/pacefold-hardening.log
+          ) 2>&1 | tee /tmp/pacefold-hardening.log
           status=${PIPESTATUS[0]}
           echo "$status" > /tmp/pacefold-hardening.status
           exit "$status"
@@ -85,10 +86,11 @@ jobs:
       - name: Pack and verify release
         run: |
           set +e
-          {
+          (
+            set -e
             node scripts/pack.mjs . _agent_core
             node scripts/verify.mjs .
-          } 2>&1 | tee /tmp/pacefold-pack-verify.log
+          ) 2>&1 | tee /tmp/pacefold-pack-verify.log
           status=${PIPESTATUS[0]}
           echo "$status" > /tmp/pacefold-pack-verify.status
           exit "$status"
