@@ -55,6 +55,18 @@ jobs:
           cat .agent/harden-core.part-00 > scripts/harden-core.mjs
           tail -n +4 .agent/harden-core.part-01 >> scripts/harden-core.mjs
           cat .agent/harden-core.part-02 .agent/harden-core.part-03 >> scripts/harden-core.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          file=Path('scripts/harden-core.mjs')
+          source=file.read_text()
+          import_needle="import path from 'node:path';"
+          call_needle="const hardened=hardenInnerHTML(app);app=hardened.source;"
+          assert source.count(import_needle)==1, 'core migration import anchor changed'
+          assert source.count(call_needle)==1, 'core migration Trusted Types call changed'
+          source=source.replace(import_needle,import_needle+"\nimport {rewriteInnerHTMLAssignments} from './trusted-types-transform.mjs';")
+          source=source.replace(call_needle,"const hardened=rewriteInnerHTMLAssignments(app,'setHTML');app=hardened.source;")
+          file.write_text(source)
+          PY
           node --check scripts/harden-core.mjs
 
       - name: Harden core, injector and repository
