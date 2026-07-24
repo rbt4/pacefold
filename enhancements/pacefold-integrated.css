@@ -31,7 +31,7 @@ html.pf-flow-active body{padding-bottom:78px!important}
 #pf-hub-root.pf-flow-integrated .pf-rail{height:0!important;min-height:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none!important;overflow:visible!important}
 .pf-flow-bar{
   position:relative;
-  min-height:50px;
+  min-height:48px;
   display:grid;
   grid-template-columns:42px minmax(0,auto) minmax(170px,1fr) 64px 64px 42px;
   align-items:center;
@@ -150,7 +150,7 @@ html.pf-flow-active body{padding-bottom:78px!important}
 @media (max-width:760px){
   #pf-flow-dock{bottom:max(6px,env(safe-area-inset-bottom));width:calc(100vw - 12px)}
   html.pf-flow-active body{padding-bottom:72px!important}
-  .pf-flow-bar{grid-template-columns:40px minmax(0,1fr) 40px;gap:3px;padding:4px;border-radius:14px;min-height:50px}
+  .pf-flow-bar{grid-template-columns:40px minmax(0,1fr) 40px;gap:3px;padding:4px;border-radius:14px;min-height:48px}
   .pf-flow-cue{grid-column:2;grid-row:1;max-width:none}
   .pf-flow-cue:not([hidden])+.pf-flow-capture{display:none}
   .pf-flow-capture{grid-column:2;grid-row:1}
