@@ -1,6 +1,7 @@
 (() => {
 'use strict';
 
+const VERSION='15.7.1';
 const ROOT_ID='pf-hub-root';
 const SETUP_SELECTORS=[
   '[data-view="setup"]','[data-screen="setup"]','[data-step="setup"]',
@@ -10,6 +11,8 @@ const SETUP_SELECTORS=[
 let preservedRoot=null;
 let frame=0;
 let wasSetup=false;
+let setupExitTimer=0;
+let setupEpoch=0;
 
 function visible(element){
   if(!element?.isConnected)return false;
@@ -17,27 +20,59 @@ function visible(element){
   const box=element.getBoundingClientRect();
   return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)!==0&&box.width>0&&box.height>0;
 }
+function setupTextPanelVisible(){
+  const candidates=[...document.querySelectorAll('[role="dialog"],body>main,body>section')].filter(visible);
+  return candidates.some(node=>{
+    const box=node.getBoundingClientRect();
+    if(box.width<280||box.height<160)return false;
+    const text=(node.textContent||'').replace(/\s+/g,' ').trim().slice(0,1400);
+    if(!/(set up pacefold|welcome to pacefold|choose your rhythm|complete setup)/i.test(text))return false;
+    return [...node.querySelectorAll('button,[role="button"]')].some(control=>/(get started|continue|complete setup|finish|next)/i.test((control.textContent||'').trim()));
+  });
+}
 function setupVisible(){
   if(SETUP_SELECTORS.some(selector=>[...document.querySelectorAll(selector)].some(visible)))return true;
-  return [...document.querySelectorAll('main,section,[role="dialog"]')]
-    .filter(visible)
-    .some(node=>/(set up pacefold|welcome to pacefold|choose your rhythm|complete setup|get started)/i.test((node.textContent||'').replace(/\s+/g,' ').slice(0,1200)));
+  return setupTextPanelVisible();
+}
+function clearSetupExitTimer(){
+  if(!setupExitTimer)return;
+  clearTimeout(setupExitTimer);
+  setupExitTimer=0;
+}
+function removeForSetup(current){
+  wasSetup=true;
+  setupEpoch+=1;
+  clearSetupExitTimer();
+  preservedRoot=null;
+  current?.remove();
+  document.documentElement.classList.remove('pf-hub-mounted');
+}
+function restoreAfterStableSetupExit(epoch){
+  clearSetupExitTimer();
+  setupExitTimer=setTimeout(()=>{
+    setupExitTimer=0;
+    if(epoch!==setupEpoch||setupVisible())return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(epoch!==setupEpoch||setupVisible())return;
+      wasSetup=false;
+      preservedRoot=null;
+      window.__PACEFOLD_SURFACE__?.reconcile?.();
+    }));
+  },240);
 }
 function reconcile(){
   frame=0;
   const setup=setupVisible();
   const current=document.getElementById(ROOT_ID);
-  if(setup){
-    wasSetup=true;
-    preservedRoot=null;
-    current?.remove();
-    document.documentElement.classList.remove('pf-hub-mounted');
-    return;
-  }
-  if(wasSetup){
-    wasSetup=false;
-    preservedRoot=null;
-    window.__PACEFOLD_SURFACE__?.reconcile?.();
+  if(setup){removeForSetup(current);return;}
+  if(wasSetup){restoreAfterStableSetupExit(setupEpoch);return;}
+  clearSetupExitTimer();
+  const roots=[...document.querySelectorAll(`#${ROOT_ID}`)];
+  if(roots.length>1){
+    const keeper=roots[0];
+    for(const duplicate of roots.slice(1))duplicate.remove();
+    preservedRoot=keeper;
+    document.documentElement.classList.add('pf-hub-mounted');
     return;
   }
   if(current){
@@ -53,7 +88,16 @@ function reconcile(){
   }
   window.__PACEFOLD_SURFACE__?.reconcile?.();
 }
-function queue(){
+function mutationInsideRootOnly(mutations){
+  return mutations.length>0&&mutations.every(mutation=>{
+    const target=mutation.target instanceof Element?mutation.target:mutation.target?.parentElement;
+    if(!target?.closest?.(`#${ROOT_ID}`))return false;
+    const changed=[...(mutation.addedNodes||[]),...(mutation.removedNodes||[])];
+    return changed.every(node=>!(node instanceof Element)||node.id!==ROOT_ID);
+  });
+}
+function queue(mutations=[]){
+  if(mutationInsideRootOnly(mutations))return;
   if(frame)return;
   frame=requestAnimationFrame(reconcile);
 }
@@ -62,10 +106,11 @@ new MutationObserver(queue).observe(document.documentElement,{
   childList:true,
   subtree:true,
   attributes:true,
-  attributeFilter:['class','hidden','aria-hidden','data-view','data-screen','data-step']
+  attributeFilter:['class','hidden','aria-hidden','data-view','data-screen','data-step','data-onboarding','data-onboard-profile']
 });
 window.addEventListener('pageshow',queue);
 window.addEventListener('focus',queue);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)queue();});
 [0,100,400,1400].forEach(delay=>setTimeout(reconcile,delay));
+window.__PACEFOLD_GUARDIAN__={version:VERSION,setupVisible,reconcile};
 })();
