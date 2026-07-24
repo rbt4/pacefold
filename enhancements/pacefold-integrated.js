@@ -49,24 +49,26 @@ function forward(kind){
 function notebookEntries(){try{const value=safeParse(localStorage.getItem(ENTRY_KEY),[]);return Array.isArray(value)?value:[];}catch{return [];}}
 function todayCount(){return notebookEntries().filter(item=>item?.date===today()).length;}
 function currentAck(){try{return safeParse(localStorage.getItem(ACK_KEY),null);}catch{return null;}}
+function cleanCueText(value){
+  let text=compactText(value);
+  text=text.split(/Open Pacefold|Quietly keeping pace|Open this moment|to this moment|\bDone\b|\bClear\b|\bLog\b|\bHandle\b/i)[0];
+  return compactText(text).slice(0,80);
+}
 function cueLabel(andon,handler){
   const selector='[data-pf-cue-label],[data-pf-label],.pf-andon-title,.pf-andon-label,strong,b';
   const candidates=[handler?.querySelector(selector),andon?.querySelector(selector),handler?.querySelector('span:not([aria-hidden="true"])'),andon?.querySelector('span:not([aria-hidden="true"])')];
   for(const candidate of candidates){
-    const text=compactText(candidate?.textContent).replace(/\b(?:Done|Clear|Log|Handle)\b/gi,'').trim();
-    if(text&&text.length<=80&&!/^(?:open pacefold|quietly keeping pace|action waiting)$/i.test(text))return text;
+    const text=cleanCueText(candidate?.textContent);
+    if(text&&!/^(?:open pacefold|quietly keeping pace|action waiting)$/i.test(text))return text;
   }
   const source=handler||andon;
   if(source){
     const clone=source.cloneNode(true);
     clone.querySelectorAll('small,button,kbd,[aria-hidden="true"],.sr-only,.pf-sr-only').forEach(node=>node.remove());
-    let text=compactText(clone.textContent);
-    text=text.split(/Open Pacefold|Quietly keeping pace|\bDone\b|\bClear\b|\bLog\b|\bHandle\b/i)[0];
-    text=compactText(text).slice(0,80);
+    const text=cleanCueText(clone.textContent);
     if(text)return text;
   }
-  const raw=compactText(andon?.textContent||handler?.textContent||'');
-  return compactText(raw.split(/Open Pacefold|Quietly keeping pace|\bDone\b|\bClear\b|\bLog\b|\bHandle\b/i)[0]).slice(0,80)||'Action waiting';
+  return cleanCueText(andon?.textContent||handler?.textContent||'')||'Action waiting';
 }
 function readCue(){
   if(!root)return {waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true};
