@@ -1,0 +1,121 @@
+name: Publish verified Pacefold hardening
+
+on:
+  push:
+    branches: [agent/pacefold-function-hardening]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pacefold-agent-publish
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    if: github.repository == 'rbt4/pacefold'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-function-hardening
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Restore production workflow and verified core
+        run: |
+          git show origin/main:.github/workflows/pages.yml > /tmp/pages.yml
+          mv /tmp/pages.yml .github/workflows/pages.yml
+          rm -rf _agent_core /tmp/pacefold-previous /tmp/pacefold-current /tmp/pacefold-site
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          expected="$(sed -n 's/^- SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p' RELEASE.md)"
+          echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir _agent_core /tmp/pacefold-previous
+          unzip -q /tmp/pacefold-v15.zip -d _agent_core
+          unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-previous
+
+      - name: Assemble audited migration
+        run: |
+          cat .agent/harden-core.part-00 > scripts/harden-core.mjs
+          tail -n +4 .agent/harden-core.part-01 >> scripts/harden-core.mjs
+          cat .agent/harden-core.part-02 .agent/harden-core.part-03 >> scripts/harden-core.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          file=Path('scripts/harden-core.mjs')
+          source=file.read_text()
+          source=source.replace("import path from 'node:path';","import path from 'node:path';\nimport {rewriteInnerHTMLAssignments} from './trusted-types-transform.mjs';",1)
+          anchor="const hardened=hardenInnerHTML(app);app=hardened.source;"
+          trusted=r'''app=replaceExact(app,
+            "  const TT=window.trustedTypes?window.trustedTypes.createPolicy('pacefold',{createHTML:value=>String(value)}):{createHTML:value=>String(value)};",
+            "  const TT=window.trustedTypes?window.trustedTypes.createPolicy('pacefold',{createHTML:value=>String(value),createScriptURL:value=>String(value)}):{createHTML:value=>String(value),createScriptURL:value=>String(value)};",
+            'trusted script URL policy');
+          app=replaceExact(app,
+            "      workerRegistration=await navigator.serviceWorker.register('../service-worker.js',{scope:'../',updateViaCache:'none'});",
+            "      workerRegistration=await navigator.serviceWorker.register(TT.createScriptURL('../service-worker.js'),{scope:'../',updateViaCache:'none'});",
+            'trusted service worker URL');
+          const hardened=rewriteInnerHTMLAssignments(app,'setHTML');app=hardened.source;'''
+          assert source.count(anchor)==1
+          source=source.replace(anchor,trusted)
+          browser_version="browser=browser.replaceAll(fromVersion,toVersion);"
+          source=source.replace(browser_version,browser_version+"\nbrowser=browser.replaceAll(fromVersion.replaceAll('.','\\\\.'),toVersion.replaceAll('.','\\\\.'));",1)
+          validate_write="write('scripts/validate.mjs',validate);"
+          validation=r'''validate=replaceExact(validate,
+            "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean);",
+            "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean).filter(ref=>!ref.startsWith('__pacefold-'));",
+            'validate virtual shell metadata');
+          validate=replaceExact(validate,
+            "if(!appJs.includes(\"navigator.serviceWorker.register('../service-worker.js'\"))fail('App does not register the root service worker');",
+            "if(!appJs.includes(\"navigator.serviceWorker.register(TT.createScriptURL('../service-worker.js')\"))fail('App does not register the trusted root service worker');",
+            'validate trusted worker registration');
+          '''
+          source=source.replace(validate_write,validation+validate_write,1)
+          browser_write="write('scripts/browser-audit.cjs',browser);"
+          audit=r'''browser=replaceExact(browser,
+            "async function waitControlled(page){await page.waitForFunction(()=>navigator.serviceWorker?.controller,null,{timeout:12000});}",
+            "async function waitControlled(page){try{await page.waitForFunction(()=>navigator.serviceWorker?.controller,null,{timeout:12000});}catch(error){const detail=await page.evaluate(async()=>{const registrations=await navigator.serviceWorker?.getRegistrations?.()||[];return{controller:navigator.serviceWorker?.controller?.scriptURL||'',registrations:registrations.map(r=>({scope:r.scope,active:r.active?{state:r.active.state,url:r.active.scriptURL}:null,waiting:r.waiting?{state:r.waiting.state,url:r.waiting.scriptURL}:null,installing:r.installing?{state:r.installing.state,url:r.installing.scriptURL}:null})),cacheKeys:await caches.keys(),setup:document.querySelector('#setupDock')?.innerText||''};});throw new Error(`Service worker control timeout: ${JSON.stringify(detail)}`);}}",
+            'service worker control diagnostics');
+          browser=replaceExact(browser,
+            "const pageErrors=[];app.on('pageerror',error=>pageErrors.push(error.message));",
+            "const pageErrors=[];app.on('pageerror',error=>pageErrors.push(error.message));app.on('console',message=>{if(message.type()==='error')pageErrors.push(message.text());});",
+            'browser console diagnostics');
+          browser=replaceExact(browser,
+            "state.notificationMode='all';localStorage.setItem('pacefoldPrefsV15',JSON.stringify(state));});await app.reload({waitUntil:'networkidle'});const outcome=",
+            "state.notificationMode='all';localStorage.setItem('pacefoldPrefsV15',JSON.stringify(state));});await app.goto(`${base}/app/?debug=1`,{waitUntil:'networkidle'});const outcome=",
+            'notification debug navigation');
+          '''
+          source=source.replace(browser_write,audit+browser_write,1)
+          file.write_text(source)
+          PY
+          node --check scripts/harden-core.mjs
+
+      - name: Harden, pack and verify
+        run: |
+          node scripts/harden-core.mjs _agent_core 15.2.1 15.2.2
+          node scripts/harden-repo.mjs .
+          node scripts/pack.mjs . _agent_core
+          node scripts/verify.mjs .
+
+      - name: Run browser gates
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-current.zip
+          mkdir /tmp/pacefold-current /tmp/pacefold-site
+          unzip -q /tmp/pacefold-current.zip -d /tmp/pacefold-current
+          cp -a /tmp/pacefold-current/. /tmp/pacefold-site/
+          PACEFOLD_DEBUG=1 node /tmp/pacefold-current/scripts/build.mjs /tmp/pacefold-current
+          node enhancements/inject.mjs /tmp/pacefold-site
+          npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
+          /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs /tmp/pacefold-site
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+
+      - name: Publish clean verified branch
+        run: |
+          rm -rf _agent_core .agent .agent-materialize-trigger .github/workflows/agent-materialize.yml .github/workflows/agent-publish.yml
+          git config user.name pacefold-agent
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Harden Pacefold function security and release pipeline"
+          git push origin HEAD:agent/pacefold-function-hardening
