@@ -2,7 +2,7 @@
 
 **One day, gently folded.**
 
-Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold 15.8 brings the HSSys notebook, current cue, capture, contained media, weather, OneNote and diagnostics into one quiet integrated dock without turning the workday into another dashboard.
+Pacefold is a local-first, installable workday rhythm system for anyone who wants a calmer day without another dashboard. The verified core keeps the clock, schedule and one next useful action primary; the integrated dock adds a local notebook, capture, contained media, weather, optional OneNote and diagnostics only when requested.
 
 ## Pacefold 15.8 — Integrated quiet dock
 
@@ -30,7 +30,7 @@ At 390 px, the dock condenses to the pulse, cue or capture field, and one contro
 
 The visual layer remains offline-safe and adds no network dependency to startup.
 
-## Capture and HSSys notebook
+## Capture and local notebook
 
 Capture is always available and saves through the existing local-first notebook path. A leading slash routes the note without adding another picker:
 
@@ -42,7 +42,11 @@ Capture is always available and saves through the existing local-first notebook 
 - `/notification` → Notifications
 - `/resource` → Resources
 
-Unprefixed notes go to Daily. The full dated HSSys notebook retains search, section tabs, editing, completion and deletion.
+Unprefixed notes go to Daily. The full dated local notebook retains search, section tabs, editing, completion and deletion.
+
+## Original developer preset
+
+Pacefold is designed for everyone, but it ships with the creator-tested Original preset so the first run is useful rather than empty. Its defaults remain an 8:30 a.m.–4:30 p.m. workday, location-calculated Muslim moments with Hanafi Asr in Toronto, a 24 oz hydration target, a 30-minute noodles preparation cue, a 20-minute desk meal, 20-minute eye cues and 45-minute movement cues. Setup can replace any or all of these immediately with Everyday, Mindfulness, another faith-aware profile or a fully custom rhythm.
 
 ## Functional taskbar state
 
@@ -72,7 +76,7 @@ Local persistence always completes before optional Microsoft delivery. Pacefold 
 3. Windows Share, where OneNote can be selected;
 4. Copy Page for manual paste.
 
-The intended destination remains the **HSSys** notebook and a **Pacefold** section. Identical page sends share one in-flight request, cross-window locks end when the real request settles or safely times out, and failed delivery never removes the local page. Pacefold does not store Microsoft passwords or access tokens.
+The destination is the OneNote notebook and section the user chooses. Identical page sends share one in-flight request, cross-window locks end when the real request settles or safely times out, and failed delivery never removes the local page. Pacefold does not store Microsoft passwords or access tokens.
 
 ## Contained player
 
@@ -122,7 +126,7 @@ The 15.8 gate verifies exact single-root and single-dock architecture, slash cap
 
 Core release SHA-256:
 
-`2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`
+`371481fd6d36322158097348743e4da9f85367910a3528e65cc7902c3d73754b`
 
 Surface version:
 
@@ -137,7 +141,7 @@ Surface version:
 
 ## Version
 
-Pacefold 15.8.0 integrated surface over Pacefold core 15.2.2
+Pacefold 15.8.0 integrated surface over Pacefold core 15.2.3
 ## Foreground reminder boundary
 
 Pacefold reminds reliably while its window is open and the device is awake. Browser timers cannot guarantee exact delivery while the window is closed, heavily throttled or the laptop is asleep. Pacefold reports missed scheduled moments with their real time instead of firing a stale notification. Exact background delivery requires the optional native Windows companion.

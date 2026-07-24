@@ -74,7 +74,7 @@ const landingReplacements=[
   ['<article class="bento wide"><div><span class="feature-tag">Kiroku · OneNote</span><h3>Capture here. Keep it in HSSys.</h3><p>Write a note, task, incident, inspection, JHSC item or follow-up without leaving Pacefold. It saves locally first, then silently appends to one dated page in the OneNote section you choose.</p></div><div class="ledger-lines"><span><b>9:12</b> Follow-up · local</span><span><b>11:06</b> Inspection · queued</span><span><b>2:24</b> Incident · synced</span></div></article>','<article class="bento wide"><div><span class="feature-tag">Capture · OneNote</span><h3>Capture here. Keep it where you work.</h3><p>Write a note, task, follow-up, incident or other quick record without leaving Pacefold. It saves locally first, then can append to the OneNote notebook and section you choose.</p></div><div class="ledger-lines"><span><b>9:12</b> Note · local</span><span><b>11:06</b> Follow-up · queued</span><span><b>2:24</b> Task · synced</span></div></article>','OneNote feature'],
   ['<details><summary>Is OneNote sync really silent?</summary><p>After a one-time Microsoft sign-in and destination choice, captures queue locally and retry in the background. Microsoft Entra registration is required, and university policy may require administrator approval. <a href="./onenote-setup.html">Read the exact setup.</a></p></details>','<details><summary>Is Microsoft or OneNote required?</summary><p>No. Pacefold works locally without an account. OneNote is an optional bridge after a one-time Microsoft sign-in and destination choice. Workplace policy may require administrator approval. <a href="./onenote-setup.html">Read the exact setup.</a></p></details>','OneNote FAQ'],
   ['<section class="wrap final"><h2>Space for what matters.</h2><p>Start with Pacefold Original or make the rhythm entirely your own.</p>','<section class="wrap final"><h2>Start ready. Make it yours.</h2><p>Use the Original preset as-is, change one piece, or build a completely different rhythm in about a minute.</p>','final call to action'],
-  [`<footer class="wrap footer"><span>Pacefold ${fromVersion} · your day, quietly kept</span>`,`<footer class="wrap footer"><span>Pacefold ${toVersion} · a quieter rhythm for any workday</span>`,'footer']
+  [`<footer class="wrap footer"><span>Pacefold ${fromVersion} · your day, quietly kept</span>`,`<footer class="wrap footer"><span>Pacefold ${toVersion} · for any workday</span>`,'footer']
 ];
 for(const [needle,replacement,label] of landingReplacements)landing=replaceExact(landing,needle,replacement,label);
 write('index.html',landing);
@@ -94,7 +94,8 @@ write('scripts/validate.mjs',validate);
 
 let browser=read('scripts/browser-audit.cjs');
 browser=browser.split(fromVersion).join(toVersion);
-browser=browser.replaceAll('your day, quietly kept','a quieter rhythm for any workday');
+browser=browser.split(fromVersion.replaceAll('.','\\.')).join(toVersion.replaceAll('.','\\.'));
+browser=browser.replaceAll('your day, quietly kept','for any workday');
 write('scripts/browser-audit.cjs',browser);
 
 for(const file of ['README.md','CHANGELOG.md','REPOSITORY_SETUP.md','SECURITY.md','ONENOTE_SETUP.md','onenote-setup.html','privacy.html'])replaceVersion(file);
