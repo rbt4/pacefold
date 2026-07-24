@@ -19,6 +19,7 @@ html.pf-flow-active body{padding-bottom:76px!important}
 .pf-flow-badge{position:absolute;right:6px;top:5px;width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px var(--flow-bg)}
 .pf-flow-pulse[data-state="new"] .pf-flow-badge{animation:pf-flow-breathe 2.4s ease-in-out infinite}
 .pf-flow-cue{height:38px;max-width:280px;min-width:0;border-radius:10px!important;display:flex;align-items:center;gap:8px;padding:0 11px!important;text-align:left;color:var(--flow-fg)}
+.pf-flow-cue[hidden]{display:none!important}
 .pf-flow-cue>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pf-flow-cue-icon{width:20px;height:20px;border:1px solid var(--flow-line);border-radius:7px;display:grid;place-items:center;color:var(--flow-accent);font-weight:700;flex:none}
 .pf-flow-capture{height:38px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 34px;border:1px solid var(--flow-line);border-radius:11px;background:color-mix(in srgb,var(--flow-fg) 4%,transparent)}
