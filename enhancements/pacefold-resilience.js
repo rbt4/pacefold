@@ -36,12 +36,7 @@ function recordError(kind,error){
   try{
     const current=safeParse(localStorage.getItem(ERROR_KEY),[]);
     const list=Array.isArray(current)?current:[];
-    list.push({
-      at:new Date().toISOString(),
-      kind:String(kind||'runtime').slice(0,40),
-      message:compactMessage(error),
-      version:VERSION
-    });
+    list.push({at:new Date().toISOString(),kind:String(kind||'runtime').slice(0,40),message:compactMessage(error),version:VERSION});
     localStorage.setItem(ERROR_KEY,JSON.stringify(list.slice(-20)));
   }catch{}
 }
@@ -61,14 +56,9 @@ function backupCorruptNotebook(raw,reason){
   const key=`${RECOVERY_PREFIX}${suffix}`;
   let location='none';
   try{localStorage.setItem(key,raw);location='localStorage';}
-  catch{
-    try{sessionStorage.setItem(key,raw);location='sessionStorage';}
-    catch{}
-  }
+  catch{try{sessionStorage.setItem(key,raw);location='sessionStorage';}catch{}}
   try{localStorage.removeItem(ENTRY_KEY);}catch(error){recordError('notebook-remove',error);}
-  try{
-    localStorage.setItem('pacefold.resilience.recoveryNotice.v1',JSON.stringify({key,location,reason,at:new Date().toISOString(),version:VERSION}));
-  }catch{}
+  try{localStorage.setItem('pacefold.resilience.recoveryNotice.v1',JSON.stringify({key,location,reason,at:new Date().toISOString(),version:VERSION}));}catch{}
   pruneRecoveries();
 }
 function validateNotebookStorage(){
@@ -86,10 +76,7 @@ function validateNotebookStorage(){
     changed=true;
     return {...item,section:'Daily'};
   });
-  if(changed){
-    try{localStorage.setItem(ENTRY_KEY,JSON.stringify(normalized));}
-    catch(error){recordError('notebook-normalize',error);}
-  }
+  if(changed){try{localStorage.setItem(ENTRY_KEY,JSON.stringify(normalized));}catch(error){recordError('notebook-normalize',error);}}
 }
 function queueReconcile(){
   if(reconcileFrame)return;
@@ -101,9 +88,16 @@ function queueReconcile(){
     }catch(error){recordError('reconcile',error);}
   });
 }
+function streamFingerprint(element){
+  const root=element.closest('#pf-hub-root')||document;
+  const input=root.querySelector('[data-pf-stream-url]');
+  const selected=root.querySelector('[role="tab"][aria-selected="true"], [data-pf-provider].is-active, [data-pf-provider][aria-pressed="true"]');
+  return `${(selected?.dataset?.pfProvider||selected?.textContent||'provider').trim().toLowerCase()}:${(input?.value||'').trim()}`;
+}
 function actionKey(element){
   const action=element?.dataset?.pfAction;
   if(!action)return '';
+  if(action==='load-stream')return `${action}:${streamFingerprint(element)}`;
   const id=element.dataset.pfId||element.closest('[data-pf-id]')?.dataset.pfId||'';
   return `${action}:${id}`;
 }
@@ -113,19 +107,14 @@ function globalSyncLocked(now){
     return Boolean(lock&&lock.owner!==TAB_ID&&Number(lock.until)>now);
   }catch{return false;}
 }
-function claimGlobalSyncLock(until){
-  try{localStorage.setItem(GLOBAL_SYNC_LOCK,JSON.stringify({owner:TAB_ID,until}));}catch{}
-}
+function claimGlobalSyncLock(until){try{localStorage.setItem(GLOBAL_SYNC_LOCK,JSON.stringify({owner:TAB_ID,until}));}catch{}}
 function releaseGlobalSyncLock(){
   try{
     const lock=safeParse(localStorage.getItem(GLOBAL_SYNC_LOCK),null);
     if(lock?.owner===TAB_ID)localStorage.removeItem(GLOBAL_SYNC_LOCK);
   }catch{}
 }
-function block(event){
-  event.preventDefault();
-  event.stopImmediatePropagation();
-}
+function block(event){event.preventDefault();event.stopImmediatePropagation();}
 function lockAction(event){
   const control=event.target.closest?.('[data-pf-action]');
   if(!control)return;
@@ -171,10 +160,7 @@ function installStyles(){
   if(document.getElementById('pf-resilience-style'))return;
   const style=document.createElement('style');
   style.id='pf-resilience-style';
-  style.textContent=`
-    #pf-hub-root .pf-resilience-busy{opacity:.72;cursor:progress}
-    #pf-hub-root [aria-busy="true"]{pointer-events:none}
-  `;
+  style.textContent=`#pf-hub-root .pf-resilience-busy{opacity:.72;cursor:progress}#pf-hub-root [aria-busy="true"]{pointer-events:none}`;
   document.head.append(style);
 }
 function relevantError(value){
@@ -192,9 +178,7 @@ window.addEventListener('online',queueReconcile);
 window.addEventListener('pageshow',queueReconcile);
 window.addEventListener('pagehide',releaseGlobalSyncLock);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)queueReconcile();});
-window.addEventListener('storage',event=>{
-  if(event.key===ENTRY_KEY||event.key===ERROR_KEY||event.key===GLOBAL_SYNC_LOCK)queueReconcile();
-});
+window.addEventListener('storage',event=>{if(event.key===ENTRY_KEY||event.key===ERROR_KEY||event.key===GLOBAL_SYNC_LOCK)queueReconcile();});
 
 window.__PACEFOLD_RESILIENCE__={version:VERSION,validateNotebookStorage,queueReconcile,recordError};
 })();
