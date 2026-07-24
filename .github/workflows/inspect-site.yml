@@ -131,10 +131,30 @@ jobs:
         env:
           NODE_PATH: /tmp/pacefold-browser-audit/node_modules
         run: |
-          node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
-          node enhancements/run-hub-audit.cjs /tmp/pacefold-site
-          node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
-          node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+          set +e
+          (
+            set -e
+            node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
+            node enhancements/run-hub-audit.cjs /tmp/pacefold-site
+            node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
+            node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+          ) 2>&1 | tee /tmp/pacefold-generic-browser.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-generic-browser.status
+          exit "$status"
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-generic-browser-${{ github.run_id }}
+          path: |
+            /tmp/pacefold-generic-browser.log
+            /tmp/pacefold-generic-browser.status
+            /tmp/pacefold-resilience-artifacts/
+            /tmp/pacefold-integrated-artifacts/
+          if-no-files-found: ignore
+          retention-days: 1
 
       - name: Publish verified product and generated workflow blob
         if: steps.state.outputs.needs_build == 'true'
