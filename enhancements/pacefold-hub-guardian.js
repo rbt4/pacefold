@@ -8,6 +8,7 @@ const SETUP_SELECTORS=[
   '[data-onboarding]','[data-onboard-profile]','.onboarding','.onboarding-option',
   '#setup','.setup','.setup-screen','.setup-wizard'
 ];
+const SETUP_SELECTOR=SETUP_SELECTORS.join(',');
 let preservedRoot=null;
 let frame=0;
 let wasSetup=false;
@@ -48,11 +49,36 @@ function removeForSetup(current){
   current?.remove();
   document.documentElement.classList.remove('pf-hub-mounted');
 }
+function maskLegacyFalsePositives(callback){
+  const masked=[];
+  for(const node of document.querySelectorAll('main,section,[role="dialog"]')){
+    if(!visible(node)||node.closest(`#${ROOT_ID}`)||node.matches(SETUP_SELECTOR)||node.querySelector(SETUP_SELECTOR))continue;
+    const text=(node.textContent||'').replace(/\s+/g,' ').trim().slice(0,1400);
+    if(!/get started/i.test(text)||/(set up pacefold|welcome to pacefold|choose your rhythm|complete setup)/i.test(text))continue;
+    masked.push({node,hidden:node.hidden,ariaHidden:node.getAttribute('aria-hidden')});
+    node.hidden=true;
+    node.setAttribute('aria-hidden','true');
+  }
+  try{callback();}
+  finally{
+    queueMicrotask(()=>{
+      for(const item of masked){
+        if(!item.node.isConnected)continue;
+        item.node.hidden=item.hidden;
+        if(item.ariaHidden==null)item.node.removeAttribute('aria-hidden');
+        else item.node.setAttribute('aria-hidden',item.ariaHidden);
+      }
+    });
+  }
+}
+function requestFreshSurface(){
+  maskLegacyFalsePositives(()=>window.__PACEFOLD_SURFACE__?.reconcile?.());
+}
 function nudgeFreshSurface(epoch){
   for(const delay of [0,80,240,700,1600]){
     setTimeout(()=>{
       if(epoch!==setupEpoch||setupVisible()||document.getElementById(ROOT_ID))return;
-      window.__PACEFOLD_SURFACE__?.reconcile?.();
+      requestFreshSurface();
     },delay);
   }
 }
@@ -98,7 +124,7 @@ function reconcile(){
     document.documentElement.classList.add('pf-hub-mounted');
     return;
   }
-  window.__PACEFOLD_SURFACE__?.reconcile?.();
+  requestFreshSurface();
 }
 function mutationInsideRootOnly(mutations){
   return mutations.length>0&&mutations.every(mutation=>{
