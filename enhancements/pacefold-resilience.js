@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const VERSION='15.7.1';
+const VERSION='15.8.0';
 const ENTRY_KEY='pacefold.notebook.entries.v2';
 const ERROR_KEY='pacefold.resilience.errors.v1';
 const RECOVERY_PREFIX='pacefold.recovery.notebook.';

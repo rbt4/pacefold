@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.7.1
+name: Validate and deploy Pacefold 15.8.0
 
 on:
   push:
@@ -16,19 +16,21 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-      - name: Require a core or resilience version advance
+
+      - name: Require a core or surface version advance
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -50,10 +52,11 @@ jobs:
           test -n "$current_surface"
           if [ "$current_core" = "$previous_core" ]; then
             test "$current_surface" != "$previous_surface"
-            echo "Resilience version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
+            echo "Surface version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
           else
-            echo "Core version advanced: $previous_core -> $current_core; resilience $current_surface"
+            echo "Core version advanced: $previous_core -> $current_core; surface $current_surface"
           fi
+
       - name: JavaScript and compressed-source syntax
         run: |
           node --check _release/app/app.js
@@ -65,10 +68,12 @@ jobs:
           node --check enhancements/pacefold-hub.js
           node --check enhancements/pacefold-hub-guardian.js
           node --check enhancements/pacefold-resilience.js
+          node --check enhancements/pacefold-integrated.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
           node --check enhancements/run-hub-audit.cjs
           node --check enhancements/resilience-audit.cjs
+          node --check enhancements/integrated-audit.cjs
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01b)" = "218fbe2ab562da27c9bd8cc1867d0749ee989566"
@@ -79,44 +84,58 @@ jobs:
           node -e "const fs=require('fs'),z=require('zlib'),p='enhancements/';const names=['pacefold-hub.js.gz.b64.part-00','pacefold-hub.js.gz.b64.part-01a','pacefold-hub.js.gz.b64.part-01b','pacefold-hub.js.gz.b64.part-01c','pacefold-hub.js.gz.b64.part-01d','pacefold-hub.js.gz.b64.part-02','pacefold-hub.js.gz.b64.part-03'];const encoded=names.map(n=>fs.readFileSync(p+n,'utf8')).join('').replace(/\\s+/g,'');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(encoded,'base64')))"
           node --check /tmp/pacefold-notebook.js
           node -e "const fs=require('fs'),z=require('zlib');const css=z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.css.gz.b64','utf8').replace(/\\s+/g,''),'base64'));if(!css.length)process.exit(1)"
+
       - name: Build and static audit
         run: |
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
+
       - name: Browser application, action and installed-upgrade audit
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
-      - name: Inject resilience surface twice
+
+      - name: Inject integrated surface twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
           ! grep -q 'data-pacefold-hub=' _release/index.html
-          test "$(grep -o 'data-pacefold-hub="15.7.1"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-hub-guardian="15.7.1"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-resilience="15.7.1"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-hub="15.8.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-hub-guardian="15.8.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-resilience="15.8.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-flow="15.8.0"' _release/app/index.html | wc -l)" -eq 2
           grep -q 'https://api.open-meteo.com' _release/app/index.html
           grep -q 'https://graph.microsoft.com' _release/app/index.html
           grep -q 'https://www.youtube-nocookie.com' _release/app/index.html
           grep -q 'https://open.spotify.com' _release/app/index.html
           grep -q 'https://music.amazon.ca' _release/app/index.html
-          test -f _release/app/icons/fold-mark.svg
-          test -f _release/app/icons/notify-water.svg
-          test -f _release/app/pacefold-resilience.js
+          test -f _release/app/pacefold-integrated.js
+          test -f _release/app/pacefold-integrated.css
+          test -f _release/app/icons/fold-mark.png
+          test -f _release/app/icons/notify-water.png
+          test "$(xxd -p -l 8 _release/app/icons/fold-mark.png)" = "89504e470d0a1a0a"
+          test "$(xxd -p -l 8 _release/app/icons/notify-water.png)" = "89504e470d0a1a0a"
+          grep -R -q 'pf=current' _release/manifest* _release/app/manifest* 2>/dev/null
+          grep -R -q 'pf=capture' _release/manifest* _release/app/manifest* 2>/dev/null
+          grep -R -q 'pf=notebook' _release/manifest* _release/app/manifest* 2>/dev/null
+          grep -R -q 'pf=media' _release/manifest* _release/app/manifest* 2>/dev/null
           test ! -e _release/pacefold-hub.js
           node --check _release/app/pacefold-hub.js
           node --check _release/app/pacefold-hub-guardian.js
           node --check _release/app/pacefold-resilience.js
+          node --check _release/app/pacefold-integrated.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
           ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
-          ! grep -q 'pacefold-notebook-15.6.0' _release/service-worker.js
-          ! grep -q 'pacefold-notebook-15.6.0' _release/app/service-worker.js
-          test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/service-worker.js | wc -l)" -eq 1
-          test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/app/service-worker.js | wc -l)" -eq 1
-          ! sed -n '/BEGIN pacefold-resilience-15.7.1/,/END pacefold-resilience-15.7.1/p' _release/app/service-worker.js | grep -q 'caches.delete'
+          ! grep -q 'complete setup|get started' _release/app/pacefold-hub.js
+          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' _release/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' _release/app/service-worker.js | wc -l)" -eq 1
+          ! sed -n '/BEGIN pacefold-resilience-15.8.0/,/END pacefold-resilience-15.8.0/p' _release/app/service-worker.js | grep -q 'caches.delete'
+          grep -q 'notify-water.png' _release/app/service-worker.js
+          ! sed -n '/BEGIN pacefold-resilience-15.8.0/,/END pacefold-resilience-15.8.0/p' _release/app/service-worker.js | grep -q 'notify-water.svg'
+
       - name: Notebook and integration browser audit
         continue-on-error: true
         run: |
@@ -126,6 +145,7 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "$status" > /tmp/pacefold-notebook-audit.status
           exit 0
+
       - name: Destructive resilience browser audit
         continue-on-error: true
         run: |
@@ -135,24 +155,42 @@ jobs:
           status=${PIPESTATUS[0]}
           echo "$status" > /tmp/pacefold-resilience-audit.status
           exit 0
-      - name: Upload browser audit diagnostics
+
+      - name: Integrated dock and taskbar browser audit
+        continue-on-error: true
+        run: |
+          echo 99 > /tmp/pacefold-integrated-audit.status
+          mkdir -p /tmp/pacefold-integrated-artifacts
+          set +e
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs _release /tmp/pacefold-integrated-artifacts 2>&1 | tee /tmp/pacefold-integrated-audit.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-integrated-audit.status
+          exit 0
+
+      - name: Upload browser diagnostics and visual captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-audit-logs-${{ github.run_id }}
+          name: pacefold-15.8-audit-${{ github.run_id }}
           path: |
             /tmp/pacefold-notebook-audit.log
             /tmp/pacefold-notebook-audit.status
             /tmp/pacefold-resilience-audit.log
             /tmp/pacefold-resilience-audit.status
+            /tmp/pacefold-integrated-audit.log
+            /tmp/pacefold-integrated-audit.status
+            /tmp/pacefold-integrated-artifacts/
           if-no-files-found: error
           retention-days: 7
-      - name: Require both resilience audits
+
+      - name: Require all Pacefold audits
         run: |
           echo "Notebook audit status: $(cat /tmp/pacefold-notebook-audit.status)"
-          echo "Destructive audit status: $(cat /tmp/pacefold-resilience-audit.status)"
+          echo "Resilience audit status: $(cat /tmp/pacefold-resilience-audit.status)"
+          echo "Integrated audit status: $(cat /tmp/pacefold-integrated-audit.status)"
           test "$(cat /tmp/pacefold-notebook-audit.status)" = "0"
           test "$(cat /tmp/pacefold-resilience-audit.status)" = "0"
+          test "$(cat /tmp/pacefold-integrated-audit.status)" = "0"
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -169,7 +207,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Reconstruct verified release and install resilience surface
+
+      - name: Reconstruct verified release and install integrated surface
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
@@ -186,28 +225,36 @@ jobs:
             --exclude 'REPOSITORY_SETUP.md' \
             --exclude 'SECURITY.md'
           node enhancements/inject.mjs _site
-          test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
+          test "$(cat _site/pacefold-hub-version.txt)" = "15.8.0"
           ! grep -q 'data-pacefold-hub=' _site/index.html
-          grep -q 'data-pacefold-hub="15.7.1"' _site/app/index.html
-          grep -q 'data-pacefold-resilience="15.7.1"' _site/app/index.html
+          grep -q 'data-pacefold-hub="15.8.0"' _site/app/index.html
+          grep -q 'data-pacefold-resilience="15.8.0"' _site/app/index.html
+          grep -q 'data-pacefold-flow="15.8.0"' _site/app/index.html
           grep -q 'https://graph.microsoft.com' _site/app/index.html
-          test -f _site/app/icons/fold-mark.svg
-          test -f _site/app/icons/notify-water.svg
-          test -f _site/app/pacefold-resilience.js
-          test ! -e _site/pacefold-hub.js
+          test -f _site/app/pacefold-integrated.js
+          test -f _site/app/pacefold-integrated.css
+          test "$(xxd -p -l 8 _site/app/icons/fold-mark.png)" = "89504e470d0a1a0a"
+          test "$(xxd -p -l 8 _site/app/icons/notify-water.png)" = "89504e470d0a1a0a"
+          grep -R -q 'pf=current' _site/manifest* _site/app/manifest* 2>/dev/null
+          grep -R -q 'pf=capture' _site/manifest* _site/app/manifest* 2>/dev/null
           node --check _site/app/pacefold-hub.js
           node --check _site/app/pacefold-hub-guardian.js
           node --check _site/app/pacefold-resilience.js
+          node --check _site/app/pacefold-integrated.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
           ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js
-          test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _site/app/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' _site/app/service-worker.js | wc -l)" -eq 1
+          grep -q 'notify-water.png' _site/app/service-worker.js
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
