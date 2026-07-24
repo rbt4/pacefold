@@ -30,7 +30,7 @@ async function main(){
     const guardian=fs.readFileSync(path.join(root,'app','pacefold-hub-guardian.js'),'utf8');
     if(!resilience.includes("const VERSION='15.7.1'"))throw new Error('Resilience runtime was not versioned to 15.7.1');
     if(!resilience.includes('preservedOriginal')||!resilience.includes('installOneNoteGuard')||!resilience.includes('previous.count'))throw new Error('15.7.1 recovery, OneNote or journal hardening is missing');
-    if(!guardian.includes("const VERSION='15.7.1'")||!guardian.includes('restoreAfterStableSetupExit')||!guardian.includes('setupTextPanelVisible'))throw new Error('15.7.1 guardian stabilization is missing');
+    if(!guardian.includes("const VERSION='15.7.1'")||!guardian.includes('restoreAfterStableSetupExit')||!guardian.includes('setupTextPanelVisible')||!guardian.includes('maskLegacyFalsePositives'))throw new Error('15.7.1 guardian stabilization is missing');
 
     await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
     browser=await chromium.launch({headless:true});
@@ -94,6 +94,11 @@ async function main(){
     if(await page.locator('#pf-hub-root').count())throw new Error('Guardian remounted during a flapping setup transition');
     await page.evaluate(()=>document.getElementById('flapping-setup').remove());
     await page.waitForSelector('#pf-hub-root',{timeout:3000});
+    const ordinaryState=await page.evaluate(()=>{
+      const node=document.getElementById('ordinary-get-started-note');
+      return {exists:Boolean(node),hidden:node?.hidden,ariaHidden:node?.getAttribute('aria-hidden'),visible:Boolean(node?.getBoundingClientRect().height)};
+    });
+    if(!ordinaryState.exists||ordinaryState.hidden||ordinaryState.ariaHidden==='true'||!ordinaryState.visible)throw new Error(`Ordinary content was not restored after strict setup reconciliation: ${JSON.stringify(ordinaryState)}`);
 
     await page.evaluate(()=>{
       const clone=document.getElementById('pf-hub-root').cloneNode(true);
