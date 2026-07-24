@@ -1,5 +1,19 @@
 # Changelog
 
+## 15.7.0 — Resilience hardening
+
+- Aligned the guardian with the core’s real `data-onboard-profile` and `.onboarding-option` setup controls so the lower workspace cannot reappear over onboarding.
+- Discarded preserved pre-setup roots and rebuilt the workspace after setup rather than reattaching stale event/state trees.
+- Added focus, visibility and bfcache reconciliation for installed-app restores and body replacement.
+- Reordered startup to guardian → resilience preflight → Notebook runtime using deterministic `defer` scripts.
+- Added pre-start notebook storage validation, bounded recovery copies, malformed JSON quarantine and normalization of legacy entries without a section.
+- Added duplicate guards for capture, save, delete, completion, cue, provider and OneNote actions.
+- Added a cross-window lease so two Pacefold windows cannot submit the same OneNote page concurrently.
+- Added a bounded privacy-trimmed local resilience error journal.
+- Replaced accumulating service-worker tails with explicit removable BEGIN/END blocks and an idempotent notification wrapper guard.
+- Removed overlay-owned cache deletion so the verified core remains the sole owner of Pacefold offline caches.
+- Expanded CI to inject the release twice and simulate real setup transitions, stale-root rejection, corrupt storage, legacy normalization, duplicate submissions, cross-window sync, repeated provider loads, exactly-once cues and mobile recovery.
+
 ## 15.6.0 — Notebook corrective release
 
 - Fixed the setup regression by preventing the injected workspace from mounting over onboarding and making the guardian remove rather than resurrect the rail while setup is visible.
