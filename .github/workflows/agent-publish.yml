@@ -111,9 +111,10 @@ jobs:
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
 
-      - name: Publish clean verified branch
+      - name: Publish verified product and release files
         run: |
-          rm -rf _agent_core .agent .agent-materialize-trigger .github/workflows/agent-materialize.yml .github/workflows/agent-publish.yml
+          git checkout HEAD -- .github/workflows/pages.yml .github/workflows/agent-materialize.yml .github/workflows/agent-publish.yml
+          rm -rf _agent_core .agent .agent-materialize-trigger
           git config user.name pacefold-agent
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
