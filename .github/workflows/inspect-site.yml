@@ -1,0 +1,41 @@
+name: Inspect Pacefold site source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: github.repository == 'rbt4/pacefold' && github.event.pull_request.head.ref == 'agent/pacefold-generic-public-site'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - name: Reconstruct verified core
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          expected="$(sed -n 's/^- SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p' RELEASE.md)"
+          echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir /tmp/pacefold-source
+          unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-source
+          mkdir /tmp/pacefold-inspection
+          cp /tmp/pacefold-source/index.html /tmp/pacefold-inspection/
+          cp /tmp/pacefold-source/site.js /tmp/pacefold-inspection/
+          cp /tmp/pacefold-source/site-style-01.css /tmp/pacefold-inspection/
+          cp /tmp/pacefold-source/site-style-02.css /tmp/pacefold-inspection/
+          cp /tmp/pacefold-source/app/index.html /tmp/pacefold-inspection/app-index.html
+          cp /tmp/pacefold-source/app/app.js /tmp/pacefold-inspection/app.js
+          cp /tmp/pacefold-source/app/app-style-01.css /tmp/pacefold-inspection/app-style-01.css
+          cp /tmp/pacefold-source/app/app-style-02.css /tmp/pacefold-inspection/app-style-02.css
+          cp /tmp/pacefold-source/app/app-style-03.css /tmp/pacefold-inspection/app-style-03.css
+          cp /tmp/pacefold-source/app/app-style-04.css /tmp/pacefold-inspection/app-style-04.css
+          cp /tmp/pacefold-source/app/app-style-05.css /tmp/pacefold-inspection/app-style-05.css
+      - name: Upload source inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-site-source-${{ github.run_id }}
+          path: /tmp/pacefold-inspection/
+          retention-days: 1
