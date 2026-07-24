@@ -7,6 +7,7 @@ const read=file=>fs.readFileSync(p(file),'utf8');
 const write=(file,value)=>fs.writeFileSync(p(file),value);
 const fail=message=>{throw new Error(message);};
 function replaceExact(source,needle,replacement,label,expected=1){const count=source.split(needle).length-1;if(count!==expected)fail(`${label}: expected ${expected}, found ${count}`);return source.split(needle).join(replacement);}
+function replaceFirstExact(source,needle,replacement,label){const count=source.split(needle).length-1;if(count<1)fail(`${label}: source anchor missing`);const index=source.indexOf(needle);return source.slice(0,index)+replacement+source.slice(index+needle.length);}
 
 let inject=read('enhancements/inject.mjs');
 inject=replaceExact(inject,"import { deflateSync, gunzipSync } from 'node:zlib';","import { deflateSync, gunzipSync } from 'node:zlib';\nimport { rewriteInnerHTMLAssignments } from '../scripts/trusted-types-transform.mjs';",'inject transformer import');
@@ -25,7 +26,7 @@ inject=replaceExact(inject,
 write('enhancements/inject.mjs',inject);
 
 let workflow=read('.github/workflows/pages.yml');
-workflow=replaceExact(workflow,'          node _release/scripts/build.mjs _release','          PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release','debug browser build');
+workflow=replaceFirstExact(workflow,'          node _release/scripts/build.mjs _release','          PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release','debug browser build');
 workflow=replaceExact(workflow,
   '          node --check _release/app/pacefold-integrated.js',
   "          node --check _release/app/pacefold-integrated.js\n          ! grep -R -E -q '\\.innerHTML[[:space:]]*=' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js",
