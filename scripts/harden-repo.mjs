@@ -17,11 +17,11 @@ inject=replaceExact(inject,
   'copied enhancement scripts');
 inject=replaceExact(inject,
   "  if(name.endsWith('.css.gz.b64'))output+='\\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\\n';\n  await fs.writeFile(destination,output);",
-  "  if(name.endsWith('.js.gz.b64'))output=rewriteInnerHTMLAssignments(output).source;\n  if(name.endsWith('.css.gz.b64'))output+='\\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\\n';\n  await fs.writeFile(destination,output);",
+  "  if(name.endsWith('.js.gz.b64'))output=trustedBootstrap+rewriteInnerHTMLAssignments(output).source;\n  if(name.endsWith('.css.gz.b64'))output+='\\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\\n';\n  await fs.writeFile(destination,output);",
   'compressed runtime Trusted Types');
 inject=replaceExact(inject,
   "function upgradeRuntimeVersion(source){",
-  "async function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,result.source);}\n\nfunction upgradeRuntimeVersion(source){",
+  "const trustedBootstrap=\"(()=>{if(window.__PACEFOLD_SET_HTML__)return;window.__PACEFOLD_SET_HTML__=(node,value)=>{if(!node)return node;const html=window.__PACEFOLD_TRUSTED_HTML__?window.__PACEFOLD_TRUSTED_HTML__(String(value)):String(value);Reflect.set(node,'innerHTML',html);return node;};})();\\n\";\nasync function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}\n\nfunction upgradeRuntimeVersion(source){",
   'trusted script helper');
 write('enhancements/inject.mjs',inject);
 
