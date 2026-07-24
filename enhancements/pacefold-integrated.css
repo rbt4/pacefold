@@ -1,6 +1,7 @@
 #pf-flow-dock{--flow-bg:color-mix(in srgb,#11181d 94%,transparent);--flow-fg:#f2f4f2;--flow-muted:#aab2ad;--flow-line:color-mix(in srgb,#f2f4f2 13%,transparent);--flow-accent:#92c7ad;--flow-warn:#e3c982;position:fixed;z-index:2147482500;left:50%;bottom:max(10px,env(safe-area-inset-bottom));width:min(980px,calc(100vw - 24px));font:500 13px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--flow-fg);color-scheme:dark;isolation:isolate}
 html.pf-flow-active body{padding-bottom:76px!important}
 #pf-hub-root.pf-flow-integrated [data-pf-flow-source="true"]{position:fixed!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;pointer-events:none!important}
+#pf-hub-root.pf-flow-integrated .pf-rail{height:0!important;min-height:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;pointer-events:none!important;overflow:visible!important}
 .pf-flow-bar{min-height:48px;display:grid;grid-template-columns:42px minmax(0,auto) minmax(160px,1fr) 58px 58px 40px;align-items:center;gap:4px;padding:4px;border:1px solid var(--flow-line);border-radius:15px;background:var(--flow-bg);box-shadow:0 12px 34px rgba(0,0,0,.22);backdrop-filter:blur(18px) saturate(1.1)}
 .pf-flow-bar button,.pf-flow-panel button,.pf-flow-capture input{font:inherit;color:inherit}
 .pf-flow-bar button,.pf-flow-panel button{border:0;background:transparent;cursor:pointer}
