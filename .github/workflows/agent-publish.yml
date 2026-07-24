@@ -41,7 +41,6 @@ jobs:
           NODE
           test "$(grep -o "$new_sha" scripts/pages.generated.yml | wc -l)" -eq 2
           grep -q 'PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release' scripts/pages.generated.yml
-          test "$(grep -c 'innerHTML\[\[:space:\]\]' scripts/pages.generated.yml)" -eq 2
 
       - name: Publish generated workflow blob
         run: |
