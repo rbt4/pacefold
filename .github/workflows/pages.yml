@@ -25,18 +25,32 @@ jobs:
           ref: agent/pacefold-function-hardening
           fetch-depth: 0
 
-      - name: Restore production workflow and verified core
+      - name: Restore production workflow
         run: |
           git show origin/main:.github/workflows/pages.yml > /tmp/pages.yml
+          test -s /tmp/pages.yml
           mv /tmp/pages.yml .github/workflows/pages.yml
+
+      - name: Verify sealed archive
+        run: |
           rm -rf _agent_core /tmp/pacefold-previous /tmp/pacefold-current /tmp/pacefold-site
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           expected="$(sed -n 's/^- SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p' RELEASE.md)"
+          echo "Expected archive SHA: $expected"
           test -n "$expected"
           echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
+
+      - name: Reconstruct source trees
+        run: |
           mkdir _agent_core /tmp/pacefold-previous
           unzip -q /tmp/pacefold-v15.zip -d _agent_core
           unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-previous
+          test -f _agent_core/app/app.js
+          test -f /tmp/pacefold-previous/app/app.js
+
+      - name: Assemble migration
+        run: |
+          ls -l .agent/harden-core.part-*
           cat .agent/harden-core.part-* > scripts/harden-core.mjs
           node --check scripts/harden-core.mjs
 
