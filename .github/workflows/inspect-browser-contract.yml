@@ -1,0 +1,28 @@
+name: Inspect Pacefold landing browser contract
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: github.repository == 'rbt4/pacefold' && github.event.pull_request.head.ref == 'agent/pacefold-generic-public-site'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Reconstruct browser audit source
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          expected="$(sed -n 's/^- SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p' RELEASE.md)"
+          echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir /tmp/pacefold-contract
+          unzip -q /tmp/pacefold-v15.zip scripts/browser-audit.cjs -d /tmp/pacefold-contract
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-browser-contract-${{ github.run_id }}
+          path: /tmp/pacefold-contract/scripts/browser-audit.cjs
+          retention-days: 1
