@@ -160,7 +160,8 @@ html.pf-flow-active body{padding-bottom:78px!important}
   .pf-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
   .pf-flow-grid>button{min-height:84px;padding:12px 10px}
   .pf-flow-now{grid-template-columns:38px minmax(0,1fr)}
-  .pf-flow-now-actions{grid-column:2;justify-self:start;flex-wrap:wrap}
+  .pf-flow-now-actions{grid-column:1/-1;justify-self:stretch;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .pf-flow-now-actions button{padding:0 6px;white-space:nowrap;font-size:12px}
   .pf-flow-panel footer kbd{display:none}
   .pf-flow-status{bottom:58px}
 }
@@ -170,7 +171,7 @@ html.pf-flow-active body{padding-bottom:78px!important}
   .pf-flow-panel header strong{font-size:18px}
   .pf-flow-grid>button{min-height:80px;grid-template-columns:32px minmax(0,1fr);column-gap:8px;padding:10px 9px}
   .pf-flow-grid>button>span{width:31px;height:31px;border-radius:10px}
-  .pf-flow-now-actions button{padding:0 9px}
+  .pf-flow-now-actions button{padding:0 5px;font-size:11.5px}
 }
 @media (forced-colors:active){#pf-flow-dock *{forced-color-adjust:auto}.pf-flow-bar,.pf-flow-panel,.pf-flow-grid>button,.pf-flow-now,.pf-flow-capture{border:1px solid CanvasText!important}}
 @media (prefers-reduced-motion:reduce){#pf-flow-dock *,#pf-flow-dock *::before,#pf-flow-dock *::after{animation:none!important;transition:none!important}}
