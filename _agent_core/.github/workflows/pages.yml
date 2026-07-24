@@ -1,0 +1,77 @@
+name: Validate Pacefold 15.2.1 source
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: JavaScript syntax
+        run: |
+          node --check site.js
+          node --check app/app.js
+          node --check app/auth.js
+          node --check service-worker.js
+          node --check app/service-worker.js
+          node --check scripts/browser-audit.cjs
+      - name: Static application audit
+        run: |
+          node scripts/build.mjs
+          node scripts/validate.mjs
+      - name: Browser application and update audit
+        run: |
+          npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
+          /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/browser-audit.cjs .
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: validate
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Build clean Pages artifact
+        run: |
+          mkdir _site
+          rsync -a ./ _site/ \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'scripts/' \
+            --exclude 'README.md' \
+            --exclude 'CHANGELOG.md' \
+            --exclude 'REPOSITORY_SETUP.md' \
+            --exclude 'SECURITY.md' \
+            --exclude '_site/'
+          node scripts/validate.mjs _site
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

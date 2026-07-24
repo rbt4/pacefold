@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f1e9">
+<title>Pacefold — Your day, quietly kept</title>
+<meta name="description" content="A quiet workday surface for rhythm, ergonomic care, sound and local capture with optional Microsoft OneNote sync.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./app/icons/icon-32.png">
+<link rel="apple-touch-icon" href="./app/icons/icon-192.png">
+<link rel="stylesheet" href="./site-style-01.css">
+<link rel="stylesheet" href="./site-style-02.css">
+</head>
+<body>
+<header class="wrap nav">
+  <a class="brand" href="./"><img src="./app/icons/icon-32.png" alt=""><span>Pacefold</span><i class="seal" aria-hidden="true"></i></a>
+  <nav class="links" aria-label="Main navigation"><a class="button secondary" href="#features">Features</a><a class="button secondary" href="./app/">Open app</a><button class="button primary" id="navInstall" type="button">Install</button></nav>
+</header>
+<main>
+<section class="wrap hero hero-v15">
+  <div>
+    <div class="eyebrow">Ma system · one quiet layer for the workday</div>
+    <h1>Your day,<br>quietly kept.</h1>
+    <p class="lead">A calm workday surface for rhythm, ergonomic care, sound and quick capture. Pacefold stays quiet in front; your OneNote notebook can live durably underneath.</p>
+    <div class="hero-actions"><button class="button primary" id="heroInstall" type="button">Install Pacefold</button><a class="button" href="./app/?setup=1">Personalize first</a></div>
+    <div class="micro">Local first · offline-ready · automatic updates · Microsoft connection optional</div>
+  </div>
+  <div class="hero-art" aria-hidden="true"><div class="frame"><div class="screen"><div class="clock"><small>Pacefold</small><div class="clock-time">10<b>:</b>42</div><div class="clock-date">Tuesday · July 21</div><div class="clock-status">Next · Midday pause · 1h 48m</div><div class="clock-line"><i></i></div><div class="clock-rituals"><span class="blue"></span><span class="warm"></span><span></span><span></span><span class="eye"></span></div></div><span class="hanko"></span></div></div><div class="floating-card"><small>Andon</small><strong>Only one cue at a time.</strong><span>Nothing competing for attention.</span></div></div>
+</section>
+
+<section class="profile-strip" aria-label="Available rhythm profiles"><div class="wrap profile-scroll"><span>Everyday</span><span>Mindfulness</span><span class="selected">Pacefold Original</span><span>Muslim</span><span>Jewish</span><span>Christian</span><span>Hindu</span><span>Buddhist</span><span>Custom</span></div></section>
+
+<section class="section" id="install">
+  <div class="wrap">
+    <div class="sectionhead"><div class="eyebrow">Setup that does not depend on a hidden browser event</div><h2>Choose your rhythm. Then install.</h2><p>Pick a profile, preparation routine, display comfort, eye and movement cadence, then install. OneNote remains a separate optional connection so setup never blocks the core clock.</p></div>
+    <div class="install-grid">
+      <div class="install-card setup-showcase"><div class="setup-number">01</div><h3>Personalize in about a minute</h3><div class="setup-preview"><span class="active">Rhythm</span><span>Routine</span><span>Comfort</span></div><p>Start with the developer’s Muslim + noodle configuration, or switch to secular, mindfulness, another faith-aware preset or your own moments.</p><div class="install-actions"><a class="button primary" id="guidedSetup" href="./app/?setup=1">Open guided setup</a><button class="button" id="installButton" type="button">Checking install…</button></div><div class="install-note">Faith presets outside the Islamic calculation mode are editable personal reminders—not official religious or denominational time rulings.</div></div>
+      <div class="system-card" id="system"><h3>Live compatibility check</h3><p>This checks only the current browser and sends nothing anywhere.</p><div class="status-list">
+        <div class="status-row" id="browserStatus"><span>Browser</span><span class="status-value"><i class="status-dot"></i><span class="status-text">Checking…</span></span></div>
+        <div class="status-row" id="installStatus"><span>Installation</span><span class="status-value"><i class="status-dot"></i><span class="status-text">Checking…</span></span></div>
+        <div class="status-row" id="offlineStatus"><span>Offline engine</span><span class="status-value"><i class="status-dot"></i><span class="status-text">Starting…</span></span></div>
+        <div class="status-row" id="notificationStatus"><span>System notifications</span><span class="status-value"><i class="status-dot"></i><span class="status-text">Checking…</span></span></div>
+      </div><a class="system-link" href="./app/?setup=1">Run the full device setup →</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="wrap"><div class="sectionhead"><div class="eyebrow">One calm surface · four quiet systems</div><h2>Higher capability without dashboard sprawl.</h2><p>Rhythm, Care, Sound and Kiroku share one priority system. The clock remains visually dominant; deeper tools wait in a quiet dock until you ask for them.</p></div>
+  <div class="feature-bento">
+    <article class="bento wide profile-feature"><div><span class="feature-tag">Profiles</span><h3>Secular, mindful, faith-aware or custom.</h3><p>Use Everyday resets, meditation moments, location-calculated Islamic prayer times, editable Jewish, Christian, Hindu or Buddhist reminders—or write your own schedule.</p></div><div class="mini-profile-grid"><i>Everyday</i><i>Mindful</i><i class="on">Original</i><i>Muslim</i><i>Jewish</i><i>Christian</i><i>Hindu</i><i>Buddhist</i><i>Custom</i></div></article>
+    <article class="bento routine-feature"><span class="feature-tag">Routine mixer</span><h3>Your timer, not ours.</h3><p>Noodles remain the original default. Switch in one tap to tea, coffee, food prep, steeping/brewing or a renamed custom routine with your own duration.</p><div class="routine-stack"><span class="on">Noodles · 30m</span><span>Tea · 5m</span><span>Coffee · 8m</span><span>Custom · 15m</span></div></article>
+    <article class="bento comfort-feature"><span class="feature-tag">Display comfort</span><h3>Adapt the app. Respect the system.</h3><p>Auto, warm and dim interface comfort modes follow the day. Optional distance-look cues provide a quiet screen reset. Pacefold can open Windows Night light, but a web app cannot directly recolour the entire monitor.</p><div class="comfort-spectrum"><i></i></div><a href="ms-settings:nightlight">Open Windows Night light</a></article>
+    <article class="bento signal-feature"><span class="feature-tag">Andon</span><h3>Quiet until one thing matters.</h3><p>The clock carries the signal first. The taskbar stays empty until something is due, and a single notification action can clear it without opening Pacefold.</p><div class="signal-demo"><i class="diamond"></i><span>Moment</span><i class="dot"></i><span>Sip</span><i class="square"></i><span>Prep</span></div></article>
+    <article class="bento ledger-feature"><span class="feature-tag">Kiroku</span><h3>An honest local ledger.</h3><p>Prayer or meditation pauses, desk meals, away lunches and bathroom breaks stay separate. Overlapping off-desk time is merged instead of inflated.</p><div class="ledger-lines"><span><b>10:14</b> Midday pause · 8m</span><span><b>12:32</b> Desk meal · 19m</span><span><b>2:08</b> Away · 4m</span></div></article>
+    <article class="bento"><span class="feature-tag">Care</span><h3>Move before discomfort accumulates.</h3><p>20-20-20 distance looks and guided position changes are break-aware: meals, away time and personal pauses reset the movement clock instead of stacking more reminders.</p><div class="routine-stack"><span class="on">Look far · 20s</span><span>Change position · 45m</span><span>One cue at a time</span></div></article>
+    <article class="bento"><span class="feature-tag">Oto · sound</span><h3>A layer that yields to the day.</h3><p>Generated offline brown hush, rain and fan textures need no account. Local audio and direct streams are optional. Important Pacefold cues can duck the volume automatically.</p><div class="signal-demo"><i class="dot"></i><span>Offline</span><i class="diamond"></i><span>Ducking</span><i class="square"></i><span>Media keys</span></div></article>
+    <article class="bento wide"><div><span class="feature-tag">Kiroku · OneNote</span><h3>Capture here. Keep it in HSSys.</h3><p>Write a note, task, incident, inspection, JHSC item or follow-up without leaving Pacefold. It saves locally first, then silently appends to one dated page in the OneNote section you choose.</p></div><div class="ledger-lines"><span><b>9:12</b> Follow-up · local</span><span><b>11:06</b> Inspection · queued</span><span><b>2:24</b> Incident · synced</span></div></article>
+    <article class="bento wide local-feature"><div><span class="feature-tag">Local first</span><h3>Private by default, connected by choice.</h3><p>No analytics, ads or Pacefold account. Preferences and the activity ledger stay in this browser. If you connect Microsoft, only captures are sent to the OneNote destination you choose.</p></div><div class="local-badges"><span>Offline</span><span>Auto-update</span><span>Optional sync</span><span>No score</span></div></article>
+  </div></div>
+</section>
+
+<section class="section">
+  <div class="wrap"><div class="sectionhead"><div class="eyebrow">Designed by behaviour, not decoration</div><h2>Japanese restraint in the way it works.</h2><p>The influence lives in the operating logic rather than ornamental clichés.</p></div>
+  <div class="principles"><article class="principle"><span class="jp">Ma</span><h3>Protect the interval</h3><p>Useful pauses belong inside a sustainable workday.</p></article><article class="principle"><span class="jp">Andon</span><h3>Signal exceptions</h3><p>Remain quiet until one cue genuinely needs attention.</p></article><article class="principle"><span class="jp">Kiroku</span><h3>Keep the record</h3><p>Maintain a private, accurate local timeline.</p></article><article class="principle"><span class="jp">Kaizen</span><h3>One improvement</h3><p>Offer one optional adjustment, never a score.</p></article><article class="principle"><span class="jp">Hansei</span><h3>Close the day</h3><p>Reflect calmly and move on without judgment.</p></article></div></div>
+</section>
+
+<section class="section"><div class="wrap"><div class="sectionhead"><div class="eyebrow">Clear expectations</div><h2>What works—and what a browser cannot promise.</h2></div><div class="faq"><details open><summary>Will Pacefold update itself?</summary><p>Yes. It checks after launch, periodically while open, when it regains focus and when connectivity returns. Updates wait rather than reloading over setup or an unfinished capture.</p></details><details><summary>Is OneNote sync really silent?</summary><p>After a one-time Microsoft sign-in and destination choice, captures queue locally and retry in the background. Microsoft Entra registration is required, and university policy may require administrator approval. <a href="./onenote-setup.html">Read the exact setup.</a></p></details><details><summary>Does the sound player control Spotify or YouTube?</summary><p>No. Pacefold generates its own offline textures and can play a local file for the session or a direct HTTPS audio source. It does not pretend it can control unrelated streaming sites.</p></details><details><summary>Will notifications work when Pacefold is closed?</summary><p>Not reliably. Keep the installed app open or minimized for scheduled JavaScript cues. Taskbar, favicon and in-app signals work even when notifications are blocked.</p></details><details><summary>Can it change my monitor’s colour temperature?</summary><p>It can change only Pacefold’s own interface. Full-display colour temperature belongs to Windows or monitor software, so Pacefold offers a user-initiated shortcut to Night light.</p></details><details><summary>Does it need administrator permission?</summary><p>Edge installation normally stays inside the Windows profile, but workplace policy can disable installation, Microsoft consent, notifications, background activity or badges. Pacefold never bypasses those controls.</p></details></div></div></section>
+
+<section class="wrap final"><h2>Space for what matters.</h2><p>Start with Pacefold Original or make the rhythm entirely your own.</p><div class="hero-actions"><a class="button primary" href="./app/?setup=1">Personalize Pacefold</a><button class="button" type="button" onclick="document.getElementById('installButton').click()">Install now</button></div></section>
+</main>
+<footer class="wrap footer"><span>Pacefold 15.2.1 · your day, quietly kept</span><span><a href="./privacy.html">Privacy</a> · <a href="./onenote-setup.html">OneNote setup</a> · <a href="https://github.com/rbt4/pacefold">GitHub</a></span></footer>
+<div class="toast" id="siteToast" role="status" aria-live="polite"></div>
+<script src="./site.js" defer></script>
+</body>
+</html>
