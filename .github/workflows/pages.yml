@@ -62,10 +62,12 @@ jobs:
           import_needle="import path from 'node:path';"
           call_needle="const hardened=hardenInnerHTML(app);app=hardened.source;"
           validate_write="write('scripts/validate.mjs',validate);"
+          browser_write="write('scripts/browser-audit.cjs',browser);"
           browser_version="browser=browser.replaceAll(fromVersion,toVersion);"
           assert source.count(import_needle)==1, 'core migration import anchor changed'
           assert source.count(call_needle)==1, 'core migration Trusted Types call changed'
           assert source.count(validate_write)==1, 'core validation write anchor changed'
+          assert source.count(browser_write)==1, 'browser audit write anchor changed'
           assert source.count(browser_version)==1, 'browser audit version anchor changed'
           source=source.replace(import_needle,import_needle+"\nimport {rewriteInnerHTMLAssignments} from './trusted-types-transform.mjs';")
           source=source.replace(call_needle,"const hardened=rewriteInnerHTMLAssignments(app,'setHTML');app=hardened.source;")
@@ -75,7 +77,17 @@ jobs:
             "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean).filter(ref=>!ref.startsWith('__pacefold-'));",
             'validate virtual shell metadata');
           '''
+          browser_patch=r'''browser=replaceExact(browser,
+            "async function waitControlled(page){await page.waitForFunction(()=>navigator.serviceWorker?.controller,null,{timeout:12000});}",
+            "async function waitControlled(page){try{await page.waitForFunction(()=>navigator.serviceWorker?.controller,null,{timeout:12000});}catch(error){const detail=await page.evaluate(async()=>{const registrations=await navigator.serviceWorker?.getRegistrations?.()||[];return{controller:navigator.serviceWorker?.controller?.scriptURL||'',registrations:registrations.map(r=>({scope:r.scope,active:r.active?{state:r.active.state,url:r.active.scriptURL}:null,waiting:r.waiting?{state:r.waiting.state,url:r.waiting.scriptURL}:null,installing:r.installing?{state:r.installing.state,url:r.installing.scriptURL}:null})),cacheKeys:await caches.keys(),setup:document.querySelector('#setupDock')?.innerText||''};});throw new Error(`Service worker control timeout: ${JSON.stringify(detail)}`);}}",
+            'service worker control diagnostics');
+          browser=replaceExact(browser,
+            "const pageErrors=[];app.on('pageerror',error=>pageErrors.push(error.message));",
+            "const pageErrors=[];app.on('pageerror',error=>pageErrors.push(error.message));app.on('console',message=>{if(message.type()==='error')pageErrors.push(message.text());});",
+            'browser console diagnostics');
+          '''
           source=source.replace(validate_write,validation_patch+validate_write)
+          source=source.replace(browser_write,browser_patch+browser_write)
           file.write_text(source)
           PY
           node --check scripts/harden-core.mjs
