@@ -4,16 +4,20 @@
 
 - Replaced the layered permanent rail with one centered 48 px dock that exposes the current cue, local-first capture, Notebook, contained Media and one progressive-disclosure control.
 - Added a compact command surface for the current action, Capture, Notebook, Media, Weather, OneNote and local diagnostics without creating parallel timers, storage or action implementations.
+- Rebuilt the visual layer as an offline-safe Japanese notebook material with warm paper surfaces, subtle ruled texture, a refined origami mark and consistent embedded vector icons instead of platform-dependent glyphs.
 - Added slash-routed capture for Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources.
 - Defined one taskbar meaning: the badge represents a new unacknowledged actionable cue.
-- Made acknowledgement clear the app badge and Pacefold notifications without completing the underlying cue; Done remains an explicit exactly-once action.
+- Made Quiet clear the app badge and Pacefold notifications without completing the underlying cue.
+- Added Remind 10m, which keeps the cue unresolved, stores a local reminder lease and re-arms taskbar attention when the same action is still waiting.
+- Kept Done as the only completion path and clear acknowledgement/reminder state after completion so future cues cannot inherit stale taskbar behaviour.
 - Added first-pulse acknowledgement, second-interaction control disclosure, focus acknowledgement and clean actionable window titles.
 - Added Current, Capture, Notebook and Media PWA shortcuts to available manifests.
 - Replaced SVG-only notification delivery with generated source-specific PNG artwork for more dependable Windows rendering.
 - Added `Ctrl+Shift+Space`, `/` and `Escape` keyboard paths for controls, Capture and dismissal.
-- Added dark, light, reduced-motion and 390 px layouts with a dock-height ceiling of 60 px and no horizontal overflow.
+- Added self-healing mount, observer and reconcile paths that record through the bounded resilience journal and rebuild a damaged dock instead of leaving dead controls.
+- Added dark, light, forced-colour, reduced-motion and 390 px layouts with a dock-height ceiling of 60 px, balanced mobile taskbar actions and no horizontal overflow.
 - Retained the full 15.7.1 lossless storage, setup lifecycle, OneNote settlement and diagnostic hardening gates.
-- Added an independent integrated browser and visual audit covering exact architecture, slash capture, taskbar acknowledgement, second interaction, explicit completion, Notebook proxying, root restoration, launch shortcuts, clean cue labels and desktop/mobile screenshots.
+- Added an independent integrated browser and visual audit covering exact architecture, slash capture, Quiet/Remind/Done semantics, stale-state cleanup, Notebook proxying, self-reconcile, root restoration, launch shortcuts, clean cue labels, vector visual contracts and desktop/mobile screenshots.
 
 ## 15.7.1 — Lossless lifecycle hardening
 
@@ -134,7 +138,7 @@
 ## 15.1.1 — Browser-gate compatibility
 
 - Corrected the notification-action browser audit to inspect the exact options Pacefold sends to Edge instead of relying on headless Chrome to expose operating-system notification metadata through `getNotifications()`.
-- Kept the durable service-worker queue, reload survival and exactly-once local logging checks unchanged.
+- Kept the durable service-worker action queue, reload survival and exactly-once local logging checks unchanged.
 
 ## 15.1.0 — Taskbar and notification control surface
 
