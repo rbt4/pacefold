@@ -26,7 +26,7 @@ jobs:
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
 
@@ -87,7 +87,7 @@ jobs:
 
       - name: Build and static audit
         run: |
-          node _release/scripts/build.mjs _release
+          PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
 
       - name: Browser application, action and installed-upgrade audit
@@ -126,6 +126,7 @@ jobs:
           node --check _release/app/pacefold-hub-guardian.js
           node --check _release/app/pacefold-resilience.js
           node --check _release/app/pacefold-integrated.js
+          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
           ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
@@ -211,7 +212,7 @@ jobs:
       - name: Reconstruct verified release and install integrated surface
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release _site
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
@@ -241,6 +242,7 @@ jobs:
           node --check _site/app/pacefold-hub-guardian.js
           node --check _site/app/pacefold-resilience.js
           node --check _site/app/pacefold-integrated.js
+          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _site/app/app.js _site/app/pacefold-hub.js _site/app/pacefold-hub-guardian.js _site/app/pacefold-resilience.js _site/app/pacefold-integrated.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
           ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js

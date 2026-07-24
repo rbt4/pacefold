@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync, gunzipSync } from 'node:zlib';
+import { rewriteInnerHTMLAssignments } from '../scripts/trusted-types-transform.mjs';
+const trustedBootstrap="(()=>{if(window.__PACEFOLD_SET_HTML__)return;window.__PACEFOLD_SET_HTML__=(node,value)=>{if(!node)return node;const html=window.__PACEFOLD_TRUSTED_HTML__?window.__PACEFOLD_TRUSTED_HTML__(String(value)):String(value);Reflect.set(node,'innerHTML',html);return node;};})();\n";
 
 const VERSION='15.8.0';
 const MARKER=`pacefold-resilience-${VERSION}`;
@@ -14,7 +16,7 @@ const iconTarget=path.join(appRoot,'icons');
 const assets=['pacefold-hub-guardian.js','pacefold-resilience.js','pacefold-integrated.js','pacefold-integrated.css'];
 
 if(!(await exists(appHtml)))throw new Error(`Pacefold app shell was not found at ${appHtml}`);
-for(const name of assets)await fs.copyFile(path.join(sourceRoot,name),path.join(appRoot,name));
+for(const name of assets){const source=path.join(sourceRoot,name),destination=path.join(appRoot,name);await fs.copyFile(source,destination);if(name.endsWith('.js'))await hardenTrustedScript(destination);}
 await materializeCompressed('pacefold-hub.css.gz.b64',path.join(appRoot,'pacefold-hub.css'));
 await materializeCompressed('pacefold-hub.js.gz.b64',path.join(appRoot,'pacefold-hub.js'));
 await fs.mkdir(iconTarget,{recursive:true});
@@ -180,9 +182,12 @@ async function materializeCompressed(name,destination){
     output=hardenSetupRuntime(output);
     output=hardenPlayerRuntime(output);
   }
+  if(name.endsWith('.js.gz.b64'))output=trustedBootstrap+rewriteInnerHTMLAssignments(output).source;
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
   await fs.writeFile(destination,output);
 }
+async function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}
+
 function upgradeRuntimeVersion(source){
   const matches=source.match(/15\.6\.0/g)||[];
   if(matches.length<1||matches.length>12)throw new Error(`Unexpected embedded runtime version marker count: ${matches.length}`);

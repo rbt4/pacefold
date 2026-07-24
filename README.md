@@ -122,7 +122,7 @@ The 15.8 gate verifies exact single-root and single-dock architecture, slash cap
 
 Core release SHA-256:
 
-`50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7`
+`2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`
 
 Surface version:
 
@@ -137,4 +137,7 @@ Surface version:
 
 ## Version
 
-Pacefold 15.8.0 integrated surface over Pacefold core 15.2.1
+Pacefold 15.8.0 integrated surface over Pacefold core 15.2.2
+## Foreground reminder boundary
+
+Pacefold reminds reliably while its window is open and the device is awake. Browser timers cannot guarantee exact delivery while the window is closed, heavily throttled or the laptop is asleep. Pacefold reports missed scheduled moments with their real time instead of firing a stale notification. Exact background delivery requires the optional native Windows companion.
