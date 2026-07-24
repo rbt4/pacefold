@@ -1,0 +1,34 @@
+name: Agent materialize verified core
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Reconstruct and verify sealed core
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          expected="$(grep -m1 -oE '[a-f0-9]{64}' RELEASE.md)"
+          test -n "$expected"
+          echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir materialized-core
+          unzip -q /tmp/pacefold-v15.zip -d materialized-core
+          cp /tmp/pacefold-v15.zip materialized-core/pacefold-v15.zip
+          find materialized-core -type f -print0 | sort -z | xargs -0 sha256sum > materialized-core/SHA256SUMS
+      - name: Upload verified core
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-verified-core-${{ github.event.pull_request.head.sha || github.sha }}
+          path: materialized-core/
+          if-no-files-found: error
+          retention-days: 1
