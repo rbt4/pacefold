@@ -70,7 +70,16 @@ jobs:
           assert source.count(browser_write)==1, 'browser audit write anchor changed'
           assert source.count(browser_version)==1, 'browser audit version anchor changed'
           source=source.replace(import_needle,import_needle+"\nimport {rewriteInnerHTMLAssignments} from './trusted-types-transform.mjs';")
-          source=source.replace(call_needle,"const hardened=rewriteInnerHTMLAssignments(app,'setHTML');app=hardened.source;")
+          trusted_url_patch=r'''app=replaceExact(app,
+            "  const TT=window.trustedTypes?window.trustedTypes.createPolicy('pacefold',{createHTML:value=>String(value)}):{createHTML:value=>String(value)};",
+            "  const TT=window.trustedTypes?window.trustedTypes.createPolicy('pacefold',{createHTML:value=>String(value),createScriptURL:value=>String(value)}):{createHTML:value=>String(value),createScriptURL:value=>String(value)};",
+            'trusted script URL policy');
+          app=replaceExact(app,
+            "      workerRegistration=await navigator.serviceWorker.register('../service-worker.js',{scope:'../',updateViaCache:'none'});",
+            "      workerRegistration=await navigator.serviceWorker.register(TT.createScriptURL('../service-worker.js'),{scope:'../',updateViaCache:'none'});",
+            'trusted service worker URL');
+          '''
+          source=source.replace(call_needle,trusted_url_patch+"const hardened=rewriteInnerHTMLAssignments(app,'setHTML');app=hardened.source;")
           source=source.replace(browser_version,browser_version+"\nbrowser=browser.replaceAll(fromVersion.replaceAll('.','\\\\.'),toVersion.replaceAll('.','\\\\.'));")
           validation_patch=r'''validate=replaceExact(validate,
             "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean);",
