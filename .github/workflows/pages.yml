@@ -84,8 +84,25 @@ jobs:
 
       - name: Pack and verify release
         run: |
-          node scripts/pack.mjs . _agent_core
-          node scripts/verify.mjs .
+          set +e
+          {
+            node scripts/pack.mjs . _agent_core
+            node scripts/verify.mjs .
+          } 2>&1 | tee /tmp/pacefold-pack-verify.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-pack-verify.status
+          exit "$status"
+
+      - name: Upload pack verification failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-pack-verify-failure-${{ github.run_id }}
+          path: |
+            /tmp/pacefold-pack-verify.log
+            /tmp/pacefold-pack-verify.status
+          if-no-files-found: ignore
+          retention-days: 1
 
       - name: Prepare browser audit builds
         run: |
