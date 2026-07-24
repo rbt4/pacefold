@@ -53,9 +53,14 @@ jobs:
           new_footer="`<footer class=\"wrap footer\"><span>Pacefold ${toVersion} · for any workday</span>`"
           old_audit="browser=browser.replaceAll('your day, quietly kept','a quieter rhythm for any workday');"
           new_audit="browser=browser.replaceAll('your day, quietly kept','for any workday');"
+          version_anchor="browser=browser.split(fromVersion).join(toVersion);"
+          escaped_version="browser=browser.split(fromVersion.replaceAll('.','\\\\.')).join(toVersion.replaceAll('.','\\\\.'));"
           assert source.count(old_footer)==1, 'universal footer anchor changed'
           assert source.count(old_audit)==1, 'landing audit anchor changed'
-          file.write_text(source.replace(old_footer,new_footer).replace(old_audit,new_audit))
+          assert source.count(version_anchor)==1, 'browser version anchor changed'
+          source=source.replace(old_footer,new_footer).replace(old_audit,new_audit)
+          source=source.replace(version_anchor,version_anchor+'\n'+escaped_version)
+          file.write_text(source)
           PY
           set +e
           node scripts/generalize-product.mjs /tmp/pacefold-core 15.2.2 15.2.3 > /tmp/pacefold-generalize.log 2>&1
