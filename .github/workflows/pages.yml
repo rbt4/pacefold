@@ -51,7 +51,9 @@ jobs:
       - name: Assemble migration
         run: |
           ls -l .agent/harden-core.part-*
-          cat .agent/harden-core.part-* > scripts/harden-core.mjs
+          cat .agent/harden-core.part-00 > scripts/harden-core.mjs
+          tail -n +4 .agent/harden-core.part-01 >> scripts/harden-core.mjs
+          cat .agent/harden-core.part-02 .agent/harden-core.part-03 >> scripts/harden-core.mjs
           node --check scripts/harden-core.mjs
 
       - name: Harden core, injector and repository
