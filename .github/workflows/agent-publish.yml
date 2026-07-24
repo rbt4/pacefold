@@ -1,8 +1,8 @@
 name: Publish verified Pacefold hardening
 
 on:
-  push:
-    branches: [agent/pacefold-function-hardening]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   publish:
-    if: github.repository == 'rbt4/pacefold'
+    if: github.repository == 'rbt4/pacefold' && github.event.pull_request.head.ref == 'agent/pacefold-function-hardening'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
