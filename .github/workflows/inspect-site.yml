@@ -1,41 +1,99 @@
-name: Inspect Pacefold site source
+name: Build universal Pacefold public site
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: pacefold-generic-public-site
+  cancel-in-progress: true
 
 jobs:
-  inspect:
+  build:
     if: github.repository == 'rbt4/pacefold' && github.event.pull_request.head.ref == 'agent/pacefold-generic-public-site'
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
-      - name: Reconstruct verified core
+        with:
+          ref: agent/pacefold-generic-public-site
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Reconstruct verified core and decide whether migration is needed
+        id: state
         run: |
+          rm -rf /tmp/pacefold-core /tmp/pacefold-previous /tmp/pacefold-current /tmp/pacefold-site
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           expected="$(sed -n 's/^- SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p' RELEASE.md)"
           echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
-          mkdir /tmp/pacefold-source
-          unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-source
-          mkdir /tmp/pacefold-inspection
-          cp /tmp/pacefold-source/index.html /tmp/pacefold-inspection/
-          cp /tmp/pacefold-source/site.js /tmp/pacefold-inspection/
-          cp /tmp/pacefold-source/site-style-01.css /tmp/pacefold-inspection/
-          cp /tmp/pacefold-source/site-style-02.css /tmp/pacefold-inspection/
-          cp /tmp/pacefold-source/app/index.html /tmp/pacefold-inspection/app-index.html
-          cp /tmp/pacefold-source/app/app.js /tmp/pacefold-inspection/app.js
-          cp /tmp/pacefold-source/app/app-style-01.css /tmp/pacefold-inspection/app-style-01.css
-          cp /tmp/pacefold-source/app/app-style-02.css /tmp/pacefold-inspection/app-style-02.css
-          cp /tmp/pacefold-source/app/app-style-03.css /tmp/pacefold-inspection/app-style-03.css
-          cp /tmp/pacefold-source/app/app-style-04.css /tmp/pacefold-inspection/app-style-04.css
-          cp /tmp/pacefold-source/app/app-style-05.css /tmp/pacefold-inspection/app-style-05.css
-      - name: Upload source inspection
-        uses: actions/upload-artifact@v4
-        with:
-          name: pacefold-site-source-${{ github.run_id }}
-          path: /tmp/pacefold-inspection/
-          retention-days: 1
+          mkdir /tmp/pacefold-core /tmp/pacefold-previous
+          unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-core
+          unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-previous
+          current="$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" /tmp/pacefold-core/app/app.js | head -n 1)"
+          if [ "$current" = "15.2.3" ]; then
+            echo "needs_build=false" >> "$GITHUB_OUTPUT"
+            echo "Universal site release already published."
+          else
+            test "$current" = "15.2.2"
+            echo "needs_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generalize, pack and verify
+        if: steps.state.outputs.needs_build == 'true'
+        run: |
+          node scripts/generalize-product.mjs /tmp/pacefold-core 15.2.2 15.2.3
+          node scripts/generalize-repository.mjs .
+          node scripts/pack.mjs . /tmp/pacefold-core
+          cp .github/workflows/pages.yml scripts/pages.generated.yml
+          node scripts/verify.mjs .
+          grep -q 'One quiet layer for any workday' /tmp/pacefold-core/index.html
+          grep -q 'Capture here. Keep it where you work.' /tmp/pacefold-core/index.html
+          ! grep -q 'Keep it in HSSys' /tmp/pacefold-core/index.html
+          grep -q "profile:'original'" /tmp/pacefold-core/app/app.js
+          grep -q "workHours:'08:30-16:30'" /tmp/pacefold-core/app/app.js
+          grep -q 'waterTarget:24' /tmp/pacefold-core/app/app.js
+          grep -q "asr:'hanafi'" /tmp/pacefold-core/app/app.js
+          grep -q "prepPreset:'noodles'" /tmp/pacefold-core/app/app.js
+          grep -q "lunchMode:'desk'" /tmp/pacefold-core/app/app.js
+          grep -q "locationLabel:'Toronto'" /tmp/pacefold-core/app/app.js
+          git checkout HEAD -- .github/workflows/pages.yml .github/workflows/inspect-site.yml
+
+      - name: Prepare browser audit builds
+        if: steps.state.outputs.needs_build == 'true'
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-current.zip
+          mkdir /tmp/pacefold-current /tmp/pacefold-site
+          unzip -q /tmp/pacefold-current.zip -d /tmp/pacefold-current
+          cp -a /tmp/pacefold-current/. /tmp/pacefold-site/
+          PACEFOLD_DEBUG=1 node /tmp/pacefold-current/scripts/build.mjs /tmp/pacefold-current
+          node /tmp/pacefold-current/scripts/validate.mjs /tmp/pacefold-current
+          node enhancements/inject.mjs /tmp/pacefold-site
+
+      - name: Install browser audit runtime
+        if: steps.state.outputs.needs_build == 'true'
+        run: |
+          npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
+          /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run core and integrated browser gates
+        if: steps.state.outputs.needs_build == 'true'
+        env:
+          NODE_PATH: /tmp/pacefold-browser-audit/node_modules
+        run: |
+          node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
+          node enhancements/run-hub-audit.cjs /tmp/pacefold-site
+          node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
+          node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+
+      - name: Publish verified product and generated workflow blob
+        if: steps.state.outputs.needs_build == 'true'
+        run: |
+          git config user.name pacefold-agent
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md RELEASE.md enhancements/VERSION release/ scripts/pages.generated.yml
+          git commit -m "Generalize Pacefold public site and preserve original defaults"
+          git push origin HEAD:agent/pacefold-generic-public-site
