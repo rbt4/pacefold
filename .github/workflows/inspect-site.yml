@@ -44,7 +44,21 @@ jobs:
 
       - name: Generalize bundled product
         if: steps.state.outputs.needs_build == 'true'
-        run: node scripts/generalize-product.mjs /tmp/pacefold-core 15.2.2 15.2.3
+        run: |
+          set +e
+          node scripts/generalize-product.mjs /tmp/pacefold-core 15.2.2 15.2.3 > /tmp/pacefold-generalize.log 2>&1
+          status=$?
+          cat /tmp/pacefold-generalize.log
+          exit "$status"
+
+      - name: Upload migration diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-generic-migration-${{ github.run_id }}
+          path: /tmp/pacefold-generalize.log
+          if-no-files-found: ignore
+          retention-days: 1
 
       - name: Generalize public repository copy
         if: steps.state.outputs.needs_build == 'true'
