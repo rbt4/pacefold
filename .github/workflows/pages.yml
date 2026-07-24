@@ -85,6 +85,10 @@ jobs:
             "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean);",
             "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean).filter(ref=>!ref.startsWith('__pacefold-'));",
             'validate virtual shell metadata');
+          validate=replaceExact(validate,
+            "if(!appJs.includes(\"navigator.serviceWorker.register('../service-worker.js'\"))fail('App does not register the root service worker');",
+            "if(!appJs.includes(\"navigator.serviceWorker.register(TT.createScriptURL('../service-worker.js')\"))fail('App does not register the trusted root service worker');",
+            'validate trusted worker registration');
           '''
           browser_patch=r'''browser=replaceExact(browser,
             "async function waitControlled(page){await page.waitForFunction(()=>navigator.serviceWorker?.controller,null,{timeout:12000});}",
