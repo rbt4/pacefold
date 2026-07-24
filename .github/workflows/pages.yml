@@ -98,6 +98,10 @@ jobs:
             "const pageErrors=[];app.on('pageerror',error=>pageErrors.push(error.message));",
             "const pageErrors=[];app.on('pageerror',error=>pageErrors.push(error.message));app.on('console',message=>{if(message.type()==='error')pageErrors.push(message.text());});",
             'browser console diagnostics');
+          browser=replaceExact(browser,
+            "state.notificationMode='all';localStorage.setItem('pacefoldPrefsV15',JSON.stringify(state));});await app.reload({waitUntil:'networkidle'});const outcome=",
+            "state.notificationMode='all';localStorage.setItem('pacefoldPrefsV15',JSON.stringify(state));});await app.goto(`${base}/app/?debug=1`,{waitUntil:'networkidle'});const outcome=",
+            'notification debug navigation');
           '''
           source=source.replace(validate_write,validation_patch+validate_write)
           source=source.replace(browser_write,browser_patch+browser_write)
