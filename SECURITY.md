@@ -7,3 +7,7 @@ The Pages workflow reconstructs a pinned release archive and rejects it unless i
 Preferences, activity records, captures, notification deduplication, notification-action history, profiles and custom moments are stored in browser local storage. A separate same-origin action cache temporarily holds a clicked notification response until Pacefold records and acknowledges it; entries expire after seven days and contain only the cue key, source, action and timestamp.
 
 The optional OneNote connection uses Microsoft identity and delegated Graph `Notes.ReadWrite`; it has no client secret or application-only permission and sends only capture time, category and text.
+
+## Microsoft authentication state
+
+Pacefold explicitly configures MSAL to use sessionStorage with auth-state cookies disabled. Microsoft access tokens are not persisted in localStorage and end with the Pacefold window session.
