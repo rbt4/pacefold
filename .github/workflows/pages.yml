@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.7.0
+name: Validate and deploy Pacefold 15.7.1
 
 on:
   push:
@@ -67,6 +67,8 @@ jobs:
           node --check enhancements/pacefold-resilience.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
+          node --check enhancements/run-hub-audit.cjs
+          node --check enhancements/resilience-audit.cjs
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01b)" = "218fbe2ab562da27c9bd8cc1867d0749ee989566"
@@ -86,15 +88,15 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
-      - name: Inject twice and audit resilience surface
+      - name: Inject resilience surface twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
           test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _release/index.html
-          test "$(grep -o 'data-pacefold-hub="15.7.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-hub-guardian="15.7.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-resilience="15.7.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-hub="15.7.1"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-hub-guardian="15.7.1"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-resilience="15.7.1"' _release/app/index.html | wc -l)" -eq 1
           grep -q 'https://api.open-meteo.com' _release/app/index.html
           grep -q 'https://graph.microsoft.com' _release/app/index.html
           grep -q 'https://www.youtube-nocookie.com' _release/app/index.html
@@ -112,10 +114,45 @@ jobs:
           ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
           ! grep -q 'pacefold-notebook-15.6.0' _release/service-worker.js
           ! grep -q 'pacefold-notebook-15.6.0' _release/app/service-worker.js
-          test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/service-worker.js | wc -l)" -eq 1
-          test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/app/service-worker.js | wc -l)" -eq 1
-          ! sed -n '/BEGIN pacefold-resilience-15.7.0/,/END pacefold-resilience-15.7.0/p' _release/app/service-worker.js | grep -q 'caches.delete'
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
+          test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/app/service-worker.js | wc -l)" -eq 1
+          ! sed -n '/BEGIN pacefold-resilience-15.7.1/,/END pacefold-resilience-15.7.1/p' _release/app/service-worker.js | grep -q 'caches.delete'
+      - name: Notebook and integration browser audit
+        continue-on-error: true
+        run: |
+          echo 99 > /tmp/pacefold-notebook-audit.status
+          set +e
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs _release 2>&1 | tee /tmp/pacefold-notebook-audit.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-notebook-audit.status
+          exit 0
+      - name: Destructive resilience browser audit
+        continue-on-error: true
+        run: |
+          echo 99 > /tmp/pacefold-resilience-audit.status
+          set +e
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release 2>&1 | tee /tmp/pacefold-resilience-audit.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-resilience-audit.status
+          exit 0
+      - name: Upload browser audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-audit-logs-${{ github.run_id }}
+          path: |
+            /tmp/pacefold-notebook-audit.log
+            /tmp/pacefold-notebook-audit.status
+            /tmp/pacefold-resilience-audit.log
+            /tmp/pacefold-resilience-audit.status
+          if-no-files-found: error
+          retention-days: 7
+      - name: Require both resilience audits
+        run: |
+          echo "Notebook audit status: $(cat /tmp/pacefold-notebook-audit.status)"
+          echo "Destructive audit status: $(cat /tmp/pacefold-resilience-audit.status)"
+          test "$(cat /tmp/pacefold-notebook-audit.status)" = "0"
+          test "$(cat /tmp/pacefold-resilience-audit.status)" = "0"
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -151,8 +188,8 @@ jobs:
           node enhancements/inject.mjs _site
           test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _site/index.html
-          grep -q 'data-pacefold-hub="15.7.0"' _site/app/index.html
-          grep -q 'data-pacefold-resilience="15.7.0"' _site/app/index.html
+          grep -q 'data-pacefold-hub="15.7.1"' _site/app/index.html
+          grep -q 'data-pacefold-resilience="15.7.1"' _site/app/index.html
           grep -q 'https://graph.microsoft.com' _site/app/index.html
           test -f _site/app/icons/fold-mark.svg
           test -f _site/app/icons/notify-water.svg
@@ -164,7 +201,7 @@ jobs:
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
           ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js
-          test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _site/app/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _site/app/service-worker.js | wc -l)" -eq 1
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact

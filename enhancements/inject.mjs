@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-const VERSION='15.7.0';
+const VERSION='15.7.1';
 const MARKER=`pacefold-resilience-${VERSION}`;
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -42,7 +42,7 @@ for(const workerPath of [path.join(targetRoot,'service-worker.js'),path.join(app
 }
 
 await fs.writeFile(path.join(targetRoot,'pacefold-hub-version.txt'),`${VERSION}\n`);
-console.log(`Installed Pacefold Resilience ${VERSION}: ordered startup, setup-safe guardian, storage recovery and idempotent notification patching.`);
+console.log(`Installed Pacefold Resilience ${VERSION}: stable setup exit, lossless recovery, settled sync locks and deduplicated diagnostics.`);
 
 function removeOldSurfaceAssets(source){
   return source
@@ -50,10 +50,13 @@ function removeOldSurfaceAssets(source){
     .replace(/\s*<script[^>]+data-pacefold-(?:hub(?:-guardian)?|resilience)[^>]*><\/script>/gi,'');
 }
 function removePreviousWorkerPatches(source){
-  return source
+  const before=source;
+  const next=source
     .replace(/\n*\/\/ BEGIN pacefold-[\s\S]*?\/\/ END pacefold-[^\n]*\n?/gi,'\n')
-    .replace(/\n*\/\/ pacefold-(?:kanso|origami|notebook|resilience)-[\s\S]*$/i,'\n')
+    .replace(/\n*\/\/ pacefold-(?:kanso|origami|notebook|resilience)-[^\n]*\n[\s\S]*$/i,'\n')
     .replace(/\s+$/,'');
+  if(before.length>0&&next.length<Math.min(200,before.length*0.1))throw new Error('Refusing to replace a service worker after an unsafe legacy-patch cleanup');
+  return next;
 }
 function notificationArtworkPatch(isAppWorker){
   const prefix=isAppWorker?'./icons/':'./app/icons/';
@@ -142,11 +145,27 @@ async function materializeCompressed(name,destination){
     : await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
   let output=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
   if(name.endsWith('.js.gz.b64')){
-    output=output.replaceAll('15.6.0',VERSION);
+    output=upgradeRuntimeVersion(output);
+    output=hardenSetupRuntime(output);
     output=hardenPlayerRuntime(output);
   }
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
   await fs.writeFile(destination,output);
+}
+function upgradeRuntimeVersion(source){
+  const matches=source.match(/15\.6\.0/g)||[];
+  if(matches.length<1||matches.length>12)throw new Error(`Unexpected embedded runtime version marker count: ${matches.length}`);
+  const next=source.replaceAll('15.6.0',VERSION);
+  if(next.includes('15.6.0')||!next.includes(VERSION))throw new Error('Embedded runtime version upgrade was incomplete');
+  return next;
+}
+function hardenSetupRuntime(source){
+  const legacy=/(set up pacefold\|welcome to pacefold\|choose your rhythm\|complete setup)\|get started/g;
+  const matches=[...source.matchAll(legacy)];
+  if(matches.length!==1)throw new Error(`Unexpected legacy setup-text signature count: ${matches.length}`);
+  const next=source.replace(legacy,'$1');
+  if(next.includes('complete setup|get started'))throw new Error('Legacy generic setup phrase survived runtime hardening');
+  return next;
 }
 function hardenPlayerRuntime(source){
   let next=source.replaceAll('allow-popups-to-escape-sandbox','');

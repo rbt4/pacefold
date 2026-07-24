@@ -1,5 +1,17 @@
 # Changelog
 
+## 15.7.1 — Lossless lifecycle hardening
+
+- Preserved malformed notebook data whenever both local and session recovery writes fail instead of deleting the only copy.
+- Added entry-count and payload-size bounds, missing-ID repair, dual-store recovery pruning and truthful recovery notices.
+- Deduplicated repeated diagnostics, redacted URLs, email addresses and credential-like values, and added a session-storage journal fallback.
+- Bound OneNote busy state and the cross-window lease to the real adapter promise, sharing identical in-flight page sends and timing out hung requests safely.
+- Narrowed setup text detection so normal content containing “get started” cannot hide Pacefold.
+- Made setup-exit recovery non-starvable, added bounded fresh-remount retries and aligned the legacy embedded detector at the reconciliation boundary without hiding real onboarding.
+- Repaired duplicate roots deterministically and refused unsafe service-worker cleanup or incomplete runtime version substitution.
+- Split release validation into core, construction, notebook/integration and destructive resilience gates with retained diagnostic artifacts.
+- Added failure injection for storage quota exhaustion, setup flapping, ordinary setup-like text, duplicate roots, duplicate OneNote requests and repeated sensitive errors.
+
 ## 15.7.0 — Resilience hardening
 
 - Aligned the guardian with the core’s real `data-onboard-profile` and `.onboarding-option` setup controls so the lower workspace cannot reappear over onboarding.
@@ -38,7 +50,7 @@
 
 ## 15.4.0 — Kanso corrective redesign
 
-- Removed the redundant three-card Hub, duplicate Pacefold branding and duplicate Capture/Care/Weather tab system introduced in 15.3.
+- Removed the redundant three-card Hub, duplicate Capture/Care/Weather tab system introduced in 15.3.
 - Replaced the standalone Care destination with one Andon-style action that translates the live core cue into Hydrate, Look far, Move, Prayer, Meal, Prepare or Step away.
 - Rebuilt the persistent bottom surface around one always-open Kiroku capture field and one quiet media rail using scalable line icons, host-aware light/dark material and restrained contextual motion.
 - Kept OneNote available through Windows Share while retaining clipboard, Markdown export and optional OneDrive-synced folder filing; removed the redundant permanent OneNote mini-app/button.
@@ -138,4 +150,4 @@
 
 ## 13.1.0 — Claude foundation
 
-- Added location-aware prayer/Qibla calculations and consolidated application source.
+- Added location-aware prayer/Qiblah calculations and consolidated application source.
