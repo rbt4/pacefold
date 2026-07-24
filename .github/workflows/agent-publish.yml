@@ -33,8 +33,9 @@ jobs:
           const file='scripts/pages.generated.yml';
           let source=fs.readFileSync(file,'utf8');
           const replaceExact=(needle,replacement,expected,label)=>{const count=source.split(needle).length-1;if(count!==expected)throw new Error(`${label}: expected ${expected}, found ${count}`);source=source.split(needle).join(replacement);};
+          const replaceFirst=(needle,replacement,label)=>{const index=source.indexOf(needle);if(index<0)throw new Error(`${label}: source anchor missing`);source=source.slice(0,index)+replacement+source.slice(index+needle.length);};
           replaceExact(process.env.OLD_SHA,process.env.NEW_SHA,2,'core SHA pins');
-          replaceExact('          node _release/scripts/build.mjs _release','          PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release',1,'debug audit build');
+          replaceFirst('          node _release/scripts/build.mjs _release','          PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release','debug audit build');
           replaceExact('          node --check _release/app/pacefold-integrated.js','          node --check _release/app/pacefold-integrated.js\n          ! grep -R -E -q \'\\.innerHTML[[:space:]]*=\' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js',1,'validation Trusted Types assertion');
           replaceExact('          node --check _site/app/pacefold-integrated.js','          node --check _site/app/pacefold-integrated.js\n          ! grep -R -E -q \'\\.innerHTML[[:space:]]*=\' _site/app/app.js _site/app/pacefold-hub.js _site/app/pacefold-hub-guardian.js _site/app/pacefold-resilience.js _site/app/pacefold-integrated.js',1,'deploy Trusted Types assertion');
           fs.writeFileSync(file,source);
