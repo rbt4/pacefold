@@ -44,6 +44,10 @@ if(fs.existsSync(coreBrowserPath)){
     "assert(rawSink,'Trusted Types did not reject an unwrapped HTML assignment');",
     "assert(rawSink,'Trusted Types did not reject an unwrapped HTML assignment');for(let index=pageErrors.length-1;index>=0;index-=1)if(/TrustedHTML assignment|requires 'TrustedHTML'/.test(pageErrors[index]))pageErrors.splice(index,1);",
     'expected Trusted Types audit violation');
+  browser=replaceExact(browser,
+    "for(let i=0;i<50;i++)window.pacefoldDebug.observeClock(Date.now()+2*864e5);const forward=window.pacefoldDebug.observeClock(Date.now()-2*864e5);",
+    "for(let i=0;i<25;i++){window.pacefoldDebug.observeClock(Date.now()+2*864e5);window.pacefoldDebug.observeClock(Date.now());}const forward=window.pacefoldDebug.observeClock(Date.now()+2*864e5);",
+    'repeated clock discontinuity audit');
   fs.writeFileSync(coreBrowserPath,browser);
 }
 
