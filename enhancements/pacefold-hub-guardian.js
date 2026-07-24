@@ -12,6 +12,7 @@ let preservedRoot=null;
 let frame=0;
 let wasSetup=false;
 let setupExitTimer=0;
+let setupExitEpoch=-1;
 let setupEpoch=0;
 
 function visible(element){
@@ -35,9 +36,9 @@ function setupVisible(){
   return setupTextPanelVisible();
 }
 function clearSetupExitTimer(){
-  if(!setupExitTimer)return;
-  clearTimeout(setupExitTimer);
+  if(setupExitTimer)clearTimeout(setupExitTimer);
   setupExitTimer=0;
+  setupExitEpoch=-1;
 }
 function removeForSetup(current){
   wasSetup=true;
@@ -48,9 +49,12 @@ function removeForSetup(current){
   document.documentElement.classList.remove('pf-hub-mounted');
 }
 function restoreAfterStableSetupExit(epoch){
+  if(setupExitTimer&&setupExitEpoch===epoch)return;
   clearSetupExitTimer();
+  setupExitEpoch=epoch;
   setupExitTimer=setTimeout(()=>{
     setupExitTimer=0;
+    setupExitEpoch=-1;
     if(epoch!==setupEpoch||setupVisible())return;
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       if(epoch!==setupEpoch||setupVisible())return;
