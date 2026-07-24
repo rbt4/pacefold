@@ -42,9 +42,7 @@ function installBrowserStubs(context){
     window.__oneNoteSyncs=[];
     Object.defineProperty(navigator,'setAppBadge',{configurable:true,value:async value=>window.__badgeEvents.push(['set',value??1])});
     Object.defineProperty(navigator,'clearAppBadge',{configurable:true,value:async()=>window.__badgeEvents.push(['clear'])});
-    try{
-      Object.defineProperty(ServiceWorkerContainer.prototype,'getRegistration',{configurable:true,value:async()=>({getNotifications:async()=>[{close(){window.__closedNotifications+=1;}}]})});
-    }catch{}
+    try{Object.defineProperty(ServiceWorkerContainer.prototype,'getRegistration',{configurable:true,value:async()=>({getNotifications:async()=>[{close(){window.__closedNotifications+=1;}}]})});}catch{}
     Object.defineProperty(navigator,'share',{configurable:true,value:async()=>{}});
     window.PacefoldOneNote={syncPage:async payload=>{window.__oneNoteSyncs.push(payload);return true;}};
   });
@@ -60,6 +58,7 @@ async function addCue(page,label='Drink water'){
     document.getElementById('pf-flow-audit-cue')?.remove();
     const cue=document.createElement('div');
     cue.id='pf-flow-audit-cue';cue.setAttribute('role','alert');
+    cue.style.cssText='position:fixed;left:-10000px;top:0;width:240px;height:50px;overflow:hidden';
     cue.innerHTML=`<span>${text}</span><button>Done</button>`;
     window.__cueClicks=0;
     cue.querySelector('button').onclick=()=>{window.__cueClicks+=1;cue.remove();};
@@ -67,6 +66,7 @@ async function addCue(page,label='Drink water'){
   },label);
   await page.waitForSelector('.pf-andon.is-waiting',{timeout:4000});
   await page.waitForFunction(()=>document.querySelector('[data-pf-flow-pulse]')?.dataset.state==='new');
+  await page.waitForFunction(expected=>[...document.querySelectorAll('[data-pf-flow-cue-text]')].every(node=>node.textContent===expected),label);
 }
 
 async function main(){
@@ -84,8 +84,10 @@ async function main(){
     assert(guardian.includes("const VERSION='15.8.0'"),'Guardian version is not 15.8.0');
     assert(resilience.includes("const VERSION='15.8.0'"),'Resilience version is not 15.8.0');
     assert(flow.includes("const ACK_KEY='pacefold.flow.ack.v1'")&&flow.includes('taskbar-acknowledged'),'Taskbar acknowledgement contract is missing');
+    assert(flow.includes('function cueLabel('),'Actionable cue-label extraction is missing');
     for(const route of ['/incident','/follow','/jhsc'])assert(flow.includes(route.slice(1)),`Capture route ${route} is missing`);
     assert(flowCss.includes('min-height:48px')&&flowCss.includes('@media (max-width:760px)'),'Minimal dock or mobile contract missing');
+    assert(flowCss.includes('translateX(-50%)')&&flowCss.includes('pointer-events:auto!important'),'Dock centering or interaction contract missing');
     const guardianIndex=appHtml.indexOf('data-pacefold-hub-guardian="15.8.0"');
     const resilienceIndex=appHtml.indexOf('data-pacefold-resilience="15.8.0"');
     const hubIndex=appHtml.indexOf('data-pacefold-hub="15.8.0"',resilienceIndex+1);
@@ -94,14 +96,10 @@ async function main(){
     assert((appHtml.match(/data-pacefold-flow="15\.8\.0"/g)||[]).length===2,'Integrated CSS/script markers are not idempotent');
     assert((worker.match(/BEGIN pacefold-resilience-15\.8\.0/g)||[]).length===1,'15.8 worker patch is duplicated');
     assert(worker.includes('notify-water.png')&&worker.includes('fold-mark.png')&&!worker.includes("notify-water.svg';"),'Worker is not using raster notification artwork');
-    for(const name of ['fold-mark.png','notify-water.png','notify-eyes.png','notify-move.png','notify-prayer.png','notify-meal.png','notify-prepare.png','notify-away.png']){
-      assert(pngSignature(path.join(root,'app','icons',name)),`${name} is missing or not a valid PNG`);
-    }
+    for(const name of ['fold-mark.png','notify-water.png','notify-eyes.png','notify-move.png','notify-prayer.png','notify-meal.png','notify-prepare.png','notify-away.png'])assert(pngSignature(path.join(root,'app','icons',name)),`${name} is missing or not a valid PNG`);
     const manifests=manifestFiles();
     assert(manifests.length>0,'No Pacefold manifest was found');
-    const shortcutUrls=manifests.flatMap(file=>{
-      try{return (JSON.parse(fs.readFileSync(file,'utf8')).shortcuts||[]).map(item=>String(item.url||''));}catch{return [];}
-    });
+    const shortcutUrls=manifests.flatMap(file=>{try{return (JSON.parse(fs.readFileSync(file,'utf8')).shortcuts||[]).map(item=>String(item.url||''));}catch{return [];}});
     for(const intent of ['current','capture','notebook','media'])assert(shortcutUrls.some(url=>new RegExp(`[?&]pf=${intent}(?:&|$)`).test(url)),`Manifest shortcut pf=${intent} is missing`);
 
     mark('browser-start');
@@ -129,11 +127,12 @@ async function main(){
       playerSources:document.querySelectorAll('.pf-player-row[data-pf-flow-source="true"]').length,
       andonSources:document.querySelectorAll('.pf-andon[data-pf-flow-source="true"]').length,
       barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,
+      dockCenter:Math.abs((document.getElementById('pf-flow-dock')?.getBoundingClientRect().left||0)+(document.getElementById('pf-flow-dock')?.getBoundingClientRect().width||0)/2-innerWidth/2),
       unknown:[...document.querySelectorAll('#pf-hub-root [data-pf-action]')].map(node=>node.dataset.pfAction).filter(action=>!window.__PACEFOLD_SURFACE__.actions.includes(action))
     }));
     assert(architecture.roots===1&&architecture.docks===1&&architecture.version==='15.8.0',`Integrated architecture is invalid: ${JSON.stringify(architecture)}`);
     assert(architecture.captureSources===1&&architecture.playerSources===1&&architecture.andonSources===1,'Proven source controls were not retained exactly once');
-    assert(architecture.barHeight<=60,`Desktop dock is too tall: ${architecture.barHeight}`);
+    assert(architecture.barHeight<=60&&architecture.dockCenter<=2,`Desktop dock geometry failed: ${JSON.stringify(architecture)}`);
     assert(architecture.unknown.length===0,`Unknown hub actions exist: ${architecture.unknown.join(',')}`);
 
     mark('slash-capture');
@@ -144,7 +143,7 @@ async function main(){
     assert(capture.length===1&&capture[0].section==='Incidents',`Slash capture was not exactly once: ${JSON.stringify(capture)}`);
 
     mark('taskbar-acknowledgement');
-    await addCue(page);
+    await addCue(page,'Drink water');
     await page.waitForFunction(()=>window.__badgeEvents.some(event=>event[0]==='set'));
     await page.locator('[data-pf-flow-pulse]').click();
     await page.waitForFunction(()=>localStorage.getItem('pacefold.flow.ack.v1')&&window.__badgeEvents.some(event=>event[0]==='clear'));
@@ -154,10 +153,11 @@ async function main(){
       cueWaiting:Boolean(document.querySelector('.pf-andon.is-waiting')),
       panelHidden:document.querySelector('[data-pf-flow-panel]').hidden,
       pulseState:document.querySelector('[data-pf-flow-pulse]').dataset.state,
+      cueText:document.querySelector('[data-pf-flow-cue-text]').textContent,
       closed:window.__closedNotifications,
       ack:JSON.parse(localStorage.getItem('pacefold.flow.ack.v1')||'null')
     }));
-    assert(acknowledged.cueClicks===0&&acknowledged.cueWaiting&&acknowledged.panelHidden&&acknowledged.pulseState==='waiting',`Taskbar acknowledgement completed or opened the cue: ${JSON.stringify(acknowledged)}`);
+    assert(acknowledged.cueClicks===0&&acknowledged.cueWaiting&&acknowledged.panelHidden&&acknowledged.pulseState==='waiting'&&acknowledged.cueText==='Drink water',`Taskbar acknowledgement completed, opened or mangled the cue: ${JSON.stringify(acknowledged)}`);
     assert(acknowledged.closed>=1&&acknowledged.ack?.version==='15.8.0','Taskbar acknowledgement did not clear notification state');
 
     mark('second-interaction-and-done');
@@ -167,6 +167,7 @@ async function main(){
     await page.locator('[data-pf-flow-done]').click();
     await page.waitForFunction(()=>window.__cueClicks===1&&!document.getElementById('pf-flow-audit-cue'));
     await page.waitForFunction(()=>document.querySelector('[data-pf-flow-pulse]')?.dataset.state==='calm');
+    await page.waitForFunction(()=>[...document.querySelectorAll('[data-pf-flow-cue-text]')].every(node=>node.textContent==='No action waiting'));
 
     mark('notebook-proxy');
     await page.locator('[data-pf-flow-tool="notebook"]').first().click();
@@ -205,9 +206,10 @@ async function main(){
       barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,
       dockWidth:document.getElementById('pf-flow-dock')?.getBoundingClientRect().width,
       overflow:document.documentElement.scrollWidth>innerWidth+2,
-      panelVisible:document.querySelector('[data-pf-flow-panel]')?.hidden===false
+      panelVisible:document.querySelector('[data-pf-flow-panel]')?.hidden===false,
+      cueText:document.querySelector('[data-pf-flow-cue-text]')?.textContent
     }));
-    assert(mobileState.roots===1&&mobileState.docks===1&&mobileState.barHeight<=60&&!mobileState.overflow&&mobileState.panelVisible,`Mobile integrated layout failed: ${JSON.stringify(mobileState)}`);
+    assert(mobileState.roots===1&&mobileState.docks===1&&mobileState.barHeight<=60&&!mobileState.overflow&&mobileState.panelVisible&&mobileState.cueText==='Look far for twenty seconds',`Mobile integrated layout failed: ${JSON.stringify(mobileState)}`);
     await mobile.screenshot({path:path.join(artifactRoot,'pacefold-flow-mobile.png'),fullPage:true});
 
     if(errors.some(error=>/pacefold|pf-flow|pf-hub|Unhandled/i.test(error)))throw new Error(`15.8 browser errors: ${errors.join(' | ')}`);
