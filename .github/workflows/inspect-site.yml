@@ -45,6 +45,18 @@ jobs:
       - name: Generalize bundled product
         if: steps.state.outputs.needs_build == 'true'
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          file=Path('scripts/generalize-product.mjs')
+          source=file.read_text()
+          old_footer="`<footer class=\"wrap footer\"><span>Pacefold ${toVersion} · a quieter rhythm for any workday</span>`"
+          new_footer="`<footer class=\"wrap footer\"><span>Pacefold ${toVersion} · for any workday</span>`"
+          old_audit="browser=browser.replaceAll('your day, quietly kept','a quieter rhythm for any workday');"
+          new_audit="browser=browser.replaceAll('your day, quietly kept','for any workday');"
+          assert source.count(old_footer)==1, 'universal footer anchor changed'
+          assert source.count(old_audit)==1, 'landing audit anchor changed'
+          file.write_text(source.replace(old_footer,new_footer).replace(old_audit,new_audit))
+          PY
           set +e
           node scripts/generalize-product.mjs /tmp/pacefold-core 15.2.2 15.2.3 > /tmp/pacefold-generalize.log 2>&1
           status=$?
