@@ -71,7 +71,7 @@ jobs:
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01b)" = "218fbe2ab562da27c9bd8cc1867d0749ee989566"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01c)" = "fc9b50bc875cc1bd2a5d8c8bf19e0f2775cbfe4a"
+          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01c)" = "fc9b50bc875cc1bd8cc1867d0749ee989566"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01d)" = "b1241ec0538977f91a97d7e7f74f2d10c4391d99"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-02)" = "2fed7d603cd98dc9ead13d3fa31041c785d08992"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-03)" = "11475bc120387ecf1cbf16dc8038aa5401d7db72"
@@ -117,13 +117,43 @@ jobs:
           test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/app/service-worker.js | wc -l)" -eq 1
           ! sed -n '/BEGIN pacefold-resilience-15.7.1/,/END pacefold-resilience-15.7.1/p' _release/app/service-worker.js | grep -q 'caches.delete'
       - name: Notebook and integration browser audit
+        continue-on-error: true
         run: |
+          echo 99 > /tmp/pacefold-notebook-audit.status
           sed 's/15\.7\.0/15.7.1/g' enhancements/hub-audit.cjs > /tmp/pacefold-hub-audit-15.7.1.cjs
           node --check /tmp/pacefold-hub-audit-15.7.1.cjs
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node /tmp/pacefold-hub-audit-15.7.1.cjs _release
+          set +e
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node /tmp/pacefold-hub-audit-15.7.1.cjs _release 2>&1 | tee /tmp/pacefold-notebook-audit.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-notebook-audit.status
+          exit 0
       - name: Destructive resilience browser audit
+        continue-on-error: true
         run: |
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release
+          echo 99 > /tmp/pacefold-resilience-audit.status
+          set +e
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release 2>&1 | tee /tmp/pacefold-resilience-audit.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-resilience-audit.status
+          exit 0
+      - name: Upload browser audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-audit-logs-${{ github.run_id }}
+          path: |
+            /tmp/pacefold-notebook-audit.log
+            /tmp/pacefold-notebook-audit.status
+            /tmp/pacefold-resilience-audit.log
+            /tmp/pacefold-resilience-audit.status
+          if-no-files-found: error
+          retention-days: 7
+      - name: Require both resilience audits
+        run: |
+          echo "Notebook audit status: $(cat /tmp/pacefold-notebook-audit.status)"
+          echo "Destructive audit status: $(cat /tmp/pacefold-resilience-audit.status)"
+          test "$(cat /tmp/pacefold-notebook-audit.status)" = "0"
+          test "$(cat /tmp/pacefold-resilience-audit.status)" = "0"
 
   deploy:
     if: github.event_name != 'pull_request'
