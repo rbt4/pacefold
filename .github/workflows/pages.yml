@@ -88,17 +88,8 @@ jobs:
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
       - name: Inject twice and audit resilience surface
         run: |
-          set -o pipefail
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          {
-            echo "hub_markers=$(grep -o 'data-pacefold-hub=\"15.7.0\"' _release/app/index.html | wc -l)"
-            echo "guardian_markers=$(grep -o 'data-pacefold-hub-guardian=\"15.7.0\"' _release/app/index.html | wc -l)"
-            echo "resilience_markers=$(grep -o 'data-pacefold-resilience=\"15.7.0\"' _release/app/index.html | wc -l)"
-            echo "root_worker_blocks=$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/service-worker.js | wc -l)"
-            echo "app_worker_blocks=$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/app/service-worker.js | wc -l)"
-            echo "legacy_worker_blocks=$(grep -c 'pacefold-notebook-15.6.0' _release/app/service-worker.js || true)"
-          } > /tmp/pacefold-resilience-static.txt
           test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _release/index.html
           test "$(grep -o 'data-pacefold-hub="15.7.0"' _release/app/index.html | wc -l)" -eq 2
@@ -124,17 +115,7 @@ jobs:
           test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/service-worker.js | wc -l)" -eq 1
           test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/app/service-worker.js | wc -l)" -eq 1
           ! sed -n '/BEGIN pacefold-resilience-15.7.0/,/END pacefold-resilience-15.7.0/p' _release/app/service-worker.js | grep -q 'caches.delete'
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release 2>&1 | tee /tmp/pacefold-resilience-audit.log
-      - name: Upload resilience failure detail
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pacefold-resilience-failure
-          path: |
-            /tmp/pacefold-resilience-static.txt
-            /tmp/pacefold-resilience-audit.log
-          if-no-files-found: ignore
-          retention-days: 1
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
 
   deploy:
     if: github.event_name != 'pull_request'
