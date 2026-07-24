@@ -1,0 +1,95 @@
+s()/3600;scheduleForDate(opened).forEach(item=>{if(item.time<=openedH-prefs.dueWindow/60)prefs.acknowledged[eventKey(opened,item.id)]=Date.now();});save();}",
+  "  try{sessionStorage.setItem('pacefoldSessionV14','active');}catch(_){ }",
+  'fresh-session auto acknowledgement');
+app=replaceExact(app,
+  "  const sent=new Set();",
+  [
+    "  const sent=new Set();",
+    "  let lastObservedAt=Date.now(),lastSeenSavedAt=0;",
+    "  function observeClock(now=Date.now()){",
+    "    const delta=now-lastObservedAt,discontinuity=delta<-60000||delta>30*60*60*1000;",
+    "    if(discontinuity){prefs.acknowledged={};prefs.snoozed={};prefs.notified={};sent.clear();const wall=new Date(now);times=computeTimes(wall);calculatedDay=dayKey(wall);recordDiagnostic('clock-jump',`wall clock changed ${Math.round(delta/60000)}m`);}",
+    "    lastObservedAt=now;prefs.lastSeenAt=now;",
+    "    if(discontinuity||now-lastSeenSavedAt>=60000){lastSeenSavedAt=now;save();}",
+    "    return discontinuity;",
+    "  }"
+  ].join('\n'),
+  'clock discontinuity observer');
+app=replaceExact(app,
+  "  function notifyOnce(key,text,source='prayer'){void showSystemNotification(key,text,source,false);}",
+  [
+    "  function notifyOnce(key,text,source='prayer'){void showSystemNotification(key,text,source,false);}",
+    "  function markMissedCue(key,source,elapsedMinutes){",
+    "    if(!key||sent.has(key)||prefs.notified[key])return false;sent.add(key);prefs.notified[key]=Date.now();save();recordDiagnostic('cue-missed',`${source} ${Math.max(0,Math.round(elapsedMinutes))}m overdue`);return true;",
+    "  }"
+  ].join('\n'),
+  'missed cue recorder');
+app=replaceExact(app,
+  "    else if(prayer.signal==='pending'){$('statusWord').textContent='Next';$('eventTime').textContent=fmt(b.next[1]);$('relativeTime').textContent=duration(nextMins);$('eventName').textContent=`${nameOf(prayer.event)} pending`;}",
+  "    else if(prayer.signal==='pending'){const stale=prayer.elapsed>prefs.staleAfterMinutes;$('statusWord').textContent=stale?'Overdue':'Now';$('eventTime').textContent=fmt(b.prev[1]);$('relativeTime').textContent=stale?`${duration(prayer.elapsed)} ago`:`${Math.floor(prayer.elapsed)}m`;$('eventName').textContent=nameOf(prayer.event);if(stale)markMissedCue(prayer.key,'prayer',prayer.elapsed);else notifyOnce(prayer.key,prefs.notificationDetail==='named'?`${nameOf(prayer.event)} reminder`:'Rhythm reminder');}",
+  'overdue status');
+app=replaceExact(app,
+  "  function oneNoteStatus(){\n    const queued=pendingCaptures().length;",
+  "  function oneNoteStatus(){\n    if(storageState!=='Local')return{text:'Not saving',tone:'blocked'};\n    const queued=pendingCaptures().length;",
+  'storage sync status');
+app=replaceExact(app,
+  "    $('syncBtn').className=`quiet-tool sync-tool ${status.tone}`;$('syncText').textContent=status.text;$('quietDock').classList.toggle('attention',body.due||status.tone==='queued');",
+  "    $('syncBtn').className=`quiet-tool sync-tool ${status.tone}`;$('syncText').textContent=status.text;$('quietDock').classList.toggle('attention',body.due||status.tone==='queued'||status.tone==='blocked');",
+  'storage dock attention');
+app=replaceExact(app,
+  "    $('foldKicker').textContent='Kiroku';$('foldTitle').textContent='Capture without leaving the day';const status=oneNoteStatus(),recent=[...prefs.captures].filter(item=>item.day===dayKey(new Date())).slice(-6).reverse();",
+  "    $('foldKicker').textContent='Kiroku';$('foldTitle').textContent='Capture without leaving the day';const status=oneNoteStatus(),recent=[...prefs.captures].filter(item=>item.day===dayKey(new Date())).slice(-6).reverse(),storageWarning=storageState==='Local'?'':`<p class=\"storage-warning\" role=\"alert\">Pacefold can't save to this browser. Notes will be lost when you close this window.</p>`;",
+  'capture storage warning');
+app=replaceExact(app,
+  "$('foldBody').innerHTML=`<form class=\"capture-form\" id=\"captureForm\">",
+  "$('foldBody').innerHTML=`${storageWarning}<form class=\"capture-form\" id=\"captureForm\">",
+  'capture warning placement');
+app=replaceExact(app,'<i style="--care-progress:${progress.toFixed(1)}%"></i>','<i></i>','care inline style');
+app=replaceExact(app,
+  "  }\n  function renderSoundFold(){",
+  "    $('foldBody').querySelector('.care-progress i')?.style.setProperty('--care-progress',`${progress.toFixed(1)}%`);\n  }\n  function renderSoundFold(){",
+  'care CSSOM progress');
+app=replaceExact(app,
+  "    $('waterMeter').innerHTML=Array.from({length:segments},(_,i)=>{const fill=Math.min(1,Math.max(0,scaled-i)),next=!water.complete&&i===Math.min(segments-1,Math.floor(scaled));return `<span class=\"water-seg${next?' next':''}\" style=\"--fill:${fill.toFixed(3)}\"></span>`;}).join('');",
+  "    const waterSegments=Array.from({length:segments},(_,i)=>({fill:Math.min(1,Math.max(0,scaled-i)),next:!water.complete&&i===Math.min(segments-1,Math.floor(scaled))}));setHTML($('waterMeter'),waterSegments.map(item=>`<span class=\"water-seg${item.next?' next':''}\"></span>`).join(''));[...$('waterMeter').children].forEach((node,index)=>node.style.setProperty('--fill',waterSegments[index].fill.toFixed(3)));",
+  'water CSSOM fill');
+app=replacePattern(app,/  function saveCapture\(\)\{[\s\S]*?\n  \}/,
+  [
+    "  function saveCapture(){",
+    "    const textValue=captureDraft.trim();if(!textValue){toast('Write something first');return false;}const createdAt=Date.now(),item={id:`${createdAt.toString(36)}-${Math.random().toString(36).slice(2,8)}`,text:textValue.slice(0,1200),kind:CAPTURE_KINDS.includes(captureDraftKind)?captureDraftKind:'inbox',createdAt,day:dayKey(new Date(createdAt)),syncedAt:0,syncError:''};",
+    "    prefs.captureKind=item.kind;prefs.captures=[...prefs.captures,item].slice(-300);const saved=save();if(saved){captureDraft='';try{localStorage.removeItem(CAPTURE_DRAFT_KEY);}catch(_){ }renderFold();toast(prefs.oneNoteSectionId?'Captured locally · OneNote queued':'Captured locally');void syncCaptureQueue(false);}else{toast('Held in this window · not saving');renderFold();}renderQuietDock();return saved;",
+    "  }"
+  ].join('\n'),
+  'capture save result');
+app=replaceExact(app,
+  "oneNoteClientStamp=stamp;oneNoteClient=new window.msal.PublicClientApplication({auth:{clientId:prefs.oneNoteClientId,authority:`https://login.microsoftonline.com/${prefs.oneNoteTenant||'organizations'}`,redirectUri:new URL('./auth.html',location.href).href},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:false}});",
+  "oneNoteClientStamp=stamp;oneNoteClient=new window.msal.PublicClientApplication({auth:{clientId:prefs.oneNoteClientId,authority:`https://login.microsoftonline.com/${prefs.oneNoteTenant||'organizations'}`,redirectUri:new URL('./auth.html',location.href).href},cache:{cacheLocation:'sessionStorage',storeAuthStateInCookie:false}});",
+  'MSAL session cache');
+app=replaceExact(app,
+  "  function scheduleReload(){if(refreshing)return;refreshing=true;serviceWorkerState='Updated';setTimeout(()=>location.reload(),650);}",
+  [
+    "  function scheduleReload(version='unknown'){if(refreshing)return;const key=`pacefoldUpdateReload:${version}`;try{if(sessionStorage.getItem(key)==='1'){serviceWorkerState='Update ready · reopen Pacefold';return;}sessionStorage.setItem(key,'1');}catch(_){ }refreshing=true;serviceWorkerState='Updated';setTimeout(()=>location.reload(),650);}",
+    "  async function controlledWorkerVersion(timeout=2200){",
+    "    const controller=navigator.serviceWorker?.controller;if(!controller)return'';return new Promise(resolve=>{const channel=new MessageChannel(),timer=setTimeout(()=>resolve(''),timeout);channel.port1.onmessage=event=>{clearTimeout(timer);resolve(String(event.data?.version||''));};try{controller.postMessage({type:'PACEFOLD_VERSION'},[channel.port2]);}catch(_){clearTimeout(timer);resolve('');}});",
+    "  }",
+    "  async function handleControllerChange(){",
+    "    const version=await controlledWorkerVersion();if(!version){serviceWorkerState='Update ready · reopen Pacefold';return;}",
+    "    if(version===APP_VERSION){controllerSeenAtLoad=true;serviceWorkerState=`Automatic · v${APP_VERSION}`;try{sessionStorage.removeItem(`pacefoldUpdateReload:${version}`);}catch(_){ }renderSetupDock();return;}",
+    "    updateAvailable=true;if(hasUnsavedWork()){pendingUpdateReload=true;serviceWorkerState='Update ready · reopen Pacefold';toast('Update held until setup or capture is closed');return;}scheduleReload(version);",
+    "  }"
+  ].join('\n'),
+  'worker version handshake');
+app=replaceExact(app,
+  "      navigator.serviceWorker.addEventListener('controllerchange',()=>{\n        if(!controllerSeenAtLoad){controllerSeenAtLoad=true;serviceWorkerState=`Automatic · v${APP_VERSION}`;renderSetupDock();return;}\n        if(hasUnsavedWork()){pendingUpdateReload=true;serviceWorkerState='Update ready · waiting';toast('Update held until setup or capture is closed');return;}scheduleReload();\n      });",
+  "      navigator.serviceWorker.addEventListener('controllerchange',()=>{void handleControllerChange();});",
+  'controller change handler');
+app=replaceExact(app,
+  "  function applyPendingReload(){if(pendingUpdateReload&&!hasUnsavedWork()){pendingUpdateReload=false;scheduleReload();}}",
+  "  function applyPendingReload(){if(pendingUpdateReload&&!hasUnsavedWork()){pendingUpdateReload=false;void controlledWorkerVersion().then(version=>scheduleReload(version||'unknown'));}}",
+  'deferred version reload');
+app=replaceExact(app,
+  "      if(workerRegistration.waiting){updateAvailable=true;serviceWorkerState='Applying update';workerRegistration.waiting.postMessage({type:'SKIP_WAITING'});}",
+  "      if(workerRegistration.waiting){updateAvailable=true;serviceWorkerState=hasUnsavedWork()?'Update ready · reopen Pacefold':'Applying update';workerRegistration.waiting.postMessage({type:'SKIP_WAITING'});}",
+  'waiting worker state');
+app=replaceExact(app,
+  "  const launchParams=new URLSearchParams(location.search),setupRequested=launchParams.get('setup')==='1'
