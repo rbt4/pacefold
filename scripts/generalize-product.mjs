@@ -50,8 +50,9 @@ write('site.js',site);
 
 for(const workerFile of ['service-worker.js','app/service-worker.js']){
   if(!fs.existsSync(p(workerFile)))continue;
-  let worker=read(workerFile);
-  worker=replaceExact(worker,`const VERSION='${fromVersion}';`,`const VERSION='${toVersion}';`,`${workerFile} version`);
+  let worker=read(workerFile),marker=`const VERSION='${fromVersion}';`,count=worker.split(marker).length-1;
+  if(count>1)fail(`${workerFile} has ${count} version declarations`);
+  if(count===1)worker=worker.replace(marker,`const VERSION='${toVersion}';`);
   write(workerFile,worker);
 }
 
@@ -93,6 +94,7 @@ write('scripts/validate.mjs',validate);
 
 let browser=read('scripts/browser-audit.cjs');
 browser=browser.split(fromVersion).join(toVersion);
+browser=browser.replaceAll('your day, quietly kept','a quieter rhythm for any workday');
 write('scripts/browser-audit.cjs',browser);
 
 for(const file of ['README.md','CHANGELOG.md','REPOSITORY_SETUP.md','SECURITY.md','ONENOTE_SETUP.md','onenote-setup.html','privacy.html'])replaceVersion(file);
