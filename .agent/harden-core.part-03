@@ -1,0 +1,39 @@
+sted types browser assertion');
+browser=replaceExact(browser,
+  "assert(graphCreates===1&&graphAppends===1,JSON.stringify({graphCreates,graphAppends,graphPageContent}));return '1 page · 1 append · retry found existing capture';});await graph.close();",
+  "assert(graphCreates===1&&graphAppends===1,JSON.stringify({graphCreates,graphAppends,graphPageContent}));const tokenKeys=await graphPage.evaluate(()=>Object.keys(localStorage).filter(key=>key.startsWith('msal.')));assert(tokenKeys.length===0,`MSAL token keys leaked to localStorage: ${tokenKeys.join(',')}`);return '1 page · 1 append · retry found existing capture · session-scoped Microsoft cache';});await graph.close();",
+  'MSAL localStorage audit');
+const insertedAudit=`
+    const reliability=await browser.newContext({viewport:{width:1100,height:820},permissions:['notifications'],timezoneId:'America/Toronto'});await reliability.grantPermissions(['notifications'],{origin:base});
+    await reliability.addInitScript(()=>{window.__pacefoldNotifications=[];addEventListener('pacefold:notification',event=>window.__pacefoldNotifications.push(event.detail));const now=new Date(),minute=now.getHours()*60+now.getMinutes()-30,normalized=(minute+1440)%1440,time=String(Math.floor(normalized/60)).padStart(2,'0')+':'+String(normalized%60).padStart(2,'0'),day=\`${'${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,\'0\')}-${String(now.getDate()).padStart(2,\'0\')}' }\`;localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'custom',customMoments:[['missed','Dhuhr',time,'D']],browserNotif:true,notificationMode:'all',staleAfterMinutes:20,activityDate:day}));});const reliabilityPage=await reliability.newPage();
+    await check('stale scheduled moments are reported without a late notification',async()=>{await reliabilityPage.goto(\`${'${base}'}/app/?debug=1\`,{waitUntil:'networkidle'});await reliabilityPage.waitForFunction(()=>document.querySelector('#statusWord')?.textContent==='Overdue');const state=await reliabilityPage.evaluate(()=>({notices:window.__pacefoldNotifications.length,status:document.querySelector('#statusLine')?.innerText,prefs:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}'),diagnostics:window.pacefoldDebug?.diagnostics||[]}));assert(state.notices===0,state.notices);assert(/Dhuhr/.test(state.status)&&/ago/.test(state.status),state.status);assert(Object.keys(state.prefs.notified||{}).length===1&&Object.keys(state.prefs.acknowledged||{}).length===0,JSON.stringify(state.prefs));assert(state.diagnostics.some(item=>item.context==='cue-missed'),JSON.stringify(state.diagnostics));return state.status.replace(/\s+/g,' ');});
+    await check('diagnostics deduplicate and clock jumps reset timestamp maps',async()=>{const result=await reliabilityPage.evaluate(()=>{for(let i=0;i<50;i++)window.pacefoldDebug.observeClock(Date.now()+2*864e5);const forward=window.pacefoldDebug.observeClock(Date.now()-2*864e5);return{forward,diagnostics:window.pacefoldDebug.diagnostics,prefs:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}')};});const jumps=result.diagnostics.filter(item=>item.context==='clock-jump');assert(jumps.length>=1&&jumps.some(item=>item.count>=2),JSON.stringify(jumps));assert(Object.keys(result.prefs.acknowledged||{}).length===0,JSON.stringify(result.prefs));return \`${'${jumps.length}'} deduplicated clock-jump record(s)\`;});
+    await check('Toronto DST transition schedules resolve to ordered real instants',async()=>{const result=await reliabilityPage.evaluate(()=>['2026-03-08','2026-11-01'].map(date=>window.pacefoldDebug.auditSchedule(date)));for(const day of result){const values=day.instants.map(item=>item.at);assert(values.every(Number.isFinite),JSON.stringify(day));assert(new Set(values).size===values.length,JSON.stringify(day));assert(values.every((value,index)=>index===0||value>values[index-1]),JSON.stringify(day));}return 'spring-forward · fall-back';});await reliability.close();
+
+    const blocked=await browser.newContext({viewport:{width:1000,height:760}});await blocked.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');const original=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='pacefoldPrefsV15')throw new DOMException('Blocked by audit','QuotaExceededError');return original.call(this,key,value);};});const blockedPage=await blocked.newPage();
+    await check('blocked storage is visible before capture is accepted',async()=>{await blockedPage.goto(\`${'${base}'}/app/?capture=1&debug=1\`,{waitUntil:'networkidle'});await blockedPage.waitForFunction(()=>document.querySelector('#syncText')?.textContent==='Not saving');assert(await blockedPage.locator('.storage-warning').isVisible(),'storage warning missing');await blockedPage.locator('#captureInput').fill('Ephemeral note');await blockedPage.locator('#captureForm [type="submit"]').click();assert(await blockedPage.locator('#captureInput').inputValue()==='Ephemeral note','failed save cleared the draft');return 'Not saving · warning shown · draft retained';});await blocked.close();
+`;
+browser=replaceExact(browser,
+  "    const update=await browser.newContext({viewport:{width:1100,height:820}}),updatePage=await update.newPage();",
+  insertedAudit+"\n    const update=await browser.newContext({viewport:{width:1100,height:820}}),updatePage=await update.newPage();",
+  'reliability browser audits');
+write('scripts/browser-audit.cjs',browser);
+
+let css=read('app/app-style-05.css');
+css+=`\n.storage-warning{margin:0 0 12px;padding:10px 12px;border:1px solid var(--attention);border-radius:10px;color:var(--attention);background:color-mix(in srgb,var(--attention) 8%,transparent);font-size:.82rem;line-height:1.4}.sync-tool.blocked{color:var(--attention)}\n`;
+write('app/app-style-05.css',css);
+
+for(const file of ['site.js','index.html','onenote-setup.html','README.md','CHANGELOG.md','REPOSITORY_SETUP.md','SECURITY.md','ONENOTE_SETUP.md']){
+  if(!fs.existsSync(p(file)))continue;let value=read(file);value=value.replaceAll(fromVersion,toVersion);write(file,value);
+}
+let changelog=read('CHANGELOG.md');
+if(!changelog.includes(`## ${toVersion}`))changelog=changelog.replace(/^#([^\n]*)\n/,match=>`${match}\n## ${toVersion}\n- Hardened offline installation, storage visibility, missed-cue handling, Trusted Types, worker updates, diagnostics, clock discontinuities, Microsoft token scope and DST auditing.\n\n`);
+write('CHANGELOG.md',changelog);
+let security=read('SECURITY.md');
+if(!security.includes('sessionStorage'))security+=`\n## Microsoft session storage\n\nPacefold explicitly keeps MSAL authentication state in sessionStorage with cookies disabled. Microsoft access tokens are not written to localStorage and end with the Pacefold window session.\n`;
+write('SECURITY.md',security);
+let readme=read('README.md');
+if(!readme.includes('Foreground reminder boundary'))readme+=`\n## Foreground reminder boundary\n\nPacefold reminds reliably while its window is open and the device is awake. Browsers cannot guarantee exact scheduled delivery while a window is closed, heavily throttled or the laptop is asleep. When Pacefold returns after a missed scheduled moment, it reports the real scheduled time and how late it is instead of firing a stale system notification. Exact background delivery requires the optional native Windows companion.\n`;
+write('README.md',readme);
+
+console.log(`Hardened Pacefold core ${fromVersion} -> ${toVersion}; ${hardened.count} innerHTML assignments routed through Trusted Types.`);
