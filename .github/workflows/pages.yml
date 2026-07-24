@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 15.6.0
+name: Validate and deploy Pacefold 15.7.0
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-      - name: Require a core or Notebook version advance
+      - name: Require a core or resilience version advance
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
@@ -50,9 +50,9 @@ jobs:
           test -n "$current_surface"
           if [ "$current_core" = "$previous_core" ]; then
             test "$current_surface" != "$previous_surface"
-            echo "Notebook version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
+            echo "Resilience version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
           else
-            echo "Core version advanced: $previous_core -> $current_core; Notebook $current_surface"
+            echo "Core version advanced: $previous_core -> $current_core; resilience $current_surface"
           fi
       - name: JavaScript and compressed-source syntax
         run: |
@@ -64,6 +64,7 @@ jobs:
           node --check _release/scripts/browser-audit.cjs
           node --check enhancements/pacefold-hub.js
           node --check enhancements/pacefold-hub-guardian.js
+          node --check enhancements/pacefold-resilience.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
@@ -85,12 +86,15 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
-      - name: Inject and audit Notebook surface
+      - name: Inject twice and audit resilience surface
         run: |
+          node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
           test "$(cat _release/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _release/index.html
-          grep -q 'data-pacefold-hub="15.6.0"' _release/app/index.html
+          test "$(grep -o 'data-pacefold-hub="15.7.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-hub-guardian="15.7.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-resilience="15.7.0"' _release/app/index.html | wc -l)" -eq 1
           grep -q 'https://api.open-meteo.com' _release/app/index.html
           grep -q 'https://graph.microsoft.com' _release/app/index.html
           grep -q 'https://www.youtube-nocookie.com' _release/app/index.html
@@ -98,12 +102,19 @@ jobs:
           grep -q 'https://music.amazon.ca' _release/app/index.html
           test -f _release/app/icons/fold-mark.svg
           test -f _release/app/icons/notify-water.svg
+          test -f _release/app/pacefold-resilience.js
           test ! -e _release/pacefold-hub.js
           node --check _release/app/pacefold-hub.js
-          ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
           node --check _release/app/pacefold-hub-guardian.js
+          node --check _release/app/pacefold-resilience.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
+          ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
+          ! grep -q 'pacefold-notebook-15.6.0' _release/service-worker.js
+          ! grep -q 'pacefold-notebook-15.6.0' _release/app/service-worker.js
+          test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _release/app/service-worker.js | wc -l)" -eq 1
+          ! sed -n '/BEGIN pacefold-resilience-15.7.0/,/END pacefold-resilience-15.7.0/p' _release/app/service-worker.js | grep -q 'caches.delete'
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/hub-audit.cjs _release
 
   deploy:
@@ -121,7 +132,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Reconstruct verified release and install Notebook surface
+      - name: Reconstruct verified release and install resilience surface
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7  /tmp/pacefold-v15.zip" | sha256sum -c -
@@ -140,16 +151,20 @@ jobs:
           node enhancements/inject.mjs _site
           test "$(cat _site/pacefold-hub-version.txt)" = "$(cat enhancements/VERSION)"
           ! grep -q 'data-pacefold-hub=' _site/index.html
-          grep -q 'data-pacefold-hub="15.6.0"' _site/app/index.html
+          grep -q 'data-pacefold-hub="15.7.0"' _site/app/index.html
+          grep -q 'data-pacefold-resilience="15.7.0"' _site/app/index.html
           grep -q 'https://graph.microsoft.com' _site/app/index.html
           test -f _site/app/icons/fold-mark.svg
           test -f _site/app/icons/notify-water.svg
+          test -f _site/app/pacefold-resilience.js
           test ! -e _site/pacefold-hub.js
           node --check _site/app/pacefold-hub.js
-          ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js
           node --check _site/app/pacefold-hub-guardian.js
+          node --check _site/app/pacefold-resilience.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
+          ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js
+          test "$(grep -o 'BEGIN pacefold-resilience-15.7.0' _site/app/service-worker.js | wc -l)" -eq 1
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
