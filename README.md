@@ -8,7 +8,7 @@ Pacefold is a local-first, installable workday rhythm system. The verified core 
 
 The permanent interface is one centered row, approximately 48 px tall:
 
-- an origami pulse that reflects calm, new attention or an acknowledged waiting action;
+- an origami pulse that reflects calm, new attention or a quieted waiting action;
 - the current actionable cue only when something is waiting;
 - one-line local-first capture;
 - direct Notebook and contained Media access;
@@ -16,7 +16,19 @@ The permanent interface is one centered row, approximately 48 px tall:
 
 The compact command surface opens only when requested and contains the current cue, Capture, Notebook, Media, Weather, OneNote and local diagnostics. The original proven controls remain underneath as the source of truth, so 15.8 does not introduce parallel timers, storage or duplicate action implementations.
 
-At 390 px, the dock condenses to the pulse, cue or capture field, and one controls button. The complete command surface remains available without horizontal overflow.
+At 390 px, the dock condenses to the pulse, cue or capture field, and one controls button. Quiet, Remind 10m and Done remain one balanced action row without horizontal overflow.
+
+## Visual system
+
+15.8 replaces platform-dependent text glyphs with an embedded vector icon system and a restrained Japanese notebook material:
+
+- warm paper surfaces with faint ruled texture and a subtle binding line;
+- consistent scalable icons for Capture, Notebook, Media, Weather, OneNote and System;
+- distinct calm, new-attention and quieted-waiting states;
+- dark, light, forced-colour and reduced-motion support;
+- no remote fonts, visual CDNs or image downloads.
+
+The visual layer remains offline-safe and adds no network dependency to startup.
 
 ## Capture and HSSys notebook
 
@@ -34,12 +46,13 @@ Unprefixed notes go to Daily. The full dated HSSys notebook retains search, sect
 
 ## Functional taskbar state
 
-The taskbar badge now has one stable meaning: **a new actionable cue has not been acknowledged yet**.
+The taskbar badge has one stable meaning: **a new actionable cue has not been acknowledged yet**.
 
 - Opening or focusing Pacefold can quiet the taskbar badge and close Pacefold notifications without completing the action.
 - The first origami-pulse interaction on a new cue performs acknowledgement only.
 - The next interaction opens the compact controls.
-- **Done** is a separate explicit action and remains the only path that completes the current cue.
+- **Remind 10m** clears the current badge and Pacefold notification, keeps the cue unresolved, and re-arms attention after ten minutes when the same action is still waiting.
+- **Done** remains the only path that completes the current cue.
 - The window title carries the clean actionable label, such as “Drink water” or “Look far,” rather than internal helper text.
 
 Pacefold also adds PWA shortcuts for Current action, Capture, Notebook and Media wherever the installed manifest is available. Notification artwork is generated as source-specific PNG for more dependable Windows rendering.
@@ -69,7 +82,7 @@ The intended destination remains the **HSSys** notebook and a **Pacefold** secti
 - Pacefold never automatically opens an external player window.
 - Local audio remains on-device and supports picker and drag-and-drop paths.
 
-## Reliability retained from 15.7.1
+## Reliability and self-recovery
 
 - Malformed notebook data is removed only after a verified recovery copy succeeds.
 - Setup owns the screen completely; rapid onboarding transitions cannot restore stale UI.
@@ -78,20 +91,22 @@ The intended destination remains the **HSSys** notebook and a **Pacefold** secti
 - Duplicate capture, provider, cue and OneNote actions are centrally suppressed.
 - Repeated injection replaces old assets and service-worker blocks instead of stacking them.
 - The verified core remains the sole owner of Pacefold’s offline caches.
+- Integrated mount, observer and reconcile failures are sent to the bounded resilience journal; the dock discards the damaged surface and performs a fresh bounded remount rather than leaving dead controls.
+- Completing a cue clears acknowledgement and reminder state so a future cue cannot inherit stale taskbar behaviour.
 
 ## Security and privacy
 
 - Every original Pacefold action remains registered and audited.
 - Provider URLs are restricted to official allowlists.
 - Player frames use `no-referrer`, a narrow Content Security Policy and a sandbox that cannot escape through popups.
-- Rhythm data, notebook entries, recovery copies, sync queue, preferences and diagnostics remain on the device.
+- Rhythm data, notebook entries, recovery copies, sync queue, preferences, reminders and diagnostics remain on the device.
 - Weather requests contain forecast coordinates.
 - Microsoft page content is sent only when OneNote synchronization or Windows Share is explicitly used.
 - Pacefold contains no account system, analytics or advertising.
 
 ## Honest platform boundaries
 
-Microsoft Edge PWAs support taskbar badges, notification actions and right-click shortcuts. Windows does not let a website intercept the pinned-icon click before the app receives focus, distinguish single from double clicks on the Windows taskbar itself, or continuously redraw the pinned icon face. Pacefold therefore makes acknowledgement, badge clearing, notifications, launch shortcuts and the in-app pulse seamless within the web-platform boundary. Exact pre-focus taskbar-click behaviour would require a native Windows companion.
+Microsoft Edge PWAs support taskbar badges, notification actions and right-click shortcuts. Windows does not let a website intercept the pinned-icon click before the app receives focus, distinguish single from double clicks on the Windows taskbar itself, or continuously redraw the pinned icon face. Pacefold therefore makes acknowledgement, badge clearing, ten-minute re-alerting, notifications, launch shortcuts and the in-app pulse seamless within the web-platform boundary. Exact pre-focus taskbar-click behaviour would require a native Windows companion.
 
 Amazon Music does not provide the same generally available iframe playback contract as YouTube or Spotify. Pacefold can preserve and attempt to contain an official Amazon URL, but Amazon can still refuse to render it inside another application.
 
@@ -103,7 +118,7 @@ GitHub Actions reconstructs the checksum-verified core release, runs the origina
 2. destructive resilience and recovery injection;
 3. integrated dock, taskbar semantics and desktop/mobile visual capture.
 
-The 15.8 gate verifies exact single-root and single-dock architecture, slash capture exactly once, acknowledgement without false completion, second-interaction disclosure, explicit Done completion, Notebook proxying, root restoration, launch shortcuts, clean actionable labels, a dock no taller than 60 px and no 390 px overflow.
+The 15.8 gate verifies exact single-root and single-dock architecture, slash capture exactly once, acknowledgement without false completion, ten-minute reminder persistence without completion, explicit Done completion and stale-state cleanup, Notebook proxying, self-reconcile, root restoration, launch shortcuts, clean actionable labels, vector-icon and notebook visual contracts, a dock no taller than 60 px and no 390 px overflow.
 
 Core release SHA-256:
 
