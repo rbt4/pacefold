@@ -45,6 +45,26 @@ jobs:
       - name: Generalize bundled product
         if: steps.state.outputs.needs_build == 'true'
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          file=Path('scripts/generalize-product.mjs')
+          source=file.read_text()
+          old="""for(const workerFile of ['service-worker.js','app/service-worker.js']){
+            if(!fs.existsSync(p(workerFile)))continue;
+            let worker=read(workerFile);
+            worker=replaceExact(worker,`const VERSION='${fromVersion}';`,`const VERSION='${toVersion}';`,`${workerFile} version`);
+            write(workerFile,worker);
+          }"""
+          new="""for(const workerFile of ['service-worker.js','app/service-worker.js']){
+            if(!fs.existsSync(p(workerFile)))continue;
+            let worker=read(workerFile),marker=`const VERSION='${fromVersion}';`,count=worker.split(marker).length-1;
+            if(count>1)fail(`${workerFile} has ${count} version declarations`);
+            if(count===1)worker=worker.replace(marker,`const VERSION='${toVersion}';`);
+            write(workerFile,worker);
+          }"""
+          assert source.count(old)==1, 'worker migration anchor changed'
+          file.write_text(source.replace(old,new))
+          PY
           set +e
           node scripts/generalize-product.mjs /tmp/pacefold-core 15.2.2 15.2.3 > /tmp/pacefold-generalize.log 2>&1
           status=$?
@@ -121,6 +141,6 @@ jobs:
         run: |
           git config user.name pacefold-agent
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add README.md RELEASE.md enhancements/VERSION release/ scripts/pages.generated.yml
+          git add README.md RELEASE.md enhancements/VERSION release/ scripts/generalize-product.mjs scripts/pages.generated.yml
           git commit -m "Generalize Pacefold public site and preserve original defaults"
           git push origin HEAD:agent/pacefold-generic-public-site
