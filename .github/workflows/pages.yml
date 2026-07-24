@@ -144,10 +144,30 @@ jobs:
         env:
           NODE_PATH: /tmp/pacefold-browser-audit/node_modules
         run: |
-          node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
-          node enhancements/run-hub-audit.cjs /tmp/pacefold-site
-          node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
-          node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+          set +e
+          (
+            set -e
+            node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
+            node enhancements/run-hub-audit.cjs /tmp/pacefold-site
+            node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
+            node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+          ) 2>&1 | tee /tmp/pacefold-browser-audits.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-browser-audits.status
+          exit "$status"
+
+      - name: Upload browser audit failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-browser-failure-${{ github.run_id }}
+          path: |
+            /tmp/pacefold-browser-audits.log
+            /tmp/pacefold-browser-audits.status
+            /tmp/pacefold-resilience-artifacts/
+            /tmp/pacefold-integrated-artifacts/
+          if-no-files-found: ignore
+          retention-days: 1
 
       - name: Commit only verified outputs
         if: github.event_name == 'push'
