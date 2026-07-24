@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" id="themeColor" content="#f4f1e9">
+<meta name="application-name" content="Pacefold">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Clock</title>
+<meta name="description" content="A quiet workday rhythm clock with local capture, optional OneNote sync, ergonomic resets and an optional sound layer.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://login.microsoftonline.com https://graph.microsoft.com; frame-src https://login.microsoftonline.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://login.microsoftonline.com">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link id="favicon" rel="icon" type="image/png" href="./icons/icon-32.png">
+<link rel="stylesheet" href="./app-style-01.css">
+<link rel="stylesheet" href="./app-style-02.css">
+<link rel="stylesheet" href="./app-style-03.css">
+<link rel="stylesheet" href="./app-style-04.css">
+<link rel="stylesheet" href="./app-style-05.css">
+</head>
+<body data-theme="desk" data-signal="none" data-clarity="discreet" data-edge="on" data-seconds="on" data-comfort="off" data-comfort-strength="1">
+<div class="grain" aria-hidden="true"></div><div class="edge-cue" aria-hidden="true"></div>
+<main><section class="clock-shell" aria-label="Pacefold workday clock">
+<button class="product-mark" id="brandButton" type="button" aria-label="Open Pacefold settings"><span></span>Pacefold<i class="hanko" aria-hidden="true"></i><span></span></button><div class="signal-aura" aria-hidden="true"></div>
+<div class="time-row"><div class="time-main"><span id="hour">--</span><span class="colon">:</span><span id="minute">--</span></div><div class="clock-side"><div class="seconds" id="seconds">--</div><div class="ampm" id="ampm">--</div></div></div>
+<div class="date" id="date"></div>
+<div class="status-area"><button class="status-line" id="statusLine" type="button" title="Click to reveal. At a scheduled moment, click to begin the pause; click again when back. Shift-click snoozes."><span class="status-word" id="statusWord">Next</span><span class="status-sep"></span><span id="eventTime">--:--</span><span class="status-sep"></span><span id="relativeTime">--</span><span class="event-name" id="eventName"></span></button>
+<div class="progress"><div class="progress-fill" id="progressFill"></div></div><div class="sequence" id="sequence" aria-label="Daily schedule sequence"></div>
+<div class="workline" id="workline" aria-label="Workday rhythm controls">
+<button class="ritual water" id="waterBtn" type="button" aria-label="Log a sip break"><span class="water-meter" id="waterMeter" aria-hidden="true"></span><span class="ritual-copy" id="waterText">Sip pace</span></button><span class="ritual-divider" aria-hidden="true"></span>
+<button class="ritual noodle" id="noodleBtn" type="button" aria-label="Start preparation timer"><span class="timer-ring" id="noodleRing" aria-hidden="true"><span class="timer-core"></span></span><span class="ritual-copy" id="noodleText">Prep 30m</span></button><span class="ritual-divider" aria-hidden="true"></span>
+<button class="ritual away" id="awayBtn" type="button" aria-label="Start away break"><span class="away-glyph" aria-hidden="true"></span><span class="ritual-copy" id="awayText">Away break</span></button><span class="ritual-divider" aria-hidden="true"></span>
+<button class="ritual lunch" id="lunchBtn" type="button" aria-label="Start desk meal window; shift-click for away lunch"><span class="lunch-meter" id="lunchMeter" aria-hidden="true"></span><span class="ritual-copy" id="lunchText">Desk meal 20m</span></button><span class="ritual-divider" aria-hidden="true"></span>
+<button class="ritual eyes" id="eyesBtn" type="button" aria-label="Log a distance-look reset"><span class="eye-glyph" aria-hidden="true"><i></i></span><span class="ritual-copy" id="eyesText">Look far</span></button>
+</div>
+<div class="quiet-dock" id="quietDock" aria-label="Pacefold quiet tools">
+  <button class="quiet-tool capture-tool" id="captureBtn" type="button"><span class="capture-glyph" aria-hidden="true"></span><span id="captureText">Capture</span></button>
+  <button class="quiet-tool care-tool" id="careBtn" type="button"><span class="care-glyph" aria-hidden="true"></span><span id="careText">Move</span></button>
+  <button class="quiet-tool sound-tool" id="soundBtn" type="button"><span class="sound-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span id="soundText">Sound</span></button>
+  <button class="quiet-tool sync-tool" id="syncBtn" type="button"><span class="sync-glyph" id="syncGlyph" aria-hidden="true"></span><span id="syncText">Local</span></button>
+</div>
+</div></section></main>
+<div class="setup-dock" id="setupDock" hidden aria-live="polite">
+  <span class="setup-indicator" aria-hidden="true"></span>
+  <span class="setup-copy"><strong id="setupTitle">Finish setup</strong><small id="setupText">Install Pacefold for the cleanest taskbar experience.</small></span>
+  <button class="setup-primary" id="setupPrimary" type="button">Install</button>
+  <button class="setup-close" id="setupClose" type="button" aria-label="Dismiss setup">×</button>
+</div>
+
+<div class="onboarding" id="onboarding" hidden role="dialog" aria-modal="true" aria-label="Pacefold setup">
+  <div class="onboarding-card">
+    <div class="onboarding-head"><div><span class="onboarding-kicker">Pacefold setup</span><h2 id="onboardingTitle">Choose your rhythm</h2></div><button class="onboarding-close" id="onboardingClose" type="button" aria-label="Close setup">×</button></div>
+    <div class="onboarding-progress" id="onboardingProgress" aria-hidden="true"></div>
+    <div class="onboarding-body" id="onboardingBody"></div>
+    <div class="onboarding-actions"><button class="action" id="onboardingBack" type="button">Back</button><button class="action primary" id="onboardingNext" type="button">Continue</button></div>
+  </div>
+</div>
+<div class="fold-drawer" id="foldDrawer" hidden role="dialog" aria-modal="true" aria-label="Pacefold quiet tools">
+  <div class="fold-sheet">
+    <div class="fold-handle" aria-hidden="true"></div>
+    <div class="fold-head"><div><span class="fold-kicker" id="foldKicker">Kiroku</span><h2 id="foldTitle">Capture</h2></div><button class="fold-close" id="foldClose" type="button" aria-label="Close">×</button></div>
+    <div class="fold-body" id="foldBody"></div>
+  </div>
+</div>
+<input id="audioPicker" type="file" accept="audio/*" hidden>
+<audio id="audioPlayer" preload="metadata"></audio>
+<div class="toast" id="toast" role="status"></div><div class="panel" id="panel" role="dialog" aria-label="Clock settings"></div><button class="corner" id="corner" type="button" aria-label="Open settings"></button>
+<script src="./vendor/msal-browser-5.17.1.min.js" defer></script>
+<script src="./app.js" defer></script>
+</body></html>

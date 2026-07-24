@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "Pacefold — Quiet Workday Rhythm",
+  "short_name": "Pacefold",
+  "description": "A quiet workday rhythm system with local capture, optional OneNote sync, break-aware ergonomic resets, sound layers, personal moments, hydration and meal timers.",
+  "start_url": "./app/?source=install",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f4f1e9",
+  "theme_color": "#f4f1e9",
+  "orientation": "any",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "launch_handler": {"client_mode": "focus-existing"},
+  "icons": [
+    {"src": "./app/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "./app/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "./app/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "./app/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Log / clear current cue", "short_name": "Log cue", "description": "Record the current Pacefold response and clear its alerts.", "url": "./app/?action=ack", "icons": [{"src": "./app/icons/shortcut-ack.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Capture in Pacefold", "short_name": "Capture", "description": "Capture a note or follow-up locally, then sync it to OneNote when connected.", "url": "./app/?capture=1", "icons": [{"src": "./app/icons/shortcut-capture.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Open Care reset", "short_name": "Care", "description": "Open the current ergonomic and eye-care reset.", "url": "./app/?care=1", "icons": [{"src": "./app/icons/shortcut-care.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Open Sound", "short_name": "Sound", "description": "Open Pacefold’s quiet focus sound layer.", "url": "./app/?sound=1", "icons": [{"src": "./app/icons/shortcut-sound.png", "sizes": "192x192", "type": "image/png"}]}
+  ]
+}

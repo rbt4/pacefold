@@ -1,0 +1,102 @@
+,captureRequested=launchParams.get('capture')==='1',careRequested=launchParams.get('care')==='1',soundRequested=launchParams.get('sound')==='1',actionRequested=launchParams.get('action')||'';",
+  "  const launchParams=new URLSearchParams(location.search),debugEnabled=DEBUG_BUILD&&launchParams.get('debug')==='1',setupRequested=launchParams.get('setup')==='1',captureRequested=launchParams.get('capture')==='1',careRequested=launchParams.get('care')==='1',soundRequested=launchParams.get('sound')==='1',actionRequested=launchParams.get('action')||'';",
+  'debug gate');
+app=replaceExact(app,
+  "  const preview=new URLSearchParams(location.search).get('preview');",
+  "  const preview=debugEnabled?launchParams.get('preview'):'';",
+  'preview gate');
+app=replaceExact(app,
+  "  function scheduleTick(){render();const delay=Math.max(120,1015-(Date.now()%1000));setTimeout(scheduleTick,delay);}",
+  "  function scheduleTick(){observeClock(Date.now());render();const delay=Math.max(120,1015-(Date.now()%1000));setTimeout(scheduleTick,delay);}",
+  'clock observer tick');
+app=replaceExact(app,
+  "  window.pacefoldPreview=mode=>{testPrayer=mode==='prayer'?'due':'none';testRoutine=['water','noodle','away','lunch','showcase'].includes(mode)?mode:'none';if(mode==='showcase')document.body.classList.add('reveal');render();};\n  window.pacefoldNotificationPreview=(source,specOnly=false)=>showSystemNotification(`preview-${source}-${Date.now()}`,notificationActionLabel(source),source,true,specOnly);",
+  [
+    "  if(debugEnabled){",
+    "    window.pacefoldPreview=mode=>{testPrayer=mode==='prayer'?'due':'none';testRoutine=['water','noodle','away','lunch','showcase'].includes(mode)?mode:'none';if(mode==='showcase')document.body.classList.add('reveal');render();};",
+    "    window.pacefoldNotificationPreview=(source,specOnly=false)=>showSystemNotification(`preview-${source}-${Date.now()}`,notificationActionLabel(source),source,true,specOnly);",
+    "    window.pacefoldDebug={diagnostics,observeClock,workdayStartAt,auditSchedule(dateValue){const date=new Date(`${dateValue}T12:00:00`),items=scheduleForDate(date,true),instants=items.map(item=>{const value=new Date(date);value.setHours(Math.floor(item.time),Math.round((item.time%1)*60),0,0);return{id:item.id,at:value.getTime(),local:value.toString()};});return{date:dateValue,instants};}};",
+    "  }"
+  ].join('\n'),
+  'debug globals');
+
+const hardened=hardenInnerHTML(app);app=hardened.source;
+if(/style=\"/.test(app))fail('Inline style attribute survived app hardening');
+write('app/app.js',app);
+
+let appHtml=read('app/index.html');
+appHtml=replaceExact(appHtml,`style-src 'self' 'unsafe-inline'`,`style-src 'self'`,'CSP inline style');
+appHtml=replaceExact(appHtml,'form-action \'self\' https://login.microsoftonline.com','form-action \'self\' https://login.microsoftonline.com; require-trusted-types-for \'script\'; trusted-types pacefold','Trusted Types CSP');
+write('app/index.html',appHtml);
+
+let worker=read('service-worker.js');
+worker=replaceExact(worker,`const VERSION='${fromVersion}';`,`const VERSION='${toVersion}';`,'worker version');
+worker=replaceExact(worker,
+  "].map(path);",
+  `].map(path);
+const CRITICAL=[
+  './','./index.html','./site-style-01.css','./site-style-02.css','./site.js','./manifest.webmanifest',
+  './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/app.js'
+].map(path);
+const OPTIONAL=APP_SHELL.filter(url=>!CRITICAL.includes(url));
+const SHELL_STATUS=path('./__pacefold-shell-status__');`,
+  'service worker shell classes');
+worker=replaceExact(worker,
+`self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    await cache.addAll(APP_SHELL);
+    await self.skipWaiting();
+  })());
+});`,
+`self.addEventListener('install',event=>{
+  event.waitUntil((async()=>{
+    const cache=await caches.open(CACHE_NAME);
+    await cache.addAll(CRITICAL);
+    const results=await Promise.allSettled(OPTIONAL.map(url=>cache.add(url)));
+    const missing=results.map((result,index)=>result.status==='rejected'?OPTIONAL[index]:'').filter(Boolean);
+    await cache.put(SHELL_STATUS,new Response(JSON.stringify({version:VERSION,missing,count:missing.length,at:Date.now()}),{headers:{'content-type':'application/json'}}));
+    if(missing.length)console.warn('[Pacefold] shell assets missing:',missing.length,missing);
+    await self.skipWaiting();
+  })());
+});`,
+  'partial optional cache install');
+worker=replaceExact(worker,
+  "  if(data.type==='PACEFOLD_VERSION'&&event.source)event.source.postMessage({type:'PACEFOLD_VERSION',version:VERSION});",
+  "  if(data.type==='PACEFOLD_VERSION'){const reply={type:'PACEFOLD_VERSION',version:VERSION};if(event.ports[0])event.ports[0].postMessage(reply);else if(event.source)event.source.postMessage(reply);}\n  if(data.type==='PACEFOLD_SHELL_STATUS')event.waitUntil((async()=>{let status={version:VERSION,missing:[],count:0};try{const response=await (await caches.open(CACHE_NAME)).match(SHELL_STATUS);if(response)status=await response.json();}catch(_){}const reply={type:'PACEFOLD_SHELL_STATUS',...status};if(event.ports[0])event.ports[0].postMessage(reply);else if(event.source)event.source.postMessage(reply);})());",
+  'worker message handshake');
+write('service-worker.js',worker);
+
+let build=read('scripts/build.mjs');
+build=replaceExact(build,"const source=fs.readFileSync(p('app','app.js'),'utf8');","let source=fs.readFileSync(p('app','app.js'),'utf8');\nconst debug=process.env.PACEFOLD_DEBUG==='1';\nif(debug){const marker='const DEBUG_BUILD=false;';if(!source.includes(marker))throw new Error('DEBUG_BUILD marker missing');source=source.replace(marker,'const DEBUG_BUILD=true;');fs.writeFileSync(p('app','app.js'),source);}",'debug build flag');
+write('scripts/build.mjs',build);
+
+let validate=read('scripts/validate.mjs');
+validate=replaceExact(validate,
+  "if(!appJs.includes('requestNotifications')||!appJs.includes('pacefoldNotificationPreview')||!appJs.includes('runSelfCheck'))fail('Notification or self-check hardening is missing');",
+  "if(!appJs.includes('requestNotifications')||!appJs.includes('debugEnabled')||!appJs.includes('pacefoldNotificationPreview')||!appJs.includes('runSelfCheck'))fail('Notification, debug gate or self-check hardening is missing');",
+  'validate debug gate');
+validate=replaceExact(validate,
+  "if(!read('app/index.html').includes('https://graph.microsoft.com'))fail('App CSP does not allow the Microsoft Graph connection');",
+  "if(!read('app/index.html').includes('https://graph.microsoft.com'))fail('App CSP does not allow the Microsoft Graph connection');\nif(read('app/index.html').includes(\"'unsafe-inline'\")||!read('app/index.html').includes(\"require-trusted-types-for 'script'\")||!read('app/index.html').includes('trusted-types pacefold'))fail('App CSP is not hardened with Trusted Types');\nif(/style=\"/.test(appJs)||appJs.includes('.innerHTML='))fail('Inline style or raw innerHTML assignment survived hardening');\nif(!appJs.includes(\"cacheLocation:'sessionStorage'\"))fail('MSAL tokens are not explicitly session-scoped');",
+  'validate CSP and storage');
+validate=replaceExact(validate,
+  "for(const feature of ['notificationWorkerReady','Permission allowed · test delivery failed','controllerSeenAtLoad','drainNotificationActions','notificationActionHistory','launchQueue','minutesUntilNextCue','taskbarBadgeMode','waterLastAt','organizeSettingsPanel','settingsView'])",
+  "for(const feature of ['notificationWorkerReady','Permission allowed · test delivery failed','controllerSeenAtLoad','controlledWorkerVersion','handleControllerChange','markMissedCue','observeClock','recordDiagnostic','staleAfterMinutes','drainNotificationActions','notificationActionHistory','launchQueue','minutesUntilNextCue','taskbarBadgeMode','waterLastAt','organizeSettingsPanel','settingsView'])",
+  'validate reliability features');
+validate=replaceExact(validate,
+  "for(const asset of ['./app/app-style-05.css','./app/auth.html','./app/vendor/msal-browser-5.17.1.min.js','./onenote-setup.html','./app/icons/notification-prayer.png','./app/icons/shortcut-ack.png'])if(!worker.includes(`'${asset}'`))fail(`Service worker does not cache Pacefold 15 asset: ${asset}`);",
+  "for(const asset of ['./app/app-style-05.css','./app/auth.html','./app/vendor/msal-browser-5.17.1.min.js','./onenote-setup.html','./app/icons/notification-prayer.png','./app/icons/shortcut-ack.png'])if(!worker.includes(`'${asset}'`))fail(`Service worker does not cache Pacefold 15 asset: ${asset}`);\nfor(const feature of ['const CRITICAL=','const OPTIONAL=','Promise.allSettled(OPTIONAL','PACEFOLD_SHELL_STATUS'])if(!worker.includes(feature))fail(`Service worker optional-shell hardening is missing: ${feature}`);",
+  'validate service worker split');
+write('scripts/validate.mjs',validate);
+
+let browser=read('scripts/browser-audit.cjs');
+browser=browser.replaceAll(fromVersion,toVersion);
+browser=replaceExact(browser,`${basePlaceholder()}`,`${basePlaceholder()}`,'browser no-op',1);
+function basePlaceholder(){return "const current=path.resolve(process.argv[2]||'.');";}
+browser=replaceExact(browser,"await app.goto(`${base}/app/?setup=1`,{waitUntil:'networkidle'});","await app.goto(`${base}/app/?setup=1&debug=1`,{waitUntil:'networkidle'});",'browser debug setup');
+browser=replaceExact(browser,"await app.goto(`${base}/app/?capture=1`,{waitUntil:'networkidle'});","await app.goto(`${base}/app/?capture=1&debug=1`,{waitUntil:'networkidle'});",'browser debug capture');
+browser=replaceExact(browser,
+  "assert(outcome.delivered&&outcome.detail,JSON.stringify(outcome));",
+  "assert(outcome.delivered&&outcome.detail,JSON.stringify(outcome));const rawSink=await app.evaluate(()=>{const node=document.createElement('div');try{node.innerHTML='<b>unsafe</b>';return false;}catch(_){return true;}});assert(rawSink,'Trusted Types did not reject an unwrapped HTML assignment');",
+  'tru
