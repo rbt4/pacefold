@@ -146,6 +146,7 @@ async function materializeCompressed(name,destination){
   let output=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
   if(name.endsWith('.js.gz.b64')){
     output=upgradeRuntimeVersion(output);
+    output=hardenSetupRuntime(output);
     output=hardenPlayerRuntime(output);
   }
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
@@ -156,6 +157,14 @@ function upgradeRuntimeVersion(source){
   if(matches.length<1||matches.length>12)throw new Error(`Unexpected embedded runtime version marker count: ${matches.length}`);
   const next=source.replaceAll('15.6.0',VERSION);
   if(next.includes('15.6.0')||!next.includes(VERSION))throw new Error('Embedded runtime version upgrade was incomplete');
+  return next;
+}
+function hardenSetupRuntime(source){
+  const legacy=/(set up pacefold\|welcome to pacefold\|choose your rhythm\|complete setup)\|get started/g;
+  const matches=[...source.matchAll(legacy)];
+  if(matches.length!==1)throw new Error(`Unexpected legacy setup-text signature count: ${matches.length}`);
+  const next=source.replace(legacy,'$1');
+  if(next.includes('complete setup|get started'))throw new Error('Legacy generic setup phrase survived runtime hardening');
   return next;
 }
 function hardenPlayerRuntime(source){
