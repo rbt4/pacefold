@@ -2,24 +2,23 @@
 
 **One day, gently folded.**
 
-Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold Resilience 15.7 hardens the 15.6 HSSys notebook, optional OneNote bridge and contained player without adding another dashboard or changing the quiet workday vision.
+Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold Resilience 15.7.1 hardens the HSSys notebook, optional OneNote bridge, contained player and setup lifecycle without adding another dashboard or changing the quiet workday vision.
 
-## Pacefold Resilience 15.7
+## Pacefold Resilience 15.7.1
 
-- **Setup cannot be covered or resurrected:** the guardian recognizes the core’s real onboarding controls, removes the lower workspace during setup and discards stale pre-setup roots instead of reattaching them later.
-- **Ordered startup:** guardian, recovery preflight and Notebook runtime load as ordered `defer` scripts. Damaged local notebook data is handled before the Notebook can parse it.
-- **Recoverable notebook storage:** malformed JSON is backed up to a bounded recovery slot, invalid active data is removed safely, and legacy entries without a section are normalized to Daily.
-- **Duplicate-action protection:** rapid repeated capture, save, delete, completion, cue, provider and sync actions are suppressed rather than applied twice.
-- **Cross-window OneNote protection:** two open Pacefold windows cannot send the same HSSys page simultaneously.
-- **Bounded diagnostics:** Pacefold keeps only the latest 20 privacy-trimmed resilience errors and removes URLs from stored messages.
-- **Idempotent updates:** repeated injection replaces the previous overlay assets and service-worker patch instead of stacking wrappers.
-- **Core caches remain owned by the core:** the Notebook notification artwork layer no longer deletes Pacefold caches during activation.
+- **Lossless recovery:** malformed notebook data is removed only after a verified recovery copy succeeds. If both browser stores reject the backup, the original stays untouched.
+- **Stable setup ownership:** real onboarding immediately removes the lower workspace; false-positive text such as an ordinary “get started” note cannot hide it, and rapid setup transitions cannot restore stale UI.
+- **Fresh remounts:** setup exit rebuilds a clean workspace through bounded retries rather than reattaching a pre-setup event tree.
+- **Settled OneNote locks:** duplicate page sends share one in-flight request, cross-window leases expire safely, and the visible busy state ends when the real request settles or times out.
+- **Private bounded diagnostics:** repeated errors collapse into counted records; URLs, email addresses and credential-like values are redacted, with session-storage fallback.
+- **Idempotent updates:** repeated injection replaces old assets and service-worker patches instead of stacking them.
+- **Transparent CI:** core, construction, notebook/integration and destructive resilience gates report separately and retain short diagnostic artifacts.
 
 ## HSSys notebook and capture
 
-Entries are organized by date and section—Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources—with search, editing, completion and deletion. Capture remains always open in the compact lower rail.
+Entries are organized by date and section—Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources—with search, editing, completion and deletion. Capture remains always available in the compact lower surface.
 
-Local persistence always completes before an optional OneNote delivery. The intended Microsoft destination remains the **HSSys** notebook and a **Pacefold** section.
+Local persistence always completes before optional OneNote delivery. The intended Microsoft destination remains the **HSSys** notebook and a **Pacefold** section.
 
 ## OneNote bridge
 
@@ -47,8 +46,8 @@ Failed deliveries remain local and retryable. Pacefold does not store Microsoft 
 - Player frames use `no-referrer`, a narrow Content Security Policy and a sandbox that cannot escape through popups.
 - Badge acknowledgement remains separate from actual cue completion.
 - Origami notification artwork remains distinct for hydration, eyes, movement, prayer, meals, preparation and away time.
-- The overlay notification wrapper is guarded so it can be applied only once per worker.
-- The complete core offline, notification-action and installed-upgrade suite runs before the Resilience-specific failure-injection audit.
+- The notification wrapper is guarded so it can be applied only once per worker.
+- The complete core offline, notification-action and installed-upgrade suite runs before the resilience-specific failure-injection gates.
 
 ## Honest platform boundaries
 
@@ -66,7 +65,7 @@ Amazon Music does not provide the same generally available iframe playback contr
 
 ## Repository release format
 
-The tested core source tree remains stored as a checksum-verified Base64 release under `release/`. GitHub Actions reconstructs it, verifies SHA-256, runs the original core suite, materializes the Notebook surface, injects the resilience layer twice to prove idempotency, and then tests real setup isolation, stale-root rejection, malformed storage recovery, duplicate capture/sync/provider actions, cross-window sync, OneNote payloads, provider containment, cue semantics, guardian recovery and 390 px layout.
+The tested core source tree remains stored as a checksum-verified Base64 release under `release/`. GitHub Actions reconstructs it, verifies SHA-256, runs the original core suite, materializes the Notebook surface, injects resilience twice to prove idempotency, and then tests setup isolation, false-positive rejection, setup flapping, lossless corrupt-storage recovery, duplicate actions, cross-window sync, OneNote settlement, provider containment, cue semantics, guardian recovery and 390 px layout.
 
 Core release SHA-256:
 
@@ -74,14 +73,14 @@ Core release SHA-256:
 
 Resilience version:
 
-`15.7.0`
+`15.7.1`
 
 ## Install
 
 1. Open `https://rbt4.github.io/pacefold/` in Microsoft Edge.
 2. Complete setup before installing or using the lower workspace.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. Fully close and reopen every Pacefold window once after deployment so the 15.7 worker and ordered shell replace the cached release.
+4. Fully close and reopen every Pacefold window once after deployment so the 15.7.1 worker and ordered shell replace the cached release.
 
 ## Privacy
 
@@ -89,4 +88,4 @@ No Pacefold account, analytics or advertising. Rhythm data, notebook entries, re
 
 ## Version
 
-Pacefold Resilience 15.7.0 over Pacefold core 15.2.1
+Pacefold Resilience 15.7.1 over Pacefold core 15.2.1
