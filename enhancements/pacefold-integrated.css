@@ -1,0 +1,69 @@
+#pf-flow-dock{--flow-bg:color-mix(in srgb,#11181d 94%,transparent);--flow-fg:#f2f4f2;--flow-muted:#aab2ad;--flow-line:color-mix(in srgb,#f2f4f2 13%,transparent);--flow-accent:#92c7ad;--flow-warn:#e3c982;position:fixed;z-index:2147482500;left:50%;bottom:max(10px,env(safe-area-inset-bottom));width:min(980px,calc(100vw - 24px));font:500 13px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--flow-fg);color-scheme:dark;isolation:isolate}
+html.pf-flow-active body{padding-bottom:76px!important}
+#pf-hub-root.pf-flow-integrated [data-pf-flow-source="true"]{position:fixed!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;pointer-events:none!important}
+.pf-flow-bar{min-height:48px;display:grid;grid-template-columns:42px minmax(0,auto) minmax(160px,1fr) 58px 58px 40px;align-items:center;gap:4px;padding:4px;border:1px solid var(--flow-line);border-radius:15px;background:var(--flow-bg);box-shadow:0 12px 34px rgba(0,0,0,.22);backdrop-filter:blur(18px) saturate(1.1)}
+.pf-flow-bar button,.pf-flow-panel button,.pf-flow-capture input{font:inherit;color:inherit}
+.pf-flow-bar button,.pf-flow-panel button{border:0;background:transparent;cursor:pointer}
+.pf-flow-bar button:disabled,.pf-flow-panel button:disabled{opacity:.34;cursor:not-allowed}
+.pf-flow-pulse{position:relative;width:40px;height:40px;border-radius:11px!important;display:grid;place-items:center;transition:background .16s ease,transform .16s ease}
+.pf-flow-pulse:hover,.pf-flow-pulse:focus-visible,.pf-flow-tool:hover,.pf-flow-tool:focus-visible,.pf-flow-more:hover,.pf-flow-more:focus-visible,.pf-flow-cue:hover,.pf-flow-cue:focus-visible{background:color-mix(in srgb,var(--flow-fg) 8%,transparent);outline:none}
+.pf-flow-pulse:active{transform:scale(.96)}
+.pf-flow-mark{position:relative;width:21px;height:21px;display:block;transform:rotate(-4deg)}
+.pf-flow-mark i{position:absolute;display:block;background:currentColor;border-radius:1px}
+.pf-flow-mark i:nth-child(1){left:3px;top:2px;width:5px;height:17px;transform:skewY(-18deg)}
+.pf-flow-mark i:nth-child(2){left:7px;top:3px;width:11px;height:7px;clip-path:polygon(0 0,100% 0,72% 100%,0 100%)}
+.pf-flow-mark i:nth-child(3){left:8px;top:10px;width:8px;height:5px;clip-path:polygon(0 0,100% 0,70% 100%,0 100%);opacity:.55}
+.pf-flow-pulse[data-state="new"]{color:var(--flow-accent)}
+.pf-flow-pulse[data-state="waiting"]{color:var(--flow-warn)}
+.pf-flow-badge{position:absolute;right:6px;top:5px;width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px var(--flow-bg)}
+.pf-flow-pulse[data-state="new"] .pf-flow-badge{animation:pf-flow-breathe 2.4s ease-in-out infinite}
+.pf-flow-cue{height:38px;max-width:280px;min-width:0;border-radius:10px!important;display:flex;align-items:center;gap:8px;padding:0 11px!important;text-align:left;color:var(--flow-fg)}
+.pf-flow-cue>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-flow-cue-icon{width:20px;height:20px;border:1px solid var(--flow-line);border-radius:7px;display:grid;place-items:center;color:var(--flow-accent);font-weight:700;flex:none}
+.pf-flow-capture{height:38px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 34px;border:1px solid var(--flow-line);border-radius:11px;background:color-mix(in srgb,var(--flow-fg) 4%,transparent)}
+.pf-flow-capture:focus-within{border-color:color-mix(in srgb,var(--flow-accent) 60%,var(--flow-line));box-shadow:0 0 0 3px color-mix(in srgb,var(--flow-accent) 12%,transparent)}
+.pf-flow-capture input{min-width:0;border:0;outline:0;background:transparent;padding:0 12px}
+.pf-flow-capture input::placeholder{color:var(--flow-muted);opacity:.75}
+.pf-flow-capture button{border-left:1px solid var(--flow-line)!important;color:var(--flow-muted)}
+.pf-flow-capture button:hover{color:var(--flow-fg)}
+.pf-flow-tool{height:38px;border-radius:10px!important;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--flow-muted);padding:0 8px!important}
+.pf-flow-tool span{font-size:16px;color:var(--flow-fg)}
+.pf-flow-tool small{font-size:11px}
+.pf-flow-more{height:38px;border-radius:10px!important;display:grid;place-content:center;gap:4px}
+.pf-flow-more span{display:block;width:17px;height:1px;background:currentColor;transition:transform .18s ease}
+#pf-flow-dock.is-open .pf-flow-more span:first-child{transform:translateY(2.5px) rotate(45deg)}
+#pf-flow-dock.is-open .pf-flow-more span:last-child{transform:translateY(-2.5px) rotate(-45deg)}
+.pf-flow-status{position:absolute;right:8px;bottom:58px;max-width:min(380px,calc(100vw - 40px));padding:9px 12px;border:1px solid var(--flow-line);border-radius:10px;background:var(--flow-bg);box-shadow:0 9px 24px rgba(0,0,0,.22);color:var(--flow-muted)}
+.pf-flow-status[data-tone="success"]{color:var(--flow-accent)}
+.pf-flow-status[data-tone="warning"]{color:var(--flow-warn)}
+.pf-flow-panel{position:absolute;right:0;bottom:58px;width:min(560px,calc(100vw - 24px));max-height:min(620px,calc(100vh - 100px));overflow:auto;padding:16px;border:1px solid var(--flow-line);border-radius:17px;background:var(--flow-bg);box-shadow:0 20px 60px rgba(0,0,0,.34);backdrop-filter:blur(22px) saturate(1.08)}
+.pf-flow-panel[hidden],.pf-flow-status[hidden]{display:none!important}
+.pf-flow-panel header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:1px 1px 14px}
+.pf-flow-panel header>div{display:grid;gap:3px}
+.pf-flow-eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--flow-muted)}
+.pf-flow-panel header strong{font-size:17px;font-weight:630;outline:none}
+.pf-flow-panel header>button{width:32px;height:32px;border-radius:9px;color:var(--flow-muted);font-size:22px;line-height:1}
+.pf-flow-panel header>button:hover{background:color-mix(in srgb,var(--flow-fg) 7%,transparent);color:var(--flow-fg)}
+.pf-flow-now{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--flow-line);border-bottom:1px solid var(--flow-line)}
+.pf-flow-now>span{font-size:11px;color:var(--flow-muted);text-transform:uppercase;letter-spacing:.1em}
+.pf-flow-now>b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pf-flow-now-actions{display:flex;gap:6px}
+.pf-flow-now-actions button{min-height:31px;padding:0 10px;border:1px solid var(--flow-line);border-radius:9px;color:var(--flow-muted)}
+.pf-flow-now-actions button:last-child{color:var(--flow-accent)}
+.pf-flow-now-actions button:hover{background:color-mix(in srgb,var(--flow-fg) 7%,transparent);color:var(--flow-fg)}
+.pf-flow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:14px 0;background:var(--flow-line);border:1px solid var(--flow-line);border-radius:12px;overflow:hidden}
+.pf-flow-grid>button{min-height:86px;display:grid;grid-template-columns:24px minmax(0,1fr);grid-template-rows:auto auto;column-gap:7px;align-content:center;text-align:left;padding:13px;background:var(--flow-bg)}
+.pf-flow-grid>button:hover,.pf-flow-grid>button:focus-visible{background:color-mix(in srgb,var(--flow-fg) 6%,var(--flow-bg));outline:none}
+.pf-flow-grid>button>span{grid-row:1/3;align-self:start;font-size:18px;color:var(--flow-accent)}
+.pf-flow-grid b{font-size:12px;font-weight:620}
+.pf-flow-grid small{font-size:10px;color:var(--flow-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-flow-grid small i{font-style:normal;color:var(--flow-fg)}
+.pf-flow-panel footer{display:flex;align-items:center;gap:7px;color:var(--flow-muted);font-size:10px}
+.pf-flow-panel footer>b{font-weight:600;color:var(--flow-fg);margin-right:auto}
+.pf-flow-panel kbd{min-width:20px;padding:3px 5px;border:1px solid var(--flow-line);border-bottom-width:2px;border-radius:5px;text-align:center;font:600 9px system-ui}
+.pf-flow-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@keyframes pf-flow-breathe{0%,100%{transform:scale(.85);opacity:.55}50%{transform:scale(1.15);opacity:1}}
+@media (prefers-color-scheme:light){#pf-flow-dock{--flow-bg:color-mix(in srgb,#fbfaf6 95%,transparent);--flow-fg:#202725;--flow-muted:#66706b;--flow-line:color-mix(in srgb,#202725 14%,transparent);--flow-accent:#26745b;--flow-warn:#8b641e;color-scheme:light}.pf-flow-bar,.pf-flow-panel,.pf-flow-status{box-shadow:0 12px 35px rgba(35,42,39,.16)}}
+@media (max-width:760px){#pf-flow-dock{bottom:max(6px,env(safe-area-inset-bottom));width:calc(100vw - 12px)}html.pf-flow-active body{padding-bottom:70px!important}.pf-flow-bar{grid-template-columns:40px minmax(0,1fr) 40px;gap:3px;padding:3px;border-radius:13px}.pf-flow-cue{grid-column:2;grid-row:1;max-width:none}.pf-flow-cue:not([hidden])+.pf-flow-capture{display:none}.pf-flow-capture{grid-column:2;grid-row:1}.pf-flow-tool{display:none}.pf-flow-more{grid-column:3;grid-row:1}.pf-flow-panel{right:0;bottom:54px;width:100%;padding:14px;border-radius:15px}.pf-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-flow-now{grid-template-columns:38px minmax(0,1fr)}.pf-flow-now-actions{grid-column:2;justify-self:start}.pf-flow-panel footer kbd{display:none}.pf-flow-status{bottom:54px}}
+@media (max-width:420px){.pf-flow-grid>button{min-height:76px;padding:10px}.pf-flow-panel{max-height:calc(100vh - 78px)}.pf-flow-now-actions button{padding:0 8px}}
+@media (prefers-reduced-motion:reduce){#pf-flow-dock *,#pf-flow-dock *::before,#pf-flow-dock *::after{animation:none!important;transition:none!important}}
