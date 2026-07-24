@@ -48,6 +48,14 @@ function removeForSetup(current){
   current?.remove();
   document.documentElement.classList.remove('pf-hub-mounted');
 }
+function nudgeFreshSurface(epoch){
+  for(const delay of [0,80,240,700,1600]){
+    setTimeout(()=>{
+      if(epoch!==setupEpoch||setupVisible()||document.getElementById(ROOT_ID))return;
+      window.__PACEFOLD_SURFACE__?.reconcile?.();
+    },delay);
+  }
+}
 function restoreAfterStableSetupExit(epoch){
   if(setupExitTimer&&setupExitEpoch===epoch)return;
   clearSetupExitTimer();
@@ -60,7 +68,7 @@ function restoreAfterStableSetupExit(epoch){
       if(epoch!==setupEpoch||setupVisible())return;
       wasSetup=false;
       preservedRoot=null;
-      window.__PACEFOLD_SURFACE__?.reconcile?.();
+      nudgeFreshSurface(epoch);
     }));
   },240);
 }
