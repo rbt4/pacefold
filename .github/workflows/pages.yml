@@ -3,6 +3,8 @@ name: Agent harden verified Pacefold core
 on:
   push:
     branches: [agent/pacefold-function-hardening]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -13,7 +15,7 @@ concurrency:
 
 jobs:
   harden:
-    if: github.repository == 'rbt4/pacefold' && github.ref == 'refs/heads/agent/pacefold-function-hardening'
+    if: github.repository == 'rbt4/pacefold' && (github.ref == 'refs/heads/agent/pacefold-function-hardening' || github.event.pull_request.head.ref == 'agent/pacefold-function-hardening')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -75,6 +77,7 @@ jobs:
           node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
 
       - name: Commit only verified outputs
+        if: github.event_name == 'push'
         run: |
           rm -rf _agent_core .agent .agent-materialize-trigger .github/workflows/agent-materialize.yml
           git config user.name pacefold-agent
