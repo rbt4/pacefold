@@ -19,6 +19,9 @@ const ACTIONS={
   notebook:['open-notebook'],media:['open-player'],weather:['open-weather','show-weather','weather'],
   system:['open-system','open-diagnostics','diagnostics'],cue:['handle-cue'],sync:['sync-page']
 };
+const RITUAL_COPY=new Map([
+  ['Sip pace','Sip'],['Prep 30m','Prep 30m'],['Away break','Step away'],['Desk meal 20m','Eat 20m'],['Look far','Look far']
+]);
 const originalTitle=document.title;
 let root=null;
 let dock=null;
@@ -27,10 +30,13 @@ let clickTimer=0;
 let statusTimer=0;
 let snoozeTimer=0;
 let mountedRoot=null;
+let foldObserver=null;
+let foldSources=null;
 let cueState={waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true,snoozed:false,snoozeUntil:0,snoozeMinutes:0};
 
 function safeParse(raw,fallback){try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}}
 function compactText(value){return String(value||'').replace(/\s+/g,' ').trim();}
+function clamp(value,min,max){return Math.min(max,Math.max(min,value));}
 function hash(value){let result=2166136261;for(const char of String(value)){result^=char.charCodeAt(0);result=Math.imul(result,16777619);}return (result>>>0).toString(36);}
 function today(){return new Date().toISOString().slice(0,10);}
 function reportError(kind,error){try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`flow-${kind}`,error);}catch{}}
@@ -38,6 +44,171 @@ function guarded(kind,callback){return function(...args){try{return callback.app
 function setupVisible(){return Boolean(window.__PACEFOLD_GUARDIAN__?.setupVisible?.());}
 function allActions(){return Array.isArray(window.__PACEFOLD_SURFACE__?.actions)?window.__PACEFOLD_SURFACE__.actions:[];}
 function originalAction(name){return [...(root?.querySelectorAll('[data-pf-action]:not([data-pf-flow-proxy])')||[])].find(control=>control.dataset.pfAction===name)||null;}
+
+function leafElements(scope=document){
+  return [...scope.querySelectorAll('button,span,p,small,strong,b,label,div,h1,h2,h3,h4')].filter(node=>node.children.length===0);
+}
+function replaceCopy(from,to,scope=document){
+  for(const node of leafElements(scope))if(compactText(node.textContent)===from&&node.textContent!==to)node.textContent=to;
+}
+function setupScope(){
+  const heading=leafElements(document).find(node=>compactText(node.textContent)==='Choose your rhythm');
+  return heading?.closest('[role="dialog"],dialog,.setup,.onboarding,.setup-screen,section,main')||null;
+}
+function applyCopyPass(){
+  const scope=setupScope();
+  replaceCopy('Finish setup / Install Pacefold for the cleanest taskbar experience.','Install Pacefold to pin it to your taskbar.');
+  replaceCopy('Finish setup / Install Pacefold for the cleanest taskbar experience','Install Pacefold to pin it to your taskbar.');
+  if(scope){
+    const kicker=leafElements(scope).find(node=>compactText(node.textContent)==='Pacefold setup');
+    if(kicker&&!kicker.hidden){kicker.hidden=true;kicker.setAttribute('aria-hidden','true');kicker.dataset.pfCopyHidden='true';}
+  }
+  const status=document.getElementById('statusLine');
+  const tooltip='Click to start the pause. Click again when you’re back.';
+  if(status){
+    const previous=compactText(status.getAttribute('title'));
+    if(previous!==tooltip)status.setAttribute('title',tooltip);
+    if(scope&&!scope.querySelector('[data-pf-onboarding-pause-help]')){
+      const help=document.createElement('p');
+      help.className='pf-onboarding-pause-help';
+      help.dataset.pfOnboardingPauseHelp='true';
+      help.textContent=previous&&previous!==tooltip
+        ?previous
+        :'The status line starts and ends a pause. Click once when you step away, then click again when you return.';
+      const heading=leafElements(scope).find(node=>compactText(node.textContent)==='Choose your rhythm');
+      (heading?.parentElement||scope).append(help);
+    }
+  }
+  for(const [from,to] of RITUAL_COPY)replaceCopy(from,to);
+}
+function parsePercent(value){
+  const match=String(value||'').trim().match(/^(-?\d+(?:\.\d+)?)%$/);
+  return match?clamp(Number(match[1]),0,100):NaN;
+}
+function progressPercent(progress){
+  const fill=progress?.querySelector('.progress-fill');
+  const candidates=[
+    fill?.style?.width,
+    fill?.style?.getPropertyValue('--progress'),
+    progress?.style?.getPropertyValue('--progress'),
+    fill?.getAttribute('aria-valuenow'),
+    progress?.getAttribute('aria-valuenow')
+  ];
+  for(const value of candidates){
+    const text=String(value??'').trim();
+    if(!text)continue;
+    const percent=parsePercent(text);
+    if(Number.isFinite(percent))return percent;
+    const numeric=Number(text);
+    if(Number.isFinite(numeric)&&numeric>=0&&numeric<=100)return numeric;
+  }
+  if(fill&&progress&&!progress.hasAttribute('hidden')){
+    const outer=progress.getBoundingClientRect();
+    const inner=fill.getBoundingClientRect();
+    if(outer.width>0&&inner.width>=0)return clamp(inner.width/outer.width*100,0,100);
+  }
+  return 0;
+}
+function markFraction(mark,sequence,index,count){
+  const stored=Number(mark.dataset.pfFoldFraction);
+  if(Number.isFinite(stored))return clamp(stored,0,100);
+  const raw=[
+    mark.style.left,mark.style.insetInlineStart,
+    mark.style.getPropertyValue('--left'),mark.style.getPropertyValue('--position'),
+    mark.style.getPropertyValue('--at'),mark.dataset.position,mark.dataset.at,mark.dataset.fraction
+  ];
+  let fraction=NaN;
+  for(const value of raw){
+    const text=String(value??'').trim();
+    if(!text)continue;
+    fraction=parsePercent(text);
+    if(Number.isFinite(fraction))break;
+    const numeric=Number(text);
+    if(Number.isFinite(numeric)){fraction=numeric<=1?numeric*100:numeric;break;}
+  }
+  if(!Number.isFinite(fraction)&&!sequence.hasAttribute('data-pf-fold-source')){
+    const outer=sequence.getBoundingClientRect();
+    const rect=mark.getBoundingClientRect();
+    if(outer.width>0)fraction=(rect.left+rect.width/2-outer.left)/outer.width*100;
+  }
+  if(!Number.isFinite(fraction))fraction=count>1?index/(count-1)*100:50;
+  fraction=clamp(fraction,0,100);
+  mark.dataset.pfFoldFraction=String(fraction);
+  return fraction;
+}
+function foldMoments(sequence,progress){
+  let marks=[...sequence.querySelectorAll('.sequence-mark')];
+  if(!marks.length)marks=[...sequence.querySelectorAll('[data-code]')].filter(node=>node.closest('.sequence')===sequence);
+  const moments=marks.map((mark,index)=>({
+    mark,
+    fraction:markFraction(mark,sequence,index,marks.length),
+    code:compactText(mark.dataset.code||mark.getAttribute('aria-label')||mark.textContent)||`Moment ${index+1}`,
+    namedCurrent:/(?:^|\s)(?:is-)?(?:active|current|now)(?:\s|$)/i.test(mark.className)||mark.matches('[aria-current="true"],[data-current="true"]'),
+    namedPassed:/(?:^|\s)(?:is-)?(?:done|passed|complete)(?:\s|$)/i.test(mark.className)||mark.matches('[data-passed="true"],[data-complete="true"]')
+  })).sort((a,b)=>a.fraction-b.fraction);
+  const explicit=moments.findIndex(item=>item.namedCurrent);
+  let current=explicit;
+  if(current<0&&moments.length){
+    current=moments.reduce((best,item,index)=>Math.abs(item.fraction-progress)<Math.abs(moments[best].fraction-progress)?index:best,0);
+  }
+  return moments.map((item,index)=>({...item,state:index===current?'current':item.namedPassed||item.fraction<progress-.15?'passed':'future'}));
+}
+function creaseLayer(moment){
+  const point=moment.fraction.toFixed(3);
+  if(moment.state==='current'){
+    return `linear-gradient(90deg,transparent 0 calc(${point}% - .5px),var(--cue,var(--accent)) calc(${point}% - .5px) calc(${point}% + .5px),color-mix(in srgb,#fff 24%,transparent) calc(${point}% + .5px) calc(${point}% + 3.5px),transparent calc(${point}% + 3.5px) 100%)`;
+  }
+  if(moment.state==='passed'){
+    return `linear-gradient(90deg,transparent 0 calc(${point}% - .5px),color-mix(in srgb,var(--ink) 14%,transparent) calc(${point}% - .5px) calc(${point}% + .5px),color-mix(in srgb,#fff 22%,transparent) calc(${point}% + .5px) calc(${point}% + 3.5px),transparent calc(${point}% + 3.5px) 100%)`;
+  }
+  return `linear-gradient(90deg,transparent 0 calc(${point}% - .5px),color-mix(in srgb,var(--ink) 12%,transparent) calc(${point}% - .5px) calc(${point}% + .5px),transparent calc(${point}% + .5px) 100%)`;
+}
+function renderFoldStrip(strip,moments,progress){
+  strip.style.setProperty('--fold-progress',`${progress.toFixed(3)}%`);
+  strip.style.setProperty('--fold-creases',moments.length?moments.map(creaseLayer).join(','):'none');
+  const existing=[...strip.querySelectorAll('.fold-crease')];
+  moments.forEach((moment,index)=>{
+    const node=existing[index]||document.createElement('span');
+    if(!existing[index]){node.className='fold-crease';node.setAttribute('aria-hidden','true');strip.append(node);}
+    node.dataset.code=moment.code;
+    node.dataset.state=moment.state;
+    node.style.setProperty('--fold-left',`${moment.fraction.toFixed(3)}%`);
+  });
+  existing.slice(moments.length).forEach(node=>node.remove());
+  const passed=moments.filter(item=>item.state==='passed').length;
+  strip.setAttribute('aria-label',`Workday ${Math.round(progress)}% folded. ${passed} of ${moments.length} scheduled moments passed.`);
+}
+function observeFoldSources(progress,sequence){
+  if(foldSources?.progress===progress&&foldSources?.sequence===sequence)return;
+  foldObserver?.disconnect();
+  foldSources={progress,sequence};
+  foldObserver=new MutationObserver(guarded('fold-observer',updateFoldStrip));
+  foldObserver.observe(progress,{attributes:true,childList:true,subtree:true,characterData:true});
+  foldObserver.observe(sequence,{attributes:true,childList:true,subtree:true,characterData:true});
+}
+function updateFoldStrip(){
+  const progress=document.querySelector('.progress');
+  const sequence=document.querySelector('.sequence');
+  if(!progress||!sequence)return;
+  const value=progressPercent(progress);
+  const moments=foldMoments(sequence,value);
+  let strip=document.querySelector('.fold-strip[data-pf-fold-strip]');
+  if(!strip){
+    strip=document.createElement('div');
+    strip.className='fold-strip';
+    strip.dataset.pfFoldStrip='true';
+    strip.setAttribute('role','img');
+    progress.parentNode?.insertBefore(strip,progress);
+  }
+  if(progress.dataset.pfFoldSource!=='true')progress.dataset.pfFoldSource='true';
+  if(progress.getAttribute('aria-hidden')!=='true')progress.setAttribute('aria-hidden','true');
+  if(sequence.dataset.pfFoldSource!=='true')sequence.dataset.pfFoldSource='true';
+  if(sequence.getAttribute('aria-hidden')!=='true')sequence.setAttribute('aria-hidden','true');
+  renderFoldStrip(strip,moments,value);
+  observeFoldSources(progress,sequence);
+}
+function enhanceCoreSurface(){applyCopyPass();updateFoldStrip();}
+
 function resolveAction(kind){
   for(const name of ACTIONS[kind]||[]){const control=originalAction(name);if(control)return {name,control};}
   const token=kind==='media'?'player':kind;
@@ -190,6 +361,7 @@ function markOriginalSources(){
 }
 function capability(kind){return Boolean(resolveAction(kind)?.control);}
 function reconcileState(){
+  enhanceCoreSurface();
   if(!dock?.isConnected||!root?.isConnected)return;
   markOriginalSources();cueState=readCue();scheduleSnoozeWake();
   const attention=cueState.waiting&&!cueState.acknowledged&&!cueState.snoozed;
@@ -269,6 +441,7 @@ function markup(){return `
 function createDock(nextRoot){const element=document.createElement('aside');element.id=DOCK_ID;element.dataset.version=VERSION;element.setAttribute('aria-label','Pacefold integrated dock');element.innerHTML=markup();nextRoot.append(element);return element;}
 function unmount(){clearTimeout(snoozeTimer);snoozeTimer=0;dock?.remove();dock=null;root=null;mountedRoot=null;document.documentElement.classList.remove('pf-flow-active');document.title=originalTitle;clearBadge();}
 function mount(){
+  enhanceCoreSurface();
   if(setupVisible()){unmount();return;}
   const nextRoot=document.getElementById(ROOT_ID);if(!nextRoot){unmount();return;}
   if(mountedRoot===nextRoot&&dock?.isConnected){reconcileSafely();return;}
@@ -286,9 +459,9 @@ function keydown(event){
 }
 function focusAcknowledge(){setTimeout(()=>{const state=readCue();if(state.waiting&&!state.acknowledged&&!state.snoozed)acknowledge('focus');},80);}
 
-new MutationObserver(guarded('observer',mutations=>{if(mutations.length&&mutations.every(item=>item.target instanceof Element&&item.target.closest?.(`#${DOCK_ID}`)))return;queueMount();})).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-hidden','disabled','data-view','data-screen','data-step']});
+new MutationObserver(guarded('observer',mutations=>{if(mutations.length&&mutations.every(item=>item.target instanceof Element&&item.target.closest?.(`#${DOCK_ID}`)))return;queueMount();})).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-hidden','disabled','data-view','data-screen','data-step','data-theme']});
 document.addEventListener('keydown',guarded('keydown',keydown));window.addEventListener('focus',guarded('focus',focusAcknowledge));window.addEventListener('pageshow',queueMount);window.addEventListener('online',queueMount);window.addEventListener('pacefold:storage-changed',queueMount);
 window.addEventListener('storage',event=>{if([ENTRY_KEY,ACK_KEY,SNOOZE_KEY,SYNC_LOCK_KEY].includes(event.key))queueMount();});
 [0,80,240,700,1600].forEach(delay=>setTimeout(queueMount,delay));setInterval(guarded('heartbeat',()=>{if(document.visibilityState==='visible')reconcileSafely();}),1500);
-window.__PACEFOLD_FLOW__={version:VERSION,mount,reconcile:reconcileSafely,acknowledge,snooze:snoozeCue,focusCapture,setPanel};
+window.__PACEFOLD_FLOW__={version:VERSION,mount,reconcile:reconcileSafely,acknowledge,snooze:snoozeCue,focusCapture,setPanel,updateFoldStrip};
 })();
