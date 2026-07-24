@@ -49,17 +49,35 @@ function forward(kind){
 function notebookEntries(){try{const value=safeParse(localStorage.getItem(ENTRY_KEY),[]);return Array.isArray(value)?value:[];}catch{return [];}}
 function todayCount(){return notebookEntries().filter(item=>item?.date===today()).length;}
 function currentAck(){try{return safeParse(localStorage.getItem(ACK_KEY),null);}catch{return null;}}
+function cueLabel(andon,handler){
+  const selector='[data-pf-cue-label],[data-pf-label],.pf-andon-title,.pf-andon-label,strong,b';
+  const candidates=[handler?.querySelector(selector),andon?.querySelector(selector),handler?.querySelector('span:not([aria-hidden="true"])'),andon?.querySelector('span:not([aria-hidden="true"])')];
+  for(const candidate of candidates){
+    const text=compactText(candidate?.textContent).replace(/\b(?:Done|Clear|Log|Handle)\b/gi,'').trim();
+    if(text&&text.length<=80&&!/^(?:open pacefold|quietly keeping pace|action waiting)$/i.test(text))return text;
+  }
+  const source=handler||andon;
+  if(source){
+    const clone=source.cloneNode(true);
+    clone.querySelectorAll('small,button,kbd,[aria-hidden="true"],.sr-only,.pf-sr-only').forEach(node=>node.remove());
+    let text=compactText(clone.textContent);
+    text=text.split(/Open Pacefold|Quietly keeping pace|\bDone\b|\bClear\b|\bLog\b|\bHandle\b/i)[0];
+    text=compactText(text).slice(0,80);
+    if(text)return text;
+  }
+  const raw=compactText(andon?.textContent||handler?.textContent||'');
+  return compactText(raw.split(/Open Pacefold|Quietly keeping pace|\bDone\b|\bClear\b|\bLog\b|\bHandle\b/i)[0]).slice(0,80)||'Action waiting';
+}
 function readCue(){
   if(!root)return {waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true};
   const andon=root.querySelector('.pf-andon');
   const handler=originalAction('handle-cue');
   const waiting=Boolean(andon?.classList.contains('is-waiting')||andon?.matches('[data-state="waiting"],[data-waiting="true"]'));
-  let text=compactText(andon?.textContent||handler?.textContent||'');
-  for(const label of ['Done','Clear','Log','Open','Handle'])text=text.replace(new RegExp(`\\b${label}\\b`,'gi'),'');
-  text=compactText(text).slice(0,110)||(waiting?'Action waiting':'No action waiting');
-  const fingerprint=waiting?hash(`${text}|${handler?.dataset?.pfId||''}`):'';
-  const acknowledged=Boolean(!waiting||currentAck()?.fingerprint===fingerprint);
-  return {waiting,text,fingerprint,acknowledged};
+  if(!waiting)return {waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true};
+  const text=cueLabel(andon,handler);
+  const fingerprint=hash(`${text}|${handler?.dataset?.pfId||''}`);
+  const acknowledged=currentAck()?.fingerprint===fingerprint;
+  return {waiting:true,text,fingerprint,acknowledged};
 }
 async function closeNotifications(){
   try{const registration=await navigator.serviceWorker?.getRegistration?.();const notifications=await registration?.getNotifications?.();for(const notification of notifications||[])notification.close();}catch{}
