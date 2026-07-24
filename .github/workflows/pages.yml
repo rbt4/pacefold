@@ -87,7 +87,7 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
-      - name: Inject twice and audit resilience surface
+      - name: Inject resilience surface twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
@@ -116,9 +116,13 @@ jobs:
           test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/service-worker.js | wc -l)" -eq 1
           test "$(grep -o 'BEGIN pacefold-resilience-15.7.1' _release/app/service-worker.js | wc -l)" -eq 1
           ! sed -n '/BEGIN pacefold-resilience-15.7.1/,/END pacefold-resilience-15.7.1/p' _release/app/service-worker.js | grep -q 'caches.delete'
+      - name: Notebook and integration browser audit
+        run: |
           sed 's/15\.7\.0/15.7.1/g' enhancements/hub-audit.cjs > /tmp/pacefold-hub-audit-15.7.1.cjs
           node --check /tmp/pacefold-hub-audit-15.7.1.cjs
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node /tmp/pacefold-hub-audit-15.7.1.cjs _release
+      - name: Destructive resilience browser audit
+        run: |
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release
 
   deploy:
