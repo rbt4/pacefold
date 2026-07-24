@@ -62,11 +62,14 @@ jobs:
           import_needle="import path from 'node:path';"
           call_needle="const hardened=hardenInnerHTML(app);app=hardened.source;"
           validate_write="write('scripts/validate.mjs',validate);"
+          browser_version="browser=browser.replaceAll(fromVersion,toVersion);"
           assert source.count(import_needle)==1, 'core migration import anchor changed'
           assert source.count(call_needle)==1, 'core migration Trusted Types call changed'
           assert source.count(validate_write)==1, 'core validation write anchor changed'
+          assert source.count(browser_version)==1, 'browser audit version anchor changed'
           source=source.replace(import_needle,import_needle+"\nimport {rewriteInnerHTMLAssignments} from './trusted-types-transform.mjs';")
           source=source.replace(call_needle,"const hardened=rewriteInnerHTMLAssignments(app,'setHTML');app=hardened.source;")
+          source=source.replace(browser_version,browser_version+"\nbrowser=browser.replaceAll(fromVersion.replaceAll('.','\\\\.'),toVersion.replaceAll('.','\\\\.'));")
           validation_patch=r'''validate=replaceExact(validate,
             "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean);",
             "const shell=[...worker.matchAll(/'\\.\\/([^']*)'/g)].map(m=>m[1]).filter(Boolean).filter(ref=>!ref.startsWith('__pacefold-'));",
