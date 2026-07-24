@@ -67,6 +67,7 @@ jobs:
           node --check enhancements/pacefold-resilience.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
+          node --check enhancements/run-hub-audit.cjs
           node --check enhancements/resilience-audit.cjs
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
@@ -120,10 +121,8 @@ jobs:
         continue-on-error: true
         run: |
           echo 99 > /tmp/pacefold-notebook-audit.status
-          sed 's/15\.7\.0/15.7.1/g' enhancements/hub-audit.cjs > /tmp/pacefold-hub-audit-15.7.1.cjs
-          node --check /tmp/pacefold-hub-audit-15.7.1.cjs
           set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node /tmp/pacefold-hub-audit-15.7.1.cjs _release 2>&1 | tee /tmp/pacefold-notebook-audit.log
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs _release 2>&1 | tee /tmp/pacefold-notebook-audit.log
           status=${PIPESTATUS[0]}
           echo "$status" > /tmp/pacefold-notebook-audit.status
           exit 0
