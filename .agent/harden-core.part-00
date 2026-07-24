@@ -1,0 +1,155 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root=path.resolve(process.argv[2]||'_agent_core');
+const fromVersion=process.argv[3]||'15.2.1';
+const toVersion=process.argv[4]||'15.2.2';
+const p=(...parts)=>path.join(root,...parts);
+const read=file=>fs.readFileSync(p(file),'utf8');
+const write=(file,value)=>fs.writeFileSync(p(file),value);
+const fail=message=>{throw new Error(message);};
+
+function replaceExact(source,needle,replacement,label,expected=1){
+  const count=source.split(needle).length-1;
+  if(count!==expected)fail(`${label}: expected ${expected} exact match(es), found ${count}`);
+  return source.split(needle).join(replacement);
+}
+function replacePattern(source,pattern,replacement,label,expected=1){
+  const flags=pattern.flags.includes('g')?pattern.flags:`${pattern.flags}g`;
+  const global=new RegExp(pattern.source,flags);
+  const matches=[...source.matchAll(global)];
+  if(matches.length!==expected)fail(`${label}: expected ${expected} pattern match(es), found ${matches.length}`);
+  return source.replace(global,replacement);
+}
+
+function skipQuoted(source,index,quote){
+  let i=index+1;
+  while(i<source.length){
+    if(source[i]==='\\'){i+=2;continue;}
+    if(source[i]===quote)return i+1;
+    i+=1;
+  }
+  fail(`Unterminated ${quote} string while hardening innerHTML`);
+}
+function skipRegex(source,index){
+  let i=index+1,inClass=false;
+  while(i<source.length){
+    const ch=source[i];
+    if(ch==='\\'){i+=2;continue;}
+    if(ch==='[')inClass=true;
+    else if(ch===']')inClass=false;
+    else if(ch==='/'&&!inClass){i+=1;while(/[a-z]/i.test(source[i]||''))i+=1;return i;}
+    i+=1;
+  }
+  fail('Unterminated regular expression while hardening innerHTML');
+}
+function regexCanStart(previous){return !previous||/[({[=,:;!?&|+\-*%^~<>]/.test(previous);}
+function findExpressionEnd(source,start){
+  const stack=[];
+  let i=start,previous='';
+  while(i<source.length){
+    const ch=source[i];
+    if(ch==="'"||ch==='"'){i=skipQuoted(source,i,ch);previous='v';continue;}
+    if(ch==='`'){
+      stack.push({kind:'template',depth:0});i+=1;
+      while(i<source.length&&stack.at(-1)?.kind==='template'){
+        const t=source[i];
+        if(t==='\\'){i+=2;continue;}
+        if(t==='`'){stack.pop();i+=1;break;}
+        if(t==='$'&&source[i+1]==='{'){stack.push({kind:'template-expression',depth:1});i+=2;break;}
+        i+=1;
+      }
+      previous='v';continue;
+    }
+    if(stack.at(-1)?.kind==='template-expression'){
+      if(ch==="'"||ch==='"'){i=skipQuoted(source,i,ch);continue;}
+      if(ch==='`'){stack.push({kind:'template',depth:0});continue;}
+      if(ch==='{'){stack.at(-1).depth+=1;i+=1;continue;}
+      if(ch==='}'){stack.at(-1).depth-=1;i+=1;if(stack.at(-1)?.depth===0){stack.pop();}continue;}
+      if(ch==='/'&&regexCanStart(previous)){i=skipRegex(source,i);previous='v';continue;}
+      previous=/\s/.test(ch)?previous:ch;i+=1;continue;
+    }
+    if(ch==='/'&&regexCanStart(previous)){i=skipRegex(source,i);previous='v';continue;}
+    if(ch==='('||ch==='['||ch==='{')stack.push({kind:'group',close:ch==='('?')':ch==='['?']':'}'});
+    else if(ch===')'||ch===']'||ch==='}'){
+      const top=stack.at(-1);if(!top||top.kind!=='group'||top.close!==ch)fail(`Unbalanced ${ch} while hardening innerHTML`);stack.pop();
+    }else if(ch===';'&&stack.length===0)return i;
+    previous=/\s/.test(ch)?previous:ch;i+=1;
+  }
+  fail('Could not find the end of an innerHTML assignment');
+}
+function findLhsStart(source,dotIndex){
+  let paren=0,bracket=0;
+  for(let i=dotIndex-1;i>=0;i-=1){
+    const ch=source[i];
+    if(ch===')')paren+=1;else if(ch==='(')paren-=1;
+    else if(ch===']')bracket+=1;else if(ch==='[')bracket-=1;
+    if(paren<0||bracket<0)fail('Unbalanced left-hand expression while hardening innerHTML');
+    if(paren===0&&bracket===0&&(ch===';'||ch==='\n'||ch==='{'||ch==='}'))return i+1;
+  }
+  return 0;
+}
+function hardenInnerHTML(source){
+  let cursor=0,count=0;
+  while(true){
+    const dot=source.indexOf('.innerHTML=',cursor);if(dot===-1)break;
+    const lhsStart=findLhsStart(source,dot),lhs=source.slice(lhsStart,dot).trim();
+    if(!lhs||/\b(?:if|for|while|return)\b/.test(lhs))fail(`Unsafe innerHTML left-hand expression: ${lhs}`);
+    const rhsStart=dot+'.innerHTML='.length,end=findExpressionEnd(source,rhsStart),rhs=source.slice(rhsStart,end).trim();
+    const leading=source.slice(lhsStart,dot).match(/^\s*/)?.[0]||'';
+    const replacement=`${leading}setHTML(${lhs},${rhs})`;
+    source=source.slice(0,lhsStart)+replacement+source.slice(end);
+    cursor=lhsStart+replacement.length+1;count+=1;
+  }
+  if(count<10)fail(`Expected at least 10 innerHTML assignments, hardened ${count}`);
+  if(source.includes('.innerHTML='))fail('An innerHTML assignment survived hardening');
+  return{source,count};
+}
+
+let app=read('app/app.js');
+app=replaceExact(app,`const APP_VERSION='${fromVersion}';`,`const APP_VERSION='${toVersion}';`,'app version');
+app=replaceExact(app,
+  "  const CAPTURE_KINDS=['inbox','follow-up','incident','inspection','jhsc','construction','notification','meeting','resource'];",
+  "  const CAPTURE_KINDS=['inbox','follow-up','incident','inspection','jhsc','construction','notification','meeting','resource'];\n  const DEBUG_BUILD=false;\n  const TT=window.trustedTypes?window.trustedTypes.createPolicy('pacefold',{createHTML:value=>String(value)}):{createHTML:value=>String(value)};\n  const setHTML=(node,value)=>{if(!node)return node;Reflect.set(node,'innerHTML',TT.createHTML(String(value)));return node;};\n  window.__PACEFOLD_TRUSTED_HTML__=value=>TT.createHTML(String(value));\n  window.__PACEFOLD_SET_HTML__=setHTML;",
+  'trusted types policy');
+app=replaceExact(app,
+  "    lead:10,dueWindow:18,snoozeMinutes:10,method:'15',asr:'hanafi',browserNotif:false,notificationDetail:'generic',notificationMode:'quiet',notified:{},notificationActionHistory:[],",
+  "    lead:10,dueWindow:18,staleAfterMinutes:20,snoozeMinutes:10,method:'15',asr:'hanafi',browserNotif:false,notificationDetail:'generic',notificationMode:'quiet',notified:{},notificationActionHistory:[],",
+  'stale default');
+app=replaceExact(app,
+  "    lat:43.62,lng:-79.51,locationLabel:'Toronto',",
+  "    lat:43.62,lng:-79.51,locationLabel:'Toronto',lastSeenAt:0,",
+  'last seen default');
+app=replaceExact(app,
+  "  const diagnostics=[];\n  let storageState='Local';\n  function reportError(error,context='runtime'){\n    try{diagnostics.push({at:new Date().toISOString(),context,message:String(error&&error.message||error)});if(diagnostics.length>12)diagnostics.shift();console.error('[Pacefold]',context,error);}catch(_){ }\n  }",
+  "  const diagnostics=[];\n  let storageState='Local';\n  const diagnosticText=value=>String(value&&value.message||value||'Unknown').replace(/https?:\\/\\/\\S+/gi,'[url]').replace(/\\b[\\w.+-]+@[\\w.-]+\\.[a-z]{2,}\\b/gi,'[email]').slice(0,240);\n  function recordDiagnostic(context,message){\n    try{const cleanContext=String(context||'runtime').slice(0,64),cleanMessage=diagnosticText(message),key=`${cleanContext}|${cleanMessage}`,now=new Date().toISOString(),existing=diagnostics.find(item=>item.key===key);if(existing){existing.count+=1;existing.lastAt=now;return existing;}const item={key,at:now,lastAt:now,count:1,context:cleanContext,message:cleanMessage};diagnostics.push(item);if(diagnostics.length>24)diagnostics.shift();return item;}catch(_){return null;}\n  }\n  function reportError(error,context='runtime'){recordDiagnostic(context,error);try{console.error('[Pacefold]',context,error);}catch(_){ }}",
+  'diagnostic deduplication');
+app=replaceExact(app,
+  "  const storageGet=key=>{try{return localStorage.getItem(key);}catch(error){if(error&&error.name!=='SecurityError')reportError(error,'storage-read');return null;}};",
+  "  const storageGet=key=>{try{return localStorage.getItem(key);}catch(error){storageState='Unavailable';reportError(error,'storage-read');return null;}};",
+  'storage read state');
+app=replaceExact(app,
+  "    p.lead=clamp(p.lead,0,30,10);p.dueWindow=clamp(p.dueWindow,5,60,18);p.snoozeMinutes=clamp(p.snoozeMinutes,5,30,10);",
+  "    p.lead=clamp(p.lead,0,30,10);p.dueWindow=clamp(p.dueWindow,5,60,18);p.staleAfterMinutes=clamp(p.staleAfterMinutes,5,120,20);p.snoozeMinutes=clamp(p.snoozeMinutes,5,30,10);",
+  'stale normalization');
+app=replaceExact(app,
+  "    p.lat=clamp(p.lat,-90,90,DEFAULTS.lat);p.lng=clamp(p.lng,-180,180,DEFAULTS.lng);p.locationLabel=(typeof p.locationLabel==='string'&&p.locationLabel)?p.locationLabel.slice(0,24):DEFAULTS.locationLabel;",
+  "    p.lat=clamp(p.lat,-90,90,DEFAULTS.lat);p.lng=clamp(p.lng,-180,180,DEFAULTS.lng);p.locationLabel=(typeof p.locationLabel==='string'&&p.locationLabel)?p.locationLabel.slice(0,24):DEFAULTS.locationLabel;p.lastSeenAt=clamp(p.lastSeenAt,0,Number.MAX_SAFE_INTEGER,0);",
+  'last seen normalization');
+app=replacePattern(app,/  function save\(\)\{[\s\S]*?\n  \}\n  ensureWorkday\(new Date\(\)\);save\(\);/,
+`  function save(){
+    try{
+      const cutoff=Date.now()-4*864e5,cleanAck={},cleanSnooze={},cleanNotified={};
+      Object.entries(prefs.acknowledged||{}).forEach(([k,v])=>{if(Number(v)>cutoff)cleanAck[k]=Number(v);});
+      Object.entries(prefs.snoozed||{}).forEach(([k,v])=>{if(Number(v)>cutoff)cleanSnooze[k]=Number(v);});
+      Object.entries(prefs.notified||{}).forEach(([k,v])=>{if(Number(v)>cutoff)cleanNotified[k]=Number(v);});
+      prefs.acknowledged=cleanAck;prefs.snoozed=cleanSnooze;prefs.notified=cleanNotified;
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(prefs));storageState='Local';return true;
+    }catch(error){storageState='Unavailable';reportError(error,'storage-write');return false;}
+  }
+  ensureWorkday(new Date());save();`,
+  'save hardening');
+app=replaceExact(app,
+  "  let continuingSession=false;\n  try{continuingSession=sessionStorage.getItem('pacefoldSessionV14')==='active';sessionStorage.setItem('pacefoldSessionV14','active');}catch(_){ }\n  if(!continuingSession){const opened=new Date(),openedH=opened.getHours()+opened.getMinutes()/60+opened.getSeconds()/3600;scheduleForDate(opened).forEach(item=>{if(item.time<=openedH-prefs.dueWindow/60)prefs.acknowledged[eventKey(opened,item.id)]=Date.now();});save();}",
+  "  try{sessionStorage.setItem('pacefoldSessionV14','active');}catch(_){ }",
+  'fresh-session auto acknowledgement');
