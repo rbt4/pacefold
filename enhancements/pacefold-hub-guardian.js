@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const VERSION='15.7.1';
+const VERSION='15.8.0';
 const ROOT_ID='pf-hub-root';
 const SETUP_SELECTORS=[
   '[data-view="setup"]','[data-screen="setup"]','[data-step="setup"]',
