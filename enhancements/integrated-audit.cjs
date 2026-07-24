@@ -83,10 +83,13 @@ async function main(){
     assert(guardian.includes("const VERSION='15.8.0'"),'Guardian version is not 15.8.0');
     assert(resilience.includes("const VERSION='15.8.0'"),'Resilience version is not 15.8.0');
     assert(flow.includes("const ACK_KEY='pacefold.flow.ack.v1'")&&flow.includes('taskbar-acknowledged'),'Taskbar acknowledgement contract is missing');
+    assert(flow.includes("const SNOOZE_KEY='pacefold.flow.snooze.v1'")&&flow.includes('taskbar-snoozed')&&flow.includes('data-pf-flow-snooze'),'Taskbar reminder contract is missing');
     assert(flow.includes('function cleanCueText(')&&flow.includes('function cueLabel('),'Actionable cue-label normalization is missing');
+    assert(flow.includes('function reportError(')&&flow.includes('function reconcileSafely(')&&flow.includes("reportError('mount'"),'Integrated self-recovery contract is missing');
     for(const route of ['/incident','/follow','/jhsc'])assert(flow.includes(route.slice(1)),`Capture route ${route} is missing`);
     assert(flowCss.includes('min-height:48px')&&flowCss.includes('@media (max-width:760px)'),'Minimal dock or mobile contract missing');
     assert(flowCss.includes('translateX(-50%)')&&flowCss.includes('pointer-events:auto!important'),'Dock centering or interaction contract missing');
+    assert(flowCss.includes('--flow-paper:')&&flowCss.includes('mask:var(--pf-icon)'),'Premium notebook or vector-icon visual contract missing');
     const guardianIndex=appHtml.indexOf('data-pacefold-hub-guardian="15.8.0"');
     const resilienceIndex=appHtml.indexOf('data-pacefold-resilience="15.8.0"');
     const hubIndex=appHtml.indexOf('data-pacefold-hub="15.8.0"',resilienceIndex+1);
@@ -115,7 +118,7 @@ async function main(){
     await page.evaluate(()=>localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify([{id:'existing',body:'Existing note',section:'Daily',date:new Date().toISOString().slice(0,10)}])));
     await page.goto(`http://127.0.0.1:${port}/__flow_host`,{waitUntil:'load'});
     await page.waitForSelector('#pf-flow-dock');
-    await page.waitForFunction(()=>window.__PACEFOLD_FLOW__?.version==='15.8.0');
+    await page.waitForFunction(()=>window.__PACEFOLD_FLOW__?.version==='15.8.0'&&typeof window.__PACEFOLD_FLOW__.snooze==='function');
 
     mark('architecture');
     const architecture=await page.evaluate(()=>({
@@ -147,14 +150,30 @@ async function main(){
     assert(acknowledged.cueClicks===0&&acknowledged.cueWaiting&&acknowledged.panelHidden&&acknowledged.pulseState==='waiting'&&acknowledged.cueText===waterLabel,`Taskbar acknowledgement completed, opened or changed the cue: ${JSON.stringify(acknowledged)}`);
     assert(acknowledged.closed>=1&&acknowledged.ack?.version==='15.8.0','Taskbar acknowledgement did not clear notification state');
 
-    mark('second-interaction-and-done');
+    mark('taskbar-reminder');
     await page.locator('[data-pf-flow-pulse]').click();
     await page.waitForFunction(()=>document.querySelector('[data-pf-flow-panel]')?.hidden===false);
-    assert(await page.locator('[data-pf-flow-done]').isEnabled(),'Done action is unavailable for a waiting cue');
+    assert(await page.locator('[data-pf-flow-snooze]').isEnabled(),'Reminder action is unavailable for a waiting cue');
+    await page.locator('[data-pf-flow-snooze]').click();
+    await page.waitForFunction(()=>localStorage.getItem('pacefold.flow.snooze.v1')&&!localStorage.getItem('pacefold.flow.ack.v1'));
+    const reminder=await page.evaluate(()=>({
+      cueClicks:window.__cueClicks,cueWaiting:Boolean(document.querySelector('.pf-andon.is-waiting')),panelHidden:document.querySelector('[data-pf-flow-panel]').hidden,
+      pulseState:document.querySelector('[data-pf-flow-pulse]').dataset.state,taskbar:document.querySelector('[data-pf-flow-taskbar]').textContent,
+      snooze:JSON.parse(localStorage.getItem('pacefold.flow.snooze.v1')||'null'),lastBadge:window.__badgeEvents.at(-1)
+    }));
+    assert(reminder.cueClicks===0&&reminder.cueWaiting&&reminder.panelHidden&&reminder.pulseState==='waiting',`Taskbar reminder completed, opened or changed the cue: ${JSON.stringify(reminder)}`);
+    assert(reminder.snooze?.version==='15.8.0'&&reminder.snooze.until>Date.now()+9*60000&&/^Remind in \d+m$/.test(reminder.taskbar)&&reminder.lastBadge?.[0]==='clear',`Taskbar reminder was not persisted or quieted correctly: ${JSON.stringify(reminder)}`);
+
+    mark('reminder-and-done');
+    await page.locator('[data-pf-flow-pulse]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-pf-flow-panel]')?.hidden===false);
+    assert(await page.locator('[data-pf-flow-done]').isEnabled(),'Done action is unavailable for a reminded cue');
     await page.locator('[data-pf-flow-done]').click();
     await page.waitForFunction(()=>window.__cueClicks===1&&!document.getElementById('pf-flow-audit-cue'));
     await page.waitForFunction(()=>document.querySelector('[data-pf-flow-pulse]')?.dataset.state==='calm');
     await page.waitForFunction(()=>[...document.querySelectorAll('[data-pf-flow-cue-text]')].every(node=>node.textContent==='No action waiting'));
+    const clearedTaskbarState=await page.evaluate(()=>({ack:localStorage.getItem('pacefold.flow.ack.v1'),snooze:localStorage.getItem('pacefold.flow.snooze.v1')}));
+    assert(clearedTaskbarState.ack===null&&clearedTaskbarState.snooze===null,`Completed cue left taskbar state behind: ${JSON.stringify(clearedTaskbarState)}`);
 
     mark('notebook-proxy');
     await page.locator('[data-pf-flow-tool="notebook"]').first().click();
@@ -164,6 +183,8 @@ async function main(){
     mark('root-recovery');
     await page.evaluate(()=>document.getElementById('pf-hub-root').remove());
     await page.waitForFunction(()=>document.querySelectorAll('#pf-hub-root').length===1&&document.querySelectorAll('#pf-flow-dock').length===1,{timeout:4000});
+    await page.evaluate(()=>window.__PACEFOLD_FLOW__.reconcile());
+    assert(await page.locator('#pf-flow-dock').count()===1,'Explicit resilient reconcile did not preserve one dock');
 
     mark('desktop-visual');
     await page.evaluate(()=>window.__PACEFOLD_FLOW__.setPanel(true,false));
@@ -183,12 +204,12 @@ async function main(){
     await mobile.goto(`http://127.0.0.1:${port}/__flow_host`,{waitUntil:'load'});await mobile.waitForSelector('#pf-flow-dock');
     const mobileLabel=await addCue(mobile,'Look far for twenty seconds',/^Look far(?: for twenty seconds)?$/i);
     await mobile.evaluate(()=>window.__PACEFOLD_FLOW__.setPanel(true,false));
-    const mobileState=await mobile.evaluate(()=>({roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,dockWidth:document.getElementById('pf-flow-dock')?.getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+2,panelVisible:document.querySelector('[data-pf-flow-panel]')?.hidden===false,cueText:document.querySelector('[data-pf-flow-cue-text]')?.textContent}));
-    assert(mobileState.roots===1&&mobileState.docks===1&&mobileState.barHeight<=60&&!mobileState.overflow&&mobileState.panelVisible&&mobileState.cueText===mobileLabel,`Mobile integrated layout failed: ${JSON.stringify(mobileState)}`);
+    const mobileState=await mobile.evaluate(()=>({roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,dockWidth:document.getElementById('pf-flow-dock')?.getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+2,panelVisible:document.querySelector('[data-pf-flow-panel]')?.hidden===false,cueText:document.querySelector('[data-pf-flow-cue-text]')?.textContent,snoozeVisible:Boolean(document.querySelector('[data-pf-flow-snooze]'))}));
+    assert(mobileState.roots===1&&mobileState.docks===1&&mobileState.barHeight<=60&&!mobileState.overflow&&mobileState.panelVisible&&mobileState.cueText===mobileLabel&&mobileState.snoozeVisible,`Mobile integrated layout failed: ${JSON.stringify(mobileState)}`);
     await mobile.screenshot({path:path.join(artifactRoot,'pacefold-flow-mobile.png'),fullPage:true});
 
     if(errors.some(error=>/pacefold|pf-flow|pf-hub|Unhandled/i.test(error)))throw new Error(`15.8 browser errors: ${errors.join(' | ')}`);
-    console.log(`Pacefold 15.8 integrated audit passed. Visual captures: ${artifactRoot}`);
+    console.log(`Pacefold 15.8 integrated audit passed: premium visuals, taskbar quiet/remind/done semantics, self-recovery and responsive captures. Visuals: ${artifactRoot}`);
   }finally{
     if(browser)await Promise.race([browser.close().catch(()=>{}),delay(2500)]);
     server.closeAllConnections?.();server.close(()=>{});
