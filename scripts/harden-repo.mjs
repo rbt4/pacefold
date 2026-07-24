@@ -10,7 +10,7 @@ function replaceExact(source,needle,replacement,label,expected=1){const count=so
 function replaceFirstExact(source,needle,replacement,label){const count=source.split(needle).length-1;if(count<1)fail(`${label}: source anchor missing`);const index=source.indexOf(needle);return source.slice(0,index)+replacement+source.slice(index+needle.length);}
 
 let inject=read('enhancements/inject.mjs');
-inject=replaceExact(inject,"import { deflateSync, gunzipSync } from 'node:zlib';","import { deflateSync, gunzipSync } from 'node:zlib';\nimport { rewriteInnerHTMLAssignments } from '../scripts/trusted-types-transform.mjs';",'inject transformer import');
+inject=replaceExact(inject,"import { deflateSync, gunzipSync } from 'node:zlib';","import { deflateSync, gunzipSync } from 'node:zlib';\nimport { rewriteInnerHTMLAssignments } from '../scripts/trusted-types-transform.mjs';\nconst trustedBootstrap=\"(()=>{if(window.__PACEFOLD_SET_HTML__)return;window.__PACEFOLD_SET_HTML__=(node,value)=>{if(!node)return node;const html=window.__PACEFOLD_TRUSTED_HTML__?window.__PACEFOLD_TRUSTED_HTML__(String(value)):String(value);Reflect.set(node,'innerHTML',html);return node;};})();\\n\";",'inject transformer import');
 inject=replaceExact(inject,
   "for(const name of assets)await fs.copyFile(path.join(sourceRoot,name),path.join(appRoot,name));",
   "for(const name of assets){const source=path.join(sourceRoot,name),destination=path.join(appRoot,name);await fs.copyFile(source,destination);if(name.endsWith('.js'))await hardenTrustedScript(destination);}",
@@ -21,7 +21,7 @@ inject=replaceExact(inject,
   'compressed runtime Trusted Types');
 inject=replaceExact(inject,
   "function upgradeRuntimeVersion(source){",
-  "const trustedBootstrap=\"(()=>{if(window.__PACEFOLD_SET_HTML__)return;window.__PACEFOLD_SET_HTML__=(node,value)=>{if(!node)return node;const html=window.__PACEFOLD_TRUSTED_HTML__?window.__PACEFOLD_TRUSTED_HTML__(String(value)):String(value);Reflect.set(node,'innerHTML',html);return node;};})();\\n\";\nasync function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}\n\nfunction upgradeRuntimeVersion(source){",
+  "async function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}\n\nfunction upgradeRuntimeVersion(source){",
   'trusted script helper');
 write('enhancements/inject.mjs',inject);
 
