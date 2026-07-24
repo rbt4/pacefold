@@ -1,4 +1,4 @@
-name: Agent materialize verified core
+name: Agent harden verified core
 
 on:
   push:
@@ -11,30 +11,72 @@ permissions:
   contents: write
 
 jobs:
-  materialize:
+  harden:
     if: github.repository == 'rbt4/pacefold' && github.ref == 'refs/heads/agent/pacefold-function-hardening'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
       - name: Checkout isolated branch
         uses: actions/checkout@v6
         with:
           ref: agent/pacefold-function-hardening
           fetch-depth: 0
-      - name: Reconstruct and verify sealed core
+
+      - name: Reconstruct verified core and assemble migration
         run: |
-          rm -rf _agent_core
+          rm -rf _agent_core /tmp/pacefold-previous /tmp/pacefold-current /tmp/pacefold-site
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           expected="$(sed -n 's/^- SHA-256: `\([a-f0-9]\{64\}\)`.*/\1/p' RELEASE.md)"
           test -n "$expected"
           echo "$expected  /tmp/pacefold-v15.zip" | sha256sum -c -
-          mkdir _agent_core
+          mkdir _agent_core /tmp/pacefold-previous
           unzip -q /tmp/pacefold-v15.zip -d _agent_core
-          find _agent_core -type f -print0 | sort -z | xargs -0 sha256sum > _agent_core/SHA256SUMS
-      - name: Commit temporary working tree
+          unzip -q /tmp/pacefold-v15.zip -d /tmp/pacefold-previous
+          cat .agent/harden-core.part-* > /tmp/harden-core.mjs
+          node --check /tmp/harden-core.mjs
+          cp /tmp/harden-core.mjs scripts/harden-core.mjs
+
+      - name: Harden core, injector and repository
         run: |
+          node scripts/harden-core.mjs _agent_core 15.2.1 15.2.2
+          node scripts/harden-repo.mjs .
+          node --check _agent_core/app/app.js
+          node --check _agent_core/service-worker.js
+          node --check enhancements/inject.mjs
+
+      - name: Pack and verify release
+        run: |
+          node scripts/pack.mjs . _agent_core
+          node scripts/verify.mjs .
+
+      - name: Prepare debug browser build
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-current.zip
+          mkdir /tmp/pacefold-current /tmp/pacefold-site
+          unzip -q /tmp/pacefold-current.zip -d /tmp/pacefold-current
+          cp -a /tmp/pacefold-current/. /tmp/pacefold-site/
+          PACEFOLD_DEBUG=1 node /tmp/pacefold-current/scripts/build.mjs /tmp/pacefold-current
+          node enhancements/inject.mjs /tmp/pacefold-site
+
+      - name: Install browser audit runtime
+        run: |
+          npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
+          /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run core and integrated browser audits
+        env:
+          NODE_PATH: /tmp/pacefold-browser-audit/node_modules
+        run: |
+          node /tmp/pacefold-current/scripts/browser-audit.cjs /tmp/pacefold-current /tmp/pacefold-previous
+          node enhancements/run-hub-audit.cjs /tmp/pacefold-site
+          node enhancements/resilience-audit.cjs /tmp/pacefold-site /tmp/pacefold-resilience-artifacts
+          node enhancements/integrated-audit.cjs /tmp/pacefold-site /tmp/pacefold-integrated-artifacts
+
+      - name: Commit only verified outputs
+        run: |
+          rm -rf _agent_core .agent .agent-materialize-trigger .github/workflows/agent-materialize.yml
           git config user.name pacefold-agent
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -f _agent_core
-          git commit -m "Materialize verified core for hardening" || exit 0
+          git add -A
+          git commit -m "Harden Pacefold function security and release pipeline"
           git push origin HEAD:agent/pacefold-function-hardening
