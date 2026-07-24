@@ -1,5 +1,20 @@
 # Changelog
 
+## 15.8.0 — Integrated quiet dock
+
+- Replaced the layered permanent rail with one centered 48 px dock that exposes the current cue, local-first capture, Notebook, contained Media and one progressive-disclosure control.
+- Added a compact command surface for the current action, Capture, Notebook, Media, Weather, OneNote and local diagnostics without creating parallel timers, storage or action implementations.
+- Added slash-routed capture for Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources.
+- Defined one taskbar meaning: the badge represents a new unacknowledged actionable cue.
+- Made acknowledgement clear the app badge and Pacefold notifications without completing the underlying cue; Done remains an explicit exactly-once action.
+- Added first-pulse acknowledgement, second-interaction control disclosure, focus acknowledgement and clean actionable window titles.
+- Added Current, Capture, Notebook and Media PWA shortcuts to available manifests.
+- Replaced SVG-only notification delivery with generated source-specific PNG artwork for more dependable Windows rendering.
+- Added `Ctrl+Shift+Space`, `/` and `Escape` keyboard paths for controls, Capture and dismissal.
+- Added dark, light, reduced-motion and 390 px layouts with a dock-height ceiling of 60 px and no horizontal overflow.
+- Retained the full 15.7.1 lossless storage, setup lifecycle, OneNote settlement and diagnostic hardening gates.
+- Added an independent integrated browser and visual audit covering exact architecture, slash capture, taskbar acknowledgement, second interaction, explicit completion, Notebook proxying, root restoration, launch shortcuts, clean cue labels and desktop/mobile screenshots.
+
 ## 15.7.1 — Lossless lifecycle hardening
 
 - Preserved malformed notebook data whenever both local and session recovery writes fail instead of deleting the only copy.
