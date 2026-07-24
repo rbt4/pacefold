@@ -30,7 +30,11 @@ workflow=replaceFirstExact(workflow,'          node _release/scripts/build.mjs _
 workflow=replaceExact(workflow,
   '          node --check _release/app/pacefold-integrated.js',
   "          node --check _release/app/pacefold-integrated.js\n          ! grep -R -E -q '\\.innerHTML[[:space:]]*=' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js",
-  'Trusted Types CI assertion',2);
+  'validation Trusted Types assertion');
+workflow=replaceExact(workflow,
+  '          node --check _site/app/pacefold-integrated.js',
+  "          node --check _site/app/pacefold-integrated.js\n          ! grep -R -E -q '\\.innerHTML[[:space:]]*=' _site/app/app.js _site/app/pacefold-hub.js _site/app/pacefold-hub-guardian.js _site/app/pacefold-resilience.js _site/app/pacefold-integrated.js",
+  'deploy Trusted Types assertion');
 write('.github/workflows/pages.yml',workflow);
 
 let security=read('SECURITY.md');
