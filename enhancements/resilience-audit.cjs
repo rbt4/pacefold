@@ -6,6 +6,7 @@ const path=require('node:path');
 const {chromium}=require('playwright');
 
 const root=path.resolve(process.argv[2]||'_release');
+const VERSION=fs.readFileSync(path.join(root,'pacefold-hub-version.txt'),'utf8').trim();
 const port=4181;
 const host=scripts=>`<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.open-meteo.com https://graph.microsoft.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com https://open.spotify.com https://music.amazon.ca https://music.amazon.com"><link rel="stylesheet" href="/app/pacefold-hub.css"></head><body><main style="min-height:100vh">Today</main>${scripts}</body></html>`;
 const server=http.createServer((request,response)=>{
@@ -18,7 +19,7 @@ const server=http.createServer((request,response)=>{
   if(!file.startsWith(root))return response.writeHead(403).end('Forbidden');
   if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');
   if(!fs.existsSync(file))return response.writeHead(404).end('Not found');
-  const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml'};
+  const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'};
   response.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');
   response.end(fs.readFileSync(file));
 });
@@ -26,11 +27,12 @@ const server=http.createServer((request,response)=>{
 async function main(){
   let browser;
   try{
+    if(!/^\d+\.\d+\.\d+$/.test(VERSION))throw new Error(`Invalid Pacefold resilience version: ${VERSION}`);
     const resilience=fs.readFileSync(path.join(root,'app','pacefold-resilience.js'),'utf8');
     const guardian=fs.readFileSync(path.join(root,'app','pacefold-hub-guardian.js'),'utf8');
-    if(!resilience.includes("const VERSION='15.7.1'"))throw new Error('Resilience runtime was not versioned to 15.7.1');
-    if(!resilience.includes('preservedOriginal')||!resilience.includes('installOneNoteGuard')||!resilience.includes('previous.count'))throw new Error('15.7.1 recovery, OneNote or journal hardening is missing');
-    if(!guardian.includes("const VERSION='15.7.1'")||!guardian.includes('restoreAfterStableSetupExit')||!guardian.includes('setupTextPanelVisible')||!guardian.includes('maskLegacyFalsePositives'))throw new Error('15.7.1 guardian stabilization is missing');
+    if(!resilience.includes(`const VERSION='${VERSION}'`))throw new Error(`Resilience runtime was not versioned to ${VERSION}`);
+    if(!resilience.includes('preservedOriginal')||!resilience.includes('installOneNoteGuard')||!resilience.includes('previous.count'))throw new Error(`${VERSION} recovery, OneNote or journal hardening is missing`);
+    if(!guardian.includes(`const VERSION='${VERSION}'`)||!guardian.includes('restoreAfterStableSetupExit')||!guardian.includes('setupTextPanelVisible')||!guardian.includes('maskLegacyFalsePositives'))throw new Error(`${VERSION} guardian stabilization is missing`);
 
     await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
     browser=await chromium.launch({headless:true});
@@ -48,7 +50,7 @@ async function main(){
     });
     await recoveryPage.goto(`http://127.0.0.1:${port}/__resilience_only`,{waitUntil:'load'});
     const preserved=await recoveryPage.evaluate(()=>({raw:localStorage.getItem('pacefold.notebook.entries.v2'),version:window.__PACEFOLD_RESILIENCE__?.version}));
-    if(preserved.raw!=='{"broken":'||preserved.version!=='15.7.1')throw new Error(`Unrecoverable notebook data was deleted: ${JSON.stringify(preserved)}`);
+    if(preserved.raw!=='{"broken":'||preserved.version!==VERSION)throw new Error(`Unrecoverable notebook data was deleted or version drifted: ${JSON.stringify(preserved)}`);
     await recoveryContext.close();
 
     const context=await browser.newContext({viewport:{width:1280,height:800}});
@@ -126,7 +128,7 @@ async function main(){
     });
     if(journal.length!==1||journal[0].count!==30||/abc123|example\.com|secret\.example/.test(journal[0].message))throw new Error(`Error journal did not deduplicate/redact: ${JSON.stringify(journal)}`);
 
-    console.log('Pacefold 15.7.1 hardening audit passed: lossless recovery, setup stability, false-positive rejection, duplicate-root repair, settled OneNote locking and deduplicated diagnostics.');
+    console.log(`Pacefold ${VERSION} hardening audit passed: lossless recovery, setup stability, false-positive rejection, duplicate-root repair, settled OneNote locking and deduplicated diagnostics.`);
   }finally{
     if(browser)await browser.close().catch(()=>{});
     server.closeAllConnections?.();
