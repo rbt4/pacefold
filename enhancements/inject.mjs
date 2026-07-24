@@ -3,15 +3,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-const VERSION='15.6.0';
-const MARKER=`pacefold-notebook-${VERSION}`;
+const VERSION='15.7.0';
+const MARKER=`pacefold-resilience-${VERSION}`;
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const appRoot=path.join(targetRoot,'app');
 const appHtml=path.join(appRoot,'index.html');
 const iconSource=path.join(sourceRoot,'icons');
 const iconTarget=path.join(appRoot,'icons');
-const assets=['pacefold-hub-guardian.js'];
+const assets=['pacefold-hub-guardian.js','pacefold-resilience.js'];
 
 if(!(await exists(appHtml)))throw new Error(`Pacefold app shell was not found at ${appHtml}`);
 for(const name of assets)await fs.copyFile(path.join(sourceRoot,name),path.join(appRoot,name));
@@ -25,8 +25,9 @@ html=ensureThemeColor(html);
 html=removeOldSurfaceAssets(html);
 const style=`<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`;
 const scripts=[
-  `<script src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
-  `<script async src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`
+  `<script defer src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
+  `<script defer src="./pacefold-resilience.js?v=${VERSION}" data-pacefold-resilience="${VERSION}"></script>`,
+  `<script defer src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`
 ].join('\n');
 html=injectBefore(html,'</head>',style);
 html=injectBefore(html,'</body>',scripts);
@@ -35,25 +36,32 @@ await fs.writeFile(appHtml,html);
 for(const workerPath of [path.join(targetRoot,'service-worker.js'),path.join(appRoot,'service-worker.js')]){
   if(!(await exists(workerPath)))continue;
   let worker=await fs.readFile(workerPath,'utf8');
-  worker=worker.replace(/\n*\/\/ pacefold-(?:kanso|origami)-[\s\S]*?(?=\n\/\/ pacefold-|\s*$)/gi,'\n');
-  if(!worker.includes(MARKER))worker+=notificationArtworkPatch(workerPath.includes(`${path.sep}app${path.sep}`));
+  worker=removePreviousWorkerPatches(worker);
+  worker+=notificationArtworkPatch(workerPath.includes(`${path.sep}app${path.sep}`));
   await fs.writeFile(workerPath,worker);
 }
 
 await fs.writeFile(path.join(targetRoot,'pacefold-hub-version.txt'),`${VERSION}\n`);
-console.log(`Installed Pacefold Notebook ${VERSION}: setup-safe rail, real notebook, OneNote bridge and user Amazon URLs.`);
+console.log(`Installed Pacefold Resilience ${VERSION}: ordered startup, setup-safe guardian, storage recovery and idempotent notification patching.`);
 
 function removeOldSurfaceAssets(source){
   return source
     .replace(/\s*<link[^>]+data-pacefold-hub[^>]*>/gi,'')
-    .replace(/\s*<script[^>]+data-pacefold-hub(?:-guardian)?[^>]*><\/script>/gi,'');
+    .replace(/\s*<script[^>]+data-pacefold-(?:hub(?:-guardian)?|resilience)[^>]*><\/script>/gi,'');
+}
+function removePreviousWorkerPatches(source){
+  return source
+    .replace(/\n*\/\/ BEGIN pacefold-[\s\S]*?\/\/ END pacefold-[^\n]*\n?/gi,'\n')
+    .replace(/\n*\/\/ pacefold-(?:kanso|origami|notebook|resilience)-[\s\S]*$/i,'\n')
+    .replace(/\s+$/,'');
 }
 function notificationArtworkPatch(isAppWorker){
   const prefix=isAppWorker?'./icons/':'./app/icons/';
   return `
 
-// ${MARKER}: source-specific origami notification artwork and cache activation.
+// BEGIN ${MARKER}
 (() => {
+  const WRAPPED='__pacefoldNotificationWrapped';
   const pfIconBase=${JSON.stringify(prefix)};
   const choose=(title,options={})=>{
     const text=(String(title||'')+' '+String(options.body||'')+' '+String(options.tag||'')+' '+String(options.data?.source||'')).toLowerCase();
@@ -67,16 +75,19 @@ function notificationArtworkPatch(isAppWorker){
     return pfIconBase+'fold-mark.svg';
   };
   const registration=self.registration;
-  if(registration&&typeof registration.showNotification==='function'){
+  if(registration&&typeof registration.showNotification==='function'&&!registration[WRAPPED]){
     const original=registration.showNotification.bind(registration);
     const wrapped=(title,options={})=>original(title,{...options,icon:choose(title,options),badge:pfIconBase+'fold-mark.svg'});
-    try{Object.defineProperty(registration,'showNotification',{configurable:true,writable:true,value:wrapped});}
-    catch{try{registration.showNotification=wrapped;}catch{}}
+    try{
+      Object.defineProperty(registration,'showNotification',{configurable:true,writable:true,value:wrapped});
+      Object.defineProperty(registration,WRAPPED,{configurable:true,value:'${VERSION}'});
+    }catch{
+      try{registration.showNotification=wrapped;registration[WRAPPED]='${VERSION}';}catch{}
+    }
   }
 })();
-self.addEventListener('activate',event=>{
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>/pacefold/i.test(key)&&!key.includes('${MARKER}')).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));
-});
+self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));
+// END ${MARKER}
 `;
 }
 function extendContentSecurityPolicy(source){
@@ -130,7 +141,10 @@ async function materializeCompressed(name,destination){
     ? (await Promise.all(partNames.map(item=>fs.readFile(path.join(sourceRoot,item),'utf8')))).join('')
     : await fs.readFile(path.join(sourceRoot,name),'utf8')).replace(/\s+/g,'');
   let output=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
-  if(name.endsWith('.js.gz.b64'))output=hardenPlayerRuntime(output);
+  if(name.endsWith('.js.gz.b64')){
+    output=output.replaceAll('15.6.0',VERSION);
+    output=hardenPlayerRuntime(output);
+  }
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
   await fs.writeFile(destination,output);
 }

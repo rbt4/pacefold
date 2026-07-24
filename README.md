@@ -2,46 +2,59 @@
 
 **One day, gently folded.**
 
-Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold Notebook 15.6 corrects the 15.5 regressions and rebuilds the lower workspace around a real dated notebook, optional OneNote synchronization and a contained player.
+Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold Resilience 15.7 hardens the 15.6 HSSys notebook, optional OneNote bridge and contained player without adding another dashboard or changing the quiet workday vision.
 
-## Pacefold Notebook 15.6
+## Pacefold Resilience 15.7
 
-- **Setup is isolated:** the Pacefold rail does not mount over onboarding. If setup appears, the rail and forced body padding are removed. A small IndexedDB recovery snapshot can restore configured Pacefold state when browser storage is unexpectedly lost.
-- **A real HSSys notebook:** entries are organized by date and section—Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources—with search, editing, completion and deletion.
-- **Capture stays always open:** choose a notebook section, type once and save without leaving Today.
-- **OneNote is optional, not required:** local save is always first. A retry-safe page queue can use an existing Pacefold OneNote adapter or an already-connected Microsoft authentication session. Windows Share and page copy remain available as honest fallbacks.
-- **Amazon accepts your playlist URL:** paste an official Amazon Music playlist, album, station or track URL. Pacefold removes tracking parameters, saves the cleaned link and attempts to display that exact page inside the sandboxed player.
-- **Contained media:** YouTube Music and Spotify use official embeds. Amazon remains best-effort because Amazon may block third-party framing. Pacefold never automatically opens an external player window.
-- **Quieter layout:** one compact rhythm/capture row and one music row sit at the bottom. The larger notebook, player, weather and diagnostics open only when requested.
-- **Origami notification identity retained:** hydration, eye care, movement, prayer, meals, preparation and away time retain distinct source artwork.
+- **Setup cannot be covered or resurrected:** the guardian recognizes the core’s real onboarding controls, removes the lower workspace during setup and discards stale pre-setup roots instead of reattaching them later.
+- **Ordered startup:** guardian, recovery preflight and Notebook runtime load as ordered `defer` scripts. Damaged local notebook data is handled before the Notebook can parse it.
+- **Recoverable notebook storage:** malformed JSON is backed up to a bounded recovery slot, invalid active data is removed safely, and legacy entries without a section are normalized to Daily.
+- **Duplicate-action protection:** rapid repeated capture, save, delete, completion, cue, provider and sync actions are suppressed rather than applied twice.
+- **Cross-window OneNote protection:** two open Pacefold windows cannot send the same HSSys page simultaneously.
+- **Bounded diagnostics:** Pacefold keeps only the latest 20 privacy-trimmed resilience errors and removes URLs from stored messages.
+- **Idempotent updates:** repeated injection replaces the previous overlay assets and service-worker patch instead of stacking wrappers.
+- **Core caches remain owned by the core:** the Notebook notification artwork layer no longer deletes Pacefold caches during activation.
 
-## Reliability and security
+## HSSys notebook and capture
 
-- Every rendered Pacefold button must map to a registered action; CI fails on unknown or dead controls.
-- Provider URLs are restricted to official allowlists and tracking parameters are stripped.
-- Player frames use `no-referrer`, a narrow Content Security Policy and a sandbox that cannot escape through popups.
-- Pacefold does not store provider passwords, provider cookies or Microsoft access tokens.
-- Notebook entries remain local even when OneNote is unavailable; failed syncs remain queued rather than blocking capture.
-- Badge acknowledgement remains separate from actual cue completion.
-- The setup-aware guardian restores the workspace only when onboarding is absent.
-- The complete core offline, notification-action and installed-upgrade suite runs before the Notebook-specific browser audit.
+Entries are organized by date and section—Daily, Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources—with search, editing, completion and deletion. Capture remains always open in the compact lower rail.
+
+Local persistence always completes before an optional OneNote delivery. The intended Microsoft destination remains the **HSSys** notebook and a **Pacefold** section.
 
 ## OneNote bridge
 
-Pacefold 15.6 does not invent a second Microsoft login screen. It uses one of these paths, in order:
+Pacefold uses these paths in order:
 
 1. An existing Pacefold OneNote adapter exposed by the verified application.
 2. An already-connected MSAL session with `Notes.Create` and `Notes.ReadWrite` consent.
 3. Windows Share, where OneNote can be selected.
-4. Copy page for manual paste.
+4. Copy Page for manual paste.
 
-The intended destination is the **HSSys** notebook and a **Pacefold** section. Local capture never depends on Microsoft connectivity.
+Failed deliveries remain local and retryable. Pacefold does not store Microsoft passwords or access tokens.
+
+## Contained player
+
+- YouTube Music and Spotify use official embeds.
+- Amazon accepts an official regional playlist, album, station or track URL, removes tracking parameters and preserves that exact cleaned link.
+- Amazon playback remains best-effort because Amazon can refuse third-party framing.
+- Pacefold never automatically opens an external player window.
+- Local audio remains on-device and supports picker and drag-and-drop paths.
+
+## Reliability and security
+
+- Every rendered Pacefold button must map to a registered action.
+- Provider URLs are restricted to official allowlists.
+- Player frames use `no-referrer`, a narrow Content Security Policy and a sandbox that cannot escape through popups.
+- Badge acknowledgement remains separate from actual cue completion.
+- Origami notification artwork remains distinct for hydration, eyes, movement, prayer, meals, preparation and away time.
+- The overlay notification wrapper is guarded so it can be applied only once per worker.
+- The complete core offline, notification-action and installed-upgrade suite runs before the Resilience-specific failure-injection audit.
 
 ## Honest platform boundaries
 
 Microsoft Edge PWAs support taskbar badges, notification actions and right-click shortcuts. Windows does not let a website intercept a normal pinned-icon click before focus, distinguish single from double taskbar clicks, or continuously redraw the pinned icon face. Exact pre-focus taskbar behaviour requires a native Windows companion.
 
-Amazon Music does not provide the same broadly available iframe playback contract as YouTube or Spotify. Pacefold can preserve and attempt to contain your official Amazon URL, but Amazon can still refuse to render it inside another application.
+Amazon Music does not provide the same generally available iframe playback contract as YouTube or Spotify. Pacefold can preserve and attempt to contain an official Amazon URL, but Amazon can still refuse to render it inside another application.
 
 ## Core reliability retained
 
@@ -53,27 +66,27 @@ Amazon Music does not provide the same broadly available iframe playback contrac
 
 ## Repository release format
 
-The tested core source tree remains stored as a checksum-verified Base64 release under `release/`. GitHub Actions reconstructs it, verifies SHA-256, runs the existing core suite, materializes the Notebook surface from compressed reviewable source, injects it into `/app/`, and then audits setup isolation, all buttons, notebook persistence/editing, OneNote payloads, Amazon URL handling, provider containment, cue semantics, guardian recovery and 390 px layout.
+The tested core source tree remains stored as a checksum-verified Base64 release under `release/`. GitHub Actions reconstructs it, verifies SHA-256, runs the original core suite, materializes the Notebook surface, injects the resilience layer twice to prove idempotency, and then tests real setup isolation, stale-root rejection, malformed storage recovery, duplicate capture/sync/provider actions, cross-window sync, OneNote payloads, provider containment, cue semantics, guardian recovery and 390 px layout.
 
 Core release SHA-256:
 
 `50c4c2787300102704d577e6e221909e307866522d59422d13871a55085d63e7`
 
-Notebook version:
+Resilience version:
 
-`15.6.0`
+`15.7.0`
 
 ## Install
 
 1. Open `https://rbt4.github.io/pacefold/` in Microsoft Edge.
 2. Complete setup before installing or using the lower workspace.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. Fully close and reopen the installed application once after deployment so the new service worker and 15.6 shell activate.
+4. Fully close and reopen every Pacefold window once after deployment so the 15.7 worker and ordered shell replace the cached release.
 
 ## Privacy
 
-No Pacefold account, analytics or advertising. Rhythm data, notebook entries, sync queue, preferences and diagnostics remain on the device. Weather requests contain forecast coordinates. Provider playback is delivered directly by the selected official provider. Microsoft page content is sent only when OneNote synchronization or Windows Share is explicitly enabled.
+No Pacefold account, analytics or advertising. Rhythm data, notebook entries, recovery copies, sync queue, preferences and diagnostics remain on the device. Weather requests contain forecast coordinates. Provider playback is delivered directly by the selected official provider. Microsoft page content is sent only when OneNote synchronization or Windows Share is explicitly enabled.
 
 ## Version
 
-Pacefold Notebook 15.6.0 over Pacefold core 15.2.1
+Pacefold Resilience 15.7.0 over Pacefold core 15.2.1
