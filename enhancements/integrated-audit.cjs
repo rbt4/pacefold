@@ -18,4 +18,7 @@ source=source.replace(broadTrack,"page.locator('[data-pf-player-drawer]:visible'
 const legacyBlack='background:#070908';
 if(!source.includes(legacyBlack))throw new Error('Pacefold black-player audit literal is missing');
 source=source.replaceAll(legacyBlack,'background:#080a09');
+const quickCapture="await page.locator('[data-pf-flow-input]').fill('/incident Flow audit note');";
+if(!source.includes(quickCapture))throw new Error('Pacefold quick-capture audit step is missing');
+source=source.replace(quickCapture,"await page.locator('[data-pf-revamp-title]').click();await page.locator('[data-pf-flow-input]').fill('/incident Flow audit note');");
 module._compile(source,__filename);
