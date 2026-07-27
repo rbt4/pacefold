@@ -1,13 +1,18 @@
-/* Pacefold 16.1.1 — desktop layout stabilization.
-   Keeps the notebook, player bar and player drawer in one collision-free desktop frame. */
+/* Pacefold 16.2.0 — unified desktop workspace.
+   The notebook, player drawer and player bar are one continuous docked object. */
 :root{
-  --pf-desktop-edge:20px;
-  --pf-player-bottom:8px;
-  --pf-player-bar-width:760px;
-  --pf-player-bar-height:48px;
-  --pf-layer-gap:10px;
-  --pf-drawer-width:clamp(360px,29vw,430px);
-  --pf-drawer-stack-height:min(36dvh,340px)
+  --pf-shell-edge:24px;
+  --pf-shell-bottom:10px;
+  --pf-shell-width:min(980px,calc(100vw - (var(--pf-shell-edge) * 2)));
+  --pf-shell-radius:18px;
+  --pf-player-bar-height:56px;
+  --pf-player-drawer-height:min(280px,34dvh);
+  --pf-shell-border:rgba(31,40,35,.13);
+  --pf-shell-shadow:0 24px 72px rgba(20,27,23,.24)
+}
+body[data-theme="dark"]{
+  --pf-shell-border:rgba(235,241,237,.13);
+  --pf-shell-shadow:0 28px 84px rgba(0,0,0,.52)
 }
 
 html.pf-flow-active,
@@ -15,21 +20,34 @@ html.pf-flow-active body{
   min-width:0!important;
   overflow-x:clip!important
 }
-html.pf-flow-active body{padding-bottom:116px!important}
+html.pf-flow-active body{padding-bottom:92px!important}
 
 #pf-local-workspace,
 #pf-local-workspace *,
 #pf-local-player,
 #pf-local-player *{box-sizing:border-box}
 
+/* One paper workspace, attached directly to the black player footer. */
 #pf-local-workspace{
-  bottom:calc(var(--pf-player-bottom) + var(--pf-player-bar-height) + var(--pf-layer-gap))!important;
-  width:min(960px,calc(100vw - (var(--pf-desktop-edge) * 2)))!important;
-  max-height:calc(100dvh - 84px)!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:calc(var(--pf-shell-bottom) + var(--pf-player-bar-height))!important;
+  width:var(--pf-shell-width)!important;
+  max-height:calc(100dvh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - 24px)!important;
+  border-color:var(--pf-shell-border)!important;
+  border-bottom:0!important;
+  border-radius:var(--pf-shell-radius) var(--pf-shell-radius) 0 0!important;
+  box-shadow:var(--pf-shell-shadow)!important;
+  transform:translateX(-50%)!important;
+  overflow:hidden!important;
   will-change:auto!important
 }
 #pf-local-workspace.is-open{
-  height:min(650px,calc(100dvh - 92px))!important
+  height:min(660px,calc(100dvh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - 32px))!important
+}
+#pf-local-workspace:not(.is-open){
+  height:48px!important;
+  max-height:48px!important
 }
 #pf-local-workspace .pf-workspace-shell,
 #pf-local-workspace .pf-notebook-sheet,
@@ -47,6 +65,22 @@ html.pf-flow-active body{padding-bottom:116px!important}
   overscroll-behavior:contain;
   scrollbar-gutter:stable
 }
+
+/* Remove decorative protrusions that made separate layers look like collisions. */
+#pf-local-workspace #pf-flow-dock .pf-flow-bar::before,
+#pf-local-workspace #pf-flow-dock .pf-flow-bar::after,
+#pf-local-workspace .pf-notebook-sheet::after,
+#pf-local-player::before{display:none!important}
+#pf-local-workspace #pf-flow-dock .pf-flow-bar{
+  border-radius:var(--pf-shell-radius) var(--pf-shell-radius) 0 0!important
+}
+#pf-local-workspace .pf-revamp-title small::after{
+  content:" · v16.2";
+  opacity:.72;
+  letter-spacing:.01em
+}
+
+/* Keep every notebook control inside the paper frame. */
 #pf-local-workspace .pf-notebook-head>div:first-child,
 #pf-local-workspace .pf-note-block>header>div:first-child{min-width:0}
 #pf-local-workspace .pf-notebook-head-actions{
@@ -76,58 +110,96 @@ html.pf-flow-active body{padding-bottom:116px!important}
   overflow:auto
 }
 
-/* Make the player container span the desktop, while the actual bar remains compact. */
+/* The player is the workspace footer, not a second floating window. */
 #pf-local-player{
-  left:0!important;
-  right:0!important;
-  bottom:var(--pf-player-bottom)!important;
-  width:auto!important;
-  transform:none!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:var(--pf-shell-bottom)!important;
+  width:var(--pf-shell-width)!important;
+  height:var(--pf-player-bar-height)!important;
+  min-height:var(--pf-player-bar-height)!important;
+  max-height:var(--pf-player-bar-height)!important;
+  color:#f4f6f5!important;
+  background:#080a09!important;
+  background-image:linear-gradient(180deg,#0d100e,#080a09)!important;
+  border-radius:0 0 var(--pf-shell-radius) var(--pf-shell-radius)!important;
+  box-shadow:0 18px 46px rgba(0,0,0,.34)!important;
+  transform:translateX(-50%)!important;
+  overflow:visible!important;
   pointer-events:none!important;
+  isolation:isolate!important;
   will-change:auto!important
 }
 #pf-local-player>.pf-player-bar{
-  width:min(var(--pf-player-bar-width),calc(100vw - (var(--pf-desktop-edge) * 2)))!important;
-  margin-inline:auto!important;
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:var(--pf-player-bar-height)!important;
+  min-height:var(--pf-player-bar-height)!important;
+  max-height:var(--pf-player-bar-height)!important;
+  display:grid!important;
+  align-items:center!important;
+  margin:0!important;
+  padding:4px 6px!important;
+  color:#f4f6f5!important;
+  background:#080a09!important;
+  background-image:linear-gradient(180deg,#0d100e,#080a09)!important;
+  border-color:rgba(255,255,255,.11)!important;
+  border-top:1px solid rgba(255,255,255,.08)!important;
+  border-radius:0 0 var(--pf-shell-radius) var(--pf-shell-radius)!important;
+  box-shadow:none!important;
+  transform:none!important;
   pointer-events:auto!important
 }
+
+/* Opening music inserts a black tray between notebook and footer. */
 #pf-local-player>.pf-player-drawer{
-  right:var(--pf-desktop-edge)!important;
-  left:auto!important;
-  bottom:calc(var(--pf-player-bar-height) + var(--pf-layer-gap))!important;
-  width:var(--pf-drawer-width)!important;
-  max-height:calc(100dvh - 86px)!important;
+  left:0!important;
+  right:0!important;
+  bottom:var(--pf-player-bar-height)!important;
+  width:100%!important;
+  height:var(--pf-player-drawer-height)!important;
+  max-height:var(--pf-player-drawer-height)!important;
+  color:#f3f5f4!important;
+  background:#0b0e0c!important;
+  background-image:linear-gradient(180deg,#111512,#090b0a)!important;
+  border-color:rgba(255,255,255,.11)!important;
+  border-bottom:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
   pointer-events:auto!important;
-  will-change:auto!important;
-  overscroll-behavior:contain
+  overscroll-behavior:contain;
+  will-change:auto!important
+}
+#pf-local-player>.pf-player-drawer[hidden]{pointer-events:none!important}
+#pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
+  bottom:calc(var(--pf-shell-bottom) + var(--pf-player-bar-height) + var(--pf-player-drawer-height))!important;
+  height:min(560px,calc(100dvh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - var(--pf-player-drawer-height) - 28px))!important;
+  max-height:calc(100dvh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - var(--pf-player-drawer-height) - 28px)!important;
+  border-radius:var(--pf-shell-radius) var(--pf-shell-radius) 0 0!important
+}
+#pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-player>.pf-player-bar{
+  background:#080a09!important;
+  background-image:linear-gradient(180deg,#0d100e,#080a09)!important;
+  border-radius:0 0 var(--pf-shell-radius) var(--pf-shell-radius)!important;
+  transform:none!important
+}
+#pf-local-player .pf-player-drawer>header,
+#pf-local-player .pf-player-nav{
+  flex:0 0 auto
+}
+#pf-local-player .pf-player-drawer-body{
+  min-height:0!important;
+  flex:1 1 auto!important;
+  overflow:auto!important
 }
 
-/* Wide desktop: notebook and open music drawer become siblings, never stacked layers. */
-@media (min-width:1180px){
-  #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
-    left:var(--pf-desktop-edge)!important;
-    width:min(960px,calc(100vw - var(--pf-drawer-width) - (var(--pf-desktop-edge) * 3)))!important;
-    transform:none!important
+/* Desktop window compression, not a separate mobile product. */
+@media (max-width:900px){
+  :root{
+    --pf-shell-edge:12px;
+    --pf-player-drawer-height:min(260px,36dvh)
   }
-}
-
-/* Compact desktop: the drawer gets a known lower lane and the notebook moves above it. */
-@media (min-width:761px) and (max-width:1179px){
-  #pf-local-player>.pf-player-drawer{
-    right:var(--pf-desktop-edge)!important;
-    left:var(--pf-desktop-edge)!important;
-    width:auto!important;
-    height:var(--pf-drawer-stack-height)!important;
-    max-height:var(--pf-drawer-stack-height)!important
-  }
-  #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
-    bottom:calc(var(--pf-player-bottom) + var(--pf-player-bar-height) + var(--pf-layer-gap) + var(--pf-drawer-stack-height) + 12px)!important;
-    height:calc(100dvh - var(--pf-drawer-stack-height) - 96px)!important;
-    max-height:calc(100dvh - var(--pf-drawer-stack-height) - 96px)!important
-  }
-}
-
-@media (min-width:761px) and (max-width:980px){
   #pf-local-workspace .pf-notebook-head,
   #pf-local-workspace .pf-notebook-tools{gap:8px}
   #pf-local-workspace .pf-notebook-tools{flex-wrap:wrap}
@@ -138,39 +210,35 @@ html.pf-flow-active body{padding-bottom:116px!important}
     scrollbar-width:thin
   }
   #pf-local-player>.pf-player-bar{
-    grid-template-columns:34px minmax(100px,1fr) 28px 34px 28px minmax(100px,.8fr) 34px!important
+    grid-template-columns:34px minmax(110px,1fr) 28px 34px 28px minmax(110px,.8fr) 34px!important
   }
   #pf-local-player .pf-player-volume{display:none!important}
 }
 
-/* Narrow-window fallback: retain the compact notebook header while the drawer owns the content lane. */
-@media (max-width:760px){
-  #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
-    height:46px!important;
-    max-height:46px!important;
-    opacity:1!important;
-    visibility:visible!important;
-    pointer-events:auto!important
+@media (max-width:680px){
+  :root{
+    --pf-shell-edge:6px;
+    --pf-shell-bottom:5px;
+    --pf-shell-radius:14px;
+    --pf-player-drawer-height:min(250px,38dvh)
   }
-  #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace .pf-notebook-sheet{
-    display:none!important
+  #pf-local-workspace .pf-revamp-title{display:grid!important;min-width:88px!important;max-width:110px!important}
+  #pf-local-workspace .pf-notebook-head-actions{max-width:54%}
+  #pf-local-player>.pf-player-bar{
+    grid-template-columns:32px minmax(90px,1fr) 32px 34px 32px 32px!important
   }
-  #pf-local-player>.pf-player-drawer{
-    right:6px!important;
-    left:6px!important;
-    width:auto!important
-  }
+  #pf-local-player .pf-player-progress,
+  #pf-local-player .pf-player-volume,
+  #pf-local-player .pf-player-bar>[data-pf-player-prev],
+  #pf-local-player .pf-player-bar>[data-pf-player-next]{display:none!important}
 }
 
 @supports not (height:100dvh){
-  #pf-local-workspace{max-height:calc(100vh - 84px)!important}
-  #pf-local-workspace.is-open{height:min(650px,calc(100vh - 92px))!important}
-  #pf-local-player>.pf-player-drawer{max-height:calc(100vh - 86px)!important}
-  @media (min-width:761px) and (max-width:1179px){
-    #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
-      height:calc(100vh - var(--pf-drawer-stack-height) - 96px)!important;
-      max-height:calc(100vh - var(--pf-drawer-stack-height) - 96px)!important
-    }
+  #pf-local-workspace{max-height:calc(100vh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - 24px)!important}
+  #pf-local-workspace.is-open{height:min(660px,calc(100vh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - 32px))!important}
+  #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
+    height:min(560px,calc(100vh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - var(--pf-player-drawer-height) - 28px))!important;
+    max-height:calc(100vh - var(--pf-shell-bottom) - var(--pf-player-bar-height) - var(--pf-player-drawer-height) - 28px)!important
   }
 }
 

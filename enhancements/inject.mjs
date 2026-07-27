@@ -3,11 +3,14 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
+const RELEASE='16.2.0';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-16-layout-floor';
 const origamiMarker='pacefold-16.1-origami-identity';
-const stabilityMarker='pacefold-16.1.1-desktop-stability';
+const stabilityMarker='pacefold-16.2-unified-desktop';
+const legacyStabilityMarkers=['pacefold-16.1.1-desktop-stability'];
+const workerReleaseMarker='pacefold-surface-release';
 const origamiSource=path.join(sourceRoot,'pacefold-origami.css');
 const origamiPolishSource=path.join(sourceRoot,'pacefold-origami-polish.css');
 const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css');
@@ -25,17 +28,24 @@ html.pf-flow-active body{padding-bottom:132px!important}
 #pf-local-player>audio{display:none!important}
 /* END ${layoutMarker} */
 `;
-async function replaceMarkedBlock(file,marker,content){
+
+async function exists(file){
+  try{await fs.access(file);return true;}catch{return false;}
+}
+async function replaceMarkedBlock(file,marker,content,legacyMarkers=[]){
   let source=await fs.readFile(file,'utf8');
-  const start=`/* BEGIN ${marker} */`;
-  const end=`/* END ${marker} */`;
-  const startIndex=source.indexOf(start);
-  if(startIndex>=0){
-    const endIndex=source.indexOf(end,startIndex);
-    if(endIndex<0)throw new Error(`Pacefold ${marker} end marker is missing`);
-    source=source.slice(0,startIndex)+source.slice(endIndex+end.length);
+  for(const candidate of [marker,...legacyMarkers]){
+    const start=`/* BEGIN ${candidate} */`;
+    const end=`/* END ${candidate} */`;
+    let startIndex=source.indexOf(start);
+    while(startIndex>=0){
+      const endIndex=source.indexOf(end,startIndex);
+      if(endIndex<0)throw new Error(`Pacefold ${candidate} end marker is missing`);
+      source=source.slice(0,startIndex)+source.slice(endIndex+end.length);
+      startIndex=source.indexOf(start);
+    }
   }
-  source=source.replace(/\s+$/,'')+`\n\n${start}\n${content.trim()}\n${end}\n`;
+  source=source.replace(/\s+$/,'')+`\n\n/* BEGIN ${marker} */\n${content.trim()}\n/* END ${marker} */\n`;
   await fs.writeFile(file,source);
 }
 async function applyLayoutPatch(file){
@@ -49,7 +59,25 @@ async function applyOrigamiPatch(file){
 }
 async function applyStabilityPatch(file){
   const stability=await fs.readFile(stabilitySource,'utf8');
-  await replaceMarkedBlock(file,stabilityMarker,stability);
+  await replaceMarkedBlock(file,stabilityMarker,stability,legacyStabilityMarkers);
+}
+async function applyAssetRevision(file){
+  let html=await fs.readFile(file,'utf8');
+  html=html.replace(
+    /((?:\.\/)?pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp)\.(?:css|js))\?v=[^"'&<\s]+/g,
+    (_,asset)=>`${asset}?v=${RELEASE}`
+  );
+  html=html.replace(/\s*<meta\s+name=["']pacefold-build["'][^>]*>/gi,'');
+  html=html.replace('</head>',`  <meta name="pacefold-build" content="${RELEASE}">\n</head>`);
+  await fs.writeFile(file,html);
+}
+async function stampWorker(file){
+  if(!(await exists(file)))return;
+  let worker=await fs.readFile(file,'utf8');
+  const block=new RegExp(`\\n*// BEGIN ${workerReleaseMarker}[\\s\\S]*?// END ${workerReleaseMarker}\\n*`,'g');
+  worker=worker.replace(block,'\n').replace(/\s+$/,'');
+  worker+=`\n\n// BEGIN ${workerReleaseMarker}\nself.__PACEFOLD_SURFACE_RELEASE__='${RELEASE}';\n// END ${workerReleaseMarker}\n`;
+  await fs.writeFile(file,worker);
 }
 function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
@@ -59,13 +87,13 @@ function replaceExactlyOnce(source,from,to,label){
 async function applyRuntimePatch(file){
   let runtime=await fs.readFile(file,'utf8');
   const replacements=[
-    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.16.1.1';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
+    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.16.2.0';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
     ["let migrateTimer=0;\nlet dbPromise=null;","let migrateTimer=0;\nlet notebookRenderKey='';\nlet playerDrawerRenderKey='';\nlet dbPromise=null;",'render-keys'],
     ["function saveStreamLinks(){writeJSON(STREAM_KEY,streamLinks);}\nfunction dispatchStorage()","function saveStreamLinks(){writeJSON(STREAM_KEY,streamLinks);}\nfunction applyVisualReset(){try{if(localStorage.getItem(VISUAL_RESET_KEY)==='1')return;playerState.drawer=false;playerState.view='queue';savePlayerState();localStorage.setItem(VISUAL_RESET_KEY,'1');}catch{}}\nfunction notebookDataKey(){try{return `${localStorage.getItem(ENTRY_KEY)||''}\\u0000${localStorage.getItem(CATEGORY_KEY)||''}`;}catch{return '';} }\nfunction playerDrawerDataKey(){return JSON.stringify({view:playerState.view,drawer:Boolean(playerState.drawer),currentId:playerState.currentId,queue:playerState.queue,tracks:trackCache.map(track=>[track.id,track.name,track.fileName,track.size]),playlists,streamLinks});}\nfunction dispatchStorage()",'data-keys'],
-    ["  workspace=document.getElementById(WORKSPACE_ID);\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();renderNotebook();","  workspace=document.getElementById(WORKSPACE_ID);let created=false;\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();created=true;}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();const dataKey=notebookDataKey();if(created||dataKey!==notebookRenderKey)renderNotebook();",'workspace-render'],
+    ["  workspace=document.getElementById(WORKSPACE_ID);\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();renderNotebook();","  workspace=document.getElementById(WORKSPACE_ID);let created=false;\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();created=true;}\n  workspace.dataset.release='16.2.0';workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();const dataKey=notebookDataKey();if(created||dataKey!==notebookRenderKey)renderNotebook();",'workspace-render'],
     ["  for(const popup of root.querySelectorAll('.pf-notebook,[data-pf-notebook-root]')){if(!popup.closest(`#${WORKSPACE_ID}`)){popup.hidden=true;popup.setAttribute('aria-hidden','true');}}","  for(const popup of root.querySelectorAll('.pf-notebook,[data-pf-notebook-root]')){if(popup.closest(`#${WORKSPACE_ID}`))continue;if(!popup.hidden)popup.hidden=true;if(popup.getAttribute('aria-hidden')!=='true')popup.setAttribute('aria-hidden','true');}",'popup-idempotence'],
     ["function renderNotebook(){if(!workspace)return;workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);const date=workspace.querySelector('[data-pf-notebook-date]');if(date)date.textContent=longDate(notebookState.date);renderCategorySelect();renderDocument();renderTabs();prepareDock();}","function renderNotebook(){if(!workspace)return;workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);const date=workspace.querySelector('[data-pf-notebook-date]');if(date)date.textContent=longDate(notebookState.date);renderCategorySelect();renderDocument();renderTabs();prepareDock();notebookRenderKey=notebookDataKey();}",'notebook-render-key'],
-    ["function ensurePlayer(){\n  if(!root)return;player=document.getElementById(PLAYER_ID);\n  if(!player){player=document.createElement('aside');player.id=PLAYER_ID;player.dataset.revision=REVISION;player.className='pf-local-player';player.setAttribute('aria-label','Pacefold local music player');setHTML(player,playerMarkup());root.append(player);audio=document.createElement('audio');audio.preload='metadata';player.append(audio);bindPlayer();refreshTracks();}\n  for(const legacy of root.querySelectorAll('.pf-player-row[data-pf-flow-source=\"true\"]'))legacy.dataset.pfLegacyPlayer='true';\n  renderPlayer();renderPlayerDrawer();\n}","function ensurePlayer(){\n  if(!root)return;player=document.getElementById(PLAYER_ID);let created=false;\n  if(!player){player=document.createElement('aside');player.id=PLAYER_ID;player.dataset.revision=REVISION;player.className='pf-local-player';player.setAttribute('aria-label','Pacefold local music player');setHTML(player,playerMarkup());root.append(player);audio=document.createElement('audio');audio.preload='metadata';player.append(audio);bindPlayer();refreshTracks();created=true;}\n  for(const legacy of root.querySelectorAll('.pf-player-row[data-pf-flow-source=\"true\"]'))if(legacy.dataset.pfLegacyPlayer!=='true')legacy.dataset.pfLegacyPlayer='true';\n  renderPlayer();const drawerKey=playerDrawerDataKey();if(created||drawerKey!==playerDrawerRenderKey)renderPlayerDrawer();\n}",'player-render'],
+    ["function ensurePlayer(){\n  if(!root)return;player=document.getElementById(PLAYER_ID);\n  if(!player){player=document.createElement('aside');player.id=PLAYER_ID;player.dataset.revision=REVISION;player.className='pf-local-player';player.setAttribute('aria-label','Pacefold local music player');setHTML(player,playerMarkup());root.append(player);audio=document.createElement('audio');audio.preload='metadata';player.append(audio);bindPlayer();refreshTracks();}\n  for(const legacy of root.querySelectorAll('.pf-player-row[data-pf-flow-source=\"true\"]'))legacy.dataset.pfLegacyPlayer='true';\n  renderPlayer();renderPlayerDrawer();\n}","function ensurePlayer(){\n  if(!root)return;player=document.getElementById(PLAYER_ID);let created=false;\n  if(!player){player=document.createElement('aside');player.id=PLAYER_ID;player.dataset.revision=REVISION;player.className='pf-local-player';player.setAttribute('aria-label','Pacefold local music player');setHTML(player,playerMarkup());root.append(player);audio=document.createElement('audio');audio.preload='metadata';player.append(audio);bindPlayer();refreshTracks();created=true;}\n  player.dataset.release='16.2.0';\n  for(const legacy of root.querySelectorAll('.pf-player-row[data-pf-flow-source=\"true\"]'))if(legacy.dataset.pfLegacyPlayer!=='true')legacy.dataset.pfLegacyPlayer='true';\n  renderPlayer();const drawerKey=playerDrawerDataKey();if(created||drawerKey!==playerDrawerRenderKey)renderPlayerDrawer();\n}",'player-render'],
     ["  bindInlinePlayerFiles();\n}","  bindInlinePlayerFiles();playerDrawerRenderKey=playerDrawerDataKey();\n}",'player-drawer-render-key'],
     ["  for(const note of root?.querySelectorAll('.pf-notebook,[data-pf-notebook-root]')||[]){if(note.closest(`#${WORKSPACE_ID}`))continue;if(!note.hidden&&note.getAttribute('aria-hidden')!=='true')notebookWasOpened=true;note.hidden=true;note.setAttribute('aria-hidden','true');}","  for(const note of root?.querySelectorAll('.pf-notebook,[data-pf-notebook-root]')||[]){if(note.closest(`#${WORKSPACE_ID}`))continue;if(!note.hidden&&note.getAttribute('aria-hidden')!=='true')notebookWasOpened=true;if(!note.hidden)note.hidden=true;if(note.getAttribute('aria-hidden')!=='true')note.setAttribute('aria-hidden','true');}",'legacy-notebook-idempotence'],
     ["  for(const legacy of root?.querySelectorAll('.pf-player-row[data-pf-flow-source=\"true\"]')||[])legacy.dataset.pfLegacyPlayer='true';","  for(const legacy of root?.querySelectorAll('.pf-player-row[data-pf-flow-source=\"true\"]')||[])if(legacy.dataset.pfLegacyPlayer!=='true')legacy.dataset.pfLegacyPlayer='true';",'legacy-player-idempotence'],
@@ -75,6 +103,7 @@ async function applyRuntimePatch(file){
   for(const [from,to,label] of replacements)runtime=replaceExactlyOnce(runtime,from,to,label);
   await fs.writeFile(file,runtime);
 }
+
 await applyLayoutPatch(path.join(sourceRoot,'pacefold-revamp.css'));
 await applyOrigamiPatch(path.join(sourceRoot,'pacefold-revamp.css'));
 await applyStabilityPatch(path.join(sourceRoot,'pacefold-revamp.css'));
@@ -94,6 +123,12 @@ try{
   await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'));
   await fs.copyFile(markSource,path.join(targetApp,'pacefold-fold-mark.svg'));
   await applyRuntimePatch(path.join(targetApp,'pacefold-revamp.js'));
+  await applyAssetRevision(path.join(targetApp,'index.html'));
+  await stampWorker(path.join(targetRoot,'service-worker.js'));
+  await stampWorker(path.join(targetApp,'service-worker.js'));
+  await fs.writeFile(path.join(targetRoot,'pacefold-build.txt'),`${RELEASE}\n`);
+  await fs.writeFile(path.join(targetApp,'pacefold-build.txt'),`${RELEASE}\n`);
+  console.log(`Installed Pacefold ${RELEASE}: unified desktop workspace with a cache-busted player tray.`);
 }finally{
   await fs.rm(temporary,{force:true});
 }
