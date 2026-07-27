@@ -16,6 +16,18 @@ let setupExitTimer=0;
 let setupExitEpoch=-1;
 let setupEpoch=0;
 
+function installBadgePolicy(){
+  if(window.__PACEFOLD_BADGE_POLICY__)return;
+  const originalSet=typeof navigator.setAppBadge==='function'?navigator.setAppBadge.bind(navigator):null;
+  const originalClear=typeof navigator.clearAppBadge==='function'?navigator.clearAppBadge.bind(navigator):null;
+  const flag=async()=>{try{return await originalSet?.();}catch{return undefined;}};
+  const clear=async()=>{try{return await originalClear?.();}catch{return undefined;}};
+  if(originalSet){
+    try{Object.defineProperty(navigator,'setAppBadge',{configurable:true,writable:true,value:flag});}
+    catch{try{navigator.setAppBadge=flag;}catch{}}
+  }
+  window.__PACEFOLD_BADGE_POLICY__={version:VERSION,flag,clear};
+}
 function visible(element){
   if(!element?.isConnected)return false;
   const style=getComputedStyle(element);
@@ -140,6 +152,7 @@ function queue(mutations=[]){
   frame=requestAnimationFrame(reconcile);
 }
 
+installBadgePolicy();
 new MutationObserver(queue).observe(document.documentElement,{
   childList:true,
   subtree:true,
