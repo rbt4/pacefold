@@ -6,7 +6,7 @@
   --pf-crease:rgba(35,48,42,.10);
   --pf-crease-strong:rgba(35,48,42,.18);
   --pf-paper-glint:rgba(255,255,255,.72);
-  --pf-player-bg:#070908;
+  --pf-player-bg:#080a09;
 }
 body[data-theme="dark"]{
   --pf-crease:rgba(231,239,234,.08);
@@ -303,7 +303,8 @@ body[data-theme="dark"]{
 }
 .pf-player-bar{
   position:relative;
-  background:linear-gradient(180deg,#0d100e,var(--pf-player-bg))!important;
+  background-color:var(--pf-player-bg)!important;
+  background-image:linear-gradient(180deg,#0d100e,var(--pf-player-bg))!important;
   box-shadow:0 16px 42px rgba(0,0,0,.39),inset 0 1px 0 rgba(255,255,255,.07)!important;
   transition:transform var(--pf-fold-duration) var(--pf-fold-ease),border-color var(--pf-fold-fast) ease,box-shadow var(--pf-fold-duration) ease!important
 }
