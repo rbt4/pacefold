@@ -27,29 +27,49 @@ for(const token of [
 }
 const stabilityCss=fs.readFileSync(path.join(__dirname,'pacefold-desktop-stability.css'),'utf8');
 for(const token of [
-  '--pf-drawer-stack-height',
+  '--pf-shell-width',
+  '--pf-player-drawer-height',
   '#pf-local-player>.pf-player-bar',
+  '#pf-local-player>.pf-player-drawer',
   '#pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace',
-  '@media (min-width:1180px)',
-  '@media (min-width:761px) and (max-width:1179px)',
-  'bottom:calc(var(--pf-player-bottom) + var(--pf-player-bar-height) + var(--pf-layer-gap))',
+  'width:100%!important',
+  'bottom:calc(var(--pf-shell-bottom) + var(--pf-player-bar-height) + var(--pf-player-drawer-height))',
+  'content:" · v16.2"',
+  'border-radius:0 0 var(--pf-shell-radius) var(--pf-shell-radius)!important',
   'will-change:auto!important',
   'overflow-x:clip!important'
 ]){
-  if(!stabilityCss.includes(token))throw new Error(`Pacefold desktop-stability audit token missing: ${token}`);
+  if(!stabilityCss.includes(token))throw new Error(`Pacefold unified-desktop audit token missing: ${token}`);
+}
+for(const retired of ['--pf-drawer-width','@media (min-width:1180px)']){
+  if(stabilityCss.includes(retired))throw new Error(`Pacefold retired detached-layout token remains: ${retired}`);
 }
 if((stabilityCss.match(/\{/g)||[]).length!==(stabilityCss.match(/\}/g)||[]).length){
-  throw new Error('Pacefold desktop-stability CSS braces are unbalanced');
+  throw new Error('Pacefold unified-desktop CSS braces are unbalanced');
 }
 const injectSource=fs.readFileSync(path.join(__dirname,'inject.mjs'),'utf8');
 for(const token of [
-  "const stabilityMarker='pacefold-16.1.1-desktop-stability'",
+  "const RELEASE='16.2.0'",
+  "const stabilityMarker='pacefold-16.2-unified-desktop'",
+  "const legacyStabilityMarkers=['pacefold-16.1.1-desktop-stability']",
   "const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css')",
   "await applyStabilityPatch(path.join(sourceRoot,'pacefold-revamp.css'))",
   "await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'))",
-  "pacefold.visual-reset.16.1.1"
+  "await applyAssetRevision(path.join(targetApp,'index.html'))",
+  "await stampWorker(path.join(targetRoot,'service-worker.js'))",
+  "await stampWorker(path.join(targetApp,'service-worker.js'))",
+  "pacefold.visual-reset.16.2.0",
+  "pacefold-build.txt",
+  "pacefold-build\" content=\"${RELEASE}"
 ]){
-  if(!injectSource.includes(token))throw new Error(`Pacefold desktop-stability injection token missing: ${token}`);
+  if(!injectSource.includes(token))throw new Error(`Pacefold unified-desktop injection token missing: ${token}`);
+}
+for(const cacheToken of [
+  'pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp)',
+  '?v=${RELEASE}',
+  '__PACEFOLD_SURFACE_RELEASE__'
+]){
+  if(!injectSource.includes(cacheToken))throw new Error(`Pacefold cache-bust contract missing: ${cacheToken}`);
 }
 const foldMark=fs.readFileSync(path.join(__dirname,'pacefold-fold-mark.svg'),'utf8');
 for(const token of ['<svg','Pacefold folded P mark','viewBox="0 0 64 64"']){
@@ -63,7 +83,7 @@ const encoded=parts.map(name=>fs.readFileSync(path.join(__dirname,name),'utf8'))
 let source=gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
 const geometry='workspaceAbovePlayer:wr.bottom<=pr.top+2';
 if(!source.includes(geometry))throw new Error('Pacefold geometry assertion could not be instrumented');
-source=source.replace(geometry,`${geometry},workspaceBottom:wr.bottom,playerTop:pr.top,playerHeight:pr.height`);
+source=source.replace(geometry,'workspaceAbovePlayer:wr.bottom<=pr.top+2&&Math.abs(wr.left-pr.left)<=2&&Math.abs(wr.right-pr.right)<=2,workspaceBottom:wr.bottom,playerTop:pr.top,playerHeight:pr.height');
 const broadTrack="page.getByText('focus-track').isVisible()";
 if(!source.includes(broadTrack))throw new Error('Pacefold local-player assertion could not be scoped');
 source=source.replace(broadTrack,"page.locator('[data-pf-player-drawer]:visible').getByText('focus-track',{exact:true}).last().isVisible()");
