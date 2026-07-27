@@ -6,6 +6,9 @@ import { gunzipSync } from 'node:zlib';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-16-layout-floor';
+const origamiMarker='pacefold-16.1-origami-identity';
+const origamiSource=path.join(sourceRoot,'pacefold-origami.css');
+const markSource=path.join(sourceRoot,'pacefold-fold-mark.svg');
 const layoutPatch=`
 
 /* BEGIN ${layoutMarker} */
@@ -19,18 +22,25 @@ html.pf-flow-active body{padding-bottom:132px!important}
 #pf-local-player>audio{display:none!important}
 /* END ${layoutMarker} */
 `;
-async function applyLayoutPatch(file){
-  let css=await fs.readFile(file,'utf8');
-  const start=`/* BEGIN ${layoutMarker} */`;
-  const end=`/* END ${layoutMarker} */`;
-  const startIndex=css.indexOf(start);
+async function replaceMarkedBlock(file,marker,content){
+  let source=await fs.readFile(file,'utf8');
+  const start=`/* BEGIN ${marker} */`;
+  const end=`/* END ${marker} */`;
+  const startIndex=source.indexOf(start);
   if(startIndex>=0){
-    const endIndex=css.indexOf(end,startIndex);
-    if(endIndex<0)throw new Error('Pacefold layout patch end marker is missing');
-    css=css.slice(0,startIndex)+css.slice(endIndex+end.length);
+    const endIndex=source.indexOf(end,startIndex);
+    if(endIndex<0)throw new Error(`Pacefold ${marker} end marker is missing`);
+    source=source.slice(0,startIndex)+source.slice(endIndex+end.length);
   }
-  css=css.replace(/\s+$/,'')+layoutPatch;
-  await fs.writeFile(file,css);
+  source=source.replace(/\s+$/,'')+`\n\n${start}\n${content.trim()}\n${end}\n`;
+  await fs.writeFile(file,source);
+}
+async function applyLayoutPatch(file){
+  const inner=layoutPatch.trim().replace(`/* BEGIN ${layoutMarker} */`,'').replace(`/* END ${layoutMarker} */`,'').trim();
+  await replaceMarkedBlock(file,layoutMarker,inner);
+}
+async function applyOrigamiPatch(file){
+  await replaceMarkedBlock(file,origamiMarker,await fs.readFile(origamiSource,'utf8'));
 }
 function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
@@ -40,7 +50,7 @@ function replaceExactlyOnce(source,from,to,label){
 async function applyRuntimePatch(file){
   let runtime=await fs.readFile(file,'utf8');
   const replacements=[
-    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.16.0.1';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
+    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.16.1.0';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
     ["let migrateTimer=0;\nlet dbPromise=null;","let migrateTimer=0;\nlet notebookRenderKey='';\nlet playerDrawerRenderKey='';\nlet dbPromise=null;",'render-keys'],
     ["function saveStreamLinks(){writeJSON(STREAM_KEY,streamLinks);}\nfunction dispatchStorage()","function saveStreamLinks(){writeJSON(STREAM_KEY,streamLinks);}\nfunction applyVisualReset(){try{if(localStorage.getItem(VISUAL_RESET_KEY)==='1')return;playerState.drawer=false;playerState.view='queue';savePlayerState();localStorage.setItem(VISUAL_RESET_KEY,'1');}catch{}}\nfunction notebookDataKey(){try{return `${localStorage.getItem(ENTRY_KEY)||''}\\u0000${localStorage.getItem(CATEGORY_KEY)||''}`;}catch{return '';} }\nfunction playerDrawerDataKey(){return JSON.stringify({view:playerState.view,drawer:Boolean(playerState.drawer),currentId:playerState.currentId,queue:playerState.queue,tracks:trackCache.map(track=>[track.id,track.name,track.fileName,track.size]),playlists,streamLinks});}\nfunction dispatchStorage()",'data-keys'],
     ["  workspace=document.getElementById(WORKSPACE_ID);\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();renderNotebook();","  workspace=document.getElementById(WORKSPACE_ID);let created=false;\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();created=true;}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();const dataKey=notebookDataKey();if(created||dataKey!==notebookRenderKey)renderNotebook();",'workspace-render'],
@@ -57,6 +67,7 @@ async function applyRuntimePatch(file){
   await fs.writeFile(file,runtime);
 }
 await applyLayoutPatch(path.join(sourceRoot,'pacefold-revamp.css'));
+await applyOrigamiPatch(path.join(sourceRoot,'pacefold-revamp.css'));
 
 const prefix='inject-runtime.mjs.gz.b64.part-';
 const parts=(await fs.readdir(sourceRoot)).filter(name=>name.startsWith(prefix)).sort();
@@ -67,8 +78,11 @@ const temporary=path.join(sourceRoot,`.inject-runtime-${process.pid}-${Date.now(
 await fs.writeFile(temporary,source);
 try{
   await import(`${pathToFileURL(temporary).href}?v=${Date.now()}`);
-  await applyLayoutPatch(path.join(targetRoot,'app','pacefold-revamp.css'));
-  await applyRuntimePatch(path.join(targetRoot,'app','pacefold-revamp.js'));
+  const targetApp=path.join(targetRoot,'app');
+  await applyLayoutPatch(path.join(targetApp,'pacefold-revamp.css'));
+  await applyOrigamiPatch(path.join(targetApp,'pacefold-revamp.css'));
+  await fs.copyFile(markSource,path.join(targetApp,'pacefold-fold-mark.svg'));
+  await applyRuntimePatch(path.join(targetApp,'pacefold-revamp.js'));
 }finally{
   await fs.rm(temporary,{force:true});
 }
