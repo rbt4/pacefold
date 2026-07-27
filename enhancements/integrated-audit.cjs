@@ -15,6 +15,16 @@ for(const token of [
 ]){
   if(!origamiCss.includes(token))throw new Error(`Pacefold origami audit token missing: ${token}`);
 }
+const polishCss=fs.readFileSync(path.join(__dirname,'pacefold-origami-polish.css'),'utf8');
+for(const token of [
+  'content:"Pacefold"',
+  '.pf-flow-bar::before{display:none!important}',
+  '.pf-notebook-sheet::before{display:none!important}',
+  'background-color:var(--pf-player-bg)'
+]){
+  const combined=`${origamiCss}\n${polishCss}`;
+  if(!combined.includes(token))throw new Error(`Pacefold origami polish token missing: ${token}`);
+}
 const foldMark=fs.readFileSync(path.join(__dirname,'pacefold-fold-mark.svg'),'utf8');
 for(const token of ['<svg','Pacefold folded P mark','viewBox="0 0 64 64"']){
   if(!foldMark.includes(token))throw new Error(`Pacefold fold-mark audit token missing: ${token}`);
