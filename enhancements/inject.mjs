@@ -213,6 +213,7 @@ async function materializeCompressed(name,destination){
     output=hardenSetupRuntime(output);
     output=hardenPlayerRuntime(output);
     output=genericizeNotebookRuntime(output);
+    output=removeNumericBadgeCalls(output,'hub runtime');
   }
   if(name.endsWith('.js.gz.b64'))output=trustedBootstrap+rewriteInnerHTMLAssignments(output).source;
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
@@ -221,11 +222,16 @@ async function materializeCompressed(name,destination){
 async function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}
 async function removeNumericBadge(file){
   const source=await fs.readFile(file,'utf8');
-  const matches=source.match(/navigator\.setAppBadge\?\.\(1\)/g)||[];
-  if(matches.length!==1)throw new Error(`Unexpected numeric app-badge call count: ${matches.length}`);
-  const next=source.replace('navigator.setAppBadge?.(1)','navigator.setAppBadge?.()');
-  if(next.includes('navigator.setAppBadge?.(1)'))throw new Error('Numeric app badge survived integrated runtime hardening');
+  const next=removeNumericBadgeCalls(source,'integrated runtime',true);
   await fs.writeFile(file,next);
+}
+function removeNumericBadgeCalls(source,label,required=false){
+  const optional=(source.match(/\.setAppBadge\?\.\(1\)/g)||[]).length;
+  const direct=(source.match(/\.setAppBadge\(1\)/g)||[]).length;
+  if(required&&optional+direct<1)throw new Error(`Expected a numeric app-badge call in ${label}`);
+  const next=source.replace(/\.setAppBadge\?\.\(1\)/g,'.setAppBadge?.()').replace(/\.setAppBadge\(1\)/g,'.setAppBadge()');
+  if(/\.setAppBadge(?:\?\.)?\(1\)/.test(next))throw new Error(`Numeric app badge survived ${label} hardening`);
+  return next;
 }
 
 function upgradeRuntimeVersion(source){
