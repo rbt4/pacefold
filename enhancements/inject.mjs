@@ -7,8 +7,10 @@ const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-16-layout-floor';
 const origamiMarker='pacefold-16.1-origami-identity';
+const stabilityMarker='pacefold-16.1.1-desktop-stability';
 const origamiSource=path.join(sourceRoot,'pacefold-origami.css');
 const origamiPolishSource=path.join(sourceRoot,'pacefold-origami-polish.css');
+const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css');
 const markSource=path.join(sourceRoot,'pacefold-fold-mark.svg');
 const layoutPatch=`
 
@@ -45,6 +47,10 @@ async function applyOrigamiPatch(file){
   const polish=await fs.readFile(origamiPolishSource,'utf8');
   await replaceMarkedBlock(file,origamiMarker,`${identity.trim()}\n\n${polish.trim()}`);
 }
+async function applyStabilityPatch(file){
+  const stability=await fs.readFile(stabilitySource,'utf8');
+  await replaceMarkedBlock(file,stabilityMarker,stability);
+}
 function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
   if(first<0||source.indexOf(from,first+1)>=0)throw new Error(`Pacefold runtime patch ${label} expected exactly one source match`);
@@ -53,7 +59,7 @@ function replaceExactlyOnce(source,from,to,label){
 async function applyRuntimePatch(file){
   let runtime=await fs.readFile(file,'utf8');
   const replacements=[
-    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.16.1.0';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
+    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.16.1.1';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
     ["let migrateTimer=0;\nlet dbPromise=null;","let migrateTimer=0;\nlet notebookRenderKey='';\nlet playerDrawerRenderKey='';\nlet dbPromise=null;",'render-keys'],
     ["function saveStreamLinks(){writeJSON(STREAM_KEY,streamLinks);}\nfunction dispatchStorage()","function saveStreamLinks(){writeJSON(STREAM_KEY,streamLinks);}\nfunction applyVisualReset(){try{if(localStorage.getItem(VISUAL_RESET_KEY)==='1')return;playerState.drawer=false;playerState.view='queue';savePlayerState();localStorage.setItem(VISUAL_RESET_KEY,'1');}catch{}}\nfunction notebookDataKey(){try{return `${localStorage.getItem(ENTRY_KEY)||''}\\u0000${localStorage.getItem(CATEGORY_KEY)||''}`;}catch{return '';} }\nfunction playerDrawerDataKey(){return JSON.stringify({view:playerState.view,drawer:Boolean(playerState.drawer),currentId:playerState.currentId,queue:playerState.queue,tracks:trackCache.map(track=>[track.id,track.name,track.fileName,track.size]),playlists,streamLinks});}\nfunction dispatchStorage()",'data-keys'],
     ["  workspace=document.getElementById(WORKSPACE_ID);\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();renderNotebook();","  workspace=document.getElementById(WORKSPACE_ID);let created=false;\n  if(!workspace){workspace=document.createElement('section');workspace.id=WORKSPACE_ID;workspace.dataset.revision=REVISION;workspace.className='pf-local-workspace';workspace.setAttribute('aria-label','Pacefold local notebook');setHTML(workspace,workspaceMarkup());root.append(workspace);bindNotebook();created=true;}\n  workspace.dataset.open=String(notebookState.open!==false);workspace.classList.toggle('is-open',notebookState.open!==false);\n  if(dock.parentElement!==workspace)workspace.prepend(dock);\n  prepareDock();const dataKey=notebookDataKey();if(created||dataKey!==notebookRenderKey)renderNotebook();",'workspace-render'],
@@ -71,6 +77,7 @@ async function applyRuntimePatch(file){
 }
 await applyLayoutPatch(path.join(sourceRoot,'pacefold-revamp.css'));
 await applyOrigamiPatch(path.join(sourceRoot,'pacefold-revamp.css'));
+await applyStabilityPatch(path.join(sourceRoot,'pacefold-revamp.css'));
 
 const prefix='inject-runtime.mjs.gz.b64.part-';
 const parts=(await fs.readdir(sourceRoot)).filter(name=>name.startsWith(prefix)).sort();
@@ -84,6 +91,7 @@ try{
   const targetApp=path.join(targetRoot,'app');
   await applyLayoutPatch(path.join(targetApp,'pacefold-revamp.css'));
   await applyOrigamiPatch(path.join(targetApp,'pacefold-revamp.css'));
+  await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'));
   await fs.copyFile(markSource,path.join(targetApp,'pacefold-fold-mark.svg'));
   await applyRuntimePatch(path.join(targetApp,'pacefold-revamp.js'));
 }finally{
