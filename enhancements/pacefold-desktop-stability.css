@@ -5,7 +5,7 @@
   --pf-shell-bottom:10px;
   --pf-shell-width:min(980px,calc(100vw - (var(--pf-shell-edge) * 2)));
   --pf-shell-radius:18px;
-  --pf-player-bar-height:52px;
+  --pf-player-bar-height:56px;
   --pf-player-drawer-height:min(280px,34dvh);
   --pf-shell-border:rgba(31,40,35,.13);
   --pf-shell-shadow:0 24px 72px rgba(20,27,23,.24)
