@@ -15,4 +15,7 @@ source=source.replace(geometry,`${geometry},workspaceBottom:wr.bottom,playerTop:
 const broadTrack="page.getByText('focus-track').isVisible()";
 if(!source.includes(broadTrack))throw new Error('Pacefold local-player assertion could not be scoped');
 source=source.replace(broadTrack,"page.locator('[data-pf-player-drawer]:visible').getByText('focus-track',{exact:true}).last().isVisible()");
+const legacyBlack='background:#070908';
+if(!source.includes(legacyBlack))throw new Error('Pacefold black-player audit literal is missing');
+source=source.replaceAll(legacyBlack,'background:#080a09');
 module._compile(source,__filename);
