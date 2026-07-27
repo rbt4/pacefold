@@ -13,13 +13,16 @@ html.pf-flow-active body{padding-bottom:190px!important}
 #pf-hub-root{--pf-workspace-bottom:76px!important}
 #pf-local-workspace{bottom:76px!important;max-height:calc(100vh - 104px)!important}
 #pf-local-workspace.is-open{height:min(680px,calc(100vh - 104px))!important}
-#pf-local-player{bottom:6px!important}
-#pf-local-player .pf-player-bar{box-sizing:border-box!important;min-height:52px!important}
+#pf-local-player{bottom:6px!important;height:52px!important;min-height:52px!important;max-height:52px!important;overflow:visible!important}
+#pf-local-player>.pf-player-bar{box-sizing:border-box!important;height:52px!important;min-height:52px!important;max-height:52px!important}
+#pf-local-player>.pf-player-drawer{position:absolute!important}
+#pf-local-player>audio{display:none!important}
 /* END ${layoutMarker} */
 `;
 async function applyLayoutPatch(file){
   let css=await fs.readFile(file,'utf8');
-  css=css.replace(new RegExp(`\\n*\\/\\* BEGIN ${layoutMarker} \\/\\*[\\s\\S]*?\\/\\* END ${layoutMarker} \\/\\*\\n?`,'g'),'').replace(/\s+$/,'')+layoutPatch;
+  const block=new RegExp(`/\\* BEGIN ${layoutMarker} \\*/[\\s\\S]*?/\\* END ${layoutMarker} \\*/`,'g');
+  css=css.replace(block,'').replace(/\s+$/,'')+layoutPatch;
   await fs.writeFile(file,css);
 }
 await applyLayoutPatch(path.join(sourceRoot,'pacefold-revamp.css'));
