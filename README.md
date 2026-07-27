@@ -2,139 +2,146 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. The checksum-verified core remains responsible for schedules, cues, preferences and offline behaviour. The 15.9 surface rebuilds the daily interface around the two compact windows the product actually needs: **Notes above and Music below**.
+Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core still owns schedules, cues, preferences and offline behaviour. Pacefold 16.0 replaces the failed cloud-notebook direction with two deliberately separate local surfaces:
 
-## Pacefold 15.9 — Notes above, Music below
+- an integrated working notebook anchored at the bottom of Pacefold;
+- a bottom-most black local-audio player with its own queue, library and playlists.
 
-The permanent interface is intentionally simple:
+There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
 
-- an upper Notes window with an actionable Notes heading, the current cue, one-line capture, OneNote and compact controls;
-- a lower mini-player that remains visible for local audio and contained music services;
-- no HSSys-specific product language or destination naming;
-- no duplicate dashboard, separate timer engine or parallel note store.
+## Pacefold 16.0 — local workspace
 
-Existing local entries remain in the proven local-first storage path. Internal legacy keys are preserved for migration compatibility, but the user-facing product and generated OneNote destination are generic Pacefold.
+The notebook is now a working document rather than a launcher.
 
-## Upper Notes window
+- It opens inside Pacefold and remains attached to the bottom of the app.
+- Collapsing it leaves the capture row and category tabs available.
+- Existing notes continue to use `pacefold.notebook.entries.v2`.
+- Older entries are enhanced in place with timestamps and category metadata; their IDs and text are retained.
+- Local notes remain available without Microsoft authentication, Graph, OneNote or another service.
 
-The upper window keeps the current work moment and note capture together without turning the app into a notebook dashboard.
+## Notes and timestamps
 
-- Write directly into **Write a note…** and press Enter.
-- Slash prefixes still route notes without adding a permanent category picker:
-  - `/incident`
-  - `/follow`
-  - `/inspect`
-  - `/jhsc`
-  - `/construction`
-  - `/notification`
-  - `/resource`
-- Click the **Notes** heading for dated browsing, search, editing, completion and deletion.
-- OneNote is optional; local saving always completes first.
+Every new note receives:
 
-The former top Notes button is removed because the heading itself now opens Notes. Duplicate Capture and Media tiles are also removed from the expanded controls; capture remains in the upper window and music remains in the lower player.
+- a stable local ID;
+- a local calendar date;
+- a creation timestamp;
+- an updated timestamp;
+- a category;
+- Markdown-style formatting metadata.
 
-## OneNote reliability
+The compact capture field still accepts slash routing:
 
-The old proxy assumed that the Notes surface and its sync action would appear in under one second. That was not a realistic assumption on a managed work computer.
+- `/incident`
+- `/follow`
+- `/inspect`
+- `/jhsc`
+- `/construction`
+- `/notification`
+- `/resource`
 
-15.9 now:
+When **Smart** is selected, Pacefold uses conservative keyword rules to suggest an existing category. An explicit category or slash command always wins.
 
-- opens Notes when needed;
-- waits for the real sync action for up to ten seconds using DOM readiness observation plus bounded polling;
-- respects the existing cross-window sync lock;
-- displays accurate preparing, busy, requested and unavailable states without claiming Microsoft success prematurely;
-- keeps local notes even when Microsoft authentication or Graph delivery fails;
-- generates a generic **Pacefold** notebook destination instead of HSSys.
+## Category tabs
 
-Pacefold still does not store Microsoft passwords. Existing delegated Microsoft authentication and fallback paths remain unchanged.
+Categories become notebook tabs along the bottom edge.
 
-## Lower mini-player
+- **Today** shows the selected day.
+- **All** searches across the notebook.
+- **Pinned** collects important notes.
+- Every used category receives its own tab and count.
+- New categories can be created directly from the tab strip.
+- A note can be reassigned from its own category menu without moving it through a separate screen.
 
-The proven media row is no longer hidden behind another button. It is restored as the permanent lower window.
+The original section names remain compatible, including Follow-ups, Incidents, Inspections, JHSC, Construction, Notifications and Resources.
 
-- Local audio remains on-device.
-- Drag-and-drop and file-picker loading remain available.
-- YouTube Music and Spotify use contained official embeds.
-- Amazon Music remains best-effort because Amazon can refuse third-party framing.
-- Pacefold does not automatically open an external music window.
+## Working-document tools
 
-The upper Media shortcut is removed from the permanent row because it duplicated the lower player.
+The integrated document supports:
 
-## Notifications and taskbar state
+- search;
+- previous, next and today navigation;
+- edit and delete;
+- pin and complete;
+- note-level copy;
+- category reassignment;
+- headings, bold, italics, bullets and checkbox syntax;
+- daily copy as a structured Markdown document;
+- daily `.md` download;
+- full note/category/playlist/link backup as JSON;
+- JSON backup import and merge.
 
-15.9 removes the meaningless hard-coded numeric **1** from the app badge. The taskbar state is now a flag: attention is waiting or it is not.
+**Copy day** is the intended handoff. At the end of the day, copy the assembled document and paste it into OneNote, Word, email or any other destination. Pacefold does not pretend that a cloud handoff succeeded when it did not.
 
-- Only one current Pacefold notification is retained at a time.
-- Repeated cues replace the existing Pacefold toast instead of stacking.
-- Notifications are explicitly non-sticky and non-renotifying.
-- When Pacefold is active, notification cleanup runs on an eight-second bounded cycle.
-- Opening, acknowledging, snoozing, completing or entering off-hours clears notification state without falsely completing the cue.
-- **Done** remains the only action that completes the underlying cue.
+## Separate local music bar
 
-## Work hours
+The bottom-most player is intentionally black and visually separate from the notebook while remaining part of the same app.
 
-The revamp reads the existing Pacefold workday preference structure, including common start/end and active-day fields, and supports overnight work windows.
+The primary workflow is local audio:
 
-Outside configured work hours:
+- add multiple audio files;
+- drag files onto the player;
+- retain files in browser-local IndexedDB storage;
+- build and reorder a queue;
+- play previous, current and next tracks;
+- seek and adjust volume;
+- create named playlists;
+- add the current track to a playlist;
+- remove local tracks when no longer needed.
 
-- taskbar badges are suppressed and cleared;
-- open Pacefold notifications are closed;
-- new service-worker notifications are suppressed after the app publishes its work state;
-- the waiting cue is visually quieted rather than presented as active work.
+Streaming is secondary. Pacefold stores optional named web links, but it does not turn the local player into another embedded streaming dashboard.
 
-The work-state check reconciles every five seconds while the app is visible and immediately after Pacefold preference changes, focus restoration or local-storage updates.
+## Local storage boundaries
 
-## Visual system
+Notes and player state stay on the current browser profile.
 
-The visual direction is restrained rather than decorative:
+- Clearing Pacefold site data can remove notes and locally stored audio.
+- The JSON backup includes notes, categories, playlist definitions and streaming links.
+- Audio blobs are not embedded in the JSON backup because that could create extremely large backup files.
+- A playlist can reference only audio still stored in this browser.
+- Browser storage quotas vary by device and administrator policy.
 
-- one compact upper Notes window;
-- one compact lower player window;
-- opaque, readable surfaces that remain above Notes modal dimming layers;
-- no overlapping cards or hidden duplicate media controls;
-- responsive layouts for desktop and 390 px mobile widths;
-- dark, light, forced-colour and reduced-motion support.
+Keep original audio files elsewhere and download periodic Pacefold JSON backups.
 
-## Reliability and recovery
+## Notifications and work hours
 
-- The verified core remains the only owner of schedules, offline caches and action completion.
-- The revamp mounts after the integrated surface and reattaches after bounded root recovery.
-- Existing note data is not renamed, discarded or migrated destructively.
-- Duplicate capture, OneNote and cue actions remain guarded.
-- Service-worker patches remain idempotent and replace earlier injected blocks rather than accumulating.
-- Runtime failures continue to report through the bounded, privacy-redacted resilience journal.
+The 15.9 notification corrections remain in place:
 
-## Validation
+- app badges use a nonnumeric attention flag;
+- only one current Pacefold toast is retained;
+- repeated cues replace rather than stack;
+- notifications are non-sticky;
+- work hours suppress badges, open notifications and waiting-cue emphasis;
+- overnight work windows and active weekdays remain supported.
 
-GitHub Actions reconstructs the checksum-verified release, injects the surface twice, and runs the existing core, offline, notification, storage and recovery gates.
+The verified core remains the only owner of completing the actual cue. Notebook and player actions do not complete reminders accidentally.
 
-The integrated browser gate additionally verifies:
+## Responsive behaviour
 
-- exactly one upper Notes window and one lower mini-player;
-- the Notes heading opens the real Notes surface;
-- redundant top Notes/Media and expanded Capture/Media controls remain hidden;
-- the Notes dock and player remain above notebook modal dimming layers;
-- desktop and 390 px geometry without horizontal overflow;
-- nonnumeric taskbar badge calls;
-- notification replacement and off-hours suppression contracts;
-- local capture and slash routing exactly once;
-- generic Pacefold OneNote delivery;
-- root recovery without duplicate docks or players;
-- desktop and mobile visual captures.
+Desktop uses the full working-document layout. Narrow screens retain:
+
+- the compact cue/capture row;
+- the notebook document;
+- horizontally scrolling category tabs;
+- the bottom black player;
+- a full-width player drawer for queue, library and playlists.
+
+The release gate checks desktop and 390 px layouts for overflow, separation and root recovery.
 
 ## Install or refresh
 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 15.9 deploys, fully close every Pacefold and Edge PWA window once, then reopen Pacefold so the new cache-busted assets and service worker replace 15.8.
+4. After 16.0 deploys, fully close every Pacefold and Edge PWA window once.
+5. Reopen Pacefold so the `16.0.0` cache-busted notebook and player replace the older surface.
 
 ## Honest platform boundaries
 
-A browser PWA cannot intercept the Windows taskbar click before focus, distinguish taskbar single-click from double-click, or continuously redraw the pinned icon face. A native Windows companion would be required for those behaviours.
+A browser PWA cannot intercept Windows taskbar clicks before focus, distinguish taskbar single-click from double-click, or continuously redraw the pinned icon face. A native Windows companion would be required.
 
-Browser timers also cannot guarantee exact delivery while the app is closed, heavily throttled or the laptop is asleep. Pacefold remains honest about that boundary rather than manufacturing stale alerts.
+Browser timers also cannot guarantee exact delivery while the app is closed, heavily throttled or the laptop is asleep.
 
 ## Version
 
-Pacefold 15.9.0 revamp surface over the verified Pacefold 15.8 integrated runtime and 15.2.2 core archive.
+Pacefold 16.0.0 local workspace over the verified Pacefold 15.8 integrated runtime and 15.2.2 core archive.
