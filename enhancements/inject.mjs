@@ -21,8 +21,15 @@ html.pf-flow-active body{padding-bottom:132px!important}
 `;
 async function applyLayoutPatch(file){
   let css=await fs.readFile(file,'utf8');
-  const block=new RegExp(`/\* BEGIN ${layoutMarker} \*/[\s\S]*?/\* END ${layoutMarker} \*/`,'g');
-  css=css.replace(block,'').replace(/\s+$/,'')+layoutPatch;
+  const start=`/* BEGIN ${layoutMarker} */`;
+  const end=`/* END ${layoutMarker} */`;
+  const startIndex=css.indexOf(start);
+  if(startIndex>=0){
+    const endIndex=css.indexOf(end,startIndex);
+    if(endIndex<0)throw new Error('Pacefold layout patch end marker is missing');
+    css=css.slice(0,startIndex)+css.slice(endIndex+end.length);
+  }
+  css=css.replace(/\s+$/,'')+layoutPatch;
   await fs.writeFile(file,css);
 }
 function replaceExactlyOnce(source,from,to,label){
