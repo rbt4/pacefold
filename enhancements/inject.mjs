@@ -8,6 +8,7 @@ const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-16-layout-floor';
 const origamiMarker='pacefold-16.1-origami-identity';
 const origamiSource=path.join(sourceRoot,'pacefold-origami.css');
+const origamiPolishSource=path.join(sourceRoot,'pacefold-origami-polish.css');
 const markSource=path.join(sourceRoot,'pacefold-fold-mark.svg');
 const layoutPatch=`
 
@@ -40,7 +41,9 @@ async function applyLayoutPatch(file){
   await replaceMarkedBlock(file,layoutMarker,inner);
 }
 async function applyOrigamiPatch(file){
-  await replaceMarkedBlock(file,origamiMarker,await fs.readFile(origamiSource,'utf8'));
+  const identity=await fs.readFile(origamiSource,'utf8');
+  const polish=await fs.readFile(origamiPolishSource,'utf8');
+  await replaceMarkedBlock(file,origamiMarker,`${identity.trim()}\n\n${polish.trim()}`);
 }
 function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
