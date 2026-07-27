@@ -8,7 +8,7 @@ Pacefold is a local-first, installable workday rhythm system. The checksum-verif
 
 The permanent interface is intentionally simple:
 
-- an upper Notes window for the current cue, one-line capture, Notes, OneNote and compact controls;
+- an upper Notes window with an actionable Notes heading, the current cue, one-line capture, OneNote and compact controls;
 - a lower mini-player that remains visible for local audio and contained music services;
 - no HSSys-specific product language or destination naming;
 - no duplicate dashboard, separate timer engine or parallel note store.
@@ -28,8 +28,10 @@ The upper window keeps the current work moment and note capture together without
   - `/construction`
   - `/notification`
   - `/resource`
-- Open **Notes** for dated browsing, search, editing, completion and deletion.
+- Click the **Notes** heading for dated browsing, search, editing, completion and deletion.
 - OneNote is optional; local saving always completes first.
+
+The former top Notes button is removed because the heading itself now opens Notes. Duplicate Capture and Media tiles are also removed from the expanded controls; capture remains in the upper window and music remains in the lower player.
 
 ## OneNote reliability
 
@@ -40,7 +42,7 @@ The old proxy assumed that the Notes surface and its sync action would appear in
 - opens Notes when needed;
 - waits for the real sync action for up to ten seconds using DOM readiness observation plus bounded polling;
 - respects the existing cross-window sync lock;
-- displays clear preparing, busy, started and unavailable states;
+- displays accurate preparing, busy, requested and unavailable states without claiming Microsoft success prematurely;
 - keeps local notes even when Microsoft authentication or Graph delivery fails;
 - generates a generic **Pacefold** notebook destination instead of HSSys.
 
@@ -88,7 +90,7 @@ The visual direction is restrained rather than decorative:
 
 - one compact upper Notes window;
 - one compact lower player window;
-- warm, low-contrast surfaces with clear separation;
+- opaque, readable surfaces that remain above Notes modal dimming layers;
 - no overlapping cards or hidden duplicate media controls;
 - responsive layouts for desktop and 390 px mobile widths;
 - dark, light, forced-colour and reduced-motion support.
@@ -109,6 +111,9 @@ GitHub Actions reconstructs the checksum-verified release, injects the surface t
 The integrated browser gate additionally verifies:
 
 - exactly one upper Notes window and one lower mini-player;
+- the Notes heading opens the real Notes surface;
+- redundant top Notes/Media and expanded Capture/Media controls remain hidden;
+- the Notes dock and player remain above notebook modal dimming layers;
 - desktop and 390 px geometry without horizontal overflow;
 - nonnumeric taskbar badge calls;
 - notification replacement and off-hours suppression contracts;
