@@ -6,7 +6,7 @@ import { rewriteInnerHTMLAssignments } from '../scripts/trusted-types-transform.
 const trustedBootstrap="(()=>{if(window.__PACEFOLD_SET_HTML__)return;window.__PACEFOLD_SET_HTML__=(node,value)=>{if(!node)return node;const html=window.__PACEFOLD_TRUSTED_HTML__?window.__PACEFOLD_TRUSTED_HTML__(String(value)):String(value);Reflect.set(node,'innerHTML',html);return node;};})();\n";
 
 const VERSION='15.8.0';
-const ASSET_REVISION='15.8.4';
+const ASSET_REVISION='15.9.0';
 const MARKER=`pacefold-resilience-${VERSION}`;
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -14,10 +14,14 @@ const appRoot=path.join(targetRoot,'app');
 const appHtml=path.join(appRoot,'index.html');
 const iconSource=path.join(sourceRoot,'icons');
 const iconTarget=path.join(appRoot,'icons');
-const assets=['pacefold-hub-guardian.js','pacefold-resilience.js','pacefold-integrated.js','pacefold-integrated.css'];
+const assets=[
+  'pacefold-hub-guardian.js','pacefold-resilience.js',
+  'pacefold-integrated.js','pacefold-integrated.css',
+  'pacefold-revamp.js','pacefold-revamp.css'
+];
 
 if(!(await exists(appHtml)))throw new Error(`Pacefold app shell was not found at ${appHtml}`);
-for(const name of assets){const source=path.join(sourceRoot,name),destination=path.join(appRoot,name);await fs.copyFile(source,destination);if(name.endsWith('.js'))await hardenTrustedScript(destination);}
+for(const name of assets){const source=path.join(sourceRoot,name),destination=path.join(appRoot,name);await fs.copyFile(source,destination);if(name==='pacefold-integrated.js')await removeNumericBadge(destination);if(name.endsWith('.js'))await hardenTrustedScript(destination);}
 await materializeCompressed('pacefold-hub.css.gz.b64',path.join(appRoot,'pacefold-hub.css'));
 await materializeCompressed('pacefold-hub.js.gz.b64',path.join(appRoot,'pacefold-hub.js'));
 await fs.mkdir(iconTarget,{recursive:true});
@@ -30,13 +34,15 @@ html=ensureThemeColor(html);
 html=removeOldSurfaceAssets(html);
 const styles=[
   `<link rel="stylesheet" href="./pacefold-hub.css?v=${ASSET_REVISION}" data-pacefold-hub="${VERSION}">`,
-  `<link rel="stylesheet" href="./pacefold-integrated.css?v=${ASSET_REVISION}" data-pacefold-flow="${VERSION}">`
+  `<link rel="stylesheet" href="./pacefold-integrated.css?v=${ASSET_REVISION}" data-pacefold-flow="${VERSION}">`,
+  `<link rel="stylesheet" href="./pacefold-revamp.css?v=${ASSET_REVISION}" data-pacefold-revamp="${ASSET_REVISION}">`
 ].join('\n');
 const scripts=[
   `<script defer src="./pacefold-hub-guardian.js?v=${ASSET_REVISION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
   `<script defer src="./pacefold-resilience.js?v=${ASSET_REVISION}" data-pacefold-resilience="${VERSION}"></script>`,
   `<script defer src="./pacefold-hub.js?v=${ASSET_REVISION}" data-pacefold-hub="${VERSION}"></script>`,
-  `<script defer src="./pacefold-integrated.js?v=${ASSET_REVISION}" data-pacefold-flow="${VERSION}"></script>`
+  `<script defer src="./pacefold-integrated.js?v=${ASSET_REVISION}" data-pacefold-flow="${VERSION}"></script>`,
+  `<script defer src="./pacefold-revamp.js?v=${ASSET_REVISION}" data-pacefold-revamp="${ASSET_REVISION}"></script>`
 ].join('\n');
 html=injectBefore(html,'</head>',styles);
 html=injectBefore(html,'</body>',scripts);
@@ -51,12 +57,12 @@ for(const workerPath of [path.join(targetRoot,'service-worker.js'),path.join(app
 }
 
 await fs.writeFile(path.join(targetRoot,'pacefold-hub-version.txt'),`${VERSION}\n`);
-console.log(`Installed Pacefold ${VERSION}: one integrated dock, actionable taskbar acknowledgement, launch shortcuts and raster notification artwork.`);
+console.log(`Installed Pacefold ${ASSET_REVISION}: upper Notes window, lower mini-player, work-hour quieting and resilient OneNote sync.`);
 
 function removeOldSurfaceAssets(source){
   return source
-    .replace(/\s*<link[^>]+data-pacefold-(?:hub|flow)[^>]*>/gi,'')
-    .replace(/\s*<script[^>]+data-pacefold-(?:hub(?:-guardian)?|resilience|flow)[^>]*><\/script>/gi,'');
+    .replace(/\s*<link[^>]+data-pacefold-(?:hub|flow|revamp)[^>]*>/gi,'')
+    .replace(/\s*<script[^>]+data-pacefold-(?:hub(?:-guardian)?|resilience|flow|revamp)[^>]*><\/script>/gi,'');
 }
 function removePreviousWorkerPatches(source){
   const before=source;
@@ -75,6 +81,8 @@ function notificationArtworkPatch(isAppWorker){
 (() => {
   const WRAPPED='__pacefoldNotificationWrapped';
   const pfIconBase=${JSON.stringify(prefix)};
+  const pfTag='pacefold-current-cue';
+  let pfWorkActive=true;
   const choose=(title,options={})=>{
     const text=(String(title||'')+' '+String(options.body||'')+' '+String(options.tag||'')+' '+String(options.data?.source||'')).toLowerCase();
     if(/water|drink|hydrate|sip/.test(text))return pfIconBase+'notify-water.png';
@@ -87,14 +95,36 @@ function notificationArtworkPatch(isAppWorker){
     return pfIconBase+'fold-mark.png';
   };
   const registration=self.registration;
+  const closePacefold=async()=>{
+    try{
+      const items=await registration?.getNotifications?.({tag:pfTag});
+      for(const item of items||[])item.close();
+    }catch{}
+  };
+  self.addEventListener('message',event=>{
+    if(event.data?.type!=='PACEFOLD_WORK_STATE')return;
+    pfWorkActive=event.data.active!==false;
+    if(!pfWorkActive)event.waitUntil?.(closePacefold());
+  });
   if(registration&&typeof registration.showNotification==='function'&&!registration[WRAPPED]){
     const original=registration.showNotification.bind(registration);
-    const wrapped=(title,options={})=>original(title,{...options,icon:choose(title,options),badge:pfIconBase+'fold-mark.png',renotify:false});
+    const wrapped=async(title,options={})=>{
+      if(!pfWorkActive){await closePacefold();return;}
+      await closePacefold();
+      return original(title,{
+        ...options,
+        tag:pfTag,
+        icon:choose(title,options),
+        badge:pfIconBase+'fold-mark.png',
+        renotify:false,
+        requireInteraction:false
+      });
+    };
     try{
       Object.defineProperty(registration,'showNotification',{configurable:true,writable:true,value:wrapped});
-      Object.defineProperty(registration,WRAPPED,{configurable:true,value:'${VERSION}'});
+      Object.defineProperty(registration,WRAPPED,{configurable:true,value:'${ASSET_REVISION}'});
     }catch{
-      try{registration.showNotification=wrapped;registration[WRAPPED]='${VERSION}';}catch{}
+      try{registration.showNotification=wrapped;registration[WRAPPED]='${ASSET_REVISION}';}catch{}
     }
   }
 })();
@@ -116,9 +146,9 @@ async function enhanceManifests(){
     const joiner=start.includes('?')?'&':'?';
     const desired=[
       {name:'Current Pacefold action',short_name:'Current',description:'Open the current action and quick controls',url:`${start}${joiner}pf=current`},
-      {name:'Capture to Pacefold',short_name:'Capture',description:'Focus the HSSys notebook capture field',url:`${start}${joiner}pf=capture`},
-      {name:'Open Pacefold notebook',short_name:'Notebook',description:'Open the dated HSSys notebook',url:`${start}${joiner}pf=notebook`},
-      {name:'Open Pacefold media',short_name:'Media',description:'Open contained media controls',url:`${start}${joiner}pf=media`}
+      {name:'Capture to Pacefold',short_name:'Capture',description:'Focus the Notes capture field',url:`${start}${joiner}pf=capture`},
+      {name:'Open Pacefold notes',short_name:'Notes',description:'Open dated Pacefold notes',url:`${start}${joiner}pf=notebook`},
+      {name:'Open Pacefold music',short_name:'Music',description:'Open contained music controls',url:`${start}${joiner}pf=media`}
     ];
     const existing=Array.isArray(manifest.shortcuts)?manifest.shortcuts.filter(item=>!/[?&]pf=(?:current|capture|notebook|media)\b/.test(String(item?.url||''))):[];
     manifest.shortcuts=[...existing,...desired].slice(-8);
@@ -182,12 +212,27 @@ async function materializeCompressed(name,destination){
     output=upgradeRuntimeVersion(output);
     output=hardenSetupRuntime(output);
     output=hardenPlayerRuntime(output);
+    output=genericizeNotebookRuntime(output);
+    output=removeNumericBadgeCalls(output,'hub runtime');
   }
   if(name.endsWith('.js.gz.b64'))output=trustedBootstrap+rewriteInnerHTMLAssignments(output).source;
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
   await fs.writeFile(destination,output);
 }
 async function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}
+async function removeNumericBadge(file){
+  const source=await fs.readFile(file,'utf8');
+  const next=removeNumericBadgeCalls(source,'integrated runtime',true);
+  await fs.writeFile(file,next);
+}
+function removeNumericBadgeCalls(source,label,required=false){
+  const optional=(source.match(/\.setAppBadge\?\.\(1\)/g)||[]).length;
+  const direct=(source.match(/\.setAppBadge\(1\)/g)||[]).length;
+  if(required&&optional+direct<1)throw new Error(`Expected a numeric app-badge call in ${label}`);
+  const next=source.replace(/\.setAppBadge\?\.\(1\)/g,'.setAppBadge?.()').replace(/\.setAppBadge\(1\)/g,'.setAppBadge()');
+  if(/\.setAppBadge(?:\?\.)?\(1\)/.test(next))throw new Error(`Numeric app badge survived ${label} hardening`);
+  return next;
+}
 
 function upgradeRuntimeVersion(source){
   const matches=source.match(/15\.6\.0/g)||[];
@@ -202,6 +247,13 @@ function hardenSetupRuntime(source){
   if(matches.length!==1)throw new Error(`Unexpected legacy setup-text signature count: ${matches.length}`);
   const next=source.replace(legacy,'$1');
   if(next.includes('complete setup|get started'))throw new Error('Legacy generic setup phrase survived runtime hardening');
+  return next;
+}
+function genericizeNotebookRuntime(source){
+  const matches=source.match(/\bHSSys\b/g)||[];
+  if(!matches.length)throw new Error('Pacefold notebook runtime no longer exposes the expected legacy HSSys marker');
+  const next=source.replace(/\bHSSys\b/g,'Pacefold');
+  if(/\bHSSys\b/.test(next))throw new Error('Legacy HSSys notebook naming survived genericization');
   return next;
 }
 function hardenPlayerRuntime(source){

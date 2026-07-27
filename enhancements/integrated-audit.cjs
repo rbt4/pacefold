@@ -11,8 +11,8 @@ const port=4183;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let phase='startup';
 const mark=name=>{phase=name;console.log(`PACEFOLD_FLOW_AUDIT_PHASE ${name}`);};
-const host=scripts=>`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.open-meteo.com https://graph.microsoft.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com https://open.spotify.com https://music.amazon.ca https://music.amazon.com"><link rel="stylesheet" href="/app/pacefold-hub.css"><link rel="stylesheet" href="/app/pacefold-integrated.css"></head><body><main style="min-height:100vh">Today</main>${scripts}</body></html>`;
-const scripts='<script defer src="/app/pacefold-hub-guardian.js"></script><script defer src="/app/pacefold-resilience.js"></script><script defer src="/app/pacefold-hub.js"></script><script defer src="/app/pacefold-integrated.js"></script>';
+const host=scripts=>`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.open-meteo.com https://graph.microsoft.com; img-src 'self' data:; frame-src https://www.youtube-nocookie.com https://open.spotify.com https://music.amazon.ca https://music.amazon.com"><link rel="stylesheet" href="/app/pacefold-hub.css"><link rel="stylesheet" href="/app/pacefold-integrated.css"><link rel="stylesheet" href="/app/pacefold-revamp.css"></head><body><main style="min-height:100vh">Today</main>${scripts}</body></html>`;
+const scripts='<script defer src="/app/pacefold-hub-guardian.js"></script><script defer src="/app/pacefold-resilience.js"></script><script defer src="/app/pacefold-hub.js"></script><script defer src="/app/pacefold-integrated.js"></script><script defer src="/app/pacefold-revamp.js"></script>';
 const server=http.createServer((request,response)=>{
   const requestPath=decodeURIComponent((request.url||'/').split('?')[0]);
   if(requestPath==='/__blank')return response.end('<!doctype html><html><body>blank</body></html>');
@@ -35,7 +35,7 @@ function manifestFiles(){
 function installBrowserStubs(context){
   return context.addInitScript(()=>{
     window.__badgeEvents=[];window.__closedNotifications=0;window.__oneNoteSyncs=[];
-    Object.defineProperty(navigator,'setAppBadge',{configurable:true,value:async value=>window.__badgeEvents.push(['set',value??1])});
+    Object.defineProperty(navigator,'setAppBadge',{configurable:true,value:async(...args)=>window.__badgeEvents.push(['set',args.length,args[0]??null])});
     Object.defineProperty(navigator,'clearAppBadge',{configurable:true,value:async()=>window.__badgeEvents.push(['clear'])});
     try{Object.defineProperty(ServiceWorkerContainer.prototype,'getRegistration',{configurable:true,value:async()=>({getNotifications:async()=>[{close(){window.__closedNotifications+=1;}}]})});}catch{}
     Object.defineProperty(navigator,'share',{configurable:true,value:async()=>{}});
@@ -76,10 +76,19 @@ async function main(){
     const appHtml=fs.readFileSync(path.join(root,'app','index.html'),'utf8');
     const flow=fs.readFileSync(path.join(root,'app','pacefold-integrated.js'),'utf8');
     const flowCss=fs.readFileSync(path.join(root,'app','pacefold-integrated.css'),'utf8');
+    const revamp=fs.readFileSync(path.join(root,'app','pacefold-revamp.js'),'utf8');
+    const revampCss=fs.readFileSync(path.join(root,'app','pacefold-revamp.css'),'utf8');
     const guardian=fs.readFileSync(path.join(root,'app','pacefold-hub-guardian.js'),'utf8');
     const resilience=fs.readFileSync(path.join(root,'app','pacefold-resilience.js'),'utf8');
     const worker=fs.readFileSync(path.join(root,'app','service-worker.js'),'utf8');
     assert(flow.includes("const VERSION='15.8.0'"),'Integrated runtime version missing');
+    assert(revamp.includes("const REVISION='15.9.0'"),'15.9 Notes/player revamp runtime missing');
+    assert(revamp.includes('waitForSyncAction(timeout=10000)')&&revamp.includes('MutationObserver'),'Resilient OneNote readiness wait is missing');
+    assert(revamp.includes('function openNotes(')&&revamp.includes("title=document.createElement('button')"),'Actionable Notes header is missing');
+    assert(revamp.includes('originalSetBadge()')&&!revamp.includes('originalSetBadge(1)'),'Nonnumeric badge policy is missing');
+    assert(revamp.includes('PACEFOLD_WORK_STATE')&&revamp.includes('readWorkWindow'),'Work-hour enforcement contract is missing');
+    assert(revampCss.includes('data-pf-revamp-player')&&revampCss.includes('bottom:max(10px'),'Persistent lower mini-player contract is missing');
+    assert(revampCss.includes('2147483647')&&revampCss.includes('data-pf-revamp-top-notes')&&revampCss.includes('data-pf-flow-focus-capture'),'Top-layer contrast or duplicate-control suppression is missing');
     assert(guardian.includes("const VERSION='15.8.0'"),'Guardian version is not 15.8.0');
     assert(resilience.includes("const VERSION='15.8.0'"),'Resilience version is not 15.8.0');
     assert(flow.includes("const ACK_KEY='pacefold.flow.ack.v1'")&&flow.includes('taskbar-acknowledged'),'Taskbar acknowledgement contract is missing');
@@ -94,10 +103,13 @@ async function main(){
     const resilienceIndex=appHtml.indexOf('data-pacefold-resilience="15.8.0"');
     const hubIndex=appHtml.indexOf('data-pacefold-hub="15.8.0"',resilienceIndex+1);
     const flowIndex=appHtml.indexOf('data-pacefold-flow="15.8.0"',hubIndex+1);
-    assert(guardianIndex>=0&&guardianIndex<resilienceIndex&&resilienceIndex<hubIndex&&hubIndex<flowIndex,'Startup order is not guardian → resilience → hub → integrated');
+    const revampIndex=appHtml.indexOf('data-pacefold-revamp="15.9.0"',flowIndex+1);
+    assert(guardianIndex>=0&&guardianIndex<resilienceIndex&&resilienceIndex<hubIndex&&hubIndex<flowIndex&&flowIndex<revampIndex,'Startup order is not guardian → resilience → hub → integrated → revamp');
     assert((appHtml.match(/data-pacefold-flow="15\.8\.0"/g)||[]).length===2,'Integrated CSS/script markers are not idempotent');
+    assert((appHtml.match(/data-pacefold-revamp="15\.9\.0"/g)||[]).length===2,'Revamp CSS/script markers are not idempotent');
     assert((worker.match(/BEGIN pacefold-resilience-15\.8\.0/g)||[]).length===1,'15.8 worker patch is duplicated');
     assert(worker.includes('notify-water.png')&&worker.includes('fold-mark.png')&&!worker.includes("notify-water.svg';"),'Worker is not using raster notification artwork');
+    assert(worker.includes('requireInteraction:false')&&worker.includes('pacefold-current-cue')&&worker.includes('PACEFOLD_WORK_STATE'),'Worker notification quieting contract is incomplete');
     for(const name of ['fold-mark.png','notify-water.png','notify-eyes.png','notify-move.png','notify-prayer.png','notify-meal.png','notify-prepare.png','notify-away.png'])assert(pngSignature(path.join(root,'app','icons',name)),`${name} is missing or not a valid PNG`);
     const manifests=manifestFiles();
     assert(manifests.length>0,'No Pacefold manifest was found');
@@ -118,19 +130,31 @@ async function main(){
     await page.evaluate(()=>localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify([{id:'existing',body:'Existing note',section:'Daily',date:new Date().toISOString().slice(0,10)}])));
     await page.goto(`http://127.0.0.1:${port}/__flow_host`,{waitUntil:'load'});
     await page.waitForSelector('#pf-flow-dock');
-    await page.waitForFunction(()=>window.__PACEFOLD_FLOW__?.version==='15.8.0'&&typeof window.__PACEFOLD_FLOW__.snooze==='function');
+    await page.waitForFunction(()=>window.__PACEFOLD_FLOW__?.version==='15.8.0'&&window.__PACEFOLD_REVAMP__?.revision==='15.9.0');
 
     mark('architecture');
-    const architecture=await page.evaluate(()=>({
-      roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,version:document.getElementById('pf-flow-dock')?.dataset.version,
-      captureSources:document.querySelectorAll('[data-pf-capture-form][data-pf-flow-source="true"]').length,playerSources:document.querySelectorAll('.pf-player-row[data-pf-flow-source="true"]').length,
-      andonSources:document.querySelectorAll('.pf-andon[data-pf-flow-source="true"]').length,barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,
-      dockCenter:Math.abs((document.getElementById('pf-flow-dock')?.getBoundingClientRect().left||0)+(document.getElementById('pf-flow-dock')?.getBoundingClientRect().width||0)/2-innerWidth/2),
-      unknown:[...document.querySelectorAll('#pf-hub-root [data-pf-action]')].map(node=>node.dataset.pfAction).filter(action=>!window.__PACEFOLD_SURFACE__.actions.includes(action))
-    }));
-    assert(architecture.roots===1&&architecture.docks===1&&architecture.version==='15.8.0',`Integrated architecture is invalid: ${JSON.stringify(architecture)}`);
+    const architecture=await page.evaluate(()=>{
+      const dock=document.getElementById('pf-flow-dock'),bar=document.querySelector('.pf-flow-bar'),player=document.querySelector('.pf-player-row[data-pf-revamp-player="true"]');
+      const title=document.querySelector('[data-pf-revamp-title]'),topNotes=document.querySelector('[data-pf-revamp-top-notes="true"]'),topMedia=document.querySelector('[data-pf-revamp-top-media="true"]');
+      const panelCapture=document.querySelector('.pf-flow-grid>[data-pf-flow-focus-capture]'),panelMedia=document.querySelector('.pf-flow-grid>[data-pf-flow-tool="media"]');
+      const dockRect=dock?.getBoundingClientRect(),playerRect=player?.getBoundingClientRect();
+      return {
+        roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,version:dock?.dataset.version,revision:dock?.dataset.revision,
+        captureSources:document.querySelectorAll('[data-pf-capture-form][data-pf-flow-source="true"]').length,playerSources:document.querySelectorAll('.pf-player-row[data-pf-flow-source="true"]').length,
+        andonSources:document.querySelectorAll('.pf-andon[data-pf-flow-source="true"]').length,barHeight:bar?.getBoundingClientRect().height,
+        dockCenter:Math.abs((dockRect?.left||0)+(dockRect?.width||0)/2-innerWidth/2),dockZ:Number(getComputedStyle(dock).zIndex),playerZ:Number(getComputedStyle(player).zIndex),
+        notesTitle:title?.querySelector('strong')?.textContent,notesTag:title?.tagName,topNotesDisplay:getComputedStyle(topNotes).display,topMediaDisplay:getComputedStyle(topMedia).display,
+        panelCaptureDisplay:getComputedStyle(panelCapture).display,panelMediaDisplay:getComputedStyle(panelMedia).display,
+        playerHeight:playerRect?.height||0,playerBottom:innerHeight-(playerRect?.bottom||0),verticalGap:(playerRect?.top||0)-(dockRect?.bottom||0),
+        unknown:[...document.querySelectorAll('#pf-hub-root [data-pf-action]')].map(node=>node.dataset.pfAction).filter(action=>!window.__PACEFOLD_SURFACE__.actions.includes(action))
+      };
+    });
+    assert(architecture.roots===1&&architecture.docks===1&&architecture.version==='15.8.0'&&architecture.revision==='15.9.0',`Integrated architecture is invalid: ${JSON.stringify(architecture)}`);
     assert(architecture.captureSources===1&&architecture.playerSources===1&&architecture.andonSources===1,'Proven source controls were not retained exactly once');
     assert(architecture.barHeight<=60&&architecture.dockCenter<=2,`Desktop dock geometry failed: ${JSON.stringify(architecture)}`);
+    assert(architecture.notesTitle==='Notes'&&architecture.notesTag==='BUTTON'&&architecture.playerHeight>=40&&architecture.playerBottom<=16&&architecture.verticalGap>=0&&architecture.verticalGap<=18,`Top Notes/lower player geometry failed: ${JSON.stringify(architecture)}`);
+    assert(architecture.topNotesDisplay==='none'&&architecture.topMediaDisplay==='none'&&architecture.panelCaptureDisplay==='none'&&architecture.panelMediaDisplay==='none',`Duplicate controls remained visible: ${JSON.stringify(architecture)}`);
+    assert(architecture.dockZ>=2147483600&&architecture.playerZ>=2147483600&&architecture.dockZ>architecture.playerZ,`Notes/player surfaces can fall under modal dimming: ${JSON.stringify(architecture)}`);
     assert(architecture.unknown.length===0,`Unknown hub actions exist: ${architecture.unknown.join(',')}`);
 
     mark('slash-capture');
@@ -143,6 +167,8 @@ async function main(){
     mark('taskbar-acknowledgement');
     const waterLabel=await addCue(page,'Drink water',/^(?:Drink water|Hydrate)$/i);
     await page.waitForFunction(()=>window.__badgeEvents.some(event=>event[0]==='set'));
+    const badgeFlag=await page.evaluate(()=>window.__badgeEvents.filter(event=>event[0]==='set').at(-1));
+    assert(badgeFlag?.[1]===0&&badgeFlag?.[2]===null,`Badge remained numeric: ${JSON.stringify(badgeFlag)}`);
     await page.locator('[data-pf-flow-pulse]').click();
     await page.waitForFunction(()=>localStorage.getItem('pacefold.flow.ack.v1')&&window.__badgeEvents.some(event=>event[0]==='clear'));
     await page.waitForTimeout(80);
@@ -175,16 +201,38 @@ async function main(){
     const clearedTaskbarState=await page.evaluate(()=>({ack:localStorage.getItem('pacefold.flow.ack.v1'),snooze:localStorage.getItem('pacefold.flow.snooze.v1')}));
     assert(clearedTaskbarState.ack===null&&clearedTaskbarState.snooze===null,`Completed cue left taskbar state behind: ${JSON.stringify(clearedTaskbarState)}`);
 
-    mark('notebook-proxy');
-    await page.locator('[data-pf-flow-tool="notebook"]').first().click();
+    mark('notebook-and-onenote');
+    await page.locator('[data-pf-revamp-title]').click();
     await page.waitForSelector('.pf-notebook');
-    assert(await page.getByText('Flow audit note').isVisible(),'Notebook proxy did not open the persisted capture');
+    assert(await page.getByText('Flow audit note').isVisible(),'Actionable Notes header did not open the persisted capture');
+    await page.locator('[data-pf-revamp-sync]').click();
+    await page.waitForFunction(()=>window.__oneNoteSyncs.length===1,{timeout:12000});
+    const synced=await page.evaluate(()=>window.__oneNoteSyncs[0]);
+    assert(synced?.html?.includes('Flow audit note'),`OneNote did not receive the current Notes page: ${JSON.stringify(synced)}`);
+
+    mark('work-hours');
+    const offHours=await page.evaluate(async()=>{
+      const currentDay=new Date().getDay(),key='pacefold.flow.work-hours.v1';
+      localStorage.setItem(key,JSON.stringify({workStart:'00:00',workEnd:'23:59',workDays:[(currentDay+1)%7]}));
+      window.dispatchEvent(new StorageEvent('storage',{key}));
+      window.__PACEFOLD_REVAMP__.reconcile();
+      await new Promise(resolve=>setTimeout(resolve,180));
+      const before=window.__badgeEvents.filter(event=>event[0]==='set').length;
+      await navigator.setAppBadge(7);
+      const after=window.__badgeEvents.filter(event=>event[0]==='set').length;
+      const clearCount=window.__badgeEvents.filter(event=>event[0]==='clear').length;
+      const state={off:document.documentElement.classList.contains('pf-revamp-offhours'),before,after,clearCount,label:document.querySelector('[data-pf-revamp-hours]')?.textContent};
+      localStorage.removeItem(key);window.dispatchEvent(new StorageEvent('storage',{key}));window.__PACEFOLD_REVAMP__.reconcile();
+      return state;
+    });
+    assert(offHours.off&&offHours.before===offHours.after&&offHours.clearCount>0&&/^Off hours/.test(offHours.label||''),`Work hours were not enforced: ${JSON.stringify(offHours)}`);
+    await page.waitForFunction(()=>!document.documentElement.classList.contains('pf-revamp-offhours'));
 
     mark('root-recovery');
     await page.evaluate(()=>document.getElementById('pf-hub-root').remove());
     await page.waitForFunction(()=>document.querySelectorAll('#pf-hub-root').length===1&&document.querySelectorAll('#pf-flow-dock').length===1,{timeout:4000});
-    await page.evaluate(()=>window.__PACEFOLD_FLOW__.reconcile());
-    assert(await page.locator('#pf-flow-dock').count()===1,'Explicit resilient reconcile did not preserve one dock');
+    await page.waitForFunction(()=>document.getElementById('pf-flow-dock')?.dataset.revision==='15.9.0');
+    assert(await page.locator('.pf-player-row[data-pf-revamp-player="true"]').count()===1,'Revamp did not recover the lower mini-player');
 
     mark('desktop-visual');
     await page.evaluate(()=>window.__PACEFOLD_FLOW__.setPanel(true,false));
@@ -194,7 +242,7 @@ async function main(){
     const launch=await context.newPage();await routeProviders(launch);
     await launch.goto(`http://127.0.0.1:${port}/__flow_host?pf=capture`,{waitUntil:'load'});
     await launch.waitForSelector('#pf-flow-dock');
-    await launch.waitForFunction(()=>document.activeElement?.matches?.('[data-pf-flow-input]'));
+    await launch.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.revision==='15.9.0'&&document.activeElement?.matches?.('[data-pf-flow-input]'));
     const launchState=await launch.evaluate(()=>({focused:document.activeElement?.matches?.('[data-pf-flow-input]'),search:location.search}));
     assert(launchState.focused&&launchState.search==='',`Capture shortcut did not focus and clean the URL: ${JSON.stringify(launchState)}`);
     await launch.close();
@@ -202,14 +250,18 @@ async function main(){
     mark('mobile-visual');
     const mobile=await context.newPage();await routeProviders(mobile);await mobile.setViewportSize({width:390,height:780});
     await mobile.goto(`http://127.0.0.1:${port}/__flow_host`,{waitUntil:'load'});await mobile.waitForSelector('#pf-flow-dock');
+    await mobile.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.revision==='15.9.0');
     const mobileLabel=await addCue(mobile,'Look far for twenty seconds',/^Look far(?: for twenty seconds)?$/i);
     await mobile.evaluate(()=>window.__PACEFOLD_FLOW__.setPanel(true,false));
-    const mobileState=await mobile.evaluate(()=>({roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,dockWidth:document.getElementById('pf-flow-dock')?.getBoundingClientRect().width,overflow:document.documentElement.scrollWidth>innerWidth+2,panelVisible:document.querySelector('[data-pf-flow-panel]')?.hidden===false,cueText:document.querySelector('[data-pf-flow-cue-text]')?.textContent,snoozeVisible:Boolean(document.querySelector('[data-pf-flow-snooze]'))}));
-    assert(mobileState.roots===1&&mobileState.docks===1&&mobileState.barHeight<=60&&!mobileState.overflow&&mobileState.panelVisible&&mobileState.cueText===mobileLabel&&mobileState.snoozeVisible,`Mobile integrated layout failed: ${JSON.stringify(mobileState)}`);
+    const mobileState=await mobile.evaluate(()=>{
+      const player=document.querySelector('.pf-player-row[data-pf-revamp-player="true"]')?.getBoundingClientRect();
+      return {roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,barHeight:document.querySelector('.pf-flow-bar')?.getBoundingClientRect().height,dockWidth:document.getElementById('pf-flow-dock')?.getBoundingClientRect().width,playerHeight:player?.height||0,overflow:document.documentElement.scrollWidth>innerWidth+2,panelVisible:document.querySelector('[data-pf-flow-panel]')?.hidden===false,cueText:document.querySelector('[data-pf-flow-cue-text]')?.textContent,snoozeVisible:Boolean(document.querySelector('[data-pf-flow-snooze]'))};
+    });
+    assert(mobileState.roots===1&&mobileState.docks===1&&mobileState.barHeight<=60&&mobileState.playerHeight>=40&&!mobileState.overflow&&mobileState.panelVisible&&mobileState.cueText===mobileLabel&&mobileState.snoozeVisible,`Mobile integrated layout failed: ${JSON.stringify(mobileState)}`);
     await mobile.screenshot({path:path.join(artifactRoot,'pacefold-flow-mobile.png'),fullPage:true});
 
-    if(errors.some(error=>/pacefold|pf-flow|pf-hub|Unhandled/i.test(error)))throw new Error(`15.8 browser errors: ${errors.join(' | ')}`);
-    console.log(`Pacefold 15.8 integrated audit passed: premium visuals, taskbar quiet/remind/done semantics, self-recovery and responsive captures. Visuals: ${artifactRoot}`);
+    if(errors.some(error=>/pacefold|pf-flow|pf-hub|Unhandled/i.test(error)))throw new Error(`15.9 browser errors: ${errors.join(' | ')}`);
+    console.log(`Pacefold 15.9 integrated audit passed: actionable Notes header, lower mini-player, high-contrast modal layering, nonnumeric notifications, work hours, resilient OneNote and responsive recovery. Visuals: ${artifactRoot}`);
   }finally{
     if(browser)await Promise.race([browser.close().catch(()=>{}),delay(2500)]);
     server.closeAllConnections?.();server.close(()=>{});

@@ -1,143 +1,140 @@
 # Pacefold
 
-**One day, gently folded.**
+**One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. The verified core keeps the clock, schedule and one next useful action primary. Pacefold 15.8 brings the HSSys notebook, current cue, capture, contained media, weather, OneNote and diagnostics into one quiet integrated dock without turning the workday into another dashboard.
+Pacefold is a local-first, installable workday rhythm system. The checksum-verified core remains responsible for schedules, cues, preferences and offline behaviour. The 15.9 surface rebuilds the daily interface around the two compact windows the product actually needs: **Notes above and Music below**.
 
-## Pacefold 15.8 — Integrated quiet dock
+## Pacefold 15.9 — Notes above, Music below
 
-The permanent interface is one centered row, approximately 48 px tall:
+The permanent interface is intentionally simple:
 
-- an origami pulse that reflects calm, new attention or a quieted waiting action;
-- the current actionable cue only when something is waiting;
-- one-line local-first capture;
-- direct Notebook and contained Media access;
-- one disclosure control for the remaining tools.
+- an upper Notes window with an actionable Notes heading, the current cue, one-line capture, OneNote and compact controls;
+- a lower mini-player that remains visible for local audio and contained music services;
+- no HSSys-specific product language or destination naming;
+- no duplicate dashboard, separate timer engine or parallel note store.
 
-The compact command surface opens only when requested and contains the current cue, Capture, Notebook, Media, Weather, OneNote and local diagnostics. The original proven controls remain underneath as the source of truth, so 15.8 does not introduce parallel timers, storage or duplicate action implementations.
+Existing local entries remain in the proven local-first storage path. Internal legacy keys are preserved for migration compatibility, but the user-facing product and generated OneNote destination are generic Pacefold.
 
-At 390 px, the dock condenses to the pulse, cue or capture field, and one controls button. Quiet, Remind 10m and Done remain one balanced action row without horizontal overflow.
+## Upper Notes window
+
+The upper window keeps the current work moment and note capture together without turning the app into a notebook dashboard.
+
+- Write directly into **Write a note…** and press Enter.
+- Slash prefixes still route notes without adding a permanent category picker:
+  - `/incident`
+  - `/follow`
+  - `/inspect`
+  - `/jhsc`
+  - `/construction`
+  - `/notification`
+  - `/resource`
+- Click the **Notes** heading for dated browsing, search, editing, completion and deletion.
+- OneNote is optional; local saving always completes first.
+
+The former top Notes button is removed because the heading itself now opens Notes. Duplicate Capture and Media tiles are also removed from the expanded controls; capture remains in the upper window and music remains in the lower player.
+
+## OneNote reliability
+
+The old proxy assumed that the Notes surface and its sync action would appear in under one second. That was not a realistic assumption on a managed work computer.
+
+15.9 now:
+
+- opens Notes when needed;
+- waits for the real sync action for up to ten seconds using DOM readiness observation plus bounded polling;
+- respects the existing cross-window sync lock;
+- displays accurate preparing, busy, requested and unavailable states without claiming Microsoft success prematurely;
+- keeps local notes even when Microsoft authentication or Graph delivery fails;
+- generates a generic **Pacefold** notebook destination instead of HSSys.
+
+Pacefold still does not store Microsoft passwords. Existing delegated Microsoft authentication and fallback paths remain unchanged.
+
+## Lower mini-player
+
+The proven media row is no longer hidden behind another button. It is restored as the permanent lower window.
+
+- Local audio remains on-device.
+- Drag-and-drop and file-picker loading remain available.
+- YouTube Music and Spotify use contained official embeds.
+- Amazon Music remains best-effort because Amazon can refuse third-party framing.
+- Pacefold does not automatically open an external music window.
+
+The upper Media shortcut is removed from the permanent row because it duplicated the lower player.
+
+## Notifications and taskbar state
+
+15.9 removes the meaningless hard-coded numeric **1** from the app badge. The taskbar state is now a flag: attention is waiting or it is not.
+
+- Only one current Pacefold notification is retained at a time.
+- Repeated cues replace the existing Pacefold toast instead of stacking.
+- Notifications are explicitly non-sticky and non-renotifying.
+- When Pacefold is active, notification cleanup runs on an eight-second bounded cycle.
+- Opening, acknowledging, snoozing, completing or entering off-hours clears notification state without falsely completing the cue.
+- **Done** remains the only action that completes the underlying cue.
+
+## Work hours
+
+The revamp reads the existing Pacefold workday preference structure, including common start/end and active-day fields, and supports overnight work windows.
+
+Outside configured work hours:
+
+- taskbar badges are suppressed and cleared;
+- open Pacefold notifications are closed;
+- new service-worker notifications are suppressed after the app publishes its work state;
+- the waiting cue is visually quieted rather than presented as active work.
+
+The work-state check reconciles every five seconds while the app is visible and immediately after Pacefold preference changes, focus restoration or local-storage updates.
 
 ## Visual system
 
-15.8 replaces platform-dependent text glyphs with an embedded vector icon system and a restrained Japanese notebook material:
+The visual direction is restrained rather than decorative:
 
-- warm paper surfaces with faint ruled texture and a subtle binding line;
-- consistent scalable icons for Capture, Notebook, Media, Weather, OneNote and System;
-- distinct calm, new-attention and quieted-waiting states;
-- dark, light, forced-colour and reduced-motion support;
-- no remote fonts, visual CDNs or image downloads.
+- one compact upper Notes window;
+- one compact lower player window;
+- opaque, readable surfaces that remain above Notes modal dimming layers;
+- no overlapping cards or hidden duplicate media controls;
+- responsive layouts for desktop and 390 px mobile widths;
+- dark, light, forced-colour and reduced-motion support.
 
-The visual layer remains offline-safe and adds no network dependency to startup.
+## Reliability and recovery
 
-## Capture and HSSys notebook
-
-Capture is always available and saves through the existing local-first notebook path. A leading slash routes the note without adding another picker:
-
-- `/incident` → Incidents
-- `/follow` → Follow-ups
-- `/inspect` → Inspections
-- `/jhsc` → JHSC
-- `/construction` → Construction
-- `/notification` → Notifications
-- `/resource` → Resources
-
-Unprefixed notes go to Daily. The full dated HSSys notebook retains search, section tabs, editing, completion and deletion.
-
-## Functional taskbar state
-
-The taskbar badge has one stable meaning: **a new actionable cue has not been acknowledged yet**.
-
-- Opening or focusing Pacefold can quiet the taskbar badge and close Pacefold notifications without completing the action.
-- The first origami-pulse interaction on a new cue performs acknowledgement only.
-- The next interaction opens the compact controls.
-- **Remind 10m** clears the current badge and Pacefold notification, keeps the cue unresolved, and re-arms attention after ten minutes when the same action is still waiting.
-- **Done** remains the only path that completes the current cue.
-- The window title carries the clean actionable label, such as “Drink water” or “Look far,” rather than internal helper text.
-
-Pacefold also adds PWA shortcuts for Current action, Capture, Notebook and Media wherever the installed manifest is available. Notification artwork is generated as source-specific PNG for more dependable Windows rendering.
-
-## Keyboard access
-
-- `Ctrl` + `Shift` + `Space` toggles the compact controls.
-- `/` focuses Capture when no text field is active.
-- `Escape` closes the compact controls.
-
-## OneNote bridge
-
-Local persistence always completes before optional Microsoft delivery. Pacefold uses these paths in order:
-
-1. an existing Pacefold OneNote adapter;
-2. an already-connected MSAL session with the required OneNote scopes;
-3. Windows Share, where OneNote can be selected;
-4. Copy Page for manual paste.
-
-The intended destination remains the **HSSys** notebook and a **Pacefold** section. Identical page sends share one in-flight request, cross-window locks end when the real request settles or safely times out, and failed delivery never removes the local page. Pacefold does not store Microsoft passwords or access tokens.
-
-## Contained player
-
-- YouTube Music and Spotify use official embeds.
-- Amazon accepts an official regional playlist, album, station or track URL, removes tracking parameters and preserves that exact cleaned link.
-- Amazon playback remains best-effort because Amazon can refuse third-party framing.
-- Pacefold never automatically opens an external player window.
-- Local audio remains on-device and supports picker and drag-and-drop paths.
-
-## Reliability and self-recovery
-
-- Malformed notebook data is removed only after a verified recovery copy succeeds.
-- Setup owns the screen completely; rapid onboarding transitions cannot restore stale UI.
-- Ordinary content containing “get started” cannot be mistaken for setup.
-- Repeated diagnostics collapse into counted, privacy-redacted records.
-- Duplicate capture, provider, cue and OneNote actions are centrally suppressed.
-- Repeated injection replaces old assets and service-worker blocks instead of stacking them.
-- The verified core remains the sole owner of Pacefold’s offline caches.
-- Integrated mount, observer and reconcile failures are sent to the bounded resilience journal; the dock discards the damaged surface and performs a fresh bounded remount rather than leaving dead controls.
-- Completing a cue clears acknowledgement and reminder state so a future cue cannot inherit stale taskbar behaviour.
-
-## Security and privacy
-
-- Every original Pacefold action remains registered and audited.
-- Provider URLs are restricted to official allowlists.
-- Player frames use `no-referrer`, a narrow Content Security Policy and a sandbox that cannot escape through popups.
-- Rhythm data, notebook entries, recovery copies, sync queue, preferences, reminders and diagnostics remain on the device.
-- Weather requests contain forecast coordinates.
-- Microsoft page content is sent only when OneNote synchronization or Windows Share is explicitly used.
-- Pacefold contains no account system, analytics or advertising.
-
-## Honest platform boundaries
-
-Microsoft Edge PWAs support taskbar badges, notification actions and right-click shortcuts. Windows does not let a website intercept the pinned-icon click before the app receives focus, distinguish single from double clicks on the Windows taskbar itself, or continuously redraw the pinned icon face. Pacefold therefore makes acknowledgement, badge clearing, ten-minute re-alerting, notifications, launch shortcuts and the in-app pulse seamless within the web-platform boundary. Exact pre-focus taskbar-click behaviour would require a native Windows companion.
-
-Amazon Music does not provide the same generally available iframe playback contract as YouTube or Spotify. Pacefold can preserve and attempt to contain an official Amazon URL, but Amazon can still refuse to render it inside another application.
+- The verified core remains the only owner of schedules, offline caches and action completion.
+- The revamp mounts after the integrated surface and reattaches after bounded root recovery.
+- Existing note data is not renamed, discarded or migrated destructively.
+- Duplicate capture, OneNote and cue actions remain guarded.
+- Service-worker patches remain idempotent and replace earlier injected blocks rather than accumulating.
+- Runtime failures continue to report through the bounded, privacy-redacted resilience journal.
 
 ## Validation
 
-GitHub Actions reconstructs the checksum-verified core release, runs the original static, browser, offline, notification-action and installed-upgrade suite, injects the integrated surface twice, and then requires three independent browser suites:
+GitHub Actions reconstructs the checksum-verified release, injects the surface twice, and runs the existing core, offline, notification, storage and recovery gates.
 
-1. Notebook and provider integration;
-2. destructive resilience and recovery injection;
-3. integrated dock, taskbar semantics and desktop/mobile visual capture.
+The integrated browser gate additionally verifies:
 
-The 15.8 gate verifies exact single-root and single-dock architecture, slash capture exactly once, acknowledgement without false completion, ten-minute reminder persistence without completion, explicit Done completion and stale-state cleanup, Notebook proxying, self-reconcile, root restoration, launch shortcuts, clean actionable labels, vector-icon and notebook visual contracts, a dock no taller than 60 px and no 390 px overflow.
+- exactly one upper Notes window and one lower mini-player;
+- the Notes heading opens the real Notes surface;
+- redundant top Notes/Media and expanded Capture/Media controls remain hidden;
+- the Notes dock and player remain above notebook modal dimming layers;
+- desktop and 390 px geometry without horizontal overflow;
+- nonnumeric taskbar badge calls;
+- notification replacement and off-hours suppression contracts;
+- local capture and slash routing exactly once;
+- generic Pacefold OneNote delivery;
+- root recovery without duplicate docks or players;
+- desktop and mobile visual captures.
 
-Core release SHA-256:
+## Install or refresh
 
-`2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`
-
-Surface version:
-
-`15.8.0`
-
-## Install
-
-1. Open `https://rbt4.github.io/pacefold/` in Microsoft Edge.
-2. Complete setup before installing.
+1. Open the Pacefold GitHub Pages app in Microsoft Edge.
+2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 15.8 deploys, fully close every Pacefold and Edge PWA window once, then reopen Pacefold so the new worker, PNG notification assets, shortcuts and integrated shell replace cached 15.7 files.
+4. After 15.9 deploys, fully close every Pacefold and Edge PWA window once, then reopen Pacefold so the new cache-busted assets and service worker replace 15.8.
+
+## Honest platform boundaries
+
+A browser PWA cannot intercept the Windows taskbar click before focus, distinguish taskbar single-click from double-click, or continuously redraw the pinned icon face. A native Windows companion would be required for those behaviours.
+
+Browser timers also cannot guarantee exact delivery while the app is closed, heavily throttled or the laptop is asleep. Pacefold remains honest about that boundary rather than manufacturing stale alerts.
 
 ## Version
 
-Pacefold 15.8.0 integrated surface over Pacefold core 15.2.2
-## Foreground reminder boundary
-
-Pacefold reminds reliably while its window is open and the device is awake. Browser timers cannot guarantee exact delivery while the window is closed, heavily throttled or the laptop is asleep. Pacefold reports missed scheduled moments with their real time instead of firing a stale notification. Exact background delivery requires the optional native Windows companion.
+Pacefold 15.9.0 revamp surface over the verified Pacefold 15.8 integrated runtime and 15.2.2 core archive.
