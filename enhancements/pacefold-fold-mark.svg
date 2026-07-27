@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Pacefold folded P mark</title>
+  <desc id="desc">A minimalist letter P assembled from folded geometric paper planes.</desc>
+  <path d="M13 7h23.5C48.3 7 56 14.2 56 24.8 56 35.6 48 43 36 43h-8v14H13V7Z" fill="#315f4d"/>
+  <path d="M28 7h9c10.8 0 19 7.1 19 17.8L43.2 20 28 7Z" fill="#769d8b"/>
+  <path d="M28 20h9.2c4 0 6.8 2 6.8 5.3 0 3.5-2.9 5.7-7.2 5.7H28V20Z" fill="#f2f4f1"/>
+  <path d="M28 31h8.8c4.3 0 7.2-2.2 7.2-5.7L53 34.8C49.4 40 43.5 43 36 43h-8V31Z" fill="#9ab5a8"/>
+  <path d="M13 7 28 20v37H13V7Z" fill="#24483a" opacity=".92"/>
+  <path d="M13 7h15v13L13 7Z" fill="#d9e2dd" opacity=".95"/>
+  <path d="M28 20 43.2 20 28 7v13Z" fill="#5e8875"/>
+</svg>
