@@ -2,14 +2,14 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core still owns schedules, cues, preferences and offline behaviour. Pacefold 16.0 replaces the failed cloud-notebook direction with two deliberately separate local surfaces:
+Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core still owns schedules, cues, preferences and offline behaviour. Pacefold 16 keeps two deliberately separate local surfaces:
 
 - an integrated working notebook anchored at the bottom of Pacefold;
 - a bottom-most black local-audio player with its own queue, library and playlists.
 
 There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
 
-## Pacefold 16.0 — local workspace
+## Pacefold 16 — local workspace
 
 The notebook is now a working document rather than a launcher.
 
@@ -116,25 +116,26 @@ The 15.9 notification corrections remain in place:
 
 The verified core remains the only owner of completing the actual cue. Notebook and player actions do not complete reminders accidentally.
 
-## Responsive behaviour
+## Desktop layout stabilization
 
-Desktop uses the full working-document layout. Narrow screens retain:
+Pacefold 16.1.1 treats the installed app as a desktop workspace rather than several floating overlays.
 
-- the compact cue/capture row;
-- the notebook document;
-- horizontally scrolling category tabs;
-- the bottom black player;
-- a full-width player drawer for queue, library and playlists.
+- The player bar owns a reserved bottom lane and cannot cover the notebook.
+- On wide windows, an open music drawer sits beside the notebook.
+- On compact desktop windows, the drawer receives a fixed lower lane and the notebook moves above it.
+- Narrow fallback windows show one major surface at a time instead of stacking translucent layers.
+- Notebook toolbars, menus and note content use internal scrolling and width constraints rather than spilling outside the app.
+- Persistent compositor hints were removed from the large panels to reduce flicker, blurry text and stale animation layers.
 
-The release gate checks desktop and 390 px layouts for overflow, separation and root recovery.
+The release audit checks that the stabilization layer is injected after the origami layer and that its collision-prevention contracts remain present.
 
 ## Install or refresh
 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 16.0 deploys, fully close every Pacefold and Edge PWA window once.
-5. Reopen Pacefold so the `16.0.0` cache-busted notebook and player replace the older surface.
+4. After 16.1.1 deploys, fully close every Pacefold and Edge PWA window once.
+5. Reopen Pacefold so the cache-busted desktop stabilization layer replaces the older surface.
 
 ## Honest platform boundaries
 
@@ -144,4 +145,4 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 16.0.0 local workspace over the verified Pacefold 15.8 integrated runtime and 15.2.2 core archive.
+Pacefold 16.1.1 desktop stabilization over the verified Pacefold 15.8 integrated runtime and 15.2.2 core archive.

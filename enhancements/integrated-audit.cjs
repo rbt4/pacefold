@@ -25,6 +25,32 @@ for(const token of [
   const combined=`${origamiCss}\n${polishCss}`;
   if(!combined.includes(token))throw new Error(`Pacefold origami polish token missing: ${token}`);
 }
+const stabilityCss=fs.readFileSync(path.join(__dirname,'pacefold-desktop-stability.css'),'utf8');
+for(const token of [
+  '--pf-drawer-stack-height',
+  '#pf-local-player>.pf-player-bar',
+  '#pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace',
+  '@media (min-width:1180px)',
+  '@media (min-width:761px) and (max-width:1179px)',
+  'bottom:calc(var(--pf-player-bottom) + var(--pf-player-bar-height) + var(--pf-layer-gap))',
+  'will-change:auto!important',
+  'overflow-x:clip!important'
+]){
+  if(!stabilityCss.includes(token))throw new Error(`Pacefold desktop-stability audit token missing: ${token}`);
+}
+if((stabilityCss.match(/\{/g)||[]).length!==(stabilityCss.match(/\}/g)||[]).length){
+  throw new Error('Pacefold desktop-stability CSS braces are unbalanced');
+}
+const injectSource=fs.readFileSync(path.join(__dirname,'inject.mjs'),'utf8');
+for(const token of [
+  "const stabilityMarker='pacefold-16.1.1-desktop-stability'",
+  "const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css')",
+  "await applyStabilityPatch(path.join(sourceRoot,'pacefold-revamp.css'))",
+  "await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'))",
+  "pacefold.visual-reset.16.1.1"
+]){
+  if(!injectSource.includes(token))throw new Error(`Pacefold desktop-stability injection token missing: ${token}`);
+}
 const foldMark=fs.readFileSync(path.join(__dirname,'pacefold-fold-mark.svg'),'utf8');
 for(const token of ['<svg','Pacefold folded P mark','viewBox="0 0 64 64"']){
   if(!foldMark.includes(token))throw new Error(`Pacefold fold-mark audit token missing: ${token}`);
