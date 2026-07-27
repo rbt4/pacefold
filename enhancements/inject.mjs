@@ -6,6 +6,7 @@ import { rewriteInnerHTMLAssignments } from '../scripts/trusted-types-transform.
 const trustedBootstrap="(()=>{if(window.__PACEFOLD_SET_HTML__)return;window.__PACEFOLD_SET_HTML__=(node,value)=>{if(!node)return node;const html=window.__PACEFOLD_TRUSTED_HTML__?window.__PACEFOLD_TRUSTED_HTML__(String(value)):String(value);Reflect.set(node,'innerHTML',html);return node;};})();\n";
 
 const VERSION='15.8.0';
+const ASSET_REVISION='15.8.4';
 const MARKER=`pacefold-resilience-${VERSION}`;
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -28,14 +29,14 @@ let html=extendContentSecurityPolicy(await fs.readFile(appHtml,'utf8'));
 html=ensureThemeColor(html);
 html=removeOldSurfaceAssets(html);
 const styles=[
-  `<link rel="stylesheet" href="./pacefold-hub.css?v=${VERSION}" data-pacefold-hub="${VERSION}">`,
-  `<link rel="stylesheet" href="./pacefold-integrated.css?v=${VERSION}" data-pacefold-flow="${VERSION}">`
+  `<link rel="stylesheet" href="./pacefold-hub.css?v=${ASSET_REVISION}" data-pacefold-hub="${VERSION}">`,
+  `<link rel="stylesheet" href="./pacefold-integrated.css?v=${ASSET_REVISION}" data-pacefold-flow="${VERSION}">`
 ].join('\n');
 const scripts=[
-  `<script defer src="./pacefold-hub-guardian.js?v=${VERSION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
-  `<script defer src="./pacefold-resilience.js?v=${VERSION}" data-pacefold-resilience="${VERSION}"></script>`,
-  `<script defer src="./pacefold-hub.js?v=${VERSION}" data-pacefold-hub="${VERSION}"></script>`,
-  `<script defer src="./pacefold-integrated.js?v=${VERSION}" data-pacefold-flow="${VERSION}"></script>`
+  `<script defer src="./pacefold-hub-guardian.js?v=${ASSET_REVISION}" data-pacefold-hub-guardian="${VERSION}"></script>`,
+  `<script defer src="./pacefold-resilience.js?v=${ASSET_REVISION}" data-pacefold-resilience="${VERSION}"></script>`,
+  `<script defer src="./pacefold-hub.js?v=${ASSET_REVISION}" data-pacefold-hub="${VERSION}"></script>`,
+  `<script defer src="./pacefold-integrated.js?v=${ASSET_REVISION}" data-pacefold-flow="${VERSION}"></script>`
 ].join('\n');
 html=injectBefore(html,'</head>',styles);
 html=injectBefore(html,'</body>',scripts);
