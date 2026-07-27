@@ -1,467 +1,155 @@
 (() => {
 'use strict';
 
-const VERSION='15.8.0';
+const VERSION='16.0.0';
 const ROOT_ID='pf-hub-root';
-const DOCK_ID='pf-flow-dock';
-const ACK_KEY='pacefold.flow.ack.v1';
-const SNOOZE_KEY='pacefold.flow.snooze.v1';
-const PANEL_KEY='pacefold.flow.panel.v1';
+const SHELL_ID='pf-calm-shell';
 const ENTRY_KEY='pacefold.notebook.entries.v2';
-const SYNC_LOCK_KEY='pacefold.resilience.lock.sync-page.v1';
-const COMMANDS={
-  daily:'Daily',note:'Daily',follow:'Follow-ups',followup:'Follow-ups','follow-up':'Follow-ups',
-  incident:'Incidents',incidents:'Incidents',inspect:'Inspections',inspection:'Inspections',
-  jhsc:'JHSC',construction:'Construction',notification:'Notifications',notifications:'Notifications',
-  resource:'Resources',resources:'Resources'
-};
-const ACTIONS={
-  notebook:['open-notebook'],media:['open-player'],weather:['open-weather','show-weather','weather'],
-  system:['open-system','open-diagnostics','diagnostics'],cue:['handle-cue'],sync:['sync-page']
-};
-const RITUAL_COPY=new Map([
-  ['Sip pace','Sip'],['Prep 30m','Prep 30m'],['Away break','Step away'],['Desk meal 20m','Eat 20m'],['Look far','Look far']
-]);
-const originalTitle=document.title;
-let root=null;
-let dock=null;
-let frame=0;
-let clickTimer=0;
-let statusTimer=0;
-let snoozeTimer=0;
-let mountedRoot=null;
-let foldObserver=null;
-let foldSources=null;
-let cueState={waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true,snoozed:false,snoozeUntil:0,snoozeMinutes:0};
+const ACK_KEY='pacefold.flow.ack.v2';
+const PANEL_KEY='pacefold.calm.panel.v1';
+const ACTIONS={notebook:['open-notebook'],media:['open-player'],cue:['handle-cue'],sync:['sync-page'],system:['open-system','open-diagnostics']};
+let root=null,shell=null,frame=0,statusTimer=0,observer=null;
+let state={waiting:false,text:'Nothing waiting',fingerprint:'',acknowledged:true,inHours:true,workLabel:'Work hours'};
 
-function safeParse(raw,fallback){try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}}
-function compactText(value){return String(value||'').replace(/\s+/g,' ').trim();}
-function clamp(value,min,max){return Math.min(max,Math.max(min,value));}
-function hash(value){let result=2166136261;for(const char of String(value)){result^=char.charCodeAt(0);result=Math.imul(result,16777619);}return (result>>>0).toString(36);}
-function today(){return new Date().toISOString().slice(0,10);}
-function reportError(kind,error){try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`flow-${kind}`,error);}catch{}}
-function guarded(kind,callback){return function(...args){try{return callback.apply(this,args);}catch(error){reportError(kind,error);try{showStatus('Pacefold recovered from a display error.','warning');}catch{}setTimeout(queueMount,100);return undefined;}};}
+const safeParse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
+const text=value=>String(value??'').replace(/\s+/g,' ').trim();
+const hash=value=>{let n=2166136261;for(const char of String(value)){n^=char.charCodeAt(0);n=Math.imul(n,16777619);}return (n>>>0).toString(36);};
+const actions=()=>Array.isArray(window.__PACEFOLD_SURFACE__?.actions)?window.__PACEFOLD_SURFACE__.actions:[];
+function originalAction(name){return [...(root?.querySelectorAll('[data-pf-action]:not([data-pf-calm-proxy])')||[])].find(node=>node.dataset.pfAction===name)||null;}
+function resolveAction(kind){for(const name of ACTIONS[kind]||[]){const control=originalAction(name);if(control)return control;}const token=kind==='media'?'player':kind;const fuzzy=actions().find(name=>String(name).includes(token));return fuzzy?originalAction(fuzzy):null;}
+function forward(kind){const control=resolveAction(kind);if(!control){showStatus(`${kind[0].toUpperCase()+kind.slice(1)} is unavailable.`,'warning');return false;}control.click();return true;}
 function setupVisible(){return Boolean(window.__PACEFOLD_GUARDIAN__?.setupVisible?.());}
-function allActions(){return Array.isArray(window.__PACEFOLD_SURFACE__?.actions)?window.__PACEFOLD_SURFACE__.actions:[];}
-function originalAction(name){return [...(root?.querySelectorAll('[data-pf-action]:not([data-pf-flow-proxy])')||[])].find(control=>control.dataset.pfAction===name)||null;}
+function report(kind,error){try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`calm-${kind}`,error);}catch{}}
 
-function leafElements(scope=document){
-  return [...scope.querySelectorAll('button,span,p,small,strong,b,label,div,h1,h2,h3,h4')].filter(node=>node.children.length===0);
-}
-function replaceCopy(from,to,scope=document){
-  for(const node of leafElements(scope))if(compactText(node.textContent)===from&&node.textContent!==to)node.textContent=to;
-}
-function setupScope(){
-  const heading=leafElements(document).find(node=>compactText(node.textContent)==='Choose your rhythm');
-  return heading?.closest('[role="dialog"],dialog,.setup,.onboarding,.setup-screen,section,main')||null;
-}
-function applyCopyPass(){
-  const scope=setupScope();
-  replaceCopy('Finish setup / Install Pacefold for the cleanest taskbar experience.','Install Pacefold to pin it to your taskbar.');
-  replaceCopy('Finish setup / Install Pacefold for the cleanest taskbar experience','Install Pacefold to pin it to your taskbar.');
-  if(scope){
-    const kicker=leafElements(scope).find(node=>compactText(node.textContent)==='Pacefold setup');
-    if(kicker&&!kicker.hidden){kicker.hidden=true;kicker.setAttribute('aria-hidden','true');kicker.dataset.pfCopyHidden='true';}
-  }
-  const status=document.getElementById('statusLine');
-  const tooltip='Click to start the pause. Click again when you’re back.';
-  if(status){
-    const previous=compactText(status.getAttribute('title'));
-    if(previous!==tooltip)status.setAttribute('title',tooltip);
-    if(scope&&!scope.querySelector('[data-pf-onboarding-pause-help]')){
-      const help=document.createElement('p');
-      help.className='pf-onboarding-pause-help';
-      help.dataset.pfOnboardingPauseHelp='true';
-      help.textContent=previous&&previous!==tooltip
-        ?previous
-        :'The status line starts and ends a pause. Click once when you step away, then click again when you return.';
-      const heading=leafElements(scope).find(node=>compactText(node.textContent)==='Choose your rhythm');
-      (heading?.parentElement||scope).append(help);
-    }
-  }
-  for(const [from,to] of RITUAL_COPY)replaceCopy(from,to);
-}
-function parsePercent(value){
-  const match=String(value||'').trim().match(/^(-?\d+(?:\.\d+)?)%$/);
-  return match?clamp(Number(match[1]),0,100):NaN;
-}
-function progressPercent(progress){
-  const fill=progress?.querySelector('.progress-fill');
-  const candidates=[
-    fill?.style?.width,
-    fill?.style?.getPropertyValue('--progress'),
-    progress?.style?.getPropertyValue('--progress'),
-    fill?.getAttribute('aria-valuenow'),
-    progress?.getAttribute('aria-valuenow')
-  ];
-  for(const value of candidates){
-    const text=String(value??'').trim();
-    if(!text)continue;
-    const percent=parsePercent(text);
-    if(Number.isFinite(percent))return percent;
-    const numeric=Number(text);
-    if(Number.isFinite(numeric)&&numeric>=0&&numeric<=100)return numeric;
-  }
-  if(fill&&progress&&!progress.hasAttribute('hidden')){
-    const outer=progress.getBoundingClientRect();
-    const inner=fill.getBoundingClientRect();
-    if(outer.width>0&&inner.width>=0)return clamp(inner.width/outer.width*100,0,100);
-  }
-  return 0;
-}
-function markFraction(mark,sequence,index,count){
-  const stored=Number(mark.dataset.pfFoldFraction);
-  if(Number.isFinite(stored))return clamp(stored,0,100);
-  const raw=[
-    mark.style.left,mark.style.insetInlineStart,
-    mark.style.getPropertyValue('--left'),mark.style.getPropertyValue('--position'),
-    mark.style.getPropertyValue('--at'),mark.dataset.position,mark.dataset.at,mark.dataset.fraction
-  ];
-  let fraction=NaN;
-  for(const value of raw){
-    const text=String(value??'').trim();
-    if(!text)continue;
-    fraction=parsePercent(text);
-    if(Number.isFinite(fraction))break;
-    const numeric=Number(text);
-    if(Number.isFinite(numeric)){fraction=numeric<=1?numeric*100:numeric;break;}
-  }
-  if(!Number.isFinite(fraction)&&!sequence.hasAttribute('data-pf-fold-source')){
-    const outer=sequence.getBoundingClientRect();
-    const rect=mark.getBoundingClientRect();
-    if(outer.width>0)fraction=(rect.left+rect.width/2-outer.left)/outer.width*100;
-  }
-  if(!Number.isFinite(fraction))fraction=count>1?index/(count-1)*100:50;
-  fraction=clamp(fraction,0,100);
-  mark.dataset.pfFoldFraction=String(fraction);
-  return fraction;
-}
-function foldMoments(sequence,progress){
-  let marks=[...sequence.querySelectorAll('.sequence-mark')];
-  if(!marks.length)marks=[...sequence.querySelectorAll('[data-code]')].filter(node=>node.closest('.sequence')===sequence);
-  const moments=marks.map((mark,index)=>({
-    mark,
-    fraction:markFraction(mark,sequence,index,marks.length),
-    code:compactText(mark.dataset.code||mark.getAttribute('aria-label')||mark.textContent)||`Moment ${index+1}`,
-    namedCurrent:/(?:^|\s)(?:is-)?(?:active|current|now)(?:\s|$)/i.test(mark.className)||mark.matches('[aria-current="true"],[data-current="true"]'),
-    namedPassed:/(?:^|\s)(?:is-)?(?:done|passed|complete)(?:\s|$)/i.test(mark.className)||mark.matches('[data-passed="true"],[data-complete="true"]')
-  })).sort((a,b)=>a.fraction-b.fraction);
-  const explicit=moments.findIndex(item=>item.namedCurrent);
-  let current=explicit;
-  if(current<0&&moments.length){
-    current=moments.reduce((best,item,index)=>Math.abs(item.fraction-progress)<Math.abs(moments[best].fraction-progress)?index:best,0);
-  }
-  return moments.map((item,index)=>({...item,state:index===current?'current':item.namedPassed||item.fraction<progress-.15?'passed':'future'}));
-}
-function creaseLayer(moment){
-  const point=moment.fraction.toFixed(3);
-  if(moment.state==='current'){
-    return `linear-gradient(90deg,transparent 0 calc(${point}% - .5px),var(--cue,var(--accent)) calc(${point}% - .5px) calc(${point}% + .5px),color-mix(in srgb,#fff 24%,transparent) calc(${point}% + .5px) calc(${point}% + 3.5px),transparent calc(${point}% + 3.5px) 100%)`;
-  }
-  if(moment.state==='passed'){
-    return `linear-gradient(90deg,transparent 0 calc(${point}% - .5px),color-mix(in srgb,var(--ink) 14%,transparent) calc(${point}% - .5px) calc(${point}% + .5px),color-mix(in srgb,#fff 22%,transparent) calc(${point}% + .5px) calc(${point}% + 3.5px),transparent calc(${point}% + 3.5px) 100%)`;
-  }
-  return `linear-gradient(90deg,transparent 0 calc(${point}% - .5px),color-mix(in srgb,var(--ink) 12%,transparent) calc(${point}% - .5px) calc(${point}% + .5px),transparent calc(${point}% + .5px) 100%)`;
-}
-function renderFoldStrip(strip,moments,progress){
-  strip.style.setProperty('--fold-progress',`${progress.toFixed(3)}%`);
-  strip.style.setProperty('--fold-creases',moments.length?moments.map(creaseLayer).join(','):'none');
-  const existing=[...strip.querySelectorAll('.fold-crease')];
-  moments.forEach((moment,index)=>{
-    const node=existing[index]||document.createElement('span');
-    if(!existing[index]){node.className='fold-crease';node.setAttribute('aria-hidden','true');strip.append(node);}
-    node.dataset.code=moment.code;
-    node.dataset.state=moment.state;
-    node.style.setProperty('--fold-left',`${moment.fraction.toFixed(3)}%`);
-  });
-  existing.slice(moments.length).forEach(node=>node.remove());
-  const passed=moments.filter(item=>item.state==='passed').length;
-  strip.setAttribute('aria-label',`Workday ${Math.round(progress)}% folded. ${passed} of ${moments.length} scheduled moments passed.`);
-}
-function observeFoldSources(progress,sequence){
-  if(foldSources?.progress===progress&&foldSources?.sequence===sequence)return;
-  foldObserver?.disconnect();
-  foldSources={progress,sequence};
-  foldObserver=new MutationObserver(guarded('fold-observer',updateFoldStrip));
-  foldObserver.observe(progress,{attributes:true,childList:true,subtree:true,characterData:true});
-  foldObserver.observe(sequence,{attributes:true,childList:true,subtree:true,characterData:true});
-}
-function updateFoldStrip(){
-  const progress=document.querySelector('.progress');
-  const sequence=document.querySelector('.sequence');
-  if(!progress||!sequence)return;
-  const value=progressPercent(progress);
-  const moments=foldMoments(sequence,value);
-  let strip=document.querySelector('.fold-strip[data-pf-fold-strip]');
-  if(!strip){
-    strip=document.createElement('div');
-    strip.className='fold-strip';
-    strip.dataset.pfFoldStrip='true';
-    strip.setAttribute('role','img');
-    progress.parentNode?.insertBefore(strip,progress);
-  }
-  if(progress.dataset.pfFoldSource!=='true')progress.dataset.pfFoldSource='true';
-  if(progress.getAttribute('aria-hidden')!=='true')progress.setAttribute('aria-hidden','true');
-  if(sequence.dataset.pfFoldSource!=='true')sequence.dataset.pfFoldSource='true';
-  if(sequence.getAttribute('aria-hidden')!=='true')sequence.setAttribute('aria-hidden','true');
-  renderFoldStrip(strip,moments,value);
-  observeFoldSources(progress,sequence);
-}
-function enhanceCoreSurface(){applyCopyPass();updateFoldStrip();}
+function entries(){try{const value=safeParse(localStorage.getItem(ENTRY_KEY),[]);return Array.isArray(value)?value:[];}catch{return [];}}
+function entryText(item){return text(item?.text||item?.body||item?.content||item?.title||'Untitled note');}
+function entrySection(item){return text(item?.section||item?.category||'Notes');}
+function entryDate(item){const raw=item?.updatedAt||item?.createdAt||item?.timestamp||item?.date;const date=raw?new Date(raw):null;return date&&!Number.isNaN(date.valueOf())?date.toLocaleDateString(undefined,{month:'short',day:'numeric'}):text(item?.date||'');}
 
-function resolveAction(kind){
-  for(const name of ACTIONS[kind]||[]){const control=originalAction(name);if(control)return {name,control};}
-  const token=kind==='media'?'player':kind;
-  const fuzzy=allActions().find(name=>String(name).includes(token));
-  return fuzzy?{name:fuzzy,control:originalAction(fuzzy)}:null;
+function clockMinutes(value){const match=String(value||'').match(/(?:^|\s)(\d{1,2}):(\d{2})(?:\s|$)/);if(!match)return null;const h=Number(match[1]),m=Number(match[2]);return h>=0&&h<24&&m>=0&&m<60?h*60+m:null;}
+function findTimePair(value,depth=0){
+  if(!value||typeof value!=='object'||depth>5)return null;
+  const pairs=[['workStart','workEnd'],['workdayStart','workdayEnd'],['startTime','endTime'],['dayStart','dayEnd'],['start','end']];
+  for(const [a,b] of pairs){const start=clockMinutes(value[a]),end=clockMinutes(value[b]);if(start!=null&&end!=null)return {start,end};}
+  for(const [key,child] of Object.entries(value)){if(!/work|schedule|hours|profile|prefs|settings/i.test(key))continue;const found=findTimePair(child,depth+1);if(found)return found;}
+  return null;
 }
-function forward(kind){
-  const match=resolveAction(kind);
-  if(!match?.control){showStatus(`${kind[0].toUpperCase()+kind.slice(1)} is unavailable here.`,'warning');return false;}
-  match.control.click();
-  return true;
+function workWindow(){
+  let pair=null;
+  try{
+    for(let i=0;i<localStorage.length&&!pair;i+=1){const key=localStorage.key(i)||'';if(!/pacefold/i.test(key))continue;const raw=localStorage.getItem(key);if(!raw||raw.length>250000)continue;pair=findTimePair(safeParse(raw,null));}
+  }catch{}
+  if(!pair)return {active:true,label:'Work hours'};
+  const now=new Date(),minutes=now.getHours()*60+now.getMinutes(),day=now.getDay();
+  const weekday=day!==0&&day!==6;
+  const within=pair.start<=pair.end?minutes>=pair.start&&minutes<pair.end:minutes>=pair.start||minutes<pair.end;
+  const format=n=>new Date(2000,0,1,Math.floor(n/60),n%60).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+  return {active:weekday&&within,label:`${format(pair.start)}–${format(pair.end)}`};
 }
-function notebookEntries(){try{const value=safeParse(localStorage.getItem(ENTRY_KEY),[]);return Array.isArray(value)?value:[];}catch{return [];}}
-function todayCount(){return notebookEntries().filter(item=>item?.date===today()).length;}
-function currentAck(){try{return safeParse(localStorage.getItem(ACK_KEY),null);}catch{return null;}}
-function currentSnooze(){try{return safeParse(localStorage.getItem(SNOOZE_KEY),null);}catch{return null;}}
-function snoozeFor(fingerprint){
-  const value=currentSnooze();
-  const until=Number(value?.until)||0;
-  if(!value||value.fingerprint!==fingerprint)return {active:false,until:0,minutes:0};
-  if(until<=Date.now()){
-    try{localStorage.removeItem(SNOOZE_KEY);}catch{}
-    return {active:false,until:0,minutes:0};
-  }
-  return {active:true,until,minutes:Math.max(1,Math.ceil((until-Date.now())/60000))};
-}
-function clearCueTaskbarState(){
-  clearTimeout(snoozeTimer);snoozeTimer=0;
-  try{localStorage.removeItem(ACK_KEY);localStorage.removeItem(SNOOZE_KEY);}catch{}
-}
-function cleanCueText(value){
-  let text=compactText(value);
-  text=text.split(/Open Pacefold|Quietly keeping pace|Open this moment|to this moment|\bDone\b|\bClear\b|\bLog\b|\bHandle\b/i)[0];
-  return compactText(text).slice(0,80);
-}
-function cueLabel(andon,handler){
-  const selector='[data-pf-cue-label],[data-pf-label],.pf-andon-title,.pf-andon-label,strong,b';
-  const candidates=[handler?.querySelector(selector),andon?.querySelector(selector),handler?.querySelector('span:not([aria-hidden="true"])'),andon?.querySelector('span:not([aria-hidden="true"])')];
-  for(const candidate of candidates){
-    const text=cleanCueText(candidate?.textContent);
-    if(text&&!/^(?:open pacefold|quietly keeping pace|action waiting)$/i.test(text))return text;
-  }
-  const source=handler||andon;
-  if(source){
-    const clone=source.cloneNode(true);
-    clone.querySelectorAll('small,button,kbd,[aria-hidden="true"],.sr-only,.pf-sr-only').forEach(node=>node.remove());
-    const text=cleanCueText(clone.textContent);
-    if(text)return text;
-  }
-  return cleanCueText(andon?.textContent||handler?.textContent||'')||'Action waiting';
+
+function cueText(andon,handler){
+  const candidates=[andon?.querySelector('[data-pf-cue-label],.pf-andon-title,.pf-andon-label,strong,b'),handler?.querySelector('strong,b,span')];
+  for(const node of candidates){const value=text(node?.textContent).split(/Open Pacefold|Quietly keeping pace|\bDone\b|\bClear\b/i)[0].trim();if(value)return value.slice(0,90);}
+  return text(andon?.textContent||handler?.textContent||'Action waiting').slice(0,90);
 }
 function readCue(){
-  if(!root)return {waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true,snoozed:false,snoozeUntil:0,snoozeMinutes:0};
-  const andon=root.querySelector('.pf-andon');
-  const handler=originalAction('handle-cue');
+  if(!root)return {waiting:false,text:'Nothing waiting',fingerprint:'',acknowledged:true};
+  const andon=root.querySelector('.pf-andon');const handler=resolveAction('cue');
   const waiting=Boolean(andon?.classList.contains('is-waiting')||andon?.matches('[data-state="waiting"],[data-waiting="true"]'));
-  if(!waiting)return {waiting:false,text:'No action waiting',fingerprint:'',acknowledged:true,snoozed:false,snoozeUntil:0,snoozeMinutes:0};
-  const text=cueLabel(andon,handler);
-  const fingerprint=hash(`${text}|${handler?.dataset?.pfId||''}`);
-  const acknowledged=currentAck()?.fingerprint===fingerprint;
-  const snooze=snoozeFor(fingerprint);
-  return {waiting:true,text,fingerprint,acknowledged,snoozed:snooze.active,snoozeUntil:snooze.until,snoozeMinutes:snooze.minutes};
+  if(!waiting)return {waiting:false,text:'Nothing waiting',fingerprint:'',acknowledged:true};
+  const label=cueText(andon,handler),fingerprint=hash(`${label}|${handler?.dataset?.pfId||''}`);
+  const acknowledged=safeParse(localStorage.getItem(ACK_KEY),null)?.fingerprint===fingerprint;
+  return {waiting:true,text:label,fingerprint,acknowledged};
 }
-async function closeNotifications(){
-  try{const registration=await navigator.serviceWorker?.getRegistration?.();const notifications=await registration?.getNotifications?.();for(const notification of notifications||[])notification.close();}catch{}
-}
+async function closeNotifications(){try{const reg=await navigator.serviceWorker?.getRegistration?.();for(const note of await reg?.getNotifications?.()||[])note.close();}catch{}}
 async function clearBadge(){try{await navigator.clearAppBadge?.();}catch{}}
-async function setBadge(){try{await navigator.setAppBadge?.(1);}catch{}}
-async function acknowledge(source='dock'){
-  const next=readCue();
-  if(next.waiting){try{localStorage.removeItem(SNOOZE_KEY);localStorage.setItem(ACK_KEY,JSON.stringify({fingerprint:next.fingerprint,at:new Date().toISOString(),source,version:VERSION}));}catch(error){reportError('acknowledge-storage',error);}}
+async function quiet(source='manual'){
+  const cue=readCue();
+  try{if(cue.waiting)localStorage.setItem(ACK_KEY,JSON.stringify({fingerprint:cue.fingerprint,source,at:new Date().toISOString()}));}catch{}
   await Promise.allSettled([clearBadge(),closeNotifications()]);
-  window.dispatchEvent(new CustomEvent('pacefold:taskbar-acknowledged',{detail:{source,fingerprint:next.fingerprint}}));
-  showStatus(next.waiting?'Taskbar quieted. The action remains waiting.':'Taskbar is clear.','success');
-  reconcileSafely();
+  showStatus(cue.waiting?'Reminder cleared; the action is still waiting.':'Notifications cleared.','success');
+  reconcile();
 }
-async function snoozeCue(minutes=10){
-  const next=readCue();
-  if(!next.waiting){showStatus('There is no action to remind you about.','warning');return false;}
-  const duration=Math.max(1,Math.min(120,Number(minutes)||10));
-  const until=Date.now()+duration*60000;
-  try{
-    localStorage.removeItem(ACK_KEY);
-    localStorage.setItem(SNOOZE_KEY,JSON.stringify({fingerprint:next.fingerprint,at:new Date().toISOString(),until,minutes:duration,version:VERSION}));
-  }catch(error){reportError('snooze-storage',error);showStatus('The reminder could not be saved on this device.','warning');return false;}
-  await Promise.allSettled([clearBadge(),closeNotifications()]);
-  window.dispatchEvent(new CustomEvent('pacefold:taskbar-snoozed',{detail:{fingerprint:next.fingerprint,until,minutes:duration}}));
-  setPanel(false,false);
-  showStatus(`Taskbar quieted. Reminding again in ${duration} minutes.`,'success');
-  reconcileSafely();
-  return true;
+async function enforceHours(){
+  const work=workWindow();
+  if(!work.active)await Promise.allSettled([clearBadge(),closeNotifications()]);
+  return work;
 }
-function scheduleSnoozeWake(){
-  clearTimeout(snoozeTimer);snoozeTimer=0;
-  if(!cueState.snoozed||!cueState.snoozeUntil)return;
-  const wait=Math.max(500,Math.min(2147483000,cueState.snoozeUntil-Date.now()+100));
-  snoozeTimer=setTimeout(()=>{snoozeTimer=0;try{localStorage.removeItem(SNOOZE_KEY);}catch{}reconcileSafely();},wait);
-}
-async function syncBadge(state=readCue()){
-  cueState=state;
-  if(cueState.waiting&&!cueState.acknowledged&&!cueState.snoozed)await setBadge();
-  else await clearBadge();
-  const attention=cueState.waiting&&!cueState.acknowledged&&!cueState.snoozed;
-  document.title=cueState.waiting?`${attention?'• ':''}${cueState.text} — Pacefold`:originalTitle;
-}
-function showStatus(message,tone='neutral'){
-  if(!dock)return;
-  const node=dock.querySelector('[data-pf-flow-status]');
-  if(!node)return;
-  clearTimeout(statusTimer);node.textContent=message;node.dataset.tone=tone;node.hidden=false;
-  statusTimer=setTimeout(()=>{if(node.isConnected)node.hidden=true;},2800);
-}
-function setPanel(open,focus=true){
-  if(!dock)return;
-  const panel=dock.querySelector('[data-pf-flow-panel]');
-  const toggle=dock.querySelector('[data-pf-flow-more]');
-  if(!panel||!toggle)return;
-  panel.hidden=!open;toggle.setAttribute('aria-expanded',String(open));dock.classList.toggle('is-open',open);
-  try{sessionStorage.setItem(PANEL_KEY,open?'open':'closed');}catch{}
-  if(open&&focus)panel.querySelector('[data-pf-flow-primary]')?.focus({preventScroll:true});
-}
-function togglePanel(){setPanel(dock?.querySelector('[data-pf-flow-panel]')?.hidden!==false);}
-function focusCapture(){setPanel(false,false);const input=dock?.querySelector('[data-pf-flow-input]');input?.focus({preventScroll:true});input?.select?.();}
-function parseCapture(value){
-  const raw=compactText(value);const match=raw.match(/^\/([\w-]+)\s*/);
-  if(!match)return {section:null,body:raw};
-  const section=COMMANDS[match[1].toLowerCase()]||null;
-  return section?{section,body:raw.slice(match[0].length).trim()}:{section:null,body:raw};
-}
-function submitCapture(event){
-  event.preventDefault();if(!root)return;
-  const proxy=dock.querySelector('[data-pf-flow-input]');const parsed=parseCapture(proxy.value);
-  if(!parsed.body){showStatus('Write a note first.','warning');return;}
-  const form=root.querySelector('[data-pf-capture-form]:not([data-pf-flow-proxy])');
-  const input=form?.querySelector('[data-pf-capture-input]');const section=form?.querySelector('[data-pf-capture-section]');
-  if(!form||!input){showStatus('Capture is still starting.','warning');return;}
-  if(parsed.section&&section){section.value=parsed.section;section.dispatchEvent(new Event('change',{bubbles:true}));}
-  input.value=parsed.body;input.dispatchEvent(new Event('input',{bubbles:true}));form.requestSubmit();proxy.value='';
-  showStatus(parsed.section?`Saved to ${parsed.section}.`:'Saved to today.','success');setTimeout(reconcileSafely,60);
-}
-function sourceIcon(){
-  const text=cueState.text.toLowerCase();
-  if(/water|drink|hydrate|sip/.test(text))return '滴';if(/eye|look far|distance/.test(text))return '◉';
-  if(/move|stretch|posture|ergonomic/.test(text))return '↗';if(/prayer|fajr|dhuhr|asr|maghrib|isha/.test(text))return '◇';
-  if(/meal|lunch|eat/.test(text))return '◡';if(/prepare|noodle|ready/.test(text))return '≈';if(/away|break|step away/.test(text))return '↘';return '·';
-}
-function markOriginalSources(){
-  if(!root)return;
-  for(const selector of ['.pf-andon','.pf-player-row','[data-pf-capture-form]'])for(const node of root.querySelectorAll(`${selector}:not([data-pf-flow-proxy])`))node.setAttribute('data-pf-flow-source','true');
-}
-function capability(kind){return Boolean(resolveAction(kind)?.control);}
-function reconcileState(){
-  enhanceCoreSurface();
-  if(!dock?.isConnected||!root?.isConnected)return;
-  markOriginalSources();cueState=readCue();scheduleSnoozeWake();
-  const attention=cueState.waiting&&!cueState.acknowledged&&!cueState.snoozed;
-  const pulse=dock.querySelector('[data-pf-flow-pulse]');const cue=dock.querySelector('[data-pf-flow-cue]');
-  const cueIcon=dock.querySelector('[data-pf-flow-cue-icon]');const badge=dock.querySelector('[data-pf-flow-badge]');
-  pulse.dataset.state=attention?'new':cueState.waiting?'waiting':'calm';
-  pulse.setAttribute('aria-label',attention?'New action; clear taskbar notification':cueState.snoozed?`Action waiting; reminder in ${cueState.snoozeMinutes} minutes`:cueState.waiting?'Action waiting; open Pacefold controls':'Open Pacefold controls');
-  badge.hidden=!attention;cue.hidden=!cueState.waiting;
-  for(const node of dock.querySelectorAll('[data-pf-flow-cue-text]'))node.textContent=cueState.text;
-  cueIcon.textContent=sourceIcon();
-  dock.querySelector('[data-pf-flow-taskbar]').textContent=cueState.snoozed?`Remind in ${cueState.snoozeMinutes}m`:cueState.waiting?(cueState.acknowledged?'Quieted · action waiting':'Taskbar attention pending'):'Clear';
-  dock.querySelector('[data-pf-flow-count]').textContent=String(todayCount());
-  let lock=null;try{lock=safeParse(localStorage.getItem(SYNC_LOCK_KEY),null);}catch{}
-  dock.querySelector('[data-pf-flow-sync-state]').textContent=lock&&Number(lock.until)>Date.now()?'Syncing…':'Ready';
-  for(const button of dock.querySelectorAll('[data-pf-flow-tool]'))button.disabled=!capability(button.dataset.pfFlowTool);
-  dock.querySelector('[data-pf-flow-done]').disabled=!cueState.waiting||!capability('cue');
-  dock.querySelector('[data-pf-flow-ack]').disabled=!cueState.waiting||cueState.acknowledged||cueState.snoozed;
-  const snooze=dock.querySelector('[data-pf-flow-snooze]');
-  snooze.disabled=!cueState.waiting;snooze.textContent=cueState.snoozed?`Reset 10m`:'Remind 10m';
-  syncBadge(cueState);
-}
-function reconcileSafely(){
-  try{reconcileState();}
-  catch(error){reportError('reconcile',error);try{dock?.remove();}catch{}dock=null;mountedRoot=null;setTimeout(queueMount,120);}
-}
-function pulseClick(event){
-  if(event.detail>1)return;clearTimeout(clickTimer);const current=readCue();
-  if(current.waiting&&!current.acknowledged&&!current.snoozed){acknowledge('pulse');return;}
-  clickTimer=setTimeout(togglePanel,180);
-}
-function pulseDoubleClick(){clearTimeout(clickTimer);setPanel(true);}
-function doneCue(){if(forward('cue')){clearCueTaskbarState();setPanel(false,false);setTimeout(reconcileSafely,120);}}
-function syncPage(){
-  if(resolveAction('sync')?.control){forward('sync');return;}
-  if(!forward('notebook'))return;
-  let attempts=0;
-  const retry=()=>{attempts+=1;if(resolveAction('sync')?.control){forward('sync');return;}if(attempts<8)setTimeout(retry,120);else showStatus('Open a notebook page, then sync.','warning');};
-  setTimeout(retry,100);
-}
-function runTool(event){const kind=event.currentTarget.dataset.pfFlowTool;if(kind)forward(kind);}
-function handleLaunchIntent(){
-  const url=new URL(location.href);const intent=url.searchParams.get('pf');if(!intent)return;
-  url.searchParams.delete('pf');history.replaceState(history.state,'',url.pathname+url.search+url.hash);
-  setTimeout(()=>{if(intent==='capture')focusCapture();else if(intent==='current')setPanel(true);else if(intent==='notebook')forward('notebook');else if(intent==='media')forward('media');},120);
-}
-function bindDock(){
-  dock.querySelector('[data-pf-flow-pulse]').addEventListener('click',guarded('pulse-click',pulseClick));dock.querySelector('[data-pf-flow-pulse]').addEventListener('dblclick',guarded('pulse-double',pulseDoubleClick));
-  dock.querySelector('[data-pf-flow-cue]').addEventListener('click',guarded('cue-open',()=>setPanel(true)));dock.querySelector('[data-pf-flow-form]').addEventListener('submit',guarded('capture',submitCapture));
-  dock.querySelector('[data-pf-flow-more]').addEventListener('click',guarded('panel-toggle',togglePanel));dock.querySelector('[data-pf-flow-close]').addEventListener('click',guarded('panel-close',()=>setPanel(false)));
-  dock.querySelector('[data-pf-flow-ack]').addEventListener('click',guarded('acknowledge',()=>acknowledge('panel')));dock.querySelector('[data-pf-flow-snooze]').addEventListener('click',guarded('snooze',()=>snoozeCue(10)));dock.querySelector('[data-pf-flow-done]').addEventListener('click',guarded('done',doneCue));
-  dock.querySelector('[data-pf-flow-focus-capture]').addEventListener('click',guarded('capture-focus',focusCapture));dock.querySelector('[data-pf-flow-sync]').addEventListener('click',guarded('sync',syncPage));
-  for(const button of dock.querySelectorAll('[data-pf-flow-tool]'))button.addEventListener('click',guarded('tool',runTool));
-}
-function markup(){return `
-  <div class="pf-flow-bar">
-    <button class="pf-flow-pulse" type="button" data-pf-flow-pulse data-state="calm" aria-label="Open Pacefold controls"><span class="pf-flow-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="pf-flow-badge" data-pf-flow-badge hidden></span></button>
-    <button class="pf-flow-cue" type="button" data-pf-flow-cue hidden><span class="pf-flow-cue-icon" data-pf-flow-cue-icon aria-hidden="true">·</span><span data-pf-flow-cue-text>No action waiting</span></button>
-    <form class="pf-flow-capture" data-pf-flow-form data-pf-flow-proxy><label class="pf-flow-sr" for="pf-flow-input">Capture to the HSSys notebook</label><input id="pf-flow-input" data-pf-flow-input autocomplete="off" maxlength="1200" placeholder="Capture…  /incident  /follow  /jhsc"><button type="submit" aria-label="Save capture"><span aria-hidden="true">↵</span></button></form>
-    <button class="pf-flow-tool" type="button" data-pf-flow-tool="notebook" data-pf-flow-proxy aria-label="Open notebook"><span aria-hidden="true">▤</span><small>Notes</small></button>
-    <button class="pf-flow-tool" type="button" data-pf-flow-tool="media" data-pf-flow-proxy aria-label="Open player"><span aria-hidden="true">♪</span><small>Media</small></button>
-    <button class="pf-flow-more" type="button" data-pf-flow-more aria-expanded="false" aria-controls="pf-flow-panel" aria-label="Open Pacefold controls"><span></span><span></span></button>
-  </div>
-  <div class="pf-flow-status" data-pf-flow-status role="status" aria-live="polite" hidden></div>
-  <section id="pf-flow-panel" class="pf-flow-panel" data-pf-flow-panel hidden aria-label="Pacefold quick controls">
-    <header><div><span class="pf-flow-eyebrow">Pacefold</span><strong data-pf-flow-primary tabindex="-1">One day, gently folded.</strong></div><button type="button" data-pf-flow-close aria-label="Close quick controls">×</button></header>
-    <div class="pf-flow-now"><span>Now</span><b data-pf-flow-cue-text>No action waiting</b><div class="pf-flow-now-actions"><button type="button" data-pf-flow-ack>Quiet taskbar</button><button type="button" data-pf-flow-snooze>Remind 10m</button><button type="button" data-pf-flow-done>Done</button></div></div>
-    <div class="pf-flow-grid">
-      <button type="button" data-pf-flow-focus-capture><span>＋</span><b>Capture</b><small>Slash routes included</small></button>
-      <button type="button" data-pf-flow-tool="notebook" data-pf-flow-proxy><span>▤</span><b>Notebook</b><small><i data-pf-flow-count>0</i> today</small></button>
-      <button type="button" data-pf-flow-tool="media" data-pf-flow-proxy><span>♪</span><b>Media</b><small>Contained playback</small></button>
-      <button type="button" data-pf-flow-tool="weather" data-pf-flow-proxy><span>○</span><b>Weather</b><small>Forecast on demand</small></button>
-      <button type="button" data-pf-flow-sync><span>↥</span><b>OneNote</b><small data-pf-flow-sync-state>Ready</small></button>
-      <button type="button" data-pf-flow-tool="system" data-pf-flow-proxy><span>···</span><b>System</b><small>Local diagnostics</small></button>
-    </div>
-    <footer><span>Taskbar</span><b data-pf-flow-taskbar>Clear</b><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Space</kbd></footer>
-  </section>`;}
-function createDock(nextRoot){const element=document.createElement('aside');element.id=DOCK_ID;element.dataset.version=VERSION;element.setAttribute('aria-label','Pacefold integrated dock');element.innerHTML=markup();nextRoot.append(element);return element;}
-function unmount(){clearTimeout(snoozeTimer);snoozeTimer=0;dock?.remove();dock=null;root=null;mountedRoot=null;document.documentElement.classList.remove('pf-flow-active');document.title=originalTitle;clearBadge();}
-function mount(){
-  enhanceCoreSurface();
-  if(setupVisible()){unmount();return;}
-  const nextRoot=document.getElementById(ROOT_ID);if(!nextRoot){unmount();return;}
-  if(mountedRoot===nextRoot&&dock?.isConnected){reconcileSafely();return;}
-  dock?.remove();root=nextRoot;mountedRoot=nextRoot;dock=nextRoot.querySelector(`#${DOCK_ID}`);
-  if(!dock||dock.dataset.version!==VERSION){dock?.remove();dock=createDock(nextRoot);}
-  root.classList.add('pf-flow-integrated');document.documentElement.classList.add('pf-flow-active');bindDock();
-  try{if(sessionStorage.getItem(PANEL_KEY)==='open')setPanel(true,false);}catch{}
-  markOriginalSources();reconcileSafely();handleLaunchIntent();
-}
-function queueMount(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;try{mount();}catch(error){reportError('mount',error);try{dock?.remove();}catch{}dock=null;mountedRoot=null;setTimeout(queueMount,140);}});}
-function keydown(event){
-  if(event.key==='Escape'&&dock&&!dock.querySelector('[data-pf-flow-panel]').hidden){setPanel(false);return;}
-  if(event.ctrlKey&&event.shiftKey&&event.code==='Space'){event.preventDefault();togglePanel();return;}
-  if(event.key==='/'&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){event.preventDefault();focusCapture();}
-}
-function focusAcknowledge(){setTimeout(()=>{const state=readCue();if(state.waiting&&!state.acknowledged&&!state.snoozed)acknowledge('focus');},80);}
 
-new MutationObserver(guarded('observer',mutations=>{if(mutations.length&&mutations.every(item=>item.target instanceof Element&&item.target.closest?.(`#${DOCK_ID}`)))return;queueMount();})).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-hidden','disabled','data-view','data-screen','data-step','data-theme']});
-document.addEventListener('keydown',guarded('keydown',keydown));window.addEventListener('focus',guarded('focus',focusAcknowledge));window.addEventListener('pageshow',queueMount);window.addEventListener('online',queueMount);window.addEventListener('pacefold:storage-changed',queueMount);
-window.addEventListener('storage',event=>{if([ENTRY_KEY,ACK_KEY,SNOOZE_KEY,SYNC_LOCK_KEY].includes(event.key))queueMount();});
-[0,80,240,700,1600].forEach(delay=>setTimeout(queueMount,delay));setInterval(guarded('heartbeat',()=>{if(document.visibilityState==='visible')reconcileSafely();}),1500);
-window.__PACEFOLD_FLOW__={version:VERSION,mount,reconcile:reconcileSafely,acknowledge,snooze:snoozeCue,focusCapture,setPanel,updateFoldStrip};
+function showStatus(message,tone='neutral'){if(!shell)return;const node=shell.querySelector('[data-calm-status]');clearTimeout(statusTimer);node.textContent=message;node.dataset.tone=tone;node.hidden=false;statusTimer=setTimeout(()=>{if(node.isConnected)node.hidden=true;},3200);}
+function setOpen(open){if(!shell)return;const panel=shell.querySelector('[data-calm-workspace]');const toggle=shell.querySelector('[data-calm-toggle]');panel.hidden=!open;toggle.setAttribute('aria-expanded',String(open));shell.classList.toggle('is-open',open);try{sessionStorage.setItem(PANEL_KEY,open?'1':'0');}catch{}if(open)renderNotes();}
+function toggle(){setOpen(shell?.querySelector('[data-calm-workspace]')?.hidden!==false);}
+function focusCapture(){setOpen(true);setTimeout(()=>shell?.querySelector('[data-calm-input]')?.focus(),0);}
+function submitCapture(event){
+  event.preventDefault();const proxy=shell.querySelector('[data-calm-input]');const value=text(proxy.value);if(!value){showStatus('Write the note first.','warning');return;}
+  const form=root?.querySelector('[data-pf-capture-form]:not([data-pf-calm-proxy])');const input=form?.querySelector('[data-pf-capture-input]');
+  if(!form||!input){showStatus('Notes are still starting.','warning');return;}
+  input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));form.requestSubmit();proxy.value='';showStatus('Saved locally.','success');setTimeout(renderNotes,80);
+}
+function renderNotes(){
+  if(!shell)return;const list=shell.querySelector('[data-calm-notes]');const all=entries().slice().sort((a,b)=>String(b?.updatedAt||b?.createdAt||b?.date||'').localeCompare(String(a?.updatedAt||a?.createdAt||a?.date||''))).slice(0,8);
+  list.replaceChildren();
+  if(!all.length){const empty=document.createElement('p');empty.className='pf-calm-empty';empty.textContent='No notes yet. Type above and press Enter.';list.append(empty);return;}
+  for(const item of all){const row=document.createElement('button');row.type='button';row.className='pf-calm-note';row.innerHTML=`<span><b></b><small></small></span><time></time>`;row.querySelector('b').textContent=entryText(item);row.querySelector('small').textContent=entrySection(item);row.querySelector('time').textContent=entryDate(item);row.addEventListener('click',()=>forward('notebook'));list.append(row);}
+}
+function latestNotePayload(){const item=entries().slice(-1)[0];return item?{title:`Pacefold — ${entrySection(item)}`,text:`${entryText(item)}\n\n${entryDate(item)}`}:null;}
+async function syncOneNote(){
+  const existing=resolveAction('sync');if(existing){existing.click();showStatus('Sending through the connected OneNote bridge…','success');return;}
+  const payload=latestNotePayload();if(!payload){showStatus('Save a note before sending it to OneNote.','warning');return;}
+  try{if(navigator.share){await navigator.share(payload);showStatus('Shared. Choose OneNote to finish.','success');return;}}catch(error){if(error?.name==='AbortError')return;report('share',error);}
+  try{await navigator.clipboard.writeText(`${payload.title}\n\n${payload.text}`);showStatus('Copied. Paste into OneNote.','success');}catch{showStatus('OneNote is not connected. Open Notes to reconnect Microsoft.','warning');forward('notebook');}
+}
+function done(){if(forward('cue')){try{localStorage.removeItem(ACK_KEY);}catch{}setTimeout(reconcile,100);}}
+function openMedia(){forward('media');}
+function markSources(){if(!root)return;for(const selector of ['.pf-andon','[data-pf-capture-form]'])for(const node of root.querySelectorAll(`${selector}:not([data-pf-calm-proxy])`))node.dataset.pfCalmSource='true';}
+
+function markup(){return `
+  <section class="pf-calm-workspace" data-calm-workspace hidden aria-label="Notes workspace">
+    <header><div><small>NOTES</small><strong>Quick notes</strong></div><div><button type="button" data-calm-onenote>Send to OneNote</button><button type="button" data-calm-full-notes>Open all</button></div></header>
+    <form class="pf-calm-compose" data-calm-form data-pf-calm-proxy><label for="pf-calm-input">Write a note</label><textarea id="pf-calm-input" data-calm-input rows="3" maxlength="2400" placeholder="Write it here. Ctrl + Enter saves."></textarea><button type="submit">Save note</button></form>
+    <div class="pf-calm-notes" data-calm-notes></div>
+  </section>
+  <div class="pf-calm-bottom">
+    <button class="pf-calm-brand" type="button" data-calm-toggle aria-expanded="false" aria-label="Open notes"><span aria-hidden="true"></span><b>Pacefold</b></button>
+    <div class="pf-calm-now"><small data-calm-hours>Work hours</small><strong data-calm-cue>Nothing waiting</strong></div>
+    <div class="pf-calm-actions"><button type="button" data-calm-quiet hidden>Clear reminder</button><button type="button" data-calm-done hidden>Done</button></div>
+    <div class="pf-calm-player"><button type="button" data-calm-media aria-label="Open music player"><span aria-hidden="true">▶</span><span><small>MINI PLAYER</small><b>Open music</b></span></button></div>
+  </div>
+  <div class="pf-calm-status" data-calm-status role="status" aria-live="polite" hidden></div>`;}
+function bind(){
+  shell.querySelector('[data-calm-toggle]').addEventListener('click',toggle);
+  shell.querySelector('[data-calm-form]').addEventListener('submit',submitCapture);
+  shell.querySelector('[data-calm-input]').addEventListener('keydown',event=>{if(event.key==='Enter'&&event.ctrlKey){event.preventDefault();shell.querySelector('[data-calm-form]').requestSubmit();}});
+  shell.querySelector('[data-calm-onenote]').addEventListener('click',syncOneNote);
+  shell.querySelector('[data-calm-full-notes]').addEventListener('click',()=>forward('notebook'));
+  shell.querySelector('[data-calm-media]').addEventListener('click',openMedia);
+  shell.querySelector('[data-calm-quiet]').addEventListener('click',()=>quiet('button'));
+  shell.querySelector('[data-calm-done]').addEventListener('click',done);
+}
+function create(nextRoot){const node=document.createElement('aside');node.id=SHELL_ID;node.dataset.version=VERSION;node.setAttribute('aria-label','Pacefold calm workspace');node.innerHTML=markup();nextRoot.append(node);return node;}
+async function reconcile(){
+  if(!shell?.isConnected||!root?.isConnected)return;
+  markSources();const cue=readCue(),work=await enforceHours();state={...cue,inHours:work.active,workLabel:work.label};
+  const visible=cue.waiting&&work.active;const attention=visible&&!cue.acknowledged;
+  shell.dataset.attention=attention?'true':'false';shell.dataset.inHours=work.active?'true':'false';
+  shell.querySelector('[data-calm-hours]').textContent=work.active?work.label:`Off hours · ${work.label}`;
+  shell.querySelector('[data-calm-cue]').textContent=work.active?(cue.waiting?cue.text:'Nothing waiting'):'Paused outside work hours';
+  shell.querySelector('[data-calm-quiet]').hidden=!attention;shell.querySelector('[data-calm-done]').hidden=!visible;
+  document.title=attention?`${cue.text} — Pacefold`:'Pacefold';
+  renderNotes();
+}
+function unmount(){observer?.disconnect();observer=null;shell?.remove();shell=null;root=null;document.documentElement.classList.remove('pf-calm-active');clearBadge();}
+function mount(){
+  if(setupVisible()){unmount();return;}const nextRoot=document.getElementById(ROOT_ID);if(!nextRoot){unmount();return;}
+  root=nextRoot;shell=nextRoot.querySelector(`#${SHELL_ID}`);if(!shell||shell.dataset.version!==VERSION){shell?.remove();shell=create(nextRoot);bind();}
+  root.classList.add('pf-calm-integrated');document.documentElement.classList.add('pf-calm-active');
+  try{if(sessionStorage.getItem(PANEL_KEY)==='1')setOpen(true);}catch{}
+  observer?.disconnect();observer=new MutationObserver(queue);observer.observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['class','hidden','data-state','data-waiting']});reconcile();
+}
+function queue(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;try{mount();}catch(error){report('mount',error);setTimeout(queue,120);}});}
+function keydown(event){if(event.key==='Escape'&&shell&&!shell.querySelector('[data-calm-workspace]').hidden)setOpen(false);if(event.ctrlKey&&event.shiftKey&&event.code==='Space'){event.preventDefault();toggle();}if(event.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')){event.preventDefault();focusCapture();}}
+
+document.addEventListener('keydown',keydown);window.addEventListener('focus',()=>{quiet('focus');queue();});window.addEventListener('pageshow',queue);window.addEventListener('storage',queue);new MutationObserver(queue).observe(document.documentElement,{childList:true,subtree:true});
+[0,100,350,900].forEach(delay=>setTimeout(queue,delay));setInterval(()=>{if(document.visibilityState==='visible')reconcile();},5000);
+window.__PACEFOLD_FLOW__={version:VERSION,mount,reconcile,quiet,focusCapture,setPanel:setOpen};
 })();
