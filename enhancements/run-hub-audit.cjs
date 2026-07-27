@@ -27,7 +27,8 @@ if(major>15||minor>=8){
     .replaceAll('notify-prepare.svg','notify-prepare.png')
     .replaceAll('notify-away.svg','notify-away.png');
 }
-if(major>15||minor>=9){
+const generatedHub=fs.readFileSync(path.join(root,'app','pacefold-hub.js'),'utf8');
+if(!/\bHSSys\b/.test(generatedHub)){
   const legacy="synced.notebook!=='HSSys'";
   if(!source.includes(legacy))throw new Error('Baseline OneNote destination assertion is missing');
   source=source.replace(legacy,"synced.notebook!=='Pacefold'");
