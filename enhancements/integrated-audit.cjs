@@ -4,6 +4,22 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {gunzipSync}=require('node:zlib');
 
+const origamiCss=fs.readFileSync(path.join(__dirname,'pacefold-origami.css'),'utf8');
+for(const token of [
+  '--pf-fold-duration',
+  'pacefold-fold-mark.svg',
+  '@keyframes pf-unfold-settle',
+  '@keyframes pf-player-unfold',
+  '.pf-player-drawer[hidden]',
+  '@media (prefers-reduced-motion:reduce)'
+]){
+  if(!origamiCss.includes(token))throw new Error(`Pacefold origami audit token missing: ${token}`);
+}
+const foldMark=fs.readFileSync(path.join(__dirname,'pacefold-fold-mark.svg'),'utf8');
+for(const token of ['<svg','Pacefold folded P mark','viewBox="0 0 64 64"']){
+  if(!foldMark.includes(token))throw new Error(`Pacefold fold-mark audit token missing: ${token}`);
+}
+
 const prefix='integrated-audit-runtime.cjs.gz.b64.part-';
 const parts=fs.readdirSync(__dirname).filter(name=>name.startsWith(prefix)).sort();
 if(!parts.length)throw new Error('Pacefold integrated audit runtime segments are missing');
