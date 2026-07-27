@@ -67,10 +67,6 @@ async function applyAssetRevision(file){
     /((?:\.\/)?pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp)\.(?:css|js))\?v=[^"'&<\s]+/g,
     (_,asset)=>`${asset}?v=${RELEASE}`
   );
-  html=html.replace(
-    /(data-pacefold-(?:hub(?:-guardian)?|resilience|flow|revamp)=")[^"]*(")/g,
-    `$1${RELEASE}$2`
-  );
   html=html.replace(/\s*<meta\s+name=["']pacefold-build["'][^>]*>/gi,'');
   html=html.replace('</head>',`  <meta name="pacefold-build" content="${RELEASE}">\n</head>`);
   await fs.writeFile(file,html);
