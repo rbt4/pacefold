@@ -212,6 +212,7 @@ async function materializeCompressed(name,destination){
     output=upgradeRuntimeVersion(output);
     output=hardenSetupRuntime(output);
     output=hardenPlayerRuntime(output);
+    output=genericizeNotebookRuntime(output);
   }
   if(name.endsWith('.js.gz.b64'))output=trustedBootstrap+rewriteInnerHTMLAssignments(output).source;
   if(name.endsWith('.css.gz.b64'))output+='\n.pf-player-row.is-drop-target{outline:1px dashed var(--mint);outline-offset:-4px;background:color-mix(in srgb,var(--mint) 10%,transparent)}\n';
@@ -232,6 +233,13 @@ function hardenSetupRuntime(source){
   if(matches.length!==1)throw new Error(`Unexpected legacy setup-text signature count: ${matches.length}`);
   const next=source.replace(legacy,'$1');
   if(next.includes('complete setup|get started'))throw new Error('Legacy generic setup phrase survived runtime hardening');
+  return next;
+}
+function genericizeNotebookRuntime(source){
+  const matches=source.match(/\bHSSys\b/g)||[];
+  if(!matches.length)throw new Error('Pacefold notebook runtime no longer exposes the expected legacy HSSys marker');
+  const next=source.replace(/\bHSSys\b/g,'Pacefold');
+  if(/\bHSSys\b/.test(next))throw new Error('Legacy HSSys notebook naming survived genericization');
   return next;
 }
 function hardenPlayerRuntime(source){
