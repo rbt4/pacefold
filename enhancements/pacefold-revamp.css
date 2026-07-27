@@ -11,7 +11,7 @@
 html.pf-flow-active body{padding-bottom:132px!important}
 #pf-flow-dock[data-revision="15.9.0"] .pf-flow-bar{
   min-height:48px;
-  grid-template-columns:42px minmax(88px,116px) minmax(0,auto) minmax(180px,1fr) 54px 76px 42px;
+  grid-template-columns:42px minmax(88px,116px) minmax(0,auto) minmax(180px,1fr) 76px 42px;
   border-radius:15px;
   color:var(--flow-fg)!important;
   opacity:1!important;
@@ -21,14 +21,18 @@ html.pf-flow-active body{padding-bottom:132px!important}
     color-mix(in srgb,var(--surface-solid) 98%,var(--ink) 2%)!important;
   box-shadow:0 14px 40px color-mix(in srgb,var(--ink) 18%,transparent),inset 0 1px 0 color-mix(in srgb,#fff 28%,transparent)
 }
-.pf-revamp-title{min-width:0;display:grid;gap:1px;padding:0 7px 0 3px;border-right:1px solid var(--flow-line)}
+.pf-revamp-title{min-width:0;height:38px;display:grid;align-content:center;gap:1px;padding:0 7px 0 5px!important;border:0!important;border-right:1px solid var(--flow-line)!important;border-radius:9px 0 0 9px!important;text-align:left;color:inherit;background:transparent!important;cursor:pointer}
+.pf-revamp-title:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)!important}
+.pf-revamp-title:focus-visible{outline:2px solid color-mix(in srgb,var(--flow-accent) 72%,transparent);outline-offset:1px}
 .pf-revamp-title strong{font-size:12px;font-weight:720;letter-spacing:.02em}
 .pf-revamp-title small{overflow:hidden;color:var(--flow-muted);font-size:8.5px;line-height:1.1;text-overflow:ellipsis;white-space:nowrap}
 .pf-revamp-sync{height:38px;border:0;border-radius:10px!important;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 7px!important;color:var(--flow-muted);background:transparent;cursor:pointer}
 .pf-revamp-sync:hover{background:color-mix(in srgb,var(--ink) 7.5%,transparent)!important}
 .pf-revamp-sync:focus-visible{outline:2px solid color-mix(in srgb,var(--flow-accent) 72%,transparent);outline-offset:2px}
+.pf-revamp-sync:disabled{opacity:.48;cursor:wait}
 .pf-revamp-sync span{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;color:var(--flow-fg);font-size:15px;font-weight:700;background:color-mix(in srgb,var(--ink) 4.5%,transparent)}
 .pf-revamp-sync small{font-size:9.5px;letter-spacing:.01em}
+#pf-flow-dock[data-revision="15.9.0"] [data-pf-revamp-top-notes="true"],
 #pf-flow-dock[data-revision="15.9.0"] [data-pf-revamp-top-media="true"]{display:none!important}
 #pf-flow-dock[data-revision="15.9.0"] .pf-flow-capture{border-radius:10px}
 #pf-flow-dock[data-revision="15.9.0"] .pf-flow-cue{max-width:235px;border-radius:10px!important}
@@ -48,6 +52,9 @@ html.pf-flow-active body{padding-bottom:132px!important}
 }
 #pf-flow-dock[data-revision="15.9.0"] .pf-flow-status{z-index:3;opacity:1!important;filter:none!important}
 #pf-flow-dock[data-revision="15.9.0"] .pf-flow-panel header strong{letter-spacing:-.018em}
+#pf-flow-dock[data-revision="15.9.0"] .pf-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#pf-flow-dock[data-revision="15.9.0"] .pf-flow-grid>[data-pf-flow-focus-capture],
+#pf-flow-dock[data-revision="15.9.0"] .pf-flow-grid>[data-pf-flow-tool="media"]{display:none!important}
 #pf-flow-dock[data-revision="15.9.0"] .pf-flow-grid>button{border-radius:13px}
 html.pf-revamp-offhours #pf-flow-dock .pf-flow-pulse{opacity:.64;color:var(--flow-muted)!important;background:color-mix(in srgb,var(--ink) 3%,transparent)!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 5%,transparent)!important}
 html.pf-revamp-offhours #pf-flow-dock .pf-flow-badge{display:none!important}
@@ -95,7 +102,7 @@ html.pf-revamp-offhours #pf-flow-dock [data-pf-flow-cue]{display:none!important}
 #pf-hub-root.pf-flow-integrated .pf-player-row[data-pf-revamp-player="true"].is-drop-target{outline:2px dashed var(--accent)!important;outline-offset:-5px!important}
 
 @media (max-width:820px){
-  #pf-flow-dock[data-revision="15.9.0"] .pf-flow-bar{grid-template-columns:42px 90px minmax(0,auto) minmax(150px,1fr) 48px 42px}
+  #pf-flow-dock[data-revision="15.9.0"] .pf-flow-bar{grid-template-columns:42px 90px minmax(0,auto) minmax(150px,1fr) 42px}
   #pf-flow-dock[data-revision="15.9.0"] .pf-revamp-sync{display:none}
   #pf-flow-dock[data-revision="15.9.0"] .pf-flow-cue{max-width:190px}
 }
@@ -126,7 +133,7 @@ html.pf-revamp-offhours #pf-flow-dock [data-pf-flow-cue]{display:none!important}
   #pf-hub-root.pf-flow-integrated .pf-player-row[data-pf-revamp-player="true"] [data-pf-player-secondary],
   #pf-hub-root.pf-flow-integrated .pf-player-row[data-pf-revamp-player="true"] small{display:none!important}
 }
-@media (prefers-reduced-motion:reduce){.pf-revamp-sync{transition:none!important}}
+@media (prefers-reduced-motion:reduce){.pf-revamp-title,.pf-revamp-sync{transition:none!important}}
 @media (forced-colors:active){
   #pf-flow-dock[data-revision="15.9.0"] .pf-flow-bar,
   #pf-hub-root.pf-flow-integrated .pf-player-row[data-pf-revamp-player="true"]{border-color:CanvasText!important;background:Canvas!important}
