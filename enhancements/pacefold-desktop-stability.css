@@ -131,11 +131,16 @@ html.pf-flow-active body{padding-bottom:92px!important}
   will-change:auto!important
 }
 #pf-local-player>.pf-player-bar{
+  position:absolute!important;
+  inset:0!important;
   width:100%!important;
   height:var(--pf-player-bar-height)!important;
   min-height:var(--pf-player-bar-height)!important;
   max-height:var(--pf-player-bar-height)!important;
+  display:grid!important;
+  align-items:center!important;
   margin:0!important;
+  padding:4px 6px!important;
   color:#f4f6f5!important;
   background:#080a09!important;
   background-image:linear-gradient(180deg,#0d100e,#080a09)!important;
