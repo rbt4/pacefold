@@ -28,6 +28,7 @@ let frame=0;
 let workTimer=0;
 let notificationTimer=0;
 let statusTimer=0;
+let syncPending=false;
 let workCache={at:0,value:{configured:false,active:true,start:null,end:null,label:'Work hours follow Pacefold setup'}};
 const originalSetBadge=typeof navigator.setAppBadge==='function'?navigator.setAppBadge.bind(navigator):null;
 const originalClearBadge=typeof navigator.clearAppBadge==='function'?navigator.clearAppBadge.bind(navigator):null;
@@ -101,6 +102,12 @@ function showStatus(message,tone='neutral'){
   statusTimer=setTimeout(()=>{if(node.isConnected)node.hidden=true;},4200);
 }
 function originalAction(name){return [...(root?.querySelectorAll('[data-pf-action]:not([data-pf-flow-proxy])')||[])].find(control=>control.dataset.pfAction===name)||null;}
+function openNotes(event){
+  event?.preventDefault?.();event?.stopPropagation?.();
+  const notes=originalAction('open-notebook');
+  if(!notes){showStatus('Notes are still starting.','warning');return false;}
+  notes.click();return true;
+}
 function waitForSyncAction(timeout=10000){
   return new Promise(resolve=>{
     const immediate=originalAction('sync-page');if(immediate)return resolve(immediate);
@@ -112,18 +119,28 @@ function waitForSyncAction(timeout=10000){
     const deadline=setTimeout(()=>finish(null),timeout);
   });
 }
+function setSyncBusy(busy){
+  syncPending=busy;
+  for(const button of dock?.querySelectorAll('[data-pf-revamp-sync]')||[]){button.disabled=busy;button.setAttribute('aria-busy',String(busy));}
+}
 async function syncOneNote(event){
   event?.preventDefault?.();event?.stopImmediatePropagation?.();
+  if(syncPending){showStatus('OneNote is already being prepared.');return;}
   const lock=safeParse(localStorage.getItem(SYNC_LOCK_KEY),null);
   if(lock&&Number(lock.until)>Date.now()){showStatus('OneNote is already syncing.','neutral');return;}
-  let action=originalAction('sync-page');
-  if(!action){
-    const notes=originalAction('open-notebook');
-    if(!notes){showStatus('Notes are unavailable, so OneNote cannot sync.','warning');return;}
-    showStatus('Opening Notes and preparing OneNote…');notes.click();action=await waitForSyncAction(10000);
+  setSyncBusy(true);
+  try{
+    let action=originalAction('sync-page');
+    if(!action){
+      const notes=originalAction('open-notebook');
+      if(!notes){showStatus('Notes are unavailable, so OneNote cannot sync.','warning');return;}
+      showStatus('Opening Notes and preparing OneNote…');notes.click();action=await waitForSyncAction(10000);
+    }
+    if(!action){showStatus('OneNote did not become ready. Open Notes, connect Microsoft, then try again.','warning');return;}
+    action.click();showStatus('OneNote handoff requested. Check Notes for Microsoft connection status.','neutral');
+  }finally{
+    setTimeout(()=>setSyncBusy(false),1200);
   }
-  if(!action){showStatus('OneNote did not become ready. Open Notes, connect Microsoft, then try again.','warning');return;}
-  action.click();showStatus('OneNote sync started. Your local notes remain saved either way.','success');
 }
 function replaceVisibleCopy(){
   if(!root)return;
@@ -144,7 +161,8 @@ function ensureTopWindow(){
   const bar=dock.querySelector('.pf-flow-bar');if(!bar)return;
   let title=bar.querySelector('[data-pf-revamp-title]');
   if(!title){
-    title=document.createElement('div');title.className='pf-revamp-title';title.dataset.pfRevampTitle='true';title.innerHTML='<strong>Notes</strong><small data-pf-revamp-hours>Work hours follow Pacefold setup</small>';
+    title=document.createElement('button');title.type='button';title.className='pf-revamp-title';title.dataset.pfRevampTitle='true';title.setAttribute('aria-label','Open Notes');title.innerHTML='<strong>Notes</strong><small data-pf-revamp-hours>Work hours follow Pacefold setup</small>';
+    title.addEventListener('click',guarded('notes',openNotes));
     const cue=bar.querySelector('[data-pf-flow-cue]');bar.insertBefore(title,cue||bar.children[1]||null);
   }
   let sync=bar.querySelector('[data-pf-revamp-sync]');
@@ -153,6 +171,7 @@ function ensureTopWindow(){
     sync.addEventListener('click',guarded('sync',syncOneNote),true);
     bar.insertBefore(sync,bar.querySelector('[data-pf-flow-more]'));
   }
+  for(const notes of bar.querySelectorAll('[data-pf-flow-tool="notebook"]'))notes.dataset.pfRevampTopNotes='true';
   for(const media of bar.querySelectorAll('[data-pf-flow-tool="media"]'))media.dataset.pfRevampTopMedia='true';
   const input=bar.querySelector('[data-pf-flow-input]');if(input)input.placeholder='Write a note…';
   const panelTitle=dock.querySelector('[data-pf-flow-primary]');if(panelTitle)panelTitle.textContent='Notes above. Music below.';
@@ -190,5 +209,5 @@ window.addEventListener('storage',event=>{if(event.key?.startsWith('pacefold.'))
 window.addEventListener('pacefold:storage-changed',()=>{workCache.at=0;queue();});
 [0,100,300,800,1800].forEach(delay=>setTimeout(queue,delay));
 workTimer=setInterval(guarded('work-hours',()=>{if(document.visibilityState==='visible'){workCache.at=0;queue();}}),5000);
-window.__PACEFOLD_REVAMP__={revision:REVISION,reconcile:queue,readWorkWindow,syncOneNote};
+window.__PACEFOLD_REVAMP__={revision:REVISION,reconcile:queue,readWorkWindow,syncOneNote,openNotes};
 })();
