@@ -84,9 +84,11 @@ async function main(){
     assert(flow.includes("const VERSION='15.8.0'"),'Integrated runtime version missing');
     assert(revamp.includes("const REVISION='15.9.0'"),'15.9 Notes/player revamp runtime missing');
     assert(revamp.includes('waitForSyncAction(timeout=10000)')&&revamp.includes('MutationObserver'),'Resilient OneNote readiness wait is missing');
+    assert(revamp.includes('function openNotes(')&&revamp.includes("title=document.createElement('button')"),'Actionable Notes header is missing');
     assert(revamp.includes('originalSetBadge()')&&!revamp.includes('originalSetBadge(1)'),'Nonnumeric badge policy is missing');
     assert(revamp.includes('PACEFOLD_WORK_STATE')&&revamp.includes('readWorkWindow'),'Work-hour enforcement contract is missing');
     assert(revampCss.includes('data-pf-revamp-player')&&revampCss.includes('bottom:max(10px'),'Persistent lower mini-player contract is missing');
+    assert(revampCss.includes('2147483647')&&revampCss.includes('data-pf-revamp-top-notes')&&revampCss.includes('data-pf-flow-focus-capture'),'Top-layer contrast or duplicate-control suppression is missing');
     assert(guardian.includes("const VERSION='15.8.0'"),'Guardian version is not 15.8.0');
     assert(resilience.includes("const VERSION='15.8.0'"),'Resilience version is not 15.8.0');
     assert(flow.includes("const ACK_KEY='pacefold.flow.ack.v1'")&&flow.includes('taskbar-acknowledged'),'Taskbar acknowledgement contract is missing');
@@ -133,22 +135,26 @@ async function main(){
     mark('architecture');
     const architecture=await page.evaluate(()=>{
       const dock=document.getElementById('pf-flow-dock'),bar=document.querySelector('.pf-flow-bar'),player=document.querySelector('.pf-player-row[data-pf-revamp-player="true"]');
+      const title=document.querySelector('[data-pf-revamp-title]'),topNotes=document.querySelector('[data-pf-revamp-top-notes="true"]'),topMedia=document.querySelector('[data-pf-revamp-top-media="true"]');
+      const panelCapture=document.querySelector('.pf-flow-grid>[data-pf-flow-focus-capture]'),panelMedia=document.querySelector('.pf-flow-grid>[data-pf-flow-tool="media"]');
       const dockRect=dock?.getBoundingClientRect(),playerRect=player?.getBoundingClientRect();
       return {
         roots:document.querySelectorAll('#pf-hub-root').length,docks:document.querySelectorAll('#pf-flow-dock').length,version:dock?.dataset.version,revision:dock?.dataset.revision,
         captureSources:document.querySelectorAll('[data-pf-capture-form][data-pf-flow-source="true"]').length,playerSources:document.querySelectorAll('.pf-player-row[data-pf-flow-source="true"]').length,
         andonSources:document.querySelectorAll('.pf-andon[data-pf-flow-source="true"]').length,barHeight:bar?.getBoundingClientRect().height,
-        dockCenter:Math.abs((dockRect?.left||0)+(dockRect?.width||0)/2-innerWidth/2),
-        notesTitle:document.querySelector('[data-pf-revamp-title] strong')?.textContent,
+        dockCenter:Math.abs((dockRect?.left||0)+(dockRect?.width||0)/2-innerWidth/2),dockZ:Number(getComputedStyle(dock).zIndex),playerZ:Number(getComputedStyle(player).zIndex),
+        notesTitle:title?.querySelector('strong')?.textContent,notesTag:title?.tagName,topNotesDisplay:getComputedStyle(topNotes).display,topMediaDisplay:getComputedStyle(topMedia).display,
+        panelCaptureDisplay:getComputedStyle(panelCapture).display,panelMediaDisplay:getComputedStyle(panelMedia).display,
         playerHeight:playerRect?.height||0,playerBottom:innerHeight-(playerRect?.bottom||0),verticalGap:(playerRect?.top||0)-(dockRect?.bottom||0),
-        topMediaDisplay:getComputedStyle(document.querySelector('[data-pf-revamp-top-media="true"]')).display,
         unknown:[...document.querySelectorAll('#pf-hub-root [data-pf-action]')].map(node=>node.dataset.pfAction).filter(action=>!window.__PACEFOLD_SURFACE__.actions.includes(action))
       };
     });
     assert(architecture.roots===1&&architecture.docks===1&&architecture.version==='15.8.0'&&architecture.revision==='15.9.0',`Integrated architecture is invalid: ${JSON.stringify(architecture)}`);
     assert(architecture.captureSources===1&&architecture.playerSources===1&&architecture.andonSources===1,'Proven source controls were not retained exactly once');
     assert(architecture.barHeight<=60&&architecture.dockCenter<=2,`Desktop dock geometry failed: ${JSON.stringify(architecture)}`);
-    assert(architecture.notesTitle==='Notes'&&architecture.playerHeight>=40&&architecture.playerBottom<=16&&architecture.verticalGap>=0&&architecture.verticalGap<=18&&architecture.topMediaDisplay==='none',`Top Notes/lower player geometry failed: ${JSON.stringify(architecture)}`);
+    assert(architecture.notesTitle==='Notes'&&architecture.notesTag==='BUTTON'&&architecture.playerHeight>=40&&architecture.playerBottom<=16&&architecture.verticalGap>=0&&architecture.verticalGap<=18,`Top Notes/lower player geometry failed: ${JSON.stringify(architecture)}`);
+    assert(architecture.topNotesDisplay==='none'&&architecture.topMediaDisplay==='none'&&architecture.panelCaptureDisplay==='none'&&architecture.panelMediaDisplay==='none',`Duplicate controls remained visible: ${JSON.stringify(architecture)}`);
+    assert(architecture.dockZ>=2147483600&&architecture.playerZ>=2147483600&&architecture.dockZ>architecture.playerZ,`Notes/player surfaces can fall under modal dimming: ${JSON.stringify(architecture)}`);
     assert(architecture.unknown.length===0,`Unknown hub actions exist: ${architecture.unknown.join(',')}`);
 
     mark('slash-capture');
@@ -196,9 +202,9 @@ async function main(){
     assert(clearedTaskbarState.ack===null&&clearedTaskbarState.snooze===null,`Completed cue left taskbar state behind: ${JSON.stringify(clearedTaskbarState)}`);
 
     mark('notebook-and-onenote');
-    await page.locator('[data-pf-flow-tool="notebook"]').first().click();
+    await page.locator('[data-pf-revamp-title]').click();
     await page.waitForSelector('.pf-notebook');
-    assert(await page.getByText('Flow audit note').isVisible(),'Notes proxy did not open the persisted capture');
+    assert(await page.getByText('Flow audit note').isVisible(),'Actionable Notes header did not open the persisted capture');
     await page.locator('[data-pf-revamp-sync]').click();
     await page.waitForFunction(()=>window.__oneNoteSyncs.length===1,{timeout:12000});
     const synced=await page.evaluate(()=>window.__oneNoteSyncs[0]);
@@ -255,7 +261,7 @@ async function main(){
     await mobile.screenshot({path:path.join(artifactRoot,'pacefold-flow-mobile.png'),fullPage:true});
 
     if(errors.some(error=>/pacefold|pf-flow|pf-hub|Unhandled/i.test(error)))throw new Error(`15.9 browser errors: ${errors.join(' | ')}`);
-    console.log(`Pacefold 15.9 integrated audit passed: upper Notes window, lower mini-player, nonnumeric notifications, work hours, resilient OneNote and responsive recovery. Visuals: ${artifactRoot}`);
+    console.log(`Pacefold 15.9 integrated audit passed: actionable Notes header, lower mini-player, high-contrast modal layering, nonnumeric notifications, work hours, resilient OneNote and responsive recovery. Visuals: ${artifactRoot}`);
   }finally{
     if(browser)await Promise.race([browser.close().catch(()=>{}),delay(2500)]);
     server.closeAllConnections?.();server.close(()=>{});
