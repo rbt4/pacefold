@@ -21,7 +21,7 @@ const assets=[
 ];
 
 if(!(await exists(appHtml)))throw new Error(`Pacefold app shell was not found at ${appHtml}`);
-for(const name of assets){const source=path.join(sourceRoot,name),destination=path.join(appRoot,name);await fs.copyFile(source,destination);if(name.endsWith('.js'))await hardenTrustedScript(destination);}
+for(const name of assets){const source=path.join(sourceRoot,name),destination=path.join(appRoot,name);await fs.copyFile(source,destination);if(name==='pacefold-integrated.js')await removeNumericBadge(destination);if(name.endsWith('.js'))await hardenTrustedScript(destination);}
 await materializeCompressed('pacefold-hub.css.gz.b64',path.join(appRoot,'pacefold-hub.css'));
 await materializeCompressed('pacefold-hub.js.gz.b64',path.join(appRoot,'pacefold-hub.js'));
 await fs.mkdir(iconTarget,{recursive:true});
@@ -219,6 +219,14 @@ async function materializeCompressed(name,destination){
   await fs.writeFile(destination,output);
 }
 async function hardenTrustedScript(file){const source=await fs.readFile(file,'utf8'),result=rewriteInnerHTMLAssignments(source);if(result.count)await fs.writeFile(file,trustedBootstrap+result.source);}
+async function removeNumericBadge(file){
+  const source=await fs.readFile(file,'utf8');
+  const matches=source.match(/navigator\.setAppBadge\?\.\(1\)/g)||[];
+  if(matches.length!==1)throw new Error(`Unexpected numeric app-badge call count: ${matches.length}`);
+  const next=source.replace('navigator.setAppBadge?.(1)','navigator.setAppBadge?.()');
+  if(next.includes('navigator.setAppBadge?.(1)'))throw new Error('Numeric app badge survived integrated runtime hardening');
+  await fs.writeFile(file,next);
+}
 
 function upgradeRuntimeVersion(source){
   const matches=source.match(/15\.6\.0/g)||[];
