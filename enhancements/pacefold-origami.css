@@ -1,0 +1,410 @@
+/* Pacefold 16.1.0 — origami identity and motion layer. */
+:root{
+  --pf-fold-duration:210ms;
+  --pf-fold-fast:145ms;
+  --pf-fold-ease:cubic-bezier(.2,.8,.2,1);
+  --pf-crease:rgba(35,48,42,.10);
+  --pf-crease-strong:rgba(35,48,42,.18);
+  --pf-paper-glint:rgba(255,255,255,.72);
+  --pf-player-bg:#080a09;
+}
+body[data-theme="dark"]{
+  --pf-crease:rgba(231,239,234,.08);
+  --pf-crease-strong:rgba(231,239,234,.15);
+  --pf-paper-glint:rgba(255,255,255,.07)
+}
+
+/* The complete workspace behaves like a hinged paper object. */
+#pf-local-workspace{
+  perspective:1400px!important;
+  transform-style:preserve-3d!important;
+  transform-origin:top center!important;
+  transition:
+    height var(--pf-fold-duration) var(--pf-fold-ease),
+    max-height var(--pf-fold-duration) var(--pf-fold-ease),
+    border-radius var(--pf-fold-fast) ease,
+    box-shadow var(--pf-fold-duration) ease!important;
+  will-change:height
+}
+#pf-local-workspace.is-open{border-radius:16px 16px 13px 13px!important;box-shadow:0 24px 68px rgba(19,25,22,.22)!important}
+#pf-local-workspace:not(.is-open){border-radius:12px!important;box-shadow:0 10px 30px rgba(19,25,22,.16)!important}
+#pf-local-workspace .pf-workspace-shell{perspective:1200px;transform-style:preserve-3d}
+
+/* Folded-P identity, using the reusable SVG asset. */
+#pf-local-workspace .pf-flow-pulse{
+  position:relative!important;
+  overflow:visible!important;
+  color:transparent!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  isolation:isolate
+}
+#pf-local-workspace .pf-flow-pulse>*{opacity:0!important}
+#pf-local-workspace .pf-flow-pulse::before{
+  content:"";
+  position:absolute;
+  inset:4px;
+  background:url("./pacefold-fold-mark.svg") center/contain no-repeat;
+  filter:drop-shadow(0 2px 3px rgba(29,48,39,.15));
+  transform:translateZ(0) rotateY(0deg);
+  transform-origin:center;
+  transition:transform var(--pf-fold-duration) var(--pf-fold-ease),filter var(--pf-fold-fast) ease
+}
+#pf-local-workspace .pf-flow-pulse::after{
+  content:"";
+  position:absolute;
+  width:18px;
+  height:1px;
+  left:8px;
+  top:17px;
+  opacity:0;
+  background:linear-gradient(90deg,transparent,var(--pf-paper-glint),transparent);
+  transform:rotate(-32deg) translateX(-7px);
+  transition:opacity var(--pf-fold-fast) ease,transform var(--pf-fold-duration) var(--pf-fold-ease)
+}
+#pf-local-workspace .pf-flow-pulse:hover::before{transform:translateZ(0) rotateY(-12deg) rotateZ(-1deg);filter:drop-shadow(0 4px 5px rgba(29,48,39,.22))}
+#pf-local-workspace .pf-flow-pulse:hover::after{opacity:.9;transform:rotate(-32deg) translateX(7px)}
+#pf-local-workspace .pf-revamp-title strong{
+  font-family:ui-serif,Georgia,"Times New Roman",serif!important;
+  font-size:14px!important;
+  font-weight:650!important;
+  letter-spacing:-.025em!important
+}
+#pf-local-workspace .pf-revamp-title small{letter-spacing:.025em!important}
+
+/* The compact header is itself a paper flap with a central crease. */
+#pf-local-workspace #pf-flow-dock .pf-flow-bar{
+  position:relative!important;
+  overflow:visible!important;
+  background:
+    linear-gradient(180deg,var(--pf-paper-raised),var(--pf-paper))!important;
+  box-shadow:inset 0 1px 0 var(--pf-paper-glint)!important
+}
+#pf-local-workspace #pf-flow-dock .pf-flow-bar::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  left:14%;
+  right:14%;
+  bottom:-9px;
+  height:12px;
+  opacity:.72;
+  pointer-events:none;
+  background:linear-gradient(180deg,var(--pf-crease-strong),transparent 72%);
+  clip-path:polygon(0 0,43% 0,50% 100%,57% 0,100% 0,96% 100%,4% 100%)
+}
+#pf-local-workspace #pf-flow-dock .pf-flow-bar::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:-8px;
+  width:42px;
+  height:11px;
+  pointer-events:none;
+  background:linear-gradient(145deg,var(--pf-paper),var(--pf-paper-raised));
+  border-right:1px solid var(--pf-crease);
+  border-bottom:1px solid var(--pf-crease-strong);
+  transform:translateX(-50%);
+  clip-path:polygon(0 0,50% 100%,100% 0)
+}
+
+/* The mounted notebook remains in the DOM and physically unfolds from the header. */
+#pf-local-workspace .pf-notebook-sheet{
+  position:relative!important;
+  display:flex!important;
+  max-height:calc(100vh - 128px)!important;
+  opacity:1;
+  visibility:visible;
+  transform:rotateX(0deg) translateY(0) scaleY(1);
+  transform-origin:top center;
+  backface-visibility:hidden;
+  will-change:transform,opacity,max-height;
+  transition:
+    transform var(--pf-fold-duration) var(--pf-fold-ease),
+    opacity var(--pf-fold-fast) ease,
+    max-height var(--pf-fold-duration) var(--pf-fold-ease),
+    visibility 0s linear 0s!important;
+  background:
+    linear-gradient(90deg,transparent 0 49.9%,var(--pf-crease) 50%,transparent 50.1%),
+    linear-gradient(180deg,var(--pf-paper-raised),color-mix(in srgb,var(--pf-paper-raised) 97%,var(--pf-paper-deep)))!important
+}
+#pf-local-workspace .pf-notebook-sheet::before{
+  content:"";
+  position:absolute;
+  z-index:5;
+  top:0;
+  left:4%;
+  right:4%;
+  height:16px;
+  opacity:.42;
+  pointer-events:none;
+  background:
+    linear-gradient(165deg,transparent 0 48%,var(--pf-crease-strong) 49%,transparent 51%) left/50% 100% no-repeat,
+    linear-gradient(195deg,transparent 0 48%,var(--pf-crease-strong) 49%,transparent 51%) right/50% 100% no-repeat
+}
+#pf-local-workspace .pf-notebook-sheet::after{
+  content:"";
+  position:absolute;
+  z-index:5;
+  right:0;
+  bottom:38px;
+  width:22px;
+  height:22px;
+  pointer-events:none;
+  background:linear-gradient(135deg,var(--pf-paper-deep) 0 49%,var(--pf-crease-strong) 50%,var(--pf-paper-raised) 52%);
+  clip-path:polygon(100% 0,0 100%,100% 100%);
+  opacity:.65
+}
+#pf-local-workspace:not(.is-open) .pf-notebook-sheet{
+  display:flex!important;
+  max-height:0!important;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none!important;
+  transform:rotateX(-15deg) translateY(-12px) scaleY(.94);
+  transition:
+    transform var(--pf-fold-duration) var(--pf-fold-ease),
+    opacity var(--pf-fold-fast) ease,
+    max-height var(--pf-fold-duration) var(--pf-fold-ease),
+    visibility 0s linear var(--pf-fold-duration)!important
+}
+#pf-local-workspace.is-open .pf-notebook-sheet{animation:pf-unfold-settle var(--pf-fold-duration) var(--pf-fold-ease) both}
+
+/* Refined paper hierarchy. */
+.pf-notebook-head{
+  position:relative;
+  padding-top:17px!important;
+  background:color-mix(in srgb,var(--pf-paper-raised) 96%,var(--pf-paper-deep))!important
+}
+.pf-notebook-head::after{
+  content:"";
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:-1px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,var(--pf-crease-strong) 16% 84%,transparent)
+}
+.pf-notebook-head strong{font-family:ui-serif,Georgia,"Times New Roman",serif!important;font-weight:630!important}
+.pf-notebook-tools{background:color-mix(in srgb,var(--pf-paper) 94%,transparent)!important}
+.pf-note-composer{position:relative;background:color-mix(in srgb,var(--pf-paper-raised) 98%,var(--pf-paper))!important}
+.pf-note-composer::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:2px;
+  opacity:.7;
+  background:linear-gradient(180deg,transparent,var(--pf-accent),transparent)
+}
+.pf-note-composer-foot button{box-shadow:0 5px 14px color-mix(in srgb,var(--pf-accent) 24%,transparent);transition:transform var(--pf-fold-fast) var(--pf-fold-ease),box-shadow var(--pf-fold-fast) ease}
+.pf-note-composer-foot button:hover{transform:translateY(-1px);box-shadow:0 8px 18px color-mix(in srgb,var(--pf-accent) 28%,transparent)}
+.pf-note-document{position:relative!important;background:transparent!important}
+.pf-note-document::before{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:18px;
+  width:1px;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent,var(--pf-crease) 8% 92%,transparent)
+}
+.pf-note-block{
+  transform-origin:top center;
+  animation:pf-paper-settle 180ms var(--pf-fold-ease) both;
+  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),background var(--pf-fold-fast) ease,padding var(--pf-fold-fast) ease
+}
+.pf-note-block:hover{transform:translateX(2px);background:linear-gradient(90deg,var(--pf-accent-soft),transparent 44%)}
+.pf-note-block::before{
+  content:"";
+  position:absolute;
+  left:-4px;
+  top:17px;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:var(--pf-accent);
+  box-shadow:0 0 0 3px var(--pf-paper-raised)
+}
+
+/* Category tabs are tucked paper leaves rather than pill buttons. */
+.pf-notebook-tabs{
+  min-height:42px!important;
+  align-items:flex-end!important;
+  gap:4px!important;
+  padding:8px 8px 0!important;
+  overflow-y:visible!important;
+  background:linear-gradient(180deg,var(--pf-paper-deep),color-mix(in srgb,var(--pf-paper-deep) 92%,var(--pf-paper)))!important
+}
+.pf-notebook-tabs>button{
+  position:relative;
+  height:32px!important;
+  border:1px solid var(--pf-line)!important;
+  border-bottom:0!important;
+  border-radius:7px 7px 0 0!important;
+  color:var(--pf-muted)!important;
+  background:color-mix(in srgb,var(--pf-paper) 90%,transparent)!important;
+  transform:translateY(1px) rotateX(2deg);
+  transform-origin:bottom center;
+  clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 100%,0 100%);
+  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),height var(--pf-fold-fast) var(--pf-fold-ease),background var(--pf-fold-fast) ease,color var(--pf-fold-fast) ease,box-shadow var(--pf-fold-fast) ease!important
+}
+.pf-notebook-tabs>button::before{
+  content:"";
+  position:absolute;
+  left:8px;
+  right:8px;
+  top:2px;
+  height:1px;
+  opacity:.5;
+  background:linear-gradient(90deg,transparent,var(--pf-paper-glint),transparent)
+}
+.pf-notebook-tabs>button:hover{transform:translateY(-1px) rotateX(0deg)!important;background:var(--pf-paper-raised)!important;color:var(--pf-ink)!important}
+.pf-notebook-tabs>button[aria-pressed="true"]{
+  height:36px!important;
+  color:var(--pf-ink)!important;
+  background:var(--pf-paper-raised)!important;
+  transform:translateY(0) rotateX(0deg)!important;
+  box-shadow:0 -7px 17px rgba(25,34,30,.08)!important
+}
+.pf-notebook-tabs>button[aria-pressed="true"]::after{
+  content:"";
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:2px;
+  height:2px;
+  border-radius:2px;
+  background:var(--pf-accent)
+}
+.pf-notebook-tabs>button small{color:var(--pf-muted)!important;background:var(--pf-accent-soft)!important}
+.pf-notebook-tabs .pf-tab-add{clip-path:none;border-radius:8px 8px 0 0!important}
+.pf-tab-new:not([hidden]){animation:pf-tab-fold-in var(--pf-fold-duration) var(--pf-fold-ease) both}
+
+/* The player is a separate black folded utility, with the drawer hinged to its bar. */
+#pf-local-player{perspective:1200px!important;transform-style:preserve-3d!important}
+#pf-local-player::before{
+  content:"";
+  position:absolute;
+  z-index:3;
+  left:50%;
+  top:-4px;
+  width:36px;
+  height:8px;
+  border:1px solid rgba(255,255,255,.11);
+  border-bottom:0;
+  border-radius:8px 8px 0 0;
+  pointer-events:none;
+  background:linear-gradient(180deg,#151917,var(--pf-player-bg));
+  transform:translateX(-50%);
+  clip-path:polygon(18% 100%,50% 30%,82% 100%)
+}
+.pf-player-bar{
+  position:relative;
+  background-color:var(--pf-player-bg)!important;
+  background-image:linear-gradient(180deg,#0d100e,var(--pf-player-bg))!important;
+  box-shadow:0 16px 42px rgba(0,0,0,.39),inset 0 1px 0 rgba(255,255,255,.07)!important;
+  transition:transform var(--pf-fold-duration) var(--pf-fold-ease),border-color var(--pf-fold-fast) ease,box-shadow var(--pf-fold-duration) ease!important
+}
+#pf-local-player:has(.pf-player-drawer:not([hidden])) .pf-player-bar{
+  transform:translateY(1px) rotateX(-1deg);
+  border-color:rgba(131,181,158,.24)!important;
+  box-shadow:0 20px 48px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.08)!important
+}
+.pf-player-drawer{
+  display:flex!important;
+  opacity:1;
+  visibility:visible;
+  transform:translateY(0) rotateX(0deg) scaleY(1);
+  transform-origin:bottom center;
+  backface-visibility:hidden;
+  will-change:transform,opacity;
+  background:linear-gradient(165deg,#101411,#090b0a)!important;
+  transition:
+    transform var(--pf-fold-duration) var(--pf-fold-ease),
+    opacity var(--pf-fold-fast) ease,
+    visibility 0s linear 0s!important
+}
+.pf-player-drawer::after{
+  content:"";
+  position:absolute;
+  left:9%;
+  right:9%;
+  bottom:0;
+  height:14px;
+  opacity:.62;
+  pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.44));
+  clip-path:polygon(0 0,44% 0,50% 100%,56% 0,100% 0,96% 100%,4% 100%)
+}
+.pf-player-drawer[hidden]{
+  display:flex!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transform:translateY(14px) rotateX(-15deg) scaleY(.93)!important;
+  transition:
+    transform var(--pf-fold-duration) var(--pf-fold-ease),
+    opacity var(--pf-fold-fast) ease,
+    visibility 0s linear var(--pf-fold-duration)!important
+}
+.pf-player-drawer:not([hidden]){animation:pf-player-unfold var(--pf-fold-duration) var(--pf-fold-ease) both}
+.pf-player-nav button{transition:transform var(--pf-fold-fast) var(--pf-fold-ease),background var(--pf-fold-fast) ease,color var(--pf-fold-fast) ease!important}
+.pf-player-nav button:hover{transform:translateY(-1px)}
+.pf-player-nav button[aria-pressed="true"]{box-shadow:inset 0 -2px 0 #83b59e}
+
+@keyframes pf-unfold-settle{
+  0%{opacity:.55;transform:rotateX(-12deg) translateY(-8px) scaleY(.96)}
+  72%{opacity:1;transform:rotateX(1.3deg) translateY(0) scaleY(1.003)}
+  100%{opacity:1;transform:rotateX(0deg) translateY(0) scaleY(1)}
+}
+@keyframes pf-player-unfold{
+  0%{opacity:.4;transform:translateY(12px) rotateX(-14deg) scaleY(.94)}
+  76%{opacity:1;transform:translateY(-1px) rotateX(1deg) scaleY(1.002)}
+  100%{opacity:1;transform:translateY(0) rotateX(0deg) scaleY(1)}
+}
+@keyframes pf-paper-settle{
+  0%{opacity:.62;transform:translateY(-4px) rotateX(-2deg)}
+  100%{opacity:1;transform:translateY(0) rotateX(0deg)}
+}
+@keyframes pf-tab-fold-in{
+  0%{opacity:0;transform:translateY(8px) rotateX(-24deg) scaleX(.92)}
+  100%{opacity:1;transform:translateY(0) rotateX(0deg) scaleX(1)}
+}
+
+@media (max-width:560px){
+  #pf-local-workspace #pf-flow-dock .pf-flow-bar::before{left:7%;right:7%}
+  #pf-local-workspace .pf-notebook-sheet{max-height:calc(100vh - 112px)!important}
+  .pf-notebook-head{padding-top:14px!important}
+  .pf-note-document::before{left:12px}
+  .pf-note-block::before{left:-3px}
+  .pf-notebook-tabs{padding-inline:5px!important}
+  .pf-notebook-tabs>button{min-width:58px!important}
+  .pf-player-drawer{transform-origin:bottom center!important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #pf-local-workspace,
+  #pf-local-workspace .pf-notebook-sheet,
+  #pf-local-workspace .pf-flow-pulse::before,
+  #pf-local-workspace .pf-flow-pulse::after,
+  .pf-note-block,
+  .pf-note-composer-foot button,
+  .pf-notebook-tabs>button,
+  .pf-tab-new,
+  .pf-player-bar,
+  .pf-player-drawer,
+  .pf-player-nav button{
+    animation:none!important;
+    transition:none!important
+  }
+  #pf-local-workspace:not(.is-open) .pf-notebook-sheet{transform:none!important}
+  .pf-player-drawer[hidden]{transform:none!important}
+}
+
+@media (forced-colors:active){
+  #pf-local-workspace .pf-flow-pulse::before{background-image:none!important;background:CanvasText!important;clip-path:polygon(15% 5%,72% 5%,92% 25%,72% 48%,42% 48%,42% 95%,15% 95%)!important}
+  .pf-notebook-tabs>button[aria-pressed="true"]{color:HighlightText!important;background:Highlight!important}
+}
