@@ -103,7 +103,7 @@ self.addEventListener('activate',event=>event.waitUntil((async()=>{
   for(const cacheName of await caches.keys()){
     const cache=await caches.open(cacheName);
     const requests=await cache.keys();
-    const stale=requests.filter(request=>{const url=new URL(request.url);return staleAsset.test(url.pathname)&&url.searchParams.get('v')!==ASSET_REVISION;});
+    const stale=requests.filter(request=>{const url=new URL(request.url);return staleAsset.test(url.pathname)&&url.searchParams.get('v')!==${JSON.stringify(ASSET_REVISION)};});
     await Promise.all(stale.map(request=>cache.delete(request)));
   }
   await self.clients.claim();
