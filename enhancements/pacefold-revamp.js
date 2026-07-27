@@ -8,7 +8,9 @@ const WORK_OVERRIDE_KEY='pacefold.flow.work-hours.v1';
 const SYNC_LOCK_KEY='pacefold.resilience.lock.sync-page.v1';
 const TEXT_REPLACEMENTS=new Map([
   ['Capture to the HSSys notebook','Add a note'],
+  ['Capture to the Pacefold notebook','Add a note'],
   ['HSSys notebook','Notes'],
+  ['Pacefold notebook','Notes'],
   ['Open Pacefold notebook','Open Pacefold notes'],
   ['Open notebook','Open notes'],
   ['Notebook','Notes'],
@@ -63,7 +65,7 @@ function findDays(object,depth=0,seen=new Set()){
   return null;
 }
 function readWorkWindow(force=false){
-  if(!force&&Date.now()-workCache.at<30000)return workCache.value;
+  if(!force&&Date.now()-workCache.at<5000)return workCache.value;
   const startNames=new Set(['workstart','workdaystart','daystart','shiftstart','starttime','workhoursstart','workfrom','officehoursstart']);
   const endNames=new Set(['workend','workdayend','dayend','shiftend','endtime','workhoursend','workto','officehoursend']);
   const candidates=[];
@@ -165,8 +167,7 @@ function applyWorkState(){
   const work=readWorkWindow();document.documentElement.classList.toggle('pf-revamp-offhours',!work.active);
   const hours=dock?.querySelector('[data-pf-revamp-hours]');if(hours)hours.textContent=work.configured?(work.active?`Working · ${work.label}`:`Off hours · ${work.label}`):work.label;
   if(!work.active){clearBadge();closeNotifications();}
-  else{
-    clearTimeout(notificationTimer);
+  else if(!notificationTimer){
     notificationTimer=setTimeout(()=>{notificationTimer=0;closeNotifications();},8000);
   }
   const taskbar=dock?.querySelector('[data-pf-flow-taskbar]');if(taskbar&&!work.active)taskbar.textContent='Off hours';
@@ -188,6 +189,6 @@ window.addEventListener('focus',guarded('focus',()=>{workCache.at=0;applyWorkSta
 window.addEventListener('storage',event=>{if(event.key?.startsWith('pacefold.')){workCache.at=0;queue();}});
 window.addEventListener('pacefold:storage-changed',()=>{workCache.at=0;queue();});
 [0,100,300,800,1800].forEach(delay=>setTimeout(queue,delay));
-workTimer=setInterval(guarded('work-hours',()=>{if(document.visibilityState==='visible'){workCache.at=0;queue();}}),30000);
+workTimer=setInterval(guarded('work-hours',()=>{if(document.visibilityState==='visible'){workCache.at=0;queue();}}),5000);
 window.__PACEFOLD_REVAMP__={revision:REVISION,reconcile:queue,readWorkWindow,syncOneNote};
 })();
