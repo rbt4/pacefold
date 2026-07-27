@@ -143,12 +143,17 @@ html.pf-flow-active body{padding-bottom:116px!important}
   #pf-local-player .pf-player-volume{display:none!important}
 }
 
-/* Narrow-window fallback: one surface at a time instead of two overlapping surfaces. */
+/* Narrow-window fallback: retain the compact notebook header while the drawer owns the content lane. */
 @media (max-width:760px){
   #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace{
-    opacity:0!important;
-    visibility:hidden!important;
-    pointer-events:none!important
+    height:46px!important;
+    max-height:46px!important;
+    opacity:1!important;
+    visibility:visible!important;
+    pointer-events:auto!important
+  }
+  #pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace .pf-notebook-sheet{
+    display:none!important
   }
   #pf-local-player>.pf-player-drawer{
     right:6px!important;
