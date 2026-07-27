@@ -1,0 +1,138 @@
+name: Temporary Pacefold branch repair
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.event.head_commit.message == 'Start Pacefold cache recovery repair'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-cache-recovery
+          fetch-depth: 0
+
+      - name: Apply targeted installed-app recovery
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          inject_path=Path('enhancements/inject.mjs')
+          source=inject_path.read_text(encoding='utf-8')
+          version_line="const VERSION='15.8.0';\n"
+          revision_line="const ASSET_REVISION='15.8.4';\n"
+          if revision_line not in source:
+              if source.count(version_line)!=1:
+                  raise SystemExit('Unexpected surface version declaration')
+              source=source.replace(version_line,version_line+revision_line,1)
+
+          stale_query='?v=${VERSION}'
+          if stale_query in source:
+              count=source.count(stale_query)
+              if count!=6:
+                  raise SystemExit(f'Expected six stale asset revisions, found {count}')
+              source=source.replace(stale_query,'?v=${ASSET_REVISION}')
+
+          old_activate="self.addEventListener('activate',event=>event.waitUntil(self.clients.claim()));"
+          repaired_activate="""self.addEventListener('activate',event=>event.waitUntil((async()=>{
+            const staleAsset=/\\/pacefold-(?:hub(?:-guardian)?|resilience|integrated)\\.(?:js|css)$/i;
+            for(const cacheName of await caches.keys()){
+              const cache=await caches.open(cacheName);
+              const requests=await cache.keys();
+              const stale=requests.filter(request=>{const url=new URL(request.url);return staleAsset.test(url.pathname)&&url.searchParams.get('v')!==ASSET_REVISION;});
+              await Promise.all(stale.map(request=>cache.delete(request)));
+            }
+            await self.clients.claim();
+          })()));"""
+          if old_activate in source:
+              if source.count(old_activate)!=1:
+                  raise SystemExit('Unexpected service-worker activate structure')
+              source=source.replace(old_activate,repaired_activate,1)
+
+          if source.count('ASSET_REVISION')!=8:
+              raise SystemExit(f'Asset revision contract incomplete: {source.count("ASSET_REVISION")} references')
+          if stale_query in source:
+              raise SystemExit('A stale injected asset query survived')
+          if old_activate in source:
+              raise SystemExit('The stale activate handler survived')
+          inject_path.write_text(source,encoding='utf-8')
+
+          Path('enhancements/VERSION').write_text('15.8.4\n',encoding='utf-8')
+          Path('CACHE_RECOVERY_15_8_4.md').write_text("""# Pacefold 15.8.4 installed-app recovery
+
+## Root cause
+
+The core 15.2.2 release enabled strict Trusted Types and rewrote the generated enhancement scripts, but the injected JavaScript and stylesheet URLs retained the old `15.8.0` cache revision. Existing Edge/PWA installations could therefore run older enhancement scripts under the new CSP while fresh CI profiles remained clean.
+
+## Repair
+
+- Keep the stable 15.8 runtime/data contract.
+- Give all six injected enhancement assets the new `15.8.4` cache revision.
+- During activation, remove only stale Pacefold enhancement JavaScript/CSS requests from origin caches.
+- Preserve preferences, captures, notebook records, Microsoft settings, the verified core cache, and unrelated origin data.
+
+## Validation
+
+The repair reconstructs the checksum-pinned core, runs the normal build, injects the surface twice, verifies the six revised URLs, checks both generated service workers, and then goes through the repository's full browser PR suite.
+""",encoding='utf-8')
+
+          readme_path=Path('README.md')
+          readme=readme_path.read_text(encoding='utf-8')
+          note="""## 15.8.4 installed-app recovery
+
+15.8.4 fixes a cache-version mismatch introduced by the 15.2.2 security release. Installed Pacefold copies now request the hardened enhancement scripts with a new asset revision and remove only stale Pacefold enhancement entries during service-worker activation. Local settings and notebook data are not reset.
+
+"""
+          if '## 15.8.4 installed-app recovery' not in readme:
+              marker='## Install\n'
+              if marker not in readme:
+                  raise SystemExit('README install section missing')
+              readme=readme.replace(marker,note+marker,1)
+          readme=readme.replace('Surface version:\n\n`15.8.0`','Surface asset revision:\n\n`15.8.4`')
+          readme=readme.replace('Pacefold 15.8.0 integrated surface over Pacefold core 15.2.2','Pacefold 15.8.4 cache-recovery surface over Pacefold core 15.2.2')
+          readme_path.write_text(readme,encoding='utf-8')
+          PY
+
+          rm -f .github/workflows/temporary-cache-repair.yml .github/workflows/temporary-cache-repair-pr.yml
+
+      - name: Verify source and generated output
+        run: |
+          node --check enhancements/inject.mjs
+          rm -rf /tmp/pacefold-repair-release /tmp/pacefold-repair.zip
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-repair.zip
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-repair.zip" | sha256sum -c -
+          mkdir /tmp/pacefold-repair-release
+          unzip -q /tmp/pacefold-repair.zip -d /tmp/pacefold-repair-release
+          node /tmp/pacefold-repair-release/scripts/build.mjs /tmp/pacefold-repair-release
+          node enhancements/inject.mjs /tmp/pacefold-repair-release
+          node enhancements/inject.mjs /tmp/pacefold-repair-release
+          test "$(grep -o '?v=15.8.4' /tmp/pacefold-repair-release/app/index.html | wc -l)" -eq 6
+          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' /tmp/pacefold-repair-release/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' /tmp/pacefold-repair-release/app/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o "url.searchParams.get('v')!==ASSET_REVISION" /tmp/pacefold-repair-release/service-worker.js | wc -l)" -eq 1
+          test "$(grep -o "url.searchParams.get('v')!==ASSET_REVISION" /tmp/pacefold-repair-release/app/service-worker.js | wc -l)" -eq 1
+          node --check /tmp/pacefold-repair-release/service-worker.js
+          node --check /tmp/pacefold-repair-release/app/service-worker.js
+
+      - name: Commit repair branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair installed Pacefold asset cache mismatch"
+          git push origin HEAD:agent/pacefold-cache-recovery
+
+      - name: Remove temporary workflow from main
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+          git rm .github/workflows/temporary-branch-repair.yml
+          git commit -m "Remove temporary Pacefold repair workflow"
+          git push origin main
