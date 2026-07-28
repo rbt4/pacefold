@@ -73,20 +73,6 @@ body[data-theme="dark"]{
   box-shadow:0 2px 0 -1px var(--pf-accent);
   background:transparent!important
 }
-@media (max-width:560px){
-  .pf-notebook-tools{
-    align-items:center!important;
-    flex-flow:row nowrap!important
-  }
-  .pf-notebook-tools>label{min-width:70px}
-  .pf-notebook-tools input{width:100%!important}
-  .pf-format-tools{
-    width:auto!important;
-    max-width:54%!important;
-    flex:0 0 auto;
-    justify-content:flex-end
-  }
-}
 .pf-note-empty strong{
   font-family:ui-serif,Georgia,"Times New Roman",serif;
   font-weight:620!important;
