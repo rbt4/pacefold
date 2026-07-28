@@ -70,6 +70,7 @@ jobs:
 
       - name: Ma browser and invariant audit
         run: |
+          set -o pipefail
           mkdir -p /tmp/pacefold-ma-artifacts
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/ma-audit.cjs _release /tmp/pacefold-ma-artifacts 2>&1 | tee /tmp/pacefold-ma-audit.log
 
