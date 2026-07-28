@@ -178,7 +178,7 @@ html.pf-flow-active body:has(#pf-local-player.is-open) main .date{
 
 /* Pacefold 17.1: the workday rhythm is the home surface again. */
 html.pf-flow-active body:not(:has(#pf-local-workspace.is-open)):not(:has(#pf-local-player.is-open)) main .workline{
-  opacity:.76;
+  opacity:.76!important;
   border-color:rgba(49,95,77,.11);
   background:color-mix(in srgb,var(--paper,#f4f1e9) 88%,transparent);
   box-shadow:0 9px 30px rgba(29,48,39,.045)
