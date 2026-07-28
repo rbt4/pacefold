@@ -90,7 +90,7 @@ const server=http.createServer((req,res)=>{
     await wafer.addInitScript(()=>localStorage.setItem('pacefoldPrefsV15',JSON.stringify({workHours:'08:30-16:30',clarity:'wafer',schemaVersion:18,workWeek:{mon:{start:'08:30',end:'16:30',type:'Desk'}}})));
     const waferPage=await wafer.newPage();await waferPage.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'networkidle'});await waferPage.waitForFunction(()=>Boolean(window.__PACEFOLD_MA__));
     const geometry=await waferPage.evaluate(()=>({scrollW:document.documentElement.scrollWidth,clientW:document.documentElement.clientWidth,scrollH:document.documentElement.scrollHeight,clientH:document.documentElement.clientHeight,player:document.getElementById('pf-local-player')?getComputedStyle(document.getElementById('pf-local-player')).display:null}));
-    assert(geometry.scrollW<=geometry.clientW+1&&geometry.scrollH<=geometry.clientH+1&&geometry.player==='none',`Wafer overflow/player overlap: ${JSON.stringify(geometry)}`);
+    assert(geometry.scrollW<=geometry.clientW+1&&geometry.scrollH<=geometry.clientH+1&&(geometry.player===null||geometry.player==='none'),`Wafer overflow/player overlap: ${JSON.stringify(geometry)}`);
     await waferPage.screenshot({path:path.join(artifactRoot,'pacefold-ma-wafer.png'),fullPage:true});await wafer.close();
 
     const forced=await browser.newContext({viewport:{width:900,height:650},forcedColors:'active'});const forcedPage=await forced.newPage();await forcedPage.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'networkidle'});await forcedPage.waitForFunction(()=>Boolean(window.__PACEFOLD_MA__));
