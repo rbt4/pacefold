@@ -12,37 +12,46 @@
     root.dataset.clarity='discreet';
   }
 
-  /* Ma owns one broad reconciliation observer. Settle that observer so DOM writes
-     produced by its own callback cannot feed an immediate reconciliation loop.
-     The wrapper is available for one task only; core and focused observers retain
-     the native MutationObserver implementation. */
+  /* The Ma layer owns one broad document reconciliation observer. Keep focused
+     core/clock observers fully native, but settle any whole-document observer
+     and ignore DOM nodes created by Ma itself. This prevents reconciliation from
+     feeding on its own ribbon, meter, Quiet and option-menu additions. */
   const NativeObserver=window.MutationObserver;
   if(typeof NativeObserver==='function'){
-    document.addEventListener('DOMContentLoaded',()=>{
-      let claimed=false;
-      function SettledObserver(callback){
-        if(claimed)return new NativeObserver(callback);
-        claimed=true;
-        let queued=[],scheduled=false,muted=false,observer;
-        observer=new NativeObserver(records=>{
-          if(muted)return;
-          queued.push(...records);
-          if(scheduled)return;
-          scheduled=true;
-          setTimeout(()=>{
-            scheduled=false;
-            const batch=queued;
-            queued=[];
-            if(!batch.length)return;
-            muted=true;
-            try{callback(batch,observer);}finally{setTimeout(()=>{muted=false;},0);}
-          },0);
-        });
-        return observer;
-      }
-      SettledObserver.prototype=NativeObserver.prototype;
-      window.MutationObserver=SettledObserver;
-      setTimeout(()=>{if(window.MutationObserver===SettledObserver)window.MutationObserver=NativeObserver;},0);
-    },{once:true});
+    const ownedSelector=[
+      '.pf-ribbon-track','.pf-ribbon-spent','.pf-ribbon-now','.pf-ribbon-tick','.pf-ribbon-mark','.pf-ribbon-ticks','.pf-ribbon-marks',
+      '.pf-time-digit','.pf-meter','.pf-meter-host','.pf-ritual-options','.pf-ritual-menu','.pf-fold-review','.pf-backup-controls',
+      '.pf-storage-line','.pf-restore-dialog','.pf-wafer-edge','.pf-wafer-suggestion','.pf-quiet-toggle','.pf-day-type-toggle',
+      '#pfQuietToggle','#pfDayTypeToggle','#pfBackupControls','#pfStorageLine','#pfFoldReview','#pfRestoreDialog','#pfWaferEdge','#pfWaferSuggestion'
+    ].join(',');
+    const isOwned=node=>node?.nodeType===1&&(node.matches?.(ownedSelector)||node.closest?.(ownedSelector));
+    function SettledObserver(callback){
+      let broad=false,queued=[],scheduled=false,muted=false;
+      const native=new NativeObserver(records=>{
+        if(!broad){callback(records,this);return;}
+        if(muted)return;
+        const meaningful=records.filter(record=>[...record.addedNodes].some(node=>node.nodeType===1&&!isOwned(node)));
+        if(!meaningful.length)return;
+        queued.push(...meaningful);
+        if(scheduled)return;
+        scheduled=true;
+        setTimeout(()=>{
+          scheduled=false;
+          const batch=queued;
+          queued=[];
+          if(!batch.length)return;
+          muted=true;
+          try{callback(batch,this);}finally{setTimeout(()=>{muted=false;},0);}
+        },0);
+      });
+      this.observe=(target,options={})=>{
+        broad=target===document.documentElement&&Boolean(options.childList)&&Boolean(options.subtree);
+        native.observe(target,broad?{childList:true,subtree:true}:options);
+      };
+      this.disconnect=()=>native.disconnect();
+      this.takeRecords=()=>native.takeRecords();
+    }
+    SettledObserver.prototype=NativeObserver.prototype;
+    window.MutationObserver=SettledObserver;
   }
 })();
