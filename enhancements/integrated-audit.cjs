@@ -80,6 +80,7 @@ for(const token of [
   'playerMotionTimer',
   'function setNotebookOpen(open,focus=true,closePlayer=true)',
   'function setPlayerDrawer(open)',
+  "function savePlayerState(){writeJSON(PLAYER_KEY,{...playerState,drawer:false});}",
   'function scheduleNotebookAutoClose(delay=60000)',
   'Saved quietly to the notebook.',
   'Saved · folding back to your rhythm.',
@@ -178,8 +179,8 @@ const productRhythmGate=[
   "    await product.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'load'});",
   "    await product.waitForSelector('#noodleBtn');await product.waitForSelector('#pf-local-workspace');",
   "    await product.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.surfaceRelease==='17.1.0');",
-  "    const rhythmHome=await product.evaluate(()=>{const ids=['waterBtn','noodleBtn','awayBtn','lunchBtn','eyesBtn'];const visible=id=>{const node=document.getElementById(id);if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};const line=document.getElementById('workline');return {notebookOpen:document.getElementById('pf-local-workspace').classList.contains('is-open'),visible:ids.filter(visible),labels:ids.map(id=>document.getElementById(id)?.getAttribute('aria-label')||''),opacity:Number.parseFloat(getComputedStyle(line).opacity),noodleText:document.getElementById('noodleText')?.textContent||'',overflow:document.documentElement.scrollWidth>innerWidth+2};});",
-  "    assert(!rhythmHome.notebookOpen&&rhythmHome.visible.length===5&&rhythmHome.opacity>=.6&&!rhythmHome.overflow&&/30m|30-minute/i.test(`${rhythmHome.noodleText} ${rhythmHome.labels[1]}`),`Original rhythm home failed: ${JSON.stringify(rhythmHome)}`);",
+  "    const rhythmHome=await product.evaluate(()=>{const ids=['waterBtn','noodleBtn','awayBtn','lunchBtn','eyesBtn'];const visible=id=>{const node=document.getElementById(id);if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};const line=document.getElementById('workline');return {notebookOpen:document.getElementById('pf-local-workspace').classList.contains('is-open'),playerOpen:document.getElementById('pf-local-player').classList.contains('is-open'),visible:ids.filter(visible),labels:ids.map(id=>document.getElementById(id)?.getAttribute('aria-label')||''),opacity:Number.parseFloat(getComputedStyle(line).opacity),noodleText:document.getElementById('noodleText')?.textContent||'',overflow:document.documentElement.scrollWidth>innerWidth+2};});",
+  "    assert(!rhythmHome.notebookOpen&&!rhythmHome.playerOpen&&rhythmHome.visible.length===5&&rhythmHome.opacity>=.6&&!rhythmHome.overflow&&/30m|30-minute/i.test(`${rhythmHome.noodleText} ${rhythmHome.labels[1]}`),`Original rhythm home failed: ${JSON.stringify(rhythmHome)}`);",
   "    await product.screenshot({path:path.join(artifactRoot,'pacefold-rhythm-home.png'),fullPage:true});"
 ].join('\n');
 source=source.replace(finalErrorGate,`${productRhythmGate}\n    ${finalErrorGate}`);
