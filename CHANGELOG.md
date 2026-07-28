@@ -1,5 +1,28 @@
 # Changelog
 
+## 16.3.0 — Kinetic origami corrective release
+
+- Replaced the shallow height-and-opacity effect with explicit opening and closing motion states.
+- Added a five-stage notebook fold, alternating leaf hinges, central crease lighting, Pacefold-mark flip and paper-settle choreography.
+- Rebuilt the local-audio drawer as a bottom-hinged black tray with staged header, navigation and body folds.
+- Kept closing surfaces mounted for the full animation and clear motion markers after a bounded 620 ms window.
+- Added `aria-expanded` state to notebook and player controls.
+- Unified notebook, drawer and footer geometry under shared variables so every animation remains collision-free.
+- Removed the visible notebook-tab scrollbar, refined page ruling, improved focus treatment and limited compositor hints to active motion.
+- Added reduced-motion and forced-colour fallbacks for the new fold layers.
+- Cache-busted every injected asset, stamped both workers and upgraded the release/audit contracts to 16.3.0.
+- Restored the README core checksum required by the repository verifier.
+
+## 16.2.0 — Unified desktop workspace
+
+- Joined the notebook, player drawer and player footer into one centered desktop shell.
+- Added cache-busted surface assets and worker release stamps.
+- Reduced redundant notebook/player renders and prevented legacy surface reconciliation loops.
+
+## 16.1.0 — Origami identity
+
+- Added the folded Pacefold mark, paper tabs, notebook hinge styling and initial fold motion.
+
 ## 15.8.0 — Integrated quiet dock
 
 - Replaced the layered permanent rail with one centered 48 px dock that exposes the current cue, local-first capture, Notebook, contained Media and one progressive-disclosure control.
