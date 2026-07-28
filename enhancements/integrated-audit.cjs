@@ -111,6 +111,9 @@ source=source.replace(broadTrack,"page.locator('[data-pf-player-drawer]:visible'
 const legacyBlack='background:#070908';
 if(!source.includes(legacyBlack))throw new Error('Pacefold black-player audit literal is missing');
 source=source.replaceAll(legacyBlack,'background:#090c0a');
+const legacyBlackRegex='/rgb\\((?:7|8|9),\\s*(?:8|9|10),\\s*(?:7|8|9)\\)/';
+if(!source.includes(legacyBlackRegex))throw new Error('Pacefold player colour assertion is missing');
+source=source.replace(legacyBlackRegex,'/rgb\\(9,\\s*12,\\s*10\\)/');
 const quickCapture="await page.locator('[data-pf-flow-input]').fill('/incident Flow audit note');";
 if(!source.includes(quickCapture))throw new Error('Pacefold quick-capture audit step is missing');
 source=source.replace(quickCapture,"await page.locator('[data-pf-revamp-title]').click();await page.locator('[data-pf-flow-input]').fill('/incident Flow audit note');");
