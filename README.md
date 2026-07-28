@@ -2,20 +2,34 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core still owns schedules, cues, preferences and offline behaviour. Pacefold 17 contains the local workspace in one bottom-anchored instrument with three explicit states:
+Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core owns schedules, cues, preferences and offline behaviour. Pacefold 17.1 puts the original workday rhythm back in charge:
 
-- **Compact** — quiet capture above the always-available black mini-player;
-- **Notebook** — the paper workspace opens while the clock recedes;
-- **Music** — the notebook folds away and the black library opens between the paper cover and player.
+- **Rhythm** — the clock, scheduled moments, Noodles/custom prep, water, away, meals, eye care and movement are the home surface;
+- **Notebook** — the paper sheet folds out only when requested, preserves drafts, and folds closed after saving or leaving it;
+- **Music** — the black local library opens above the player and closes back to the rhythm clock.
 
 There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
+
+## Pacefold 17.1 — rhythm-first return
+
+The visual overhaul in 17.0 left the original rhythm engine running but made the notebook feel like the product. 17.1 corrects that hierarchy.
+
+- Pacefold always starts with the rhythm clock visible, regardless of the notebook's previous state.
+- The original Noodles default and configurable preparation presets remain available at 5, 8, 10, 15, 20, 30, 45 and 60 minutes.
+- Water, away, desk/away lunch, eye-care, movement, prayer and meditation controls remain first-class.
+- Compact Capture saves quietly without opening the document.
+- Opening Notebook creates a temporary integrated sheet, not a new browser popup.
+- A successful note save folds the sheet closed after a short confirmation.
+- Escape, clicking the clock, leaving the app, or one minute of inactivity also folds it closed.
+- Unsaved composer text is retained locally and restored on the next notebook opening.
+- Closing Music returns to the clock rather than reviving an earlier notebook state.
 
 ## Pacefold 17 — Sumi workspace
 
 Pacefold now behaves like one coherent physical object anchored above the taskbar.
 
 - Notebook and Music cannot remain expanded together. Opening either one folds the other away.
-- Closing Music restores the notebook only when it was open before Music was requested.
+- Closing Music returns to the rhythm clock.
 - The paper cover, notebook, black library and black footer share one width, one hinge and one geometry owner.
 - A single 220 ms material fold replaces the slower five-region choreography.
 - The clock quietly recedes behind an open work surface instead of competing with it.
@@ -149,7 +163,7 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 17.0 deploys, fully close every Pacefold and Edge PWA window once.
+4. After 17.1 deploys, fully close every Pacefold and Edge PWA window once.
 5. Reopen Pacefold so the cache-busted Sumi workspace replaces the older surface.
 
 ## Honest platform boundaries
@@ -160,6 +174,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 17.0.0 Sumi workspace over the Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 17.1.0 rhythm-first Sumi workspace over the Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.
