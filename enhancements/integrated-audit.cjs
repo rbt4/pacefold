@@ -135,6 +135,11 @@ source=source.replace(desktopCapture,`${desktopCapture}
     await page.locator('[data-pf-revamp-title]').click();await page.waitForTimeout(300);
     assert(!await page.locator('#pf-local-workspace').evaluate(node=>node.classList.contains('is-open')),'Compact visual state did not close the notebook');
     await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-compact.png'),fullPage:true});
+    await page.locator('[data-pf-revamp-title]').click();await page.waitForTimeout(90);
+    const foldVisual=await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),sheet=workspace.querySelector('.pf-notebook-sheet'),style=getComputedStyle(sheet);return {motion:workspace.dataset.foldMotion,transform:style.transform,opacity:Number(style.opacity),open:workspace.classList.contains('is-open')};});
+    assert(foldVisual.open&&foldVisual.motion==='opening'&&foldVisual.transform!=='none'&&foldVisual.opacity>0&&foldVisual.opacity<1,'Notebook mid-fold did not render as a live material transform: '+JSON.stringify(foldVisual));
+    await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-fold-midpoint.png'),fullPage:true});
+    await page.waitForTimeout(220);
     await page.locator('[data-pf-player-menu]').click();await page.waitForSelector('[data-pf-player-drawer]:visible');await page.waitForTimeout(300);
     const musicVisual=await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),drawer=document.querySelector('[data-pf-player-drawer]'),player=document.getElementById('pf-local-player'),wr=workspace.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),pr=player.getBoundingClientRect();return {notebookOpen:workspace.classList.contains('is-open'),coverAboveDrawer:wr.bottom<=dr.top+2,drawerAbovePlayer:dr.bottom<=pr.top+2,widthAligned:Math.abs(wr.left-dr.left)<=2&&Math.abs(wr.right-dr.right)<=2&&Math.abs(dr.left-pr.left)<=2&&Math.abs(dr.right-pr.right)<=2};});
     assert(!musicVisual.notebookOpen&&musicVisual.coverAboveDrawer&&musicVisual.drawerAbovePlayer&&musicVisual.widthAligned,\`Music visual geometry failed: \${JSON.stringify(musicVisual)}\`);
