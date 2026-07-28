@@ -25,7 +25,9 @@
     }
     for(const selector of ['#onboarding','#panel','#toast','#corner','#setupDock','#foldDrawer','#quietDock','#workline','#pf-local-workspace','#pf-local-player']){
       const node=document.querySelector(selector);
-      if(node&&!node.hidden)node.hidden=true;
+      if(!node)continue;
+      node.hidden=true;
+      node.style.setProperty('display','none','important');
     }
   }
   document.addEventListener('DOMContentLoaded',()=>{applyWaferFloor();setTimeout(applyWaferFloor,0);setTimeout(applyWaferFloor,250);},{once:true});
