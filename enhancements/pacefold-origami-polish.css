@@ -1,4 +1,4 @@
-/* Pacefold 16.3.0 — restrained final identity polish. */
+/* Pacefold 17.0.0 — restrained final identity polish. */
 :root{
   --pf-crease:rgba(35,48,42,.075);
   --pf-crease-strong:rgba(35,48,42,.16)
@@ -21,7 +21,23 @@ body[data-theme="dark"]{
   line-height:1.05
 }
 
-/* Maintain a calm hierarchy after the kinetic fold settles. */
+/* Maintain a calm hierarchy after the material fold settles. */
+.pf-notebook-head-actions button,
+.pf-notebook-tools button,
+.pf-note-composer button{
+  transition:
+    color var(--pf-motion-fast) ease,
+    background var(--pf-motion-fast) ease,
+    border-color var(--pf-motion-fast) ease,
+    transform var(--pf-motion-fast) var(--pf-motion-ease)!important
+}
+.pf-notebook-head-actions button:hover,
+.pf-notebook-tools button:hover{transform:translateY(-1px)}
+.pf-note-empty strong{
+  font-family:ui-serif,Georgia,"Times New Roman",serif;
+  font-weight:620!important;
+  letter-spacing:-.015em
+}
 .pf-notebook-tabs>button[aria-pressed="true"] small{
   color:var(--pf-accent)!important;
   background:var(--pf-accent-soft)!important
@@ -31,6 +47,17 @@ body[data-theme="dark"]{
 }
 .pf-player-drawer>header{
   background:linear-gradient(180deg,rgba(255,255,255,.028),transparent)
+}
+.pf-player-drawer>header strong{
+  font-family:ui-serif,Georgia,"Times New Roman",serif;
+  font-weight:620!important;
+  letter-spacing:-.015em
+}
+.pf-player-section-head strong{letter-spacing:.01em}
+.pf-player-empty{
+  background:
+    radial-gradient(circle at 50% 40%,rgba(131,181,158,.055),transparent 44%);
+  border-radius:12px
 }
 #pf-local-workspace :where(button,input,textarea,select):focus-visible,
 #pf-local-player :where(button,input,label):focus-visible{

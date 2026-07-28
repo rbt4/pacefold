@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 16.3.0
+name: Validate and deploy Pacefold 17.0.0
 
 on:
   push:
@@ -172,7 +172,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-16.3-audit-${{ github.run_id }}
+          name: pacefold-17.0-audit-${{ github.run_id }}
           path: |
             /tmp/pacefold-notebook-audit.log
             /tmp/pacefold-notebook-audit.status
