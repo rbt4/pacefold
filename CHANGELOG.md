@@ -1,5 +1,17 @@
 # Changelog
 
+## 17.1.0 — Rhythm-first return
+
+- Restored the clock and its original workday rhythm as Pacefold's default home surface.
+- Kept Noodles/custom preparation, hydration, away, meal, eye-care, movement and prayer/meditation engines intact and made their workline deliberately visible again.
+- Changed the integrated notebook into a transient fold-out sheet instead of a persisted default screen.
+- Fold the notebook closed after a successful save, on Escape, on a click back to the clock, when the app is hidden, or after one quiet minute of inactivity.
+- Preserve unsaved notebook text locally across a fold, refresh or app restart.
+- Keep compact Capture quiet: it saves to the notebook without opening the full document.
+- Route the PWA Capture shortcut to the compact capture field and the Notebook shortcut to the full fold-out sheet.
+- Close Music back to the rhythm clock instead of unexpectedly reopening a previous notebook.
+- Cache-busted every injected asset and worker with the 17.1.0 surface release.
+
 ## 17.0.0 — Sumi workspace overhaul
 
 - Replaced the competing 16.x surface layers with one explicit compact/notebook/music workspace contract.

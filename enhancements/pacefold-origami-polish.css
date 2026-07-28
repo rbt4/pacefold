@@ -1,4 +1,4 @@
-/* Pacefold 17.0.0 — restrained final identity polish. */
+/* Pacefold 17.1.0 — restrained identity and rhythm-home polish. */
 :root{
   --pf-crease:rgba(35,48,42,.075);
   --pf-crease-strong:rgba(35,48,42,.16)
@@ -176,6 +176,28 @@ html.pf-flow-active body:has(#pf-local-player.is-open) main .date{
   outline-offset:2px!important
 }
 
+/* Pacefold 17.1: the workday rhythm is the home surface again. */
+html.pf-flow-active body:not(:has(#pf-local-workspace.is-open)):not(:has(#pf-local-player.is-open)) main .workline{
+  opacity:.76!important;
+  border-color:rgba(49,95,77,.11);
+  background:color-mix(in srgb,var(--paper,#f4f1e9) 88%,transparent);
+  box-shadow:0 9px 30px rgba(29,48,39,.045)
+}
+html.pf-flow-active body:not(:has(#pf-local-workspace.is-open)):not(:has(#pf-local-player.is-open)) main .ritual-copy{
+  opacity:.68
+}
+html.pf-flow-active body[data-source="noodle"] main .ritual.noodle,
+html.pf-flow-active body[data-source="water"] main .ritual.water,
+html.pf-flow-active body[data-source="away"] main .ritual.away,
+html.pf-flow-active body[data-source="lunch"] main .ritual.lunch{
+  opacity:1
+}
+#pf-local-workspace.is-open .pf-revamp-title small::after{
+  content:" · folds after save";
+  color:var(--pf-accent);
+  font-weight:650
+}
+
 @media (max-width:680px){
   #pf-local-workspace .pf-revamp-title strong::after{font-size:13px}
   .pf-notebook-tools{
@@ -195,6 +217,7 @@ html.pf-flow-active body:has(#pf-local-player.is-open) main .date{
   .pf-note-composer-row{padding-bottom:5px}
   .pf-note-composer-foot{justify-content:flex-end!important}
   .pf-note-composer-foot small{display:none!important}
+  #pf-local-workspace.is-open .pf-revamp-title small::after{content:" · auto-fold"}
 }
 
 @media (prefers-reduced-motion:reduce){
