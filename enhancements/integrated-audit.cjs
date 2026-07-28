@@ -6,15 +6,15 @@ const {gunzipSync}=require('node:zlib');
 
 const origamiCss=fs.readFileSync(path.join(__dirname,'pacefold-origami.css'),'utf8');
 for(const token of [
-  '--pf-fold-duration',
+  '--pf-motion',
   'pacefold-fold-mark.svg',
   '[data-fold-motion="opening"]',
   '[data-fold-motion="closing"]',
   '@keyframes pf-sheet-unfold',
   '@keyframes pf-sheet-fold',
-  '@keyframes pf-leaf-open-a',
   '@keyframes pf-player-unfold',
   '@keyframes pf-player-fold',
+  'body:has(#pf-local-workspace.is-open) main .clock-shell',
   '.pf-player-drawer[hidden]',
   'scrollbar-width:none!important',
   '@media (prefers-reduced-motion:reduce)'
@@ -25,6 +25,9 @@ const polishCss=fs.readFileSync(path.join(__dirname,'pacefold-origami-polish.css
 for(const token of [
   'content:"Pacefold"',
   'restrained final identity polish',
+  'main .date',
+  '.pf-note-composer-row select',
+  '.pf-note-composer-foot button::after',
   ':focus-visible',
   '.pf-player-drawer>header'
 ]){
@@ -36,12 +39,13 @@ for(const token of [
   '--pf-shell-width',
   '--pf-player-drawer-height',
   '--pf-workspace-open-height',
+  '--pf-cover-height',
   '#pf-local-player>.pf-player-bar',
   '#pf-local-player>.pf-player-drawer',
   '#pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace',
   'width:100%!important',
   'bottom:calc(var(--pf-shell-bottom) + var(--pf-player-bar-height) + var(--pf-player-drawer-height))',
-  'content:" · v16.3"',
+  'height:var(--pf-cover-height)!important',
   'border-radius:0 0 var(--pf-shell-radius) var(--pf-shell-radius)!important',
   'scrollbar-color:',
   'overflow-x:clip!important'
@@ -56,23 +60,26 @@ if((stabilityCss.match(/\{/g)||[]).length!==(stabilityCss.match(/\}/g)||[]).leng
 }
 const injectSource=fs.readFileSync(path.join(__dirname,'inject.mjs'),'utf8');
 for(const token of [
-  "const RELEASE='16.3.0'",
-  "const origamiMarker='pacefold-16.3-kinetic-origami'",
-  "const legacyOrigamiMarkers=['pacefold-16.1-origami-identity']",
-  "const stabilityMarker='pacefold-16.3-kinetic-desktop'",
-  "const legacyStabilityMarkers=['pacefold-16.1.1-desktop-stability','pacefold-16.2-unified-desktop']",
+  "const RELEASE='17.0.0'",
+  "const origamiMarker='pacefold-17-sumi-fold'",
+  "const legacyOrigamiMarkers=['pacefold-16.1-origami-identity','pacefold-16.3-kinetic-origami']",
+  "const stabilityMarker='pacefold-17-sumi-workspace'",
+  "const legacyStabilityMarkers=['pacefold-16.1.1-desktop-stability','pacefold-16.2-unified-desktop','pacefold-16.3-kinetic-desktop']",
   "const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css')",
   "await applyOrigamiPatch(path.join(targetApp,'pacefold-revamp.css'))",
   "await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'))",
   "await applyAssetRevision(path.join(targetApp,'index.html'))",
   "await stampWorker(path.join(targetRoot,'service-worker.js'))",
   "await stampWorker(path.join(targetApp,'service-worker.js'))",
-  "pacefold.visual-reset.16.3.0",
+  "pacefold.visual-reset.17.0.0",
   'notebookMotionTimer',
   'playerMotionTimer',
-  'function setNotebookOpen(open,focus=true)',
+  'notebookResumeAfterPlayer',
+  'function setNotebookOpen(open,focus=true,closePlayer=true)',
+  'function setPlayerDrawer(open,resumeNotebook=true)',
   'workspace.dataset.foldMotion',
   'player.dataset.foldMotion',
+  "surfaceRelease:'17.0.0'",
   "pacefold-build.txt",
   "pacefold-build\" content=\"${RELEASE}"
 ]){
@@ -106,8 +113,46 @@ if(!source.includes(broadTrack))throw new Error('Pacefold local-player assertion
 source=source.replace(broadTrack,"page.locator('[data-pf-player-drawer]:visible').getByText('focus-track',{exact:true}).last().isVisible()");
 const legacyBlack='background:#070908';
 if(!source.includes(legacyBlack))throw new Error('Pacefold black-player audit literal is missing');
-source=source.replaceAll(legacyBlack,'background:#080a09');
+source=source.replaceAll(legacyBlack,'background:#090c0a');
+const legacyBlackRegex='/rgb\\((?:7|8|9),\\s*(?:8|9|10),\\s*(?:7|8|9)\\)/';
+if(!source.includes(legacyBlackRegex))throw new Error('Pacefold player colour assertion is missing');
+source=source.replace(legacyBlackRegex,'/rgb\\(9,\\s*12,\\s*10\\)/');
 const quickCapture="await page.locator('[data-pf-flow-input]').fill('/incident Flow audit note');";
 if(!source.includes(quickCapture))throw new Error('Pacefold quick-capture audit step is missing');
 source=source.replace(quickCapture,"await page.locator('[data-pf-revamp-title]').click();await page.locator('[data-pf-flow-input]').fill('/incident Flow audit note');");
+const playerOpen="await page.locator('[data-pf-player-menu]').click();await page.waitForSelector('[data-pf-player-drawer]:visible');";
+if(!source.includes(playerOpen))throw new Error('Pacefold player-open audit step is missing');
+source=source.replace(playerOpen,`${playerOpen}await page.waitForTimeout(300);const exclusive=await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),drawer=document.querySelector('[data-pf-player-drawer]'),wr=workspace.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),menu=document.querySelector('[data-pf-player-menu]');return {notebookOpen:workspace.classList.contains('is-open'),workspaceAboveDrawer:wr.bottom<=dr.top+2,widthAligned:Math.abs(wr.left-dr.left)<=2&&Math.abs(wr.right-dr.right)<=2,expanded:menu.getAttribute('aria-expanded'),label:menu.getAttribute('aria-label')};});assert(!exclusive.notebookOpen&&exclusive.workspaceAboveDrawer&&exclusive.widthAligned&&exclusive.expanded==='true'&&/^Close/.test(exclusive.label),\`Notebook/music exclusivity failed: \${JSON.stringify(exclusive)}\`);`);
+const recoveredDock="assert(await page.locator('#pf-local-workspace #pf-flow-dock').count()===1,'Recovered dock was not reintegrated into the notebook');";
+if(!source.includes(recoveredDock))throw new Error('Pacefold root-recovery assertion is missing');
+source=source.replace(recoveredDock,`${recoveredDock}assert(await page.locator('[data-pf-player-menu]').getAttribute('aria-expanded')==='true','Restored music drawer aria-expanded state is stale');`);
+const desktopOpen="await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace');workspace.classList.add('is-open');workspace.dataset.open='true';});";
+if(!source.includes(desktopOpen))throw new Error('Pacefold desktop visual setup is missing');
+source=source.replace(desktopOpen,"await page.evaluate(()=>{window.__PACEFOLD_REVAMP__.player.close();window.__PACEFOLD_REVAMP__.openNotebook();});await page.waitForTimeout(300);");
+const desktopCapture="await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-desktop.png'),fullPage:true});";
+if(!source.includes(desktopCapture))throw new Error('Pacefold desktop visual capture is missing');
+source=source.replace(desktopCapture,`${desktopCapture}
+    await page.locator('[data-pf-revamp-title]').click();await page.waitForTimeout(300);
+    assert(!await page.locator('#pf-local-workspace').evaluate(node=>node.classList.contains('is-open')),'Compact visual state did not close the notebook');
+    await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-compact.png'),fullPage:true});
+    await page.locator('[data-pf-revamp-title]').click();await page.waitForTimeout(90);
+    const foldVisual=await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),sheet=workspace.querySelector('.pf-notebook-sheet'),style=getComputedStyle(sheet);return {motion:workspace.dataset.foldMotion,transform:style.transform,opacity:Number(style.opacity),open:workspace.classList.contains('is-open')};});
+    assert(foldVisual.open&&foldVisual.motion==='opening'&&foldVisual.transform!=='none'&&foldVisual.opacity>0&&foldVisual.opacity<1,'Notebook mid-fold did not render as a live material transform: '+JSON.stringify(foldVisual));
+    await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-fold-midpoint.png'),fullPage:true});
+    await page.waitForTimeout(220);
+    await page.locator('[data-pf-player-menu]').click();await page.waitForSelector('[data-pf-player-drawer]:visible');await page.waitForTimeout(300);
+    const musicVisual=await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),drawer=document.querySelector('[data-pf-player-drawer]'),player=document.getElementById('pf-local-player'),wr=workspace.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),pr=player.getBoundingClientRect();return {notebookOpen:workspace.classList.contains('is-open'),coverAboveDrawer:wr.bottom<=dr.top+2,drawerAbovePlayer:dr.bottom<=pr.top+2,widthAligned:Math.abs(wr.left-dr.left)<=2&&Math.abs(wr.right-dr.right)<=2&&Math.abs(dr.left-pr.left)<=2&&Math.abs(dr.right-pr.right)<=2};});
+    assert(!musicVisual.notebookOpen&&musicVisual.coverAboveDrawer&&musicVisual.drawerAbovePlayer&&musicVisual.widthAligned,\`Music visual geometry failed: \${JSON.stringify(musicVisual)}\`);
+    await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-music-desktop.png'),fullPage:true});
+    await page.evaluate(()=>{window.__PACEFOLD_REVAMP__.player.close();window.__PACEFOLD_REVAMP__.openNotebook();});await page.waitForTimeout(300);`);
+const mobileCapture="await mobile.screenshot({path:path.join(artifactRoot,'pacefold-workspace-mobile.png'),fullPage:true});";
+if(!source.includes(mobileCapture))throw new Error('Pacefold mobile visual capture is missing');
+source=source.replace(mobileCapture,`${mobileCapture}
+    await mobile.locator('[data-pf-player-menu]').click();await mobile.waitForSelector('[data-pf-player-drawer]:visible');await mobile.waitForTimeout(300);
+    const mobileMusic=await mobile.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),drawer=document.querySelector('[data-pf-player-drawer]'),player=document.getElementById('pf-local-player'),wr=workspace.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),pr=player.getBoundingClientRect();return {notebookOpen:workspace.classList.contains('is-open'),coverAboveDrawer:wr.bottom<=dr.top+2,drawerAbovePlayer:dr.bottom<=pr.top+2,widthAligned:Math.abs(wr.left-dr.left)<=2&&Math.abs(wr.right-dr.right)<=2&&Math.abs(dr.left-pr.left)<=2&&Math.abs(dr.right-pr.right)<=2,overflow:document.documentElement.scrollWidth>innerWidth+2};});
+    assert(!mobileMusic.notebookOpen&&mobileMusic.coverAboveDrawer&&mobileMusic.drawerAbovePlayer&&mobileMusic.widthAligned&&!mobileMusic.overflow,\`Mobile music visual geometry failed: \${JSON.stringify(mobileMusic)}\`);
+    await mobile.screenshot({path:path.join(artifactRoot,'pacefold-workspace-music-mobile.png'),fullPage:true});`);
+const successLabel='Pacefold 16.0 integrated audit passed:';
+if(!source.includes(successLabel))throw new Error('Pacefold integrated audit success label is missing');
+source=source.replace(successLabel,'Pacefold 17.0 integrated audit passed:');
 module._compile(source,__filename);

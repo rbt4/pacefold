@@ -2,25 +2,27 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core still owns schedules, cues, preferences and offline behaviour. Pacefold 16 keeps two deliberately separate local surfaces:
+Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core still owns schedules, cues, preferences and offline behaviour. Pacefold 17 contains the local workspace in one bottom-anchored instrument with three explicit states:
 
-- an integrated working notebook anchored at the bottom of Pacefold;
-- a bottom-most black local-audio player with its own queue, library and playlists.
+- **Compact** — quiet capture above the always-available black mini-player;
+- **Notebook** — the paper workspace opens while the clock recedes;
+- **Music** — the notebook folds away and the black library opens between the paper cover and player.
 
 There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
 
-## Pacefold 16.3 — kinetic origami workspace
+## Pacefold 17 — Sumi workspace
 
-Pacefold now behaves like one physical object anchored above the taskbar.
+Pacefold now behaves like one coherent physical object anchored above the taskbar.
 
-- Opening the notebook unfolds a mounted paper sheet instead of fading in a floating panel.
-- Five notebook regions hinge in sequence, with alternating fold direction, crease light and a brief paper-settle motion.
-- Closing reverses the sequence while the Pacefold mark folds with the action.
-- The black audio library opens upward from the player footer as a separate hinged tray.
-- Motion state is explicit and self-clearing, so rapid repeated actions cannot leave a half-open surface behind.
+- Notebook and Music cannot remain expanded together. Opening either one folds the other away.
+- Closing Music restores the notebook only when it was open before Music was requested.
+- The paper cover, notebook, black library and black footer share one width, one hinge and one geometry owner.
+- A single 220 ms material fold replaces the slower five-region choreography.
+- The clock quietly recedes behind an open work surface instead of competing with it.
+- Warm off-white paper, charcoal ink, muted deep green and a Sumi-black player now form one identity.
+- Conflicting restored state is contained visually even before runtime reconciliation finishes.
+- Music menu accessibility state is synchronized on creation, toggling and root recovery.
 - Reduced-motion mode removes the choreography without changing layout or functionality.
-- The notebook uses subtle Japanese stationery details, ruled writing areas and hidden category-strip scrollbars.
-- The paper workspace, audio tray and player footer share geometry throughout the transition and cannot overlap.
 
 ## Pacefold 16 — local workspace
 
@@ -131,23 +133,24 @@ The verified core remains the only owner of completing the actual cue. Notebook 
 
 ## Desktop workspace
 
-Pacefold 16.3 treats the installed app as one collision-free desktop workspace rather than several floating overlays.
+Pacefold 17 treats the installed app as one collision-free desktop workspace rather than several floating overlays.
 
 - The player footer owns a reserved bottom lane and cannot cover the notebook.
-- An open music drawer is inserted between the notebook and footer without detaching from either surface.
+- Music mode collapses the notebook to its paper cover, then inserts the library above the player.
+- Closing Music returns to the prior Notebook or Compact state.
 - Compact windows remove secondary player controls before the layout can overflow.
 - Notebook toolbars, menus and note content use internal scrolling and width constraints rather than spilling outside the app.
-- Expensive compositor hints exist only during an active fold.
+- Compositor hints exist only during the short active fold.
 
-The release audit checks fold-state cleanup, single-copy injection, cache-busting, collision prevention and desktop/mobile geometry.
+The release audit checks exclusive surface state, restored accessibility state, fold cleanup, single-copy injection, cache-busting, collision prevention and desktop/mobile geometry.
 
 ## Install or refresh
 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 16.3 deploys, fully close every Pacefold and Edge PWA window once.
-5. Reopen Pacefold so the cache-busted kinetic workspace replaces the older surface.
+4. After 17.0 deploys, fully close every Pacefold and Edge PWA window once.
+5. Reopen Pacefold so the cache-busted Sumi workspace replaces the older surface.
 
 ## Honest platform boundaries
 
@@ -157,6 +160,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 16.3.0 kinetic origami workspace over the Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 17.0.0 Sumi workspace over the Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.

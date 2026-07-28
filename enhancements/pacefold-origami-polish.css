@@ -1,4 +1,4 @@
-/* Pacefold 16.3.0 — restrained final identity polish. */
+/* Pacefold 17.0.0 — restrained final identity polish. */
 :root{
   --pf-crease:rgba(35,48,42,.075);
   --pf-crease-strong:rgba(35,48,42,.16)
@@ -21,7 +21,134 @@ body[data-theme="dark"]{
   line-height:1.05
 }
 
-/* Maintain a calm hierarchy after the kinetic fold settles. */
+/* Fully quiet the base clock canvas while a material surface is in focus.
+   The old date label sat outside .clock-shell and otherwise remained orphaned. */
+html.pf-flow-active main .date{
+  transition:
+    opacity var(--pf-motion-fast) ease,
+    transform var(--pf-motion) var(--pf-motion-ease),
+    visibility 0s linear 0s
+}
+html.pf-flow-active body:has(#pf-local-workspace.is-open) main .date,
+html.pf-flow-active body:has(#pf-local-player.is-open) main .date{
+  opacity:0!important;
+  visibility:hidden!important;
+  transform:translateY(-8px)
+}
+
+/* Maintain a calm hierarchy after the material fold settles. */
+.pf-notebook-head-actions button,
+.pf-notebook-tools button,
+.pf-note-composer button{
+  transition:
+    color var(--pf-motion-fast) ease,
+    background var(--pf-motion-fast) ease,
+    border-color var(--pf-motion-fast) ease,
+    transform var(--pf-motion-fast) var(--pf-motion-ease)!important
+}
+.pf-notebook-head-actions button:hover,
+.pf-notebook-tools button:hover{transform:translateY(-1px)}
+.pf-notebook-tools>label{
+  position:relative
+}
+.pf-notebook-tools>label::before{
+  content:"";
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+  color:var(--pf-accent);
+  opacity:.72;
+  background:currentColor;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m16 16 4 4'/%3E%3C/svg%3E") center/contain no-repeat
+}
+.pf-notebook-tools>label span{
+  display:block!important;
+  flex:0 0 auto;
+  color:var(--pf-muted);
+  font-size:8px!important;
+  font-weight:760;
+  letter-spacing:.12em;
+  text-transform:uppercase
+}
+.pf-notebook-tools input{
+  min-width:0;
+  flex:0 1 260px;
+  border:0!important;
+  border-bottom:1px solid var(--pf-line)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  letter-spacing:.015em
+}
+.pf-notebook-tools input::placeholder{
+  color:color-mix(in srgb,var(--pf-ink) 48%,var(--pf-paper))!important;
+  opacity:1
+}
+.pf-notebook-tools input:focus{
+  border-bottom-color:var(--pf-accent)!important;
+  box-shadow:0 2px 0 -1px var(--pf-accent);
+  background:transparent!important
+}
+
+/* The composer is one ruled stationery surface, not three browser controls. */
+.pf-note-composer-row{
+  min-height:28px;
+  padding:0 2px 6px;
+  border-bottom:1px solid color-mix(in srgb,var(--pf-line) 76%,transparent)
+}
+.pf-note-composer-row select{
+  height:26px!important;
+  border:0!important;
+  border-radius:0!important;
+  padding-left:0!important;
+  color:var(--pf-accent)!important;
+  background:transparent!important;
+  font-weight:720!important;
+  outline:none
+}
+.pf-note-composer-row select:focus-visible{
+  box-shadow:0 2px 0 -1px var(--pf-accent)
+}
+.pf-note-composer textarea{
+  border:0!important;
+  border-radius:3px!important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb,var(--pf-line) 72%,transparent),
+    inset 0 -1px 0 color-mix(in srgb,var(--pf-line) 72%,transparent)!important
+}
+.pf-note-composer textarea:focus{
+  border-color:transparent!important;
+  box-shadow:
+    inset 2px 0 0 var(--pf-accent),
+    inset 0 1px 0 color-mix(in srgb,var(--pf-accent) 28%,var(--pf-line)),
+    inset 0 -1px 0 color-mix(in srgb,var(--pf-accent) 28%,var(--pf-line))!important
+}
+.pf-note-composer-foot button{
+  position:relative;
+  min-width:96px!important;
+  color:#f7faf8!important;
+  border:1px solid color-mix(in srgb,var(--pf-accent) 78%,#14251e)!important;
+  border-radius:8px!important;
+  background:
+    linear-gradient(180deg,color-mix(in srgb,var(--pf-accent) 92%,#fff),var(--pf-accent))!important;
+  box-shadow:0 5px 14px color-mix(in srgb,var(--pf-accent) 18%,transparent)!important;
+  letter-spacing:.015em
+}
+.pf-note-composer-foot button::after{
+  content:"↵";
+  display:inline-block;
+  margin-left:7px;
+  opacity:.62;
+  font:700 10px/1 ui-monospace,SFMono-Regular,Consolas,monospace
+}
+.pf-note-composer-foot button:hover{
+  color:#fff!important;
+  box-shadow:0 7px 17px color-mix(in srgb,var(--pf-accent) 23%,transparent)!important
+}
+.pf-note-empty strong{
+  font-family:ui-serif,Georgia,"Times New Roman",serif;
+  font-weight:620!important;
+  letter-spacing:-.015em
+}
 .pf-notebook-tabs>button[aria-pressed="true"] small{
   color:var(--pf-accent)!important;
   background:var(--pf-accent-soft)!important
@@ -32,6 +159,17 @@ body[data-theme="dark"]{
 .pf-player-drawer>header{
   background:linear-gradient(180deg,rgba(255,255,255,.028),transparent)
 }
+.pf-player-drawer>header strong{
+  font-family:ui-serif,Georgia,"Times New Roman",serif;
+  font-weight:620!important;
+  letter-spacing:-.015em
+}
+.pf-player-section-head strong{letter-spacing:.01em}
+.pf-player-empty{
+  background:
+    radial-gradient(circle at 50% 40%,rgba(131,181,158,.055),transparent 44%);
+  border-radius:12px
+}
 #pf-local-workspace :where(button,input,textarea,select):focus-visible,
 #pf-local-player :where(button,input,label):focus-visible{
   outline:2px solid color-mix(in srgb,var(--pf-accent) 68%,transparent)!important;
@@ -40,4 +178,25 @@ body[data-theme="dark"]{
 
 @media (max-width:680px){
   #pf-local-workspace .pf-revamp-title strong::after{font-size:13px}
+  .pf-notebook-tools{
+    row-gap:4px!important;
+    padding-block:6px!important
+  }
+  .pf-notebook-tools>label{
+    min-height:26px;
+    flex:1 0 100%!important
+  }
+  .pf-format-tools{
+    min-height:28px;
+    margin-left:auto;
+    padding-left:0!important;
+    border-left:0!important
+  }
+  .pf-note-composer-row{padding-bottom:5px}
+  .pf-note-composer-foot{justify-content:flex-end!important}
+  .pf-note-composer-foot small{display:none!important}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html.pf-flow-active main .date{transition:none!important}
 }

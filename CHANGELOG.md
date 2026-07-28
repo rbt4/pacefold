@@ -1,5 +1,18 @@
 # Changelog
 
+## 17.0.0 — Sumi workspace overhaul
+
+- Replaced the competing 16.x surface layers with one explicit compact/notebook/music workspace contract.
+- Made notebook and music mutually exclusive: Music folds the notebook away, and closing Music restores the prior notebook state.
+- Reduced the five-plane, 620 ms choreography to one restrained 220 ms material fold with no bounce or cascading child animations.
+- Joined the paper cover, notebook, black library and black footer under one width, hinge and geometry system.
+- Added a focused open-surface state that quietly recedes the clock instead of leaving oversized clock fragments behind the notebook.
+- Reworked the Japanese stationery hierarchy, writing surface, paper tabs, black audio library and core workday controls around warm paper, charcoal ink and one deep-green accent.
+- Added stale-state containment so a restored or conflicting open state cannot overlap notebook content with the music library.
+- Fixed restored music-drawer `aria-expanded` and accessible-label state.
+- Added browser audit coverage for exclusive state transitions, aligned cover/library geometry and restored drawer accessibility.
+- Cache-busted every injected asset and worker with the 17.0.0 surface release.
+
 ## 16.3.0 — Kinetic origami corrective release
 
 - Replaced the shallow height-and-opacity effect with explicit opening and closing motion states.

@@ -1,46 +1,69 @@
-/* Pacefold 16.3.0 — kinetic origami identity.
-   Motion is state-driven: the notebook and audio tray remain mounted while
-   their paper planes fold, so closing animations are visible and reversible. */
+/* Pacefold 17.0 — Sumi fold language.
+   One decisive fold communicates a surface change. Routine movement finishes
+   in 220 ms and never bounces, staggers through the whole interface, or owns
+   layout geometry. */
 :root{
-  --pf-fold-duration:520ms;
-  --pf-fold-fast:180ms;
-  --pf-fold-stagger:52ms;
-  --pf-fold-ease:cubic-bezier(.18,.82,.22,1);
-  --pf-fold-snap:cubic-bezier(.34,1.28,.42,1);
-  --pf-crease:rgba(35,48,42,.085);
-  --pf-crease-strong:rgba(35,48,42,.18);
-  --pf-paper-glint:rgba(255,255,255,.78);
-  --pf-paper-shadow:rgba(21,31,26,.18);
-  --pf-player-bg:#080a09
+  --pf-motion:220ms;
+  --pf-motion-fast:140ms;
+  --pf-motion-ease:cubic-bezier(.2,.78,.24,1);
+  --pf-motion-fold:cubic-bezier(.32,.02,.18,1);
+  --pf-crease:rgba(34,47,40,.10);
+  --pf-crease-strong:rgba(34,47,40,.18);
+  --pf-paper-glint:rgba(255,255,255,.72);
+  --pf-paper-shadow:rgba(20,29,24,.16);
+  --pf-player-bg:#090c0a
 }
 body[data-theme="dark"]{
-  --pf-crease:rgba(231,239,234,.07);
-  --pf-crease-strong:rgba(231,239,234,.15);
-  --pf-paper-glint:rgba(255,255,255,.08);
-  --pf-paper-shadow:rgba(0,0,0,.48)
+  --pf-crease:rgba(229,238,232,.075);
+  --pf-crease-strong:rgba(229,238,232,.15);
+  --pf-paper-glint:rgba(255,255,255,.07);
+  --pf-paper-shadow:rgba(0,0,0,.46)
 }
 
-/* One anchored object: the title flap, notebook leaf and audio footer. */
-#pf-local-workspace{
-  perspective:1800px!important;
-  transform-style:preserve-3d!important;
-  transform-origin:bottom center!important;
+/* The clock and lower workfold now belong to the same calm material system. */
+html.pf-flow-active body{
+  background:
+    linear-gradient(90deg,transparent 49.94%,rgba(44,60,51,.035) 50%,transparent 50.06%),
+    linear-gradient(180deg,rgba(255,255,255,.30),transparent 42%),
+    var(--paper,#f2f0e9)!important
+}
+html.pf-flow-active main .clock-shell{
   transition:
-    height var(--pf-fold-duration) var(--pf-fold-ease),
-    max-height var(--pf-fold-duration) var(--pf-fold-ease),
-    bottom var(--pf-fold-duration) var(--pf-fold-ease),
-    border-radius var(--pf-fold-fast) ease,
-    box-shadow var(--pf-fold-duration) ease!important
+    opacity var(--pf-motion) ease,
+    filter var(--pf-motion) ease,
+    transform var(--pf-motion) var(--pf-motion-ease)
 }
-#pf-local-workspace[data-fold-motion]{
-  will-change:height,max-height,bottom
+html.pf-flow-active body:has(#pf-local-workspace.is-open) main .clock-shell,
+html.pf-flow-active body:has(#pf-local-player.is-open) main .clock-shell{
+  opacity:.14;
+  filter:blur(.7px) saturate(.72);
+  transform:translateY(-42px) scale(.965)
 }
-#pf-local-workspace .pf-workspace-shell{
-  perspective:1500px;
-  transform-style:preserve-3d
+html.pf-flow-active main .product-mark{opacity:.54!important}
+html.pf-flow-active main .workline,
+html.pf-flow-active main .quiet-dock{
+  border:1px solid rgba(45,59,51,.075);
+  border-radius:15px;
+  background:color-mix(in srgb,var(--paper,#f4f1e9) 78%,transparent);
+  box-shadow:0 8px 28px rgba(29,39,33,.035);
+  backdrop-filter:blur(7px)
+}
+html.pf-flow-active main .ritual,
+html.pf-flow-active main .quiet-tool{
+  border-radius:10px;
+  transition:
+    color var(--pf-motion-fast) ease,
+    background var(--pf-motion-fast) ease,
+    transform var(--pf-motion-fast) var(--pf-motion-ease),
+    opacity var(--pf-motion-fast) ease
+}
+html.pf-flow-active main .ritual:hover,
+html.pf-flow-active main .quiet-tool:hover{
+  background:rgba(49,95,77,.065);
+  transform:translateY(-1px)
 }
 
-/* Folded-P identity, kept vector-sharp and animated only during intent. */
+/* Folded-P identity. The mark moves only when a material surface changes. */
 #pf-local-workspace .pf-flow-pulse{
   position:relative!important;
   overflow:visible!important;
@@ -55,38 +78,26 @@ body[data-theme="dark"]{
   position:absolute;
   inset:3px;
   background:url("./pacefold-fold-mark.svg") center/contain no-repeat;
-  filter:drop-shadow(0 2px 3px rgba(29,48,39,.16));
+  filter:drop-shadow(0 2px 3px rgba(29,48,39,.14));
   transform:translateZ(0);
   transform-origin:center;
-  transition:filter var(--pf-fold-fast) ease,transform var(--pf-fold-fast) var(--pf-fold-ease)
-}
-#pf-local-workspace .pf-flow-pulse::after{
-  content:"";
-  position:absolute;
-  left:7px;
-  top:7px;
-  width:19px;
-  height:19px;
-  opacity:0;
-  pointer-events:none;
-  background:linear-gradient(118deg,transparent 31%,var(--pf-paper-glint) 47%,transparent 62%);
-  clip-path:polygon(0 0,100% 0,68% 100%,0 74%);
-  transform:translateX(-8px) rotate(-8deg)
+  transition:
+    filter var(--pf-motion-fast) ease,
+    transform var(--pf-motion-fast) var(--pf-motion-ease)
 }
 #pf-local-workspace .pf-flow-pulse:hover::before{
-  filter:drop-shadow(0 4px 6px rgba(29,48,39,.24));
-  transform:translateZ(8px) rotateY(-9deg) rotateZ(-1deg)
+  filter:drop-shadow(0 4px 7px rgba(29,48,39,.22));
+  transform:translateY(-1px) rotateY(-8deg)
 }
-#pf-local-workspace[data-fold-motion="opening"] .pf-flow-pulse::before{
-  animation:pf-mark-open var(--pf-fold-duration) var(--pf-fold-snap) both
+#pf-local-workspace[data-fold-motion="opening"] .pf-flow-pulse::before,
+#pf-local-player[data-fold-motion="opening"]~#pf-local-workspace .pf-flow-pulse::before{
+  animation:pf-mark-unfold var(--pf-motion) var(--pf-motion-fold) both
 }
 #pf-local-workspace[data-fold-motion="closing"] .pf-flow-pulse::before{
-  animation:pf-mark-close calc(var(--pf-fold-duration) * .78) var(--pf-fold-ease) both
-}
-#pf-local-workspace[data-fold-motion] .pf-flow-pulse::after{
-  animation:pf-mark-glint calc(var(--pf-fold-duration) * .8) ease both
+  animation:pf-mark-fold var(--pf-motion) var(--pf-motion-fold) both
 }
 
+/* The title rail is the cover and the shared hinge for paper and sound. */
 #pf-local-workspace .pf-revamp-title{
   position:relative!important;
   padding-right:24px!important
@@ -96,7 +107,7 @@ body[data-theme="dark"]{
   font-weight:650!important;
   letter-spacing:-.025em!important
 }
-#pf-local-workspace .pf-revamp-title small{letter-spacing:.025em!important}
+#pf-local-workspace .pf-revamp-title small{letter-spacing:.02em!important}
 #pf-local-workspace .pf-revamp-title::after{
   content:"";
   position:absolute;
@@ -106,16 +117,16 @@ body[data-theme="dark"]{
   height:7px;
   border-right:1.5px solid var(--pf-accent);
   border-bottom:1.5px solid var(--pf-accent);
-  opacity:.68;
+  opacity:.66;
   transform:translateY(-65%) rotate(45deg);
-  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),opacity var(--pf-fold-fast) ease
+  transition:
+    transform var(--pf-motion-fast) var(--pf-motion-ease),
+    opacity var(--pf-motion-fast) ease
 }
 #pf-local-workspace.is-open .pf-revamp-title::after{
-  opacity:.92;
+  opacity:.94;
   transform:translateY(-30%) rotate(225deg)
 }
-
-/* The 48 px title bar is the cover flap and the notebook's hinge. */
 #pf-local-workspace #pf-flow-dock .pf-flow-bar{
   position:relative!important;
   overflow:visible!important;
@@ -130,13 +141,12 @@ body[data-theme="dark"]{
   display:block!important;
   position:absolute;
   z-index:0;
-  left:5%;
-  right:5%;
+  left:6%;
+  right:6%;
   bottom:-1px;
   height:1px;
-  opacity:.8;
   pointer-events:none;
-  background:linear-gradient(90deg,transparent,var(--pf-crease-strong) 18% 82%,transparent)
+  background:linear-gradient(90deg,transparent,var(--pf-crease-strong) 20% 80%,transparent)
 }
 #pf-local-workspace #pf-flow-dock .pf-flow-bar::after{
   content:"";
@@ -144,43 +154,61 @@ body[data-theme="dark"]{
   position:absolute;
   z-index:2;
   left:50%;
-  bottom:-7px;
-  width:38px;
-  height:8px;
+  bottom:-6px;
+  width:32px;
+  height:7px;
   pointer-events:none;
   background:linear-gradient(150deg,var(--pf-paper),var(--pf-paper-raised));
   border-right:1px solid var(--pf-crease);
   border-bottom:1px solid var(--pf-crease-strong);
   clip-path:polygon(0 0,50% 100%,100% 0);
-  filter:drop-shadow(0 3px 2px rgba(28,38,33,.07));
-  transform:translateX(-50%) scaleY(.72);
+  filter:drop-shadow(0 2px 2px rgba(28,38,33,.06));
+  opacity:.5;
+  transform:translateX(-50%) scaleY(.64);
   transform-origin:top center;
-  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),opacity var(--pf-fold-fast) ease
+  transition:
+    transform var(--pf-motion-fast) var(--pf-motion-ease),
+    opacity var(--pf-motion-fast) ease
 }
 #pf-local-workspace.is-open #pf-flow-dock .pf-flow-bar::after{
-  opacity:.58;
+  opacity:.82;
   transform:translateX(-50%) scaleY(1)
 }
 
-/* The notebook stays mounted and unfolds as a large hinged sheet. */
+/* One paper fold. A restrained centre crease sells the material without
+   turning every toolbar into its own animated plane. */
+#pf-local-workspace{
+  perspective:1700px!important;
+  transform-style:preserve-3d!important;
+  transform-origin:bottom center!important;
+  transition:
+    height var(--pf-motion) var(--pf-motion-ease),
+    max-height var(--pf-motion) var(--pf-motion-ease),
+    bottom var(--pf-motion) var(--pf-motion-ease),
+    border-radius var(--pf-motion-fast) ease,
+    box-shadow var(--pf-motion) ease!important
+}
+#pf-local-workspace[data-fold-motion]{will-change:height,bottom}
+#pf-local-workspace .pf-workspace-shell{
+  perspective:1500px;
+  transform-style:preserve-3d
+}
 #pf-local-workspace .pf-notebook-sheet{
   position:relative!important;
   display:flex!important;
-  max-height:calc(100vh - 128px)!important;
   opacity:1;
   visibility:visible;
-  transform:translate3d(0,0,0) rotateX(0deg) scaleY(1);
+  overflow:hidden!important;
+  transform:translate3d(0,0,0) rotateX(0deg);
   transform-origin:top center;
   transform-style:preserve-3d;
   backface-visibility:hidden;
   transition:
-    transform var(--pf-fold-duration) var(--pf-fold-ease),
-    opacity calc(var(--pf-fold-fast) * 1.25) ease,
-    max-height var(--pf-fold-duration) var(--pf-fold-ease),
-    filter var(--pf-fold-duration) ease,
+    opacity var(--pf-motion-fast) ease,
+    transform var(--pf-motion) var(--pf-motion-fold),
     visibility 0s linear 0s!important;
   background:
-    linear-gradient(90deg,transparent 0 49.88%,var(--pf-crease) 50%,var(--pf-paper-glint) 50.15%,transparent 50.32%),
+    linear-gradient(90deg,transparent 0 49.90%,var(--pf-crease) 50%,var(--pf-paper-glint) 50.13%,transparent 50.3%),
     linear-gradient(180deg,var(--pf-paper-raised),color-mix(in srgb,var(--pf-paper-raised) 97%,var(--pf-paper-deep)))!important
 }
 #pf-local-workspace .pf-notebook-sheet::before{
@@ -188,16 +216,20 @@ body[data-theme="dark"]{
   display:block!important;
   position:absolute;
   z-index:12;
-  inset:0;
-  opacity:.52;
+  left:0;
+  right:0;
+  top:50%;
+  height:18px;
   pointer-events:none;
-  background:
-    linear-gradient(180deg,transparent 0 24.72%,var(--pf-crease-strong) 24.92%,var(--pf-paper-glint) 25.08%,transparent 25.42%),
-    linear-gradient(180deg,transparent 0 49.70%,var(--pf-crease) 49.91%,var(--pf-paper-glint) 50.09%,transparent 50.42%),
-    linear-gradient(180deg,transparent 0 74.70%,var(--pf-crease-strong) 74.91%,var(--pf-paper-glint) 75.08%,transparent 75.42%);
+  opacity:.34;
+  background:linear-gradient(180deg,transparent,var(--pf-crease-strong) 48%,var(--pf-paper-glint) 52%,transparent);
+  transform:translateY(-50%);
   mix-blend-mode:multiply
 }
-body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend-mode:screen;opacity:.34}
+body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{
+  opacity:.22;
+  mix-blend-mode:screen
+}
 #pf-local-workspace .pf-notebook-sheet::after{
   content:"";
   display:block!important;
@@ -205,13 +237,13 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   z-index:13;
   right:0;
   bottom:0;
-  width:26px;
-  height:26px;
-  opacity:.72;
+  width:22px;
+  height:22px;
+  opacity:.62;
   pointer-events:none;
   background:linear-gradient(135deg,var(--pf-paper-deep) 0 48%,var(--pf-crease-strong) 49%,var(--pf-paper-raised) 52%);
   clip-path:polygon(100% 0,0 100%,100% 100%);
-  filter:drop-shadow(-2px -2px 3px rgba(25,34,30,.06))
+  filter:drop-shadow(-2px -2px 3px rgba(25,34,30,.05))
 }
 #pf-local-workspace:not(.is-open) .pf-notebook-sheet{
   display:flex!important;
@@ -219,54 +251,27 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   opacity:0;
   visibility:hidden;
   pointer-events:none!important;
-  filter:brightness(.9) saturate(.82);
-  transform:translate3d(0,-18px,-20px) rotateX(-78deg) scaleY(.16);
+  transform:translate3d(0,-12px,-24px) rotateX(-72deg) scaleY(.16);
   transition:
-    transform var(--pf-fold-duration) var(--pf-fold-ease),
-    opacity calc(var(--pf-fold-fast) * 1.2) ease calc(var(--pf-fold-fast) * .8),
-    max-height var(--pf-fold-duration) var(--pf-fold-ease),
-    filter var(--pf-fold-duration) ease,
-    visibility 0s linear var(--pf-fold-duration)!important
+    opacity var(--pf-motion-fast) ease 70ms,
+    transform var(--pf-motion) var(--pf-motion-fold),
+    visibility 0s linear var(--pf-motion)!important
 }
-
-/* Staged folds make the motion read as paper, not a panel resizing. */
 #pf-local-workspace[data-fold-motion="opening"] .pf-notebook-sheet{
-  animation:pf-sheet-unfold var(--pf-fold-duration) var(--pf-fold-ease) both
+  animation:pf-sheet-unfold var(--pf-motion) var(--pf-motion-fold) both
 }
 #pf-local-workspace[data-fold-motion="closing"] .pf-notebook-sheet{
-  animation:pf-sheet-fold var(--pf-fold-duration) var(--pf-fold-ease) both
+  animation:pf-sheet-fold var(--pf-motion) var(--pf-motion-fold) both
 }
-#pf-local-workspace[data-fold-motion="opening"] .pf-notebook-sheet::before{
-  animation:pf-crease-open var(--pf-fold-duration) ease both
+#pf-local-workspace[data-fold-motion="opening"] .pf-notebook-tabs{
+  animation:pf-tab-settle var(--pf-motion-fast) var(--pf-motion-ease) 80ms both
 }
-#pf-local-workspace[data-fold-motion="closing"] .pf-notebook-sheet::before{
-  animation:pf-crease-close var(--pf-fold-duration) ease both
-}
-.pf-notebook-head,
-.pf-notebook-tools,
-.pf-note-composer,
-.pf-note-document,
-.pf-notebook-tabs{
-  transform-style:preserve-3d;
-  backface-visibility:hidden
-}
-#pf-local-workspace[data-fold-motion="opening"] .pf-notebook-head{animation:pf-leaf-open-a 420ms var(--pf-fold-snap) 20ms both}
-#pf-local-workspace[data-fold-motion="opening"] .pf-notebook-tools{animation:pf-leaf-open-b 440ms var(--pf-fold-snap) 62ms both}
-#pf-local-workspace[data-fold-motion="opening"] .pf-note-composer{animation:pf-leaf-open-a 460ms var(--pf-fold-snap) 104ms both}
-#pf-local-workspace[data-fold-motion="opening"] .pf-note-document{animation:pf-leaf-open-b 480ms var(--pf-fold-snap) 146ms both}
-#pf-local-workspace[data-fold-motion="opening"] .pf-notebook-tabs{animation:pf-leaf-open-a 500ms var(--pf-fold-snap) 188ms both}
-#pf-local-workspace[data-fold-motion="closing"] .pf-notebook-head{animation:pf-leaf-close-a 340ms var(--pf-fold-ease) 128ms both}
-#pf-local-workspace[data-fold-motion="closing"] .pf-notebook-tools{animation:pf-leaf-close-b 340ms var(--pf-fold-ease) 96ms both}
-#pf-local-workspace[data-fold-motion="closing"] .pf-note-composer{animation:pf-leaf-close-a 340ms var(--pf-fold-ease) 64ms both}
-#pf-local-workspace[data-fold-motion="closing"] .pf-note-document{animation:pf-leaf-close-b 340ms var(--pf-fold-ease) 32ms both}
-#pf-local-workspace[data-fold-motion="closing"] .pf-notebook-tabs{animation:pf-leaf-close-a 340ms var(--pf-fold-ease) both}
 
-/* Refined Japanese stationery hierarchy. */
+/* Japanese stationery hierarchy: quieter chrome, stronger writing surface. */
 .pf-notebook-head{
   position:relative;
-  padding-top:17px!important;
   background:
-    linear-gradient(90deg,color-mix(in srgb,var(--pf-accent) 7%,transparent),transparent 42%),
+    linear-gradient(90deg,color-mix(in srgb,var(--pf-accent) 6%,transparent),transparent 40%),
     color-mix(in srgb,var(--pf-paper-raised) 96%,var(--pf-paper-deep))!important
 }
 .pf-notebook-head::after{
@@ -276,16 +281,14 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   right:18px;
   bottom:-1px;
   height:1px;
-  background:linear-gradient(90deg,transparent,var(--pf-crease-strong) 16% 84%,transparent)
+  background:linear-gradient(90deg,transparent,var(--pf-crease-strong) 18% 82%,transparent)
 }
 .pf-notebook-head strong{
   font-family:ui-serif,Georgia,"Times New Roman",serif!important;
   font-weight:630!important
 }
 .pf-notebook-tools{
-  background:
-    linear-gradient(90deg,color-mix(in srgb,var(--pf-accent) 4%,transparent),transparent 36%),
-    color-mix(in srgb,var(--pf-paper) 94%,transparent)!important
+  background:color-mix(in srgb,var(--pf-paper) 95%,transparent)!important
 }
 .pf-note-composer{
   position:relative;
@@ -295,43 +298,42 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   content:"";
   position:absolute;
   left:0;
-  top:0;
-  bottom:0;
-  width:3px;
-  opacity:.72;
+  top:8px;
+  bottom:8px;
+  width:2px;
+  opacity:.58;
   background:linear-gradient(180deg,transparent,var(--pf-accent),transparent)
 }
 .pf-note-composer textarea{
   background:
-    repeating-linear-gradient(180deg,transparent 0 26px,color-mix(in srgb,var(--pf-crease) 58%,transparent) 27px),
+    repeating-linear-gradient(180deg,transparent 0 26px,color-mix(in srgb,var(--pf-crease) 52%,transparent) 27px),
     var(--pf-paper)!important
 }
 .pf-note-composer-foot button{
-  box-shadow:0 7px 18px color-mix(in srgb,var(--pf-accent) 24%,transparent);
-  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),box-shadow var(--pf-fold-fast) ease
+  box-shadow:0 7px 18px color-mix(in srgb,var(--pf-accent) 20%,transparent);
+  transition:
+    transform var(--pf-motion-fast) var(--pf-motion-ease),
+    box-shadow var(--pf-motion-fast) ease
 }
 .pf-note-composer-foot button:hover{
   transform:translateY(-1px);
-  box-shadow:0 10px 24px color-mix(in srgb,var(--pf-accent) 28%,transparent)
+  box-shadow:0 10px 22px color-mix(in srgb,var(--pf-accent) 25%,transparent)
 }
 .pf-note-document{
   position:relative!important;
-  padding-left:38px!important;
+  padding-left:36px!important;
   padding-right:22px!important;
   background:
-    linear-gradient(90deg,transparent 0 25px,color-mix(in srgb,var(--pf-accent) 12%,transparent) 25px 26px,transparent 26px),
-    repeating-linear-gradient(180deg,transparent 0 31px,color-mix(in srgb,var(--pf-crease) 58%,transparent) 32px),
+    linear-gradient(90deg,transparent 0 25px,color-mix(in srgb,var(--pf-accent) 11%,transparent) 25px 26px,transparent 26px),
+    repeating-linear-gradient(180deg,transparent 0 31px,color-mix(in srgb,var(--pf-crease) 52%,transparent) 32px),
     var(--pf-paper-raised)!important
 }
 .pf-note-block{
-  transform-origin:top center;
-  animation:pf-paper-settle 220ms var(--pf-fold-ease) both;
-  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),background var(--pf-fold-fast) ease,padding var(--pf-fold-fast) ease
+  transition:
+    background var(--pf-motion-fast) ease,
+    padding var(--pf-motion-fast) var(--pf-motion-ease)
 }
-.pf-note-block:hover{
-  transform:translateX(2px);
-  background:linear-gradient(90deg,var(--pf-accent-soft),transparent 48%)
-}
+.pf-note-block:hover{background:linear-gradient(90deg,var(--pf-accent-soft),transparent 50%)}
 .pf-note-block::before{
   content:"";
   position:absolute;
@@ -344,11 +346,11 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   box-shadow:0 0 0 3px var(--pf-paper-raised)
 }
 
-/* Category tabs are tucked paper leaves; hide the ugly native scrollbar. */
+/* Tucked paper tabs read as navigation without looking like another toolbar. */
 .pf-notebook-tabs{
   min-height:42px!important;
   align-items:flex-end!important;
-  gap:4px!important;
+  gap:3px!important;
   padding:8px 8px 0!important;
   overflow-x:auto!important;
   overflow-y:hidden!important;
@@ -363,34 +365,28 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   border-bottom:0!important;
   border-radius:7px 7px 0 0!important;
   color:var(--pf-muted)!important;
-  background:color-mix(in srgb,var(--pf-paper) 90%,transparent)!important;
+  background:color-mix(in srgb,var(--pf-paper) 91%,transparent)!important;
   clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 100%,0 100%);
-  transform:translateY(1px) rotateX(3deg);
+  transform:translateY(1px);
   transform-origin:bottom center;
-  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),height var(--pf-fold-fast) var(--pf-fold-ease),background var(--pf-fold-fast) ease,color var(--pf-fold-fast) ease,box-shadow var(--pf-fold-fast) ease!important
-}
-.pf-notebook-tabs>button::before{
-  content:"";
-  position:absolute;
-  left:8px;
-  right:8px;
-  top:2px;
-  height:1px;
-  opacity:.5;
-  background:linear-gradient(90deg,transparent,var(--pf-paper-glint),transparent)
+  transition:
+    transform var(--pf-motion-fast) var(--pf-motion-ease),
+    height var(--pf-motion-fast) var(--pf-motion-ease),
+    background var(--pf-motion-fast) ease,
+    color var(--pf-motion-fast) ease!important
 }
 .pf-notebook-tabs>button:hover{
   color:var(--pf-ink)!important;
   background:var(--pf-paper-raised)!important;
-  transform:translateY(-2px) rotateX(0deg)!important
+  transform:translateY(-1px)!important
 }
 .pf-notebook-tabs>button[aria-pressed="true"]{
   height:37px!important;
   color:var(--pf-ink)!important;
   background:var(--pf-paper-raised)!important;
   border-color:color-mix(in srgb,var(--pf-accent) 24%,var(--pf-line))!important;
-  box-shadow:0 -8px 20px rgba(25,34,30,.09)!important;
-  transform:translateY(0) rotateX(0deg)!important
+  box-shadow:0 -7px 18px rgba(25,34,30,.075)!important;
+  transform:none!important
 }
 .pf-notebook-tabs>button[aria-pressed="true"]::after{
   content:"";
@@ -410,9 +406,9 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   clip-path:none;
   border-radius:8px 8px 0 0!important
 }
-.pf-tab-new:not([hidden]){animation:pf-tab-fold-in var(--pf-fold-duration) var(--pf-fold-snap) both}
+.pf-tab-new:not([hidden]){animation:pf-tab-settle var(--pf-motion) var(--pf-motion-ease) both}
 
-/* The black audio utility unfolds upward from its bottom hinge. */
+/* The black library is one hinged material, not a floating second window. */
 #pf-local-player{
   perspective:1500px!important;
   transform-style:preserve-3d!important
@@ -420,27 +416,24 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
 #pf-local-player>.pf-player-bar{
   transform-origin:bottom center!important;
   transition:
-    transform var(--pf-fold-fast) var(--pf-fold-ease),
-    border-color var(--pf-fold-fast) ease,
-    box-shadow var(--pf-fold-duration) ease!important
+    border-color var(--pf-motion-fast) ease,
+    box-shadow var(--pf-motion) ease!important
 }
 #pf-local-player.is-open>.pf-player-bar{
-  border-top-color:rgba(131,181,158,.3)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 -9px 26px rgba(0,0,0,.16)!important;
-  transform:rotateX(-1.4deg)!important
+  border-top-color:rgba(131,181,158,.28)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.075),0 -8px 22px rgba(0,0,0,.14)!important
 }
 #pf-local-player>.pf-player-drawer{
   display:flex!important;
   opacity:1;
   visibility:visible;
-  transform:translate3d(0,0,0) rotateX(0deg) scaleY(1);
+  transform:translate3d(0,0,0) rotateX(0deg);
   transform-origin:bottom center;
   transform-style:preserve-3d;
   backface-visibility:hidden;
   transition:
-    transform var(--pf-fold-duration) var(--pf-fold-ease),
-    opacity var(--pf-fold-fast) ease,
-    filter var(--pf-fold-duration) ease,
+    opacity var(--pf-motion-fast) ease,
+    transform var(--pf-motion) var(--pf-motion-fold),
     visibility 0s linear 0s!important
 }
 #pf-local-player>.pf-player-drawer::after{
@@ -449,121 +442,76 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   left:7%;
   right:7%;
   bottom:0;
-  height:14px;
-  opacity:.62;
+  height:12px;
+  opacity:.48;
   pointer-events:none;
-  background:linear-gradient(180deg,transparent,rgba(0,0,0,.44));
-  clip-path:polygon(0 0,44% 0,50% 100%,56% 0,100% 0,96% 100%,4% 100%)
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.42));
+  clip-path:polygon(0 0,46% 0,50% 100%,54% 0,100% 0,97% 100%,3% 100%)
 }
 #pf-local-player>.pf-player-drawer[hidden]{
   display:flex!important;
   opacity:0!important;
   visibility:hidden!important;
   pointer-events:none!important;
-  filter:brightness(.66);
-  transform:translate3d(0,34px,-24px) rotateX(82deg) scaleY(.14)!important;
+  transform:translate3d(0,24px,-26px) rotateX(76deg) scaleY(.18)!important;
   transition:
-    transform var(--pf-fold-duration) var(--pf-fold-ease),
-    opacity var(--pf-fold-fast) ease calc(var(--pf-fold-fast) * .8),
-    filter var(--pf-fold-duration) ease,
-    visibility 0s linear var(--pf-fold-duration)!important
+    opacity var(--pf-motion-fast) ease 60ms,
+    transform var(--pf-motion) var(--pf-motion-fold),
+    visibility 0s linear var(--pf-motion)!important
 }
 #pf-local-player[data-fold-motion="opening"]>.pf-player-drawer{
-  animation:pf-player-unfold var(--pf-fold-duration) var(--pf-fold-ease) both
+  animation:pf-player-unfold var(--pf-motion) var(--pf-motion-fold) both
 }
 #pf-local-player[data-fold-motion="closing"]>.pf-player-drawer{
-  animation:pf-player-fold var(--pf-fold-duration) var(--pf-fold-ease) both
+  animation:pf-player-fold var(--pf-motion) var(--pf-motion-fold) both
 }
-#pf-local-player[data-fold-motion="opening"] .pf-player-drawer>header{animation:pf-player-leaf-open 380ms var(--pf-fold-snap) 44ms both}
-#pf-local-player[data-fold-motion="opening"] .pf-player-nav{animation:pf-player-leaf-open 410ms var(--pf-fold-snap) 92ms both}
-#pf-local-player[data-fold-motion="opening"] .pf-player-drawer-body{animation:pf-player-leaf-open 440ms var(--pf-fold-snap) 140ms both}
 .pf-player-nav button{
-  transition:transform var(--pf-fold-fast) var(--pf-fold-ease),background var(--pf-fold-fast) ease,color var(--pf-fold-fast) ease!important
+  transition:
+    background var(--pf-motion-fast) ease,
+    color var(--pf-motion-fast) ease,
+    transform var(--pf-motion-fast) var(--pf-motion-ease)!important
 }
 .pf-player-nav button:hover{transform:translateY(-1px)}
 .pf-player-nav button[aria-pressed="true"]{box-shadow:inset 0 -2px 0 #83b59e}
 
-@keyframes pf-mark-open{
-  0%{transform:rotateY(0deg) scale(.9)}
-  46%{transform:rotateY(-78deg) rotateZ(-4deg) scale(.94)}
-  78%{transform:rotateY(12deg) rotateZ(1deg) scale(1.04)}
-  100%{transform:rotateY(0deg) rotateZ(0) scale(1)}
+@keyframes pf-mark-unfold{
+  0%{transform:rotateY(0deg)}
+  48%{transform:rotateY(-72deg)}
+  100%{transform:rotateY(0deg)}
 }
-@keyframes pf-mark-close{
-  0%{transform:rotateY(0deg) scale(1)}
-  62%{transform:rotateY(72deg) rotateZ(4deg) scale(.93)}
-  100%{transform:rotateY(0deg) scale(.96)}
-}
-@keyframes pf-mark-glint{
-  0%,20%{opacity:0;transform:translateX(-9px) rotate(-8deg)}
-  48%{opacity:.88}
-  78%,100%{opacity:0;transform:translateX(10px) rotate(-8deg)}
+@keyframes pf-mark-fold{
+  0%{transform:rotateY(0deg)}
+  52%{transform:rotateY(72deg)}
+  100%{transform:rotateY(0deg)}
 }
 @keyframes pf-sheet-unfold{
-  0%{opacity:.12;filter:brightness(.78) saturate(.76);transform:translate3d(0,-24px,-38px) rotateX(-82deg) scaleY(.12)}
-  38%{opacity:.76;filter:brightness(.9) saturate(.9);transform:translate3d(0,-7px,-8px) rotateX(-31deg) scaleY(.64)}
-  76%{opacity:1;filter:brightness(1.025) saturate(1);transform:translate3d(0,1px,4px) rotateX(3.2deg) scaleY(1.006)}
-  100%{opacity:1;filter:none;transform:translate3d(0,0,0) rotateX(0deg) scaleY(1)}
+  0%{opacity:.16;transform:translate3d(0,-14px,-26px) rotateX(-72deg) scaleY(.16)}
+  64%{opacity:.9;transform:translate3d(0,-2px,-3px) rotateX(-12deg) scaleY(.88)}
+  100%{opacity:1;transform:none}
 }
 @keyframes pf-sheet-fold{
-  0%{opacity:1;filter:none;transform:translate3d(0,0,0) rotateX(0deg) scaleY(1)}
-  44%{opacity:.84;filter:brightness(.94) saturate(.92);transform:translate3d(0,-5px,-8px) rotateX(-28deg) scaleY(.72)}
-  100%{opacity:0;filter:brightness(.76) saturate(.72);transform:translate3d(0,-22px,-38px) rotateX(-82deg) scaleY(.12)}
-}
-@keyframes pf-crease-open{0%{opacity:.05;transform:scaleY(.18)}54%{opacity:.92}100%{opacity:.52;transform:scaleY(1)}}
-@keyframes pf-crease-close{0%{opacity:.52;transform:scaleY(1)}48%{opacity:.95}100%{opacity:0;transform:scaleY(.16)}}
-@keyframes pf-leaf-open-a{
-  0%{opacity:.08;filter:brightness(.82);transform:rotateX(-68deg) translateY(-10px) scaleY(.54)}
-  72%{opacity:1;filter:brightness(1.03);transform:rotateX(3deg) translateY(0) scaleY(1.01)}
-  100%{opacity:1;filter:none;transform:none}
-}
-@keyframes pf-leaf-open-b{
-  0%{opacity:.08;filter:brightness(.78);transform:rotateX(64deg) translateY(10px) scaleY(.54)}
-  72%{opacity:1;filter:brightness(1.03);transform:rotateX(-2deg) translateY(0) scaleY(1.01)}
-  100%{opacity:1;filter:none;transform:none}
-}
-@keyframes pf-leaf-close-a{
   0%{opacity:1;transform:none}
-  100%{opacity:.04;filter:brightness(.74);transform:rotateX(-72deg) translateY(-11px) scaleY(.42)}
-}
-@keyframes pf-leaf-close-b{
-  0%{opacity:1;transform:none}
-  100%{opacity:.04;filter:brightness(.74);transform:rotateX(72deg) translateY(11px) scaleY(.42)}
+  100%{opacity:.08;transform:translate3d(0,-14px,-26px) rotateX(-72deg) scaleY(.16)}
 }
 @keyframes pf-player-unfold{
-  0%{opacity:.12;filter:brightness(.62);transform:translate3d(0,32px,-30px) rotateX(84deg) scaleY(.12)}
-  42%{opacity:.78;filter:brightness(.84);transform:translate3d(0,8px,-8px) rotateX(31deg) scaleY(.68)}
-  78%{opacity:1;filter:brightness(1.04);transform:translate3d(0,-1px,3px) rotateX(-2.4deg) scaleY(1.006)}
-  100%{opacity:1;filter:none;transform:none}
+  0%{opacity:.12;transform:translate3d(0,25px,-28px) rotateX(78deg) scaleY(.16)}
+  68%{opacity:.92;transform:translate3d(0,2px,-2px) rotateX(10deg) scaleY(.9)}
+  100%{opacity:1;transform:none}
 }
 @keyframes pf-player-fold{
-  0%{opacity:1;filter:none;transform:none}
-  48%{opacity:.82;filter:brightness(.82);transform:translate3d(0,8px,-8px) rotateX(31deg) scaleY(.68)}
-  100%{opacity:0;filter:brightness(.58);transform:translate3d(0,34px,-30px) rotateX(84deg) scaleY(.12)}
+  0%{opacity:1;transform:none}
+  100%{opacity:.08;transform:translate3d(0,25px,-28px) rotateX(78deg) scaleY(.16)}
 }
-@keyframes pf-player-leaf-open{
-  0%{opacity:.08;transform:rotateX(66deg) translateY(9px)}
-  76%{opacity:1;transform:rotateX(-2deg) translateY(0)}
+@keyframes pf-tab-settle{
+  0%{opacity:.38;transform:translateY(6px)}
   100%{opacity:1;transform:none}
-}
-@keyframes pf-paper-settle{
-  0%{opacity:.62;transform:translateY(-5px) rotateX(-3deg)}
-  100%{opacity:1;transform:none}
-}
-@keyframes pf-tab-fold-in{
-  0%{opacity:0;transform:translateY(9px) rotateX(-28deg) scaleX(.9)}
-  100%{opacity:1;transform:translateY(0) rotateX(0deg) scaleX(1)}
 }
 
 @media (max-width:680px){
-  :root{--pf-fold-duration:440ms}
-  #pf-local-workspace .pf-notebook-sheet{max-height:calc(100vh - 112px)!important}
-  #pf-local-workspace #pf-flow-dock .pf-flow-bar::after{width:28px;height:7px}
-  .pf-notebook-head{padding-top:14px!important}
   .pf-note-document{
     padding-inline:12px!important;
     background:
-      repeating-linear-gradient(180deg,transparent 0 31px,color-mix(in srgb,var(--pf-crease) 58%,transparent) 32px),
+      repeating-linear-gradient(180deg,transparent 0 31px,color-mix(in srgb,var(--pf-crease) 52%,transparent) 32px),
       var(--pf-paper-raised)!important
   }
   .pf-note-block::before{display:none}
@@ -579,7 +527,8 @@ body[data-theme="dark"] #pf-local-workspace .pf-notebook-sheet::before{mix-blend
   #pf-local-player,
   #pf-local-player *,
   #pf-local-player *::before,
-  #pf-local-player *::after{
+  #pf-local-player *::after,
+  html.pf-flow-active main .clock-shell{
     animation:none!important;
     transition:none!important
   }
