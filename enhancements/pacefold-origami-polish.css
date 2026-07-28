@@ -33,6 +33,35 @@ body[data-theme="dark"]{
 }
 .pf-notebook-head-actions button:hover,
 .pf-notebook-tools button:hover{transform:translateY(-1px)}
+.pf-notebook-tools>label{
+  position:relative
+}
+.pf-notebook-tools>label::before{
+  content:"";
+  width:14px;
+  height:14px;
+  flex:0 0 14px;
+  color:var(--pf-accent);
+  opacity:.72;
+  background:currentColor;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m16 16 4 4'/%3E%3C/svg%3E") center/contain no-repeat
+}
+.pf-notebook-tools input{
+  border:0!important;
+  border-bottom:1px solid var(--pf-line)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  letter-spacing:.015em
+}
+.pf-notebook-tools input::placeholder{
+  color:color-mix(in srgb,var(--pf-ink) 48%,var(--pf-paper))!important;
+  opacity:1
+}
+.pf-notebook-tools input:focus{
+  border-bottom-color:var(--pf-accent)!important;
+  box-shadow:0 2px 0 -1px var(--pf-accent);
+  background:transparent!important
+}
 .pf-note-empty strong{
   font-family:ui-serif,Georgia,"Times New Roman",serif;
   font-weight:620!important;
