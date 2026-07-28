@@ -12,6 +12,24 @@
     root.dataset.clarity='discreet';
   }
 
+  function applyWaferFloor(){
+    if(root.dataset.clarity!=='wafer'&&document.body?.dataset.clarity!=='wafer')return;
+    root.style.setProperty('height','100%');
+    root.style.setProperty('overflow','hidden');
+    if(document.body){
+      document.body.style.setProperty('height','100dvh','important');
+      document.body.style.setProperty('min-height','0','important');
+      document.body.style.setProperty('overflow','hidden','important');
+      document.body.style.setProperty('padding','0','important');
+      document.body.style.setProperty('margin','0','important');
+    }
+    for(const selector of ['#onboarding','#panel','#toast','#corner','#setupDock','#foldDrawer','#quietDock','#workline','#pf-local-workspace','#pf-local-player']){
+      const node=document.querySelector(selector);
+      if(node&&!node.hidden)node.hidden=true;
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{applyWaferFloor();setTimeout(applyWaferFloor,0);setTimeout(applyWaferFloor,250);},{once:true});
+
   /* The Ma layer owns one broad document reconciliation observer. Keep focused
      core/clock observers fully native, but settle any whole-document observer
      and ignore DOM nodes created by Ma itself. This prevents reconciliation from
@@ -42,6 +60,7 @@
           if(!batch.length)return;
           const sequence=document.getElementById('sequence');
           if(sequence?.dataset.pfMaRibbon==='true'&&!sequence.querySelector('.pf-ribbon-track'))delete sequence.dataset.pfMaRibbon;
+          applyWaferFloor();
           muted=true;
           try{callback(batch,this);}finally{setTimeout(()=>{muted=false;},0);}
         },0);
