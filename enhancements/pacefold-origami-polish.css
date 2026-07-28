@@ -46,7 +46,18 @@ body[data-theme="dark"]{
   background:currentColor;
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='m16 16 4 4'/%3E%3C/svg%3E") center/contain no-repeat
 }
+.pf-notebook-tools>label span{
+  display:block!important;
+  flex:0 0 auto;
+  color:var(--pf-muted);
+  font-size:8px!important;
+  font-weight:760;
+  letter-spacing:.12em;
+  text-transform:uppercase
+}
 .pf-notebook-tools input{
+  min-width:0;
+  flex:0 1 260px;
   border:0!important;
   border-bottom:1px solid var(--pf-line)!important;
   border-radius:0!important;
@@ -61,6 +72,20 @@ body[data-theme="dark"]{
   border-bottom-color:var(--pf-accent)!important;
   box-shadow:0 2px 0 -1px var(--pf-accent);
   background:transparent!important
+}
+@media (max-width:560px){
+  .pf-notebook-tools{
+    align-items:center!important;
+    flex-flow:row nowrap!important
+  }
+  .pf-notebook-tools>label{min-width:70px}
+  .pf-notebook-tools input{width:100%!important}
+  .pf-format-tools{
+    width:auto!important;
+    max-width:54%!important;
+    flex:0 0 auto;
+    justify-content:flex-end
+  }
 }
 .pf-note-empty strong{
   font-family:ui-serif,Georgia,"Times New Roman",serif;
