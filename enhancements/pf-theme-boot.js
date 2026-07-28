@@ -40,6 +40,8 @@
           const batch=queued;
           queued=[];
           if(!batch.length)return;
+          const sequence=document.getElementById('sequence');
+          if(sequence?.dataset.pfMaRibbon==='true'&&!sequence.querySelector('.pf-ribbon-track'))delete sequence.dataset.pfMaRibbon;
           muted=true;
           try{callback(batch,this);}finally{setTimeout(()=>{muted=false;},0);}
         },0);
