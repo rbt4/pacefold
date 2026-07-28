@@ -25,6 +25,9 @@ const polishCss=fs.readFileSync(path.join(__dirname,'pacefold-origami-polish.css
 for(const token of [
   'content:"Pacefold"',
   'restrained final identity polish',
+  'main .date',
+  '.pf-note-composer-row select',
+  '.pf-note-composer-foot button::after',
   ':focus-visible',
   '.pf-player-drawer>header'
 ]){
@@ -126,4 +129,25 @@ source=source.replace(recoveredDock,`${recoveredDock}assert(await page.locator('
 const desktopOpen="await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace');workspace.classList.add('is-open');workspace.dataset.open='true';});";
 if(!source.includes(desktopOpen))throw new Error('Pacefold desktop visual setup is missing');
 source=source.replace(desktopOpen,"await page.evaluate(()=>{window.__PACEFOLD_REVAMP__.player.close();window.__PACEFOLD_REVAMP__.openNotebook();});await page.waitForTimeout(300);");
+const desktopCapture="await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-desktop.png'),fullPage:true});";
+if(!source.includes(desktopCapture))throw new Error('Pacefold desktop visual capture is missing');
+source=source.replace(desktopCapture,`${desktopCapture}
+    await page.locator('[data-pf-revamp-title]').click();await page.waitForTimeout(300);
+    assert(!await page.locator('#pf-local-workspace').evaluate(node=>node.classList.contains('is-open')),'Compact visual state did not close the notebook');
+    await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-compact.png'),fullPage:true});
+    await page.locator('[data-pf-player-menu]').click();await page.waitForSelector('[data-pf-player-drawer]:visible');await page.waitForTimeout(300);
+    const musicVisual=await page.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),drawer=document.querySelector('[data-pf-player-drawer]'),player=document.getElementById('pf-local-player'),wr=workspace.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),pr=player.getBoundingClientRect();return {notebookOpen:workspace.classList.contains('is-open'),coverAboveDrawer:wr.bottom<=dr.top+2,drawerAbovePlayer:dr.bottom<=pr.top+2,widthAligned:Math.abs(wr.left-dr.left)<=2&&Math.abs(wr.right-dr.right)<=2&&Math.abs(dr.left-pr.left)<=2&&Math.abs(dr.right-pr.right)<=2};});
+    assert(!musicVisual.notebookOpen&&musicVisual.coverAboveDrawer&&musicVisual.drawerAbovePlayer&&musicVisual.widthAligned,\`Music visual geometry failed: \${JSON.stringify(musicVisual)}\`);
+    await page.screenshot({path:path.join(artifactRoot,'pacefold-workspace-music-desktop.png'),fullPage:true});
+    await page.evaluate(()=>{window.__PACEFOLD_REVAMP__.player.close();window.__PACEFOLD_REVAMP__.openNotebook();});await page.waitForTimeout(300);`);
+const mobileCapture="await mobile.screenshot({path:path.join(artifactRoot,'pacefold-workspace-mobile.png'),fullPage:true});";
+if(!source.includes(mobileCapture))throw new Error('Pacefold mobile visual capture is missing');
+source=source.replace(mobileCapture,`${mobileCapture}
+    await mobile.locator('[data-pf-player-menu]').click();await mobile.waitForSelector('[data-pf-player-drawer]:visible');await mobile.waitForTimeout(300);
+    const mobileMusic=await mobile.evaluate(()=>{const workspace=document.getElementById('pf-local-workspace'),drawer=document.querySelector('[data-pf-player-drawer]'),player=document.getElementById('pf-local-player'),wr=workspace.getBoundingClientRect(),dr=drawer.getBoundingClientRect(),pr=player.getBoundingClientRect();return {notebookOpen:workspace.classList.contains('is-open'),coverAboveDrawer:wr.bottom<=dr.top+2,drawerAbovePlayer:dr.bottom<=pr.top+2,widthAligned:Math.abs(wr.left-dr.left)<=2&&Math.abs(wr.right-dr.right)<=2&&Math.abs(dr.left-pr.left)<=2&&Math.abs(dr.right-pr.right)<=2,overflow:document.documentElement.scrollWidth>innerWidth+2};});
+    assert(!mobileMusic.notebookOpen&&mobileMusic.coverAboveDrawer&&mobileMusic.drawerAbovePlayer&&mobileMusic.widthAligned&&!mobileMusic.overflow,\`Mobile music visual geometry failed: \${JSON.stringify(mobileMusic)}\`);
+    await mobile.screenshot({path:path.join(artifactRoot,'pacefold-workspace-music-mobile.png'),fullPage:true});`);
+const successLabel='Pacefold 16.0 integrated audit passed:';
+if(!source.includes(successLabel))throw new Error('Pacefold integrated audit success label is missing');
+source=source.replace(successLabel,'Pacefold 17.0 integrated audit passed:');
 module._compile(source,__filename);
