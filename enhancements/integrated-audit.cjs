@@ -8,9 +8,15 @@ const origamiCss=fs.readFileSync(path.join(__dirname,'pacefold-origami.css'),'ut
 for(const token of [
   '--pf-fold-duration',
   'pacefold-fold-mark.svg',
-  '@keyframes pf-unfold-settle',
+  '[data-fold-motion="opening"]',
+  '[data-fold-motion="closing"]',
+  '@keyframes pf-sheet-unfold',
+  '@keyframes pf-sheet-fold',
+  '@keyframes pf-leaf-open-a',
   '@keyframes pf-player-unfold',
+  '@keyframes pf-player-fold',
   '.pf-player-drawer[hidden]',
+  'scrollbar-width:none!important',
   '@media (prefers-reduced-motion:reduce)'
 ]){
   if(!origamiCss.includes(token))throw new Error(`Pacefold origami audit token missing: ${token}`);
@@ -18,9 +24,9 @@ for(const token of [
 const polishCss=fs.readFileSync(path.join(__dirname,'pacefold-origami-polish.css'),'utf8');
 for(const token of [
   'content:"Pacefold"',
-  '.pf-flow-bar::before{display:none!important}',
-  '.pf-notebook-sheet::before{display:none!important}',
-  'background-color:var(--pf-player-bg)'
+  'restrained final identity polish',
+  ':focus-visible',
+  '.pf-player-drawer>header'
 ]){
   const combined=`${origamiCss}\n${polishCss}`;
   if(!combined.includes(token))throw new Error(`Pacefold origami polish token missing: ${token}`);
@@ -29,14 +35,15 @@ const stabilityCss=fs.readFileSync(path.join(__dirname,'pacefold-desktop-stabili
 for(const token of [
   '--pf-shell-width',
   '--pf-player-drawer-height',
+  '--pf-workspace-open-height',
   '#pf-local-player>.pf-player-bar',
   '#pf-local-player>.pf-player-drawer',
   '#pf-hub-root:has(#pf-local-player .pf-player-drawer:not([hidden])) #pf-local-workspace',
   'width:100%!important',
   'bottom:calc(var(--pf-shell-bottom) + var(--pf-player-bar-height) + var(--pf-player-drawer-height))',
-  'content:" · v16.2"',
+  'content:" · v16.3"',
   'border-radius:0 0 var(--pf-shell-radius) var(--pf-shell-radius)!important',
-  'will-change:auto!important',
+  'scrollbar-color:',
   'overflow-x:clip!important'
 ]){
   if(!stabilityCss.includes(token))throw new Error(`Pacefold unified-desktop audit token missing: ${token}`);
@@ -49,16 +56,23 @@ if((stabilityCss.match(/\{/g)||[]).length!==(stabilityCss.match(/\}/g)||[]).leng
 }
 const injectSource=fs.readFileSync(path.join(__dirname,'inject.mjs'),'utf8');
 for(const token of [
-  "const RELEASE='16.2.0'",
-  "const stabilityMarker='pacefold-16.2-unified-desktop'",
-  "const legacyStabilityMarkers=['pacefold-16.1.1-desktop-stability']",
+  "const RELEASE='16.3.0'",
+  "const origamiMarker='pacefold-16.3-kinetic-origami'",
+  "const legacyOrigamiMarkers=['pacefold-16.1-origami-identity']",
+  "const stabilityMarker='pacefold-16.3-kinetic-desktop'",
+  "const legacyStabilityMarkers=['pacefold-16.1.1-desktop-stability','pacefold-16.2-unified-desktop']",
   "const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css')",
-  "await applyStabilityPatch(path.join(sourceRoot,'pacefold-revamp.css'))",
+  "await applyOrigamiPatch(path.join(targetApp,'pacefold-revamp.css'))",
   "await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'))",
   "await applyAssetRevision(path.join(targetApp,'index.html'))",
   "await stampWorker(path.join(targetRoot,'service-worker.js'))",
   "await stampWorker(path.join(targetApp,'service-worker.js'))",
-  "pacefold.visual-reset.16.2.0",
+  "pacefold.visual-reset.16.3.0",
+  'notebookMotionTimer',
+  'playerMotionTimer',
+  'function setNotebookOpen(open,focus=true)',
+  'workspace.dataset.foldMotion',
+  'player.dataset.foldMotion',
   "pacefold-build.txt",
   "pacefold-build\" content=\"${RELEASE}"
 ]){
@@ -70,6 +84,9 @@ for(const cacheToken of [
   '__PACEFOLD_SURFACE_RELEASE__'
 ]){
   if(!injectSource.includes(cacheToken))throw new Error(`Pacefold cache-bust contract missing: ${cacheToken}`);
+}
+if(injectSource.includes("path.join(sourceRoot,'pacefold-revamp.css')")){
+  throw new Error('Pacefold injection must not rewrite its checked-in base stylesheet');
 }
 const foldMark=fs.readFileSync(path.join(__dirname,'pacefold-fold-mark.svg'),'utf8');
 for(const token of ['<svg','Pacefold folded P mark','viewBox="0 0 64 64"']){

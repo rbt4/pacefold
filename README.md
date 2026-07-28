@@ -9,6 +9,19 @@ Pacefold is a local-first, installable workday rhythm system. Its checksum-verif
 
 There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
 
+## Pacefold 16.3 — kinetic origami workspace
+
+Pacefold now behaves like one physical object anchored above the taskbar.
+
+- Opening the notebook unfolds a mounted paper sheet instead of fading in a floating panel.
+- Five notebook regions hinge in sequence, with alternating fold direction, crease light and a brief paper-settle motion.
+- Closing reverses the sequence while the Pacefold mark folds with the action.
+- The black audio library opens upward from the player footer as a separate hinged tray.
+- Motion state is explicit and self-clearing, so rapid repeated actions cannot leave a half-open surface behind.
+- Reduced-motion mode removes the choreography without changing layout or functionality.
+- The notebook uses subtle Japanese stationery details, ruled writing areas and hidden category-strip scrollbars.
+- The paper workspace, audio tray and player footer share geometry throughout the transition and cannot overlap.
+
 ## Pacefold 16 — local workspace
 
 The notebook is now a working document rather than a launcher.
@@ -116,26 +129,25 @@ The 15.9 notification corrections remain in place:
 
 The verified core remains the only owner of completing the actual cue. Notebook and player actions do not complete reminders accidentally.
 
-## Desktop layout stabilization
+## Desktop workspace
 
-Pacefold 16.1.1 treats the installed app as a desktop workspace rather than several floating overlays.
+Pacefold 16.3 treats the installed app as one collision-free desktop workspace rather than several floating overlays.
 
-- The player bar owns a reserved bottom lane and cannot cover the notebook.
-- On wide windows, an open music drawer sits beside the notebook.
-- On compact desktop windows, the drawer receives a fixed lower lane and the notebook moves above it.
-- Narrow fallback windows show one major surface at a time instead of stacking translucent layers.
+- The player footer owns a reserved bottom lane and cannot cover the notebook.
+- An open music drawer is inserted between the notebook and footer without detaching from either surface.
+- Compact windows remove secondary player controls before the layout can overflow.
 - Notebook toolbars, menus and note content use internal scrolling and width constraints rather than spilling outside the app.
-- Persistent compositor hints were removed from the large panels to reduce flicker, blurry text and stale animation layers.
+- Expensive compositor hints exist only during an active fold.
 
-The release audit checks that the stabilization layer is injected after the origami layer and that its collision-prevention contracts remain present.
+The release audit checks fold-state cleanup, single-copy injection, cache-busting, collision prevention and desktop/mobile geometry.
 
 ## Install or refresh
 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 16.1.1 deploys, fully close every Pacefold and Edge PWA window once.
-5. Reopen Pacefold so the cache-busted desktop stabilization layer replaces the older surface.
+4. After 16.3 deploys, fully close every Pacefold and Edge PWA window once.
+5. Reopen Pacefold so the cache-busted kinetic workspace replaces the older surface.
 
 ## Honest platform boundaries
 
@@ -145,4 +157,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 16.1.1 desktop stabilization over the verified Pacefold 15.8 integrated runtime and 15.2.2 core archive.
+Pacefold 16.3.0 kinetic origami workspace over the Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+
+Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.
