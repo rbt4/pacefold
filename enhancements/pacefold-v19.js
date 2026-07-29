@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const RELEASE='19.1.0';
+const RELEASE='20.0.0';
 const WEATHER_KEY='pacefold.v19.weather.v1';
 const WEATHER_TTL=20*60*1000;
 const WEATHER_REFRESH=20*60*1000;
@@ -305,8 +305,29 @@ function updateRitualStates(){
   for(const [name] of Object.entries(RITUALS)){
     const slot=document.querySelector(`.pf-ritual-slot[data-source="${name}"]`);
     if(!slot)continue;
-    slot.dataset.active=String(Boolean(active[name]));
+    let nextActive=String(Boolean(active[name]));
+    const optimistic=slot.dataset.optimisticActive;
+    if(optimistic){
+      if(optimistic===nextActive||Number(slot.dataset.optimisticUntil)<=Date.now()){
+        delete slot.dataset.optimisticActive;
+        delete slot.dataset.optimisticUntil;
+      }else nextActive=optimistic;
+    }
+    slot.dataset.active=nextActive;
     slot.dataset.attention=String(source===name&&signal!=='none');
+  }
+}
+
+function reflectRitualClick(event){
+  const button=event.target instanceof Element?event.target.closest('button'):null;
+  if(!button)return;
+  const entry=Object.entries(RITUALS).find(([,definition])=>definition.button===button.id);
+  if(!entry||entry[0]==='water')return;
+  const slot=button.closest('.pf-ritual-slot');
+  if(slot){
+    slot.dataset.optimisticActive=String(slot.dataset.active!=='true');
+    slot.dataset.optimisticUntil=String(Date.now()+450);
+    slot.dataset.active=slot.dataset.optimisticActive;
   }
 }
 
@@ -507,6 +528,7 @@ function exposeModules(){
     unregisterModule,
     showNotes:()=>setWorkbenchPage('notes',{focus:true}),
     showSound:()=>setWorkbenchPage('sound',{focus:true}),
+    updateRitualStates,
     reconcile:reconcileSurfaces
   };
 }
@@ -526,7 +548,13 @@ function mount(){
   if(!byId('pf-v19-weather'))shell.insertBefore(weatherCard(),statusArea);
   ritualGrid();
   if(!installWorkbench())return false;
-  byId('workline')?.addEventListener('click',guarded('rhythm-state',()=>requestAnimationFrame(updateRitualStates)));
+  byId('workline')?.addEventListener('click',guarded('rhythm-state',event=>{
+    reflectRitualClick(event);
+    queueMicrotask(updateRitualStates);
+    requestAnimationFrame(updateRitualStates);
+    setTimeout(updateRitualStates,60);
+    setTimeout(updateRitualStates,180);
+  }));
   window.addEventListener('pacefold:ma-prefs',guarded('prefs-state',updateRitualStates));
   identityPass();
   observeSurfaces();
