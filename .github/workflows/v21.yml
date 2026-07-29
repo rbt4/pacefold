@@ -1,0 +1,76 @@
+name: Validate Pacefold 21 experience
+
+on:
+  push:
+    branches: [pacefold-21-rebuild]
+  pull_request:
+    paths:
+      - 'enhancements/**'
+      - '.github/workflows/v21.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pacefold-21-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-v21:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Reconstruct verified release
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir _release
+          unzip -q /tmp/pacefold-v15.zip -d _release
+          node _release/scripts/build.mjs _release
+          node _release/scripts/validate.mjs _release
+
+      - name: Syntax and version guard
+        run: |
+          test "$(cat enhancements/VERSION)" = "21.0.0"
+          node --check enhancements/pacefold-v21-boot.js
+          node --check enhancements/pacefold-v21.js
+          node --check enhancements/v21-audit.cjs
+          node --check enhancements/inject.mjs
+          node --check enhancements/inject-v20.mjs
+
+      - name: Inject Pacefold 21 twice
+        run: |
+          node enhancements/inject.mjs _release
+          node enhancements/inject.mjs _release
+          test "$(cat _release/pacefold-experience.txt)" = "21.0.0"
+          test "$(grep -o 'data-pacefold-v21="21.0.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-boot="21.0.0"' _release/app/index.html | wc -l)" -eq 1
+          grep -q 'pacefold-v21.css' _release/service-worker.js
+          grep -q 'pacefold-v21-boot.js' _release/service-worker.js
+          grep -q 'pacefold-v21.js' _release/service-worker.js
+          node --check _release/app/pacefold-v21-boot.js
+          node --check _release/app/pacefold-v21.js
+          PACEFOLD_STATIC_ONLY=1 node enhancements/v21-audit.cjs _release
+
+      - name: Install browser audit runtime
+        run: |
+          npm install --prefix /tmp/pacefold-v21-audit playwright@1.61.1
+          /tmp/pacefold-v21-audit/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run Pacefold 21 browser audit
+        run: |
+          mkdir -p /tmp/pacefold-v21-artifacts
+          NODE_PATH=/tmp/pacefold-v21-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-v21-artifacts
+
+      - name: Upload visual diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pacefold-21-audit-${{ github.run_id }}
+          path: /tmp/pacefold-v21-artifacts/
+          if-no-files-found: warn
+          retention-days: 7
