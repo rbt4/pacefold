@@ -172,7 +172,7 @@ async function browserAudit(core){
     await offlinePage.goto(`${base}/app/`,{waitUntil:'domcontentloaded'});
     await offlinePage.waitForFunction(()=>window.__PACEFOLD_MA_CORE__&&document.querySelector('#sequence.pf-day-ribbon'),null,{timeout:12000});
     const offline=await offlinePage.evaluate(async()=>({themeBoot:Boolean(document.documentElement.dataset.pfTheme),font:(await document.fonts.load('16px "Pacefold Ma"')).length>0,ma:window.__PACEFOLD_MA_AUDIT__?.release}));
-    assert(offline.themeBoot&&offline.font&&offline.ma==='19.0.0',`Ma first-run cache failed offline: ${JSON.stringify(offline)}`);
+    assert(offline.themeBoot&&offline.font&&offline.ma==='19.1.0',`Ma first-run cache failed offline: ${JSON.stringify(offline)}`);
     await offlinePage.close();
     await context.setOffline(false);
     await context.close();

@@ -24,9 +24,9 @@ function staticAudit(){
   assert(!/\.innerHTML\s*=/.test(runtime),'V19 runtime contains a raw innerHTML assignment');
   assert(!/style\s*=\s*["']/.test(runtime),'V19 runtime contains an inline style string');
   assert((html.match(/data-pacefold-v19=/g)||[]).length===2,'V19 CSS and runtime were not injected exactly once');
-  assert((landing.match(/name="pacefold-landing" content="19\.0\.0"/g)||[]).length===1,'V19 landing marker was not injected exactly once');
-  assert(html.includes('pacefold-v19.css?v=19.0.0')&&html.includes('pacefold-v19.js?v=19.0.0'),'V19 app assets are not cache-busted');
-  assert(landing.includes('pacefold-site-v19.css?v=19.0.0'),'V19 landing stylesheet is not cache-busted');
+  assert((landing.match(/name="pacefold-landing" content="19\.1\.0"/g)||[]).length===1,'V19.1 landing marker was not injected exactly once');
+  assert(html.includes('pacefold-v19.css?v=19.1.0')&&html.includes('pacefold-v19.js?v=19.1.0'),'V19.1 app assets are not cache-busted');
+  assert(landing.includes('pacefold-site-v19.css?v=19.1.0'),'V19.1 landing stylesheet is not cache-busted');
   assert(!/\b(?:Kiroku|Andon|Hansei|Kaizen|Sumi|Sekkei|Washi|Oto|OneNote)\b|Ma ·/i.test(landing),'V19 landing retains a retired product term');
   assert(!html.includes('graph.microsoft.com'),'The V19 app CSP still permits Microsoft Graph');
   assert(core.includes('async function syncCaptureQueue(){return false;}'),'The retired OneNote delivery path is not disabled');
@@ -36,24 +36,27 @@ function staticAudit(){
 
   for(const token of [
     'weatherUrl','prefs.lat','prefs.lng','pacefold.v19.weather.v1','refreshWeather',
-    'Water','Timer','Away','Meal','Eyes','Move','registerModule','unregisterModule',
+    'Water','Timer','Away','Meal','Eyes','Move','installWorkbench','setWorkbenchPage',
+    'showNotes','showSound','registerModule','unregisterModule',
     'window.__PACEFOLD_V19__','pacefold:v19-ready'
   ])assert(runtime.includes(token),`V19 runtime token missing: ${token}`);
 
   for(const token of [
-    'grid-template-columns:repeat(6','grid-template-columns:repeat(4',
-    '#pf-local-player:not(.is-open)','data-v19-surface="music"',
+    'grid-template-columns:repeat(6','.pf-v19-workbench','grid-template-rows:50px minmax(0,1fr)',
+    '#pf-v19-workbench #pf-local-workspace','#pf-v19-workbench #pf-local-player',
+    '#quietDock{display:none','pf-v19-scrim{display:none',
     '@media (max-width:380px) and (max-height:220px)',
     'prefers-reduced-motion:reduce','prefers-reduced-transparency:reduce',
     'forced-colors:active',':focus-visible'
   ])assert(css.includes(token),`V19 CSS token missing: ${token}`);
+  assert(!runtime.includes('installScrim'),'The obsolete modal scrim runtime is still installed');
 
   for(const asset of ['pacefold-site-v19.css','pacefold-v19.css','pacefold-v19.js'])
     assert(worker.includes(asset),`Offline shell omits ${asset}`);
 
   const staleLanguage=/Japanese restraint|Kiroku ·|Andon ·|Hansei ·|Kaizen ·|Sumi workspace|Ma · Day Ribbon/i;
   assert(!staleLanguage.test(landing),'The public page still markets the retired Japanese-language identity');
-  assert(landing.includes('one workday instrument')&&landing.includes('Workday dashboard'),'The public page does not describe the V19 dashboard');
+  assert(landing.includes('one workday instrument')&&landing.includes('Workday dashboard')&&landing.includes('permanent notebook'),'The public page does not describe the V19.1 folio');
   return{runtime,css,core};
 }
 
@@ -177,7 +180,7 @@ async function browserAudit(){
     page.on('pageerror',error=>errors.push(error.message));
     page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
     await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.0.0'&&document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length===6);
+    await page.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0'&&document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length===6);
     await page.waitForFunction(()=>document.getElementById('pf-v19-weather')?.dataset.ready==='true');
 
     const dashboard=await page.evaluate(()=>({
@@ -185,19 +188,30 @@ async function browserAudit(){
       weather:document.getElementById('pf-v19-weather-location')?.textContent,
       temperature:document.getElementById('pf-v19-weather-temp')?.textContent,
       rituals:[...document.querySelectorAll('#workline .pf-v19-ritual-name')].map(node=>node.textContent),
-      tools:[...document.querySelectorAll('#quietDock .pf-v19-tool-copy strong')].map(node=>node.textContent),
       options:document.querySelectorAll('#workline .pf-ritual-options').length,
-      playerDisplay:getComputedStyle(document.getElementById('pf-local-player')).display,
-      playerHeight:document.getElementById('pf-local-player').getBoundingClientRect().height,
+      workbench:(()=>{
+        const node=document.getElementById('pf-v19-workbench'),rect=node.getBoundingClientRect();
+        return{
+          page:node.dataset.page,
+          display:getComputedStyle(node).display,
+          height:rect.height,
+          viewport:innerHeight,
+          inView:rect.left>=0&&rect.right<=innerWidth&&rect.top>=0,
+          notebook:!document.getElementById('pf-local-workspace').hidden,
+          player:!document.getElementById('pf-local-player').hidden
+        };
+      })(),
+      scrim:Boolean(document.getElementById('pf-v19-scrim')),
       statusWidth:document.getElementById('statusLine').scrollWidth<=document.getElementById('statusLine').clientWidth+1,
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1
     }));
-    assert(dashboard.release==='19.0.0',`V19 release marker is wrong: ${dashboard.release}`);
+    assert(dashboard.release==='19.1.0',`V19.1 release marker is wrong: ${dashboard.release}`);
     assert(dashboard.weather==='Calgary'&&dashboard.temperature==='12°',`Saved-location weather did not render: ${JSON.stringify(dashboard)}`);
     assert(JSON.stringify(dashboard.rituals)===JSON.stringify(['Water','Timer','Away','Meal','Eyes','Move']),`Rhythm controls were reduced or reordered: ${JSON.stringify(dashboard.rituals)}`);
-    assert(JSON.stringify(dashboard.tools)===JSON.stringify(['Notes','Music']),`Utility strip is incomplete: ${JSON.stringify(dashboard.tools)}`);
     assert(dashboard.options===6,'Every rhythm control must retain a visible options path');
-    assert(dashboard.playerDisplay==='none'&&dashboard.playerHeight===0,'The legacy player still occupies the dashboard at rest');
+    assert(dashboard.workbench.page==='notes'&&dashboard.workbench.display==='grid'&&dashboard.workbench.notebook&&!dashboard.workbench.player,`The notebook is not the persistent default lower half: ${JSON.stringify(dashboard.workbench)}`);
+    assert(dashboard.workbench.height/dashboard.workbench.viewport>=.38&&dashboard.workbench.height/dashboard.workbench.viewport<=.66&&dashboard.workbench.inView,`The notebook does not occupy a contained lower half: ${JSON.stringify(dashboard.workbench)}`);
+    assert(!dashboard.scrim,'The retired modal scrim still exists');
     assert(dashboard.statusWidth&&dashboard.horizontal,`The main dashboard clips or overflows: ${JSON.stringify(dashboard)}`);
     assert(requests.some(value=>{
       const url=new URL(value);
@@ -215,36 +229,36 @@ async function browserAudit(){
     });
     assert(rhythmState.water===before+1&&rhythmState.timer>0&&rhythmState.active==='true',`Core rhythm actions did not survive the redesign: ${JSON.stringify(rhythmState)}`);
 
-    await page.locator('#pf-v19-notes').click();
-    await page.waitForFunction(()=>document.body.dataset.v19Surface==='notes');
-    await page.waitForTimeout(220);
+    const composer=page.locator('[data-pf-note-body]');
+    await composer.fill('Persistent notebook audit note');
+    await page.locator('[data-pf-note-save]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-pf-note-document]')?.textContent.includes('Persistent notebook audit note'));
     const notes=await page.evaluate(()=>({
-      open:document.getElementById('pf-local-workspace').classList.contains('is-open'),
-      player:document.getElementById('pf-local-player').classList.contains('is-open'),
-      inView:(()=>{const r=document.getElementById('pf-local-workspace').getBoundingClientRect();return r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight;})(),
-      topmost:(()=>{const node=document.getElementById('pf-local-workspace'),r=node.getBoundingClientRect();return Boolean(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('#pf-local-workspace'));})()
+      page:document.getElementById('pf-v19-workbench').dataset.page,
+      visible:!document.getElementById('pf-local-workspace').hidden,
+      status:document.getElementById('statusLine')?.textContent,
+      scrim:Boolean(document.getElementById('pf-v19-scrim')),
+      position:getComputedStyle(document.getElementById('pf-local-workspace')).position
     }));
-    assert(notes.open&&!notes.player&&notes.inView&&notes.topmost,`Notes focus sheet is not exclusive, contained and above its scrim: ${JSON.stringify(notes)}`);
+    assert(notes.page==='notes'&&notes.visible&&!notes.scrim&&notes.position==='relative'&&!/folding back/i.test(notes.status||''),`Saving disturbed the persistent notebook: ${JSON.stringify(notes)}`);
     await page.screenshot({path:path.join(artifacts,'pacefold-v19-notes.png'),fullPage:true});
-    await page.evaluate(()=>window.__PACEFOLD_REVAMP__.closeNotebook());
-    await page.locator('#pf-v19-music').click();
-    await page.waitForFunction(()=>document.body.dataset.v19Surface==='music');
-    await page.waitForTimeout(220);
+    await page.locator('[data-workbench-page="sound"]').click();
+    await page.waitForFunction(()=>document.body.dataset.v19WorkbenchPage==='sound');
     const music=await page.evaluate(()=>{
-      const player=document.getElementById('pf-local-player'),rgb=getComputedStyle(player).backgroundColor;
-      const rect=player.getBoundingClientRect();
+      const player=document.getElementById('pf-local-player'),workbench=document.getElementById('pf-v19-workbench');
       return{
-        open:player.classList.contains('is-open'),
-        notes:document.getElementById('pf-local-workspace').classList.contains('is-open'),
-        background:rgb,
-        inView:rect.left>=0&&rect.top>=0&&rect.right<=innerWidth&&rect.bottom<=innerHeight,
-        topmost:Boolean(document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2)?.closest('#pf-local-player'))
+        page:workbench.dataset.page,
+        visible:!player.hidden,
+        notebook:!document.getElementById('pf-local-workspace').hidden,
+        position:getComputedStyle(player).position,
+        parent:player.parentElement?.className,
+        scrim:Boolean(document.getElementById('pf-v19-scrim'))
       };
     });
-    assert(music.open&&!music.notes&&music.inView&&music.topmost&&!/^rgb\\(0, 0, 0\\)$/.test(music.background),`Music focus sheet retained the black slab, fell behind its scrim or has bad geometry: ${JSON.stringify(music)}`);
+    assert(music.page==='sound'&&music.visible&&!music.notebook&&music.position==='relative'&&music.parent==='pf-v19-workbench-body'&&!music.scrim,`Sound did not replace the notebook page in place: ${JSON.stringify(music)}`);
     await page.screenshot({path:path.join(artifacts,'pacefold-v19-music.png'),fullPage:true});
-    await page.evaluate(()=>window.__PACEFOLD_REVAMP__.player.close());
-    await page.waitForFunction(()=>document.body.dataset.v19Surface==='dashboard'&&document.getElementById('pf-v19-scrim')?.hidden);
+    await page.locator('[data-workbench-page="notes"]').click();
+    await page.waitForFunction(()=>document.body.dataset.v19WorkbenchPage==='notes'&&!document.getElementById('pf-local-workspace').hidden);
 
     await page.locator('#brandButton').click();
     await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));
@@ -283,7 +297,7 @@ async function browserAudit(){
       text:document.body.textContent||'',
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1
     }));
-    assert(landingState.marker==='19.0.0'&&landingState.horizontal&&landingState.text.includes('one workday instrument')&&!retired.test(landingState.text),`V19 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
+    assert(landingState.marker==='19.1.0'&&landingState.horizontal&&landingState.text.includes('one workday instrument')&&landingState.text.includes('permanent notebook')&&!retired.test(landingState.text),`V19.1 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
     await landingPage.screenshot({path:path.join(artifacts,'pacefold-v19-landing.png'),fullPage:true});
     await landingPage.close();
     await context.close();
@@ -292,45 +306,60 @@ async function browserAudit(){
     const mobile=await mobileBundle.context.newPage();
     mobile.on('pageerror',error=>errors.push(error.message));
     await mobile.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await mobile.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.0.0');
+    await mobile.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0');
     const mobileGeometry=await mobile.evaluate(()=>({
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,
       rituals:document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length,
       weather:getComputedStyle(document.getElementById('pf-v19-weather')).display,
+      workbench:getComputedStyle(document.getElementById('pf-v19-workbench')).display,
+      notebook:!document.getElementById('pf-local-workspace').hidden,
+      contained:[document.querySelector('.time-row'),document.getElementById('pf-v19-weather'),document.getElementById('workline')]
+        .every(node=>{const rect=node.getBoundingClientRect();return rect.left>=0&&rect.right<=innerWidth+1&&rect.width>innerWidth*.72;}),
       status:document.getElementById('statusLine').getBoundingClientRect(),
       viewport:{width:innerWidth,height:innerHeight}
     }));
-    assert(mobileGeometry.horizontal&&mobileGeometry.rituals===6&&mobileGeometry.weather!=='none',`Mobile dashboard lost content or overflowed: ${JSON.stringify(mobileGeometry)}`);
+    assert(mobileGeometry.horizontal&&mobileGeometry.contained&&mobileGeometry.rituals===6&&mobileGeometry.weather!=='none'&&mobileGeometry.workbench==='grid'&&mobileGeometry.notebook,`Mobile dashboard lost content or overflowed: ${JSON.stringify(mobileGeometry)}`);
     await mobile.screenshot({path:path.join(artifacts,'pacefold-v19-mobile.png'),fullPage:true});
-    await mobile.locator('#pf-v19-music').scrollIntoViewIfNeeded();
-    const mobileTools=await mobile.evaluate(()=>Object.fromEntries(['captureBtn','soundBtn','pf-v19-notes','pf-v19-music'].map(id=>{
-      const node=document.getElementById(id),rect=node.getBoundingClientRect(),style=getComputedStyle(node);
-      return[id,style.display!=='none'&&style.visibility!=='hidden'&&rect.width>80&&rect.top>=0&&rect.bottom<=innerHeight];
-    })));
-    assert(Object.values(mobileTools).every(Boolean),`Mobile utilities are clipped or unreachable: ${JSON.stringify(mobileTools)}`);
+    await mobile.locator('[data-pf-note-body]').scrollIntoViewIfNeeded();
+    const mobileTools=await mobile.evaluate(()=>{
+      const workbench=document.getElementById('pf-v19-workbench'),composer=document.querySelector('[data-pf-note-body]');
+      const benchRect=workbench.getBoundingClientRect(),composerRect=composer.getBoundingClientRect();
+      return{
+        tabs:document.querySelectorAll('[data-workbench-page]').length,
+        horizontal:workbench.scrollWidth<=workbench.clientWidth+1,
+        composerVisible:composerRect.width>200&&composerRect.height>40,
+        lowerHalf:benchRect.height/innerHeight>=.5,
+        reachable:benchRect.bottom<=document.documentElement.scrollHeight+1,
+        bench:{top:benchRect.top,bottom:benchRect.bottom,height:benchRect.height},
+        scrollHeight:document.documentElement.scrollHeight,
+        main:(()=>{const node=document.querySelector('main'),rect=node.getBoundingClientRect(),style=getComputedStyle(node);return{top:rect.top,bottom:rect.bottom,height:rect.height,overflow:style.overflow,heightStyle:style.height};})()
+      };
+    });
+    assert(mobileTools.tabs===2&&mobileTools.horizontal&&mobileTools.composerVisible&&mobileTools.lowerHalf&&mobileTools.reachable,`Mobile notebook is clipped or unreachable: ${JSON.stringify(mobileTools)}`);
     await mobile.screenshot({path:path.join(artifacts,'pacefold-v19-mobile-tools.png'),fullPage:true});
     await mobileBundle.context.close();
 
     const waferBundle=await prepareContext(browser,{width:340,height:150});
     const wafer=await waferBundle.context.newPage();
     await wafer.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await wafer.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.0.0');
+    await wafer.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0');
     const waferGeometry=await wafer.evaluate(()=>({
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,
       vertical:document.documentElement.scrollHeight<=document.documentElement.clientHeight+1,
       weather:getComputedStyle(document.getElementById('pf-v19-weather')).display,
       rituals:getComputedStyle(document.getElementById('workline')).display,
+      workbench:getComputedStyle(document.getElementById('pf-v19-workbench')).display,
       time:getComputedStyle(document.querySelector('.time-row')).display,
       status:getComputedStyle(document.getElementById('statusLine')).display
     }));
-    assert(waferGeometry.horizontal&&waferGeometry.vertical&&waferGeometry.weather==='none'&&waferGeometry.rituals==='none'&&waferGeometry.time!=='none'&&waferGeometry.status!=='none',`Wafer fallback failed: ${JSON.stringify(waferGeometry)}`);
+    assert(waferGeometry.horizontal&&waferGeometry.vertical&&waferGeometry.weather==='none'&&waferGeometry.rituals==='none'&&waferGeometry.workbench==='none'&&waferGeometry.time!=='none'&&waferGeometry.status!=='none',`Wafer fallback failed: ${JSON.stringify(waferGeometry)}`);
     await wafer.screenshot({path:path.join(artifacts,'pacefold-v19-wafer.png')});
     await waferBundle.context.close();
 
     const reducedBundle=await prepareContext(browser,{width:900,height:700},{reducedMotion:'reduce'});
     const reduced=await reducedBundle.context.newPage();
     await reduced.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await reduced.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.0.0');
+    await reduced.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0');
     const motion=await reduced.evaluate(()=>{
       const card=document.querySelector('.pf-ritual-slot[data-v19-ritual="true"]');
       return{transition:getComputedStyle(card).transitionDuration,animation:getComputedStyle(card).animationDuration};
@@ -350,11 +379,11 @@ async function browserAudit(){
 async function main(){
   staticAudit();
   if(process.env.PACEFOLD_STATIC_ONLY==='1'){
-    console.log('Pacefold 19 static dashboard audit passed.');
+    console.log('Pacefold 19.1 static folio audit passed.');
     return;
   }
   await browserAudit();
-  console.log('Pacefold 19 dashboard audit passed: saved-location weather, core rhythm actions, local-only notes, focused music, responsive geometry, reduced motion and extension hooks.');
+  console.log('Pacefold 19.1 folio audit passed: saved-location weather, core rhythm actions, a persistent half-height notebook, in-place sound, responsive geometry, reduced motion and extension hooks.');
 }
 
 main().catch(error=>{console.error(error?.stack||error);process.exit(1);});

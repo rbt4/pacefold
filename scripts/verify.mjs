@@ -45,8 +45,8 @@ if((injectedHtml.match(/data-pacefold-theme-boot=/g)||[]).length!==1)fail('Theme
 if((injectedHtml.match(/data-pacefold-ma=/g)||[]).length!==2)fail('Ma stylesheet and runtime were not injected exactly once');
 if((injectedHtml.match(/data-pacefold-v19=/g)||[]).length!==2)fail('V19 stylesheet and runtime were not injected exactly once');
 if(injectedHtml.indexOf('pacefold-theme-boot.js')>injectedHtml.indexOf('app-style-01.css'))fail('Theme boot does not precede the first stylesheet');
-if((landingHtml.match(/name="pacefold-landing" content="19\.0\.0"/g)||[]).length!==1)fail('V19 landing page was not injected exactly once');
-if(!landingHtml.includes('one workday instrument')||!landingHtml.includes('Workday dashboard')||!landingHtml.includes('Where do my notes go?'))fail('V19 landing page does not describe the dashboard product');
+if((landingHtml.match(/name="pacefold-landing" content="19\.1\.0"/g)||[]).length!==1)fail('V19.1 landing page was not injected exactly once');
+if(!landingHtml.includes('one workday instrument')||!landingHtml.includes('Workday dashboard')||!landingHtml.includes('permanent notebook')||!landingHtml.includes('Where do my notes go?'))fail('V19.1 landing page does not describe the folio product');
 if(/Japanese restraint|\bOneNote\b|Kiroku ·|Andon ·|Hansei ·|Kaizen ·|Sumi workspace|Ma · Day Ribbon|Pacefold 15\.2\.2 · your day/.test(landingHtml))fail('V19 landing page retains stale product language');
 if(!fs.existsSync(path.join(site,'pacefold-site-ma.css')))fail('Ma landing stylesheet is missing');
 if(!fs.existsSync(path.join(site,'pacefold-site-v19.css')))fail('V19 landing stylesheet is missing');
@@ -62,4 +62,4 @@ const injectedWorker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8')
 for(const asset of ['pacefold-site-ma.css','pacefold-site-v19.css','pacefold-ma.css','pacefold-ma.js','pacefold-v19.css','pacefold-v19.js','pacefold-theme-boot.js','pacefold-hub-guardian.js','pacefold-resilience.js','pacefold-hub.js','pacefold-integrated.js','pacefold-revamp.js','pacefold-fold-mark.svg','fonts/pacefold-ma.woff2'])if(!injectedWorker.includes(asset))fail(`Offline shell omits ${asset}`);
 if(!injectedWorker.includes('caches.match(request,{ignoreSearch:true})'))fail('Offline worker does not resolve cache-busted asset URLs');
 fs.cpSync(core,debug,{recursive:true});run('node',[path.join(debug,'scripts','build.mjs'),debug],{env:{PACEFOLD_DEBUG:'1'}});const debugApp=fs.readFileSync(path.join(debug,'app','app.js'),'utf8');if(!debugApp.includes('const DEBUG_BUILD=true;'))fail('Debug build flag was not enabled for audits');
-console.log(JSON.stringify({version,sha256:actualSha,parts:parts.length,hubPins:'verified',coreValidation:'passed',surface:'19.0.0 dashboard',trustedTypes:'core and injected surfaces',offlineAssets:'verified',landingPage:'19.0.0',oneNoteDelivery:'retired',debugAuditBuild:'enabled'},null,2));
+console.log(JSON.stringify({version,sha256:actualSha,parts:parts.length,hubPins:'verified',coreValidation:'passed',surface:'19.1.0 persistent folio',trustedTypes:'core and injected surfaces',offlineAssets:'verified',landingPage:'19.1.0',oneNoteDelivery:'retired',debugAuditBuild:'enabled'},null,2));

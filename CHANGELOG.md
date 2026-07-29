@@ -1,5 +1,14 @@
 # Changelog
 
+## 19.1.0 — Persistent notebook folio
+
+- Replaced the centered Notes and Music sheets with one permanent lower workspace.
+- Rebalanced the desktop window into an upper workday instrument and a roughly half-height notebook.
+- Kept Notes visible by default; saving, clicking the dashboard, hiding the app and pressing Escape no longer fold it away.
+- Moved local Sound into a page inside the same notebook frame, with a compact always-available transport in the page rail.
+- Removed the modal scrim, flying-sheet animation, duplicate utility row and player close controls from ordinary use.
+- Tightened desktop and mobile geometry and added containment/reachability assertions for the persistent workspace.
+
 ## 19.0.0 — Workday dashboard reset
 
 - Rebuilt the home surface around the clock, next cue, Day Ribbon and weather instead of a sparse interval canvas.

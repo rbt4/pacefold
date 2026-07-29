@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const RELEASE='19.0.0';
+const RELEASE='19.1.0';
 const WEATHER_KEY='pacefold.v19.weather.v1';
 const WEATHER_TTL=20*60*1000;
 const WEATHER_REFRESH=20*60*1000;
@@ -30,6 +30,7 @@ let surfaceObserver=null;
 let textObserver=null;
 let lastWeather=null;
 let lastWeatherAt=0;
+let workbenchPage='notes';
 
 const byId=id=>document.getElementById(id);
 const compact=value=>String(value??'').replace(/\s+/g,' ').trim();
@@ -314,50 +315,118 @@ function proxyClick(selector){
   if(target)target.click();
 }
 
-function utilityButton(className,title,detail){
-  const node=button(`pf-v19-tool ${className}`,'',title);
-  const mark=create('span','pf-v19-tool-mark');
-  mark.setAttribute('aria-hidden','true');
-  const copy=create('span','pf-v19-tool-copy');
-  copy.append(create('strong','',title),create('small','',detail));
-  node.append(mark,copy);
+function workbenchTab(page,label,detail){
+  const node=button('pf-v19-workbench-tab','',`Show ${label}`);
+  node.dataset.workbenchPage=page;
+  node.setAttribute('role','tab');
+  const copy=create('span','');
+  copy.append(create('strong','',label),create('small','',detail));
+  node.append(copy);
+  node.addEventListener('click',()=>setWorkbenchPage(page,{focus:true}));
   return node;
 }
 
-function utilityStrip(){
-  const dock=byId('quietDock');
-  if(!dock||dock.dataset.v19Tools==='true')return;
-  dock.dataset.v19Tools='true';
-  const notes=utilityButton('pf-v19-notes','Notes','Local workday notes');
-  notes.id='pf-v19-notes';
-  notes.addEventListener('click',()=>window.__PACEFOLD_REVAMP__?.openNotebook?.());
-
-  const musicCard=create('div','pf-v19-tool pf-v19-music');
-  musicCard.id='pf-v19-music-card';
-  const music=button('pf-v19-music-open','','Open Music');
-  music.id='pf-v19-music';
-  const musicCopy=create('span','pf-v19-tool-copy');
-  musicCopy.append(create('strong','','Music'),create('small','','Local audio'));
-  music.append(musicCopy);
-  music.addEventListener('click',()=>window.__PACEFOLD_REVAMP__?.player?.open?.());
-
-  const play=button('pf-v19-music-play','▶','Play or pause local audio');
-  play.id='pf-v19-music-play';
-  play.addEventListener('click',event=>{event.stopPropagation();proxyClick('#pf-local-player [data-pf-player-play]');});
-  musicCard.append(play,music);
-  dock.append(notes,musicCard);
+function setWorkbenchPage(page,{focus=false}={}){
+  page=page==='sound'?'sound':'notes';
+  const workbench=byId('pf-v19-workbench');
+  const workspace=byId('pf-local-workspace');
+  const player=byId('pf-local-player');
+  if(!workbench||!workspace||!player)return false;
+  workbenchPage=page;
+  workbench.dataset.page=page;
+  workspace.hidden=page!=='notes';
+  player.hidden=page!=='sound';
+  workspace.inert=page!=='notes';
+  player.inert=page!=='sound';
+  for(const tab of workbench.querySelectorAll('[data-workbench-page]')){
+    const selected=tab.dataset.workbenchPage===page;
+    tab.setAttribute('aria-selected',String(selected));
+    tab.setAttribute('tabindex',selected?'0':'-1');
+  }
+  if(page==='sound')window.__PACEFOLD_REVAMP__?.player?.open?.();
+  else{
+    window.__PACEFOLD_REVAMP__?.player?.close?.();
+    window.__PACEFOLD_REVAMP__?.openNotebook?.();
+  }
+  document.body.dataset.v19Surface='workbench';
+  document.body.dataset.v19WorkbenchPage=page;
+  if(focus){
+    const target=page==='notes'
+      ?workspace.querySelector('[data-pf-note-body]')
+      :player.querySelector('[data-pf-player-title]');
+    target?.focus?.({preventScroll:true});
+  }
   syncMusicState();
+  return true;
+}
+
+function installWorkbench(){
+  if(byId('pf-v19-workbench'))return true;
+  const main=document.querySelector('main');
+  const shell=main?.querySelector('.clock-shell');
+  const workspace=byId('pf-local-workspace');
+  const player=byId('pf-local-player');
+  if(!main||!shell||!workspace||!player)return false;
+
+  const workbench=create('section','pf-v19-workbench');
+  workbench.id='pf-v19-workbench';
+  workbench.dataset.page='notes';
+  workbench.setAttribute('aria-label','Pacefold workday notebook');
+
+  const rail=create('header','pf-v19-workbench-rail');
+  const identity=create('div','pf-v19-workbench-identity');
+  const mark=create('span','pf-v19-workbench-mark');
+  mark.setAttribute('aria-hidden','true');
+  const identityCopy=create('span','');
+  identityCopy.append(create('strong','','Notebook'),create('small','','Always here · saved on this device'));
+  identity.append(mark,identityCopy);
+
+  const tabs=create('div','pf-v19-workbench-tabs');
+  tabs.setAttribute('role','tablist');
+  tabs.setAttribute('aria-label','Notebook pages');
+  tabs.append(
+    workbenchTab('notes','Notes','Write and review'),
+    workbenchTab('sound','Sound','Local audio')
+  );
+
+  const nowPlaying=create('div','pf-v19-workbench-playing');
+  const play=button('pf-v19-workbench-play','▶','Play local audio');
+  play.id='pf-v19-music-play';
+  play.addEventListener('click',event=>{
+    event.stopPropagation();
+    proxyClick('#pf-local-player [data-pf-player-play]');
+  });
+  const playingCopy=button('pf-v19-workbench-track','','Show local audio');
+  const playingText=create('span','');
+  playingText.append(create('strong','','No local track'),create('small','','Sound stays on this device'));
+  playingCopy.append(playingText);
+  playingCopy.addEventListener('click',()=>setWorkbenchPage('sound',{focus:true}));
+  nowPlaying.append(play,playingCopy);
+
+  const extra=create('div','pf-v19-workbench-extra');
+  extra.id='pf-v19-workbench-extra';
+  const body=create('div','pf-v19-workbench-body');
+  body.append(workspace,player);
+  rail.append(identity,tabs,nowPlaying,extra);
+  workbench.append(rail,body);
+  shell.insertAdjacentElement('afterend',workbench);
+
+  byId('pf-v19-scrim')?.remove();
+  setWorkbenchPage('notes');
+  return true;
 }
 
 function syncMusicState(){
   const title=document.querySelector('#pf-local-player [data-pf-player-title]');
   const sourcePlay=document.querySelector('#pf-local-player [data-pf-player-play]');
-  const widget=byId('pf-v19-music');
   const play=byId('pf-v19-music-play');
-  if(widget){
-    const detail=widget.querySelector('small');
-    const next=compact(title?.textContent)||'Local audio';
-    if(detail&&detail.textContent!==next)detail.textContent=next;
+  const track=byId('pf-v19-workbench')?.querySelector('.pf-v19-workbench-track');
+  if(track){
+    const name=track.querySelector('strong');
+    const detail=track.querySelector('small');
+    const next=compact(title?.textContent)||'No local track';
+    if(name&&name.textContent!==next)name.textContent=next;
+    if(detail&&detail.textContent!=='Sound stays on this device')detail.textContent='Sound stays on this device';
   }
   if(play){
     const playing=sourcePlay?.getAttribute('aria-label')==='Pause';
@@ -383,32 +452,11 @@ function identityPass(){
   if(foldKicker&&foldKicker.textContent!=='Quick note')foldKicker.textContent='Quick note';
 }
 
-function installScrim(){
-  if(byId('pf-v19-scrim'))return;
-  const scrim=button('pf-v19-scrim','', 'Close the open Pacefold sheet');
-  scrim.id='pf-v19-scrim';
-  scrim.hidden=true;
-  scrim.addEventListener('click',()=>{
-    window.__PACEFOLD_REVAMP__?.closeNotebook?.();
-    window.__PACEFOLD_REVAMP__?.player?.close?.();
-  });
-  document.body.append(scrim);
-}
-
 function reconcileSurfaces(){
-  const workspace=byId('pf-local-workspace');
-  const player=byId('pf-local-player');
-  const notebook=Boolean(workspace?.classList.contains('is-open'));
-  const music=Boolean(player?.classList.contains('is-open'));
-  const surface=music?'music':notebook?'notes':'dashboard';
-  if(document.body.dataset.v19Surface!==surface)document.body.dataset.v19Surface=surface;
-  const scrim=byId('pf-v19-scrim');
-  if(scrim){
-    const closed=surface==='dashboard';
-    if(scrim.hidden!==closed)scrim.hidden=closed;
-    const ariaHidden=String(closed);
-    if(scrim.getAttribute('aria-hidden')!==ariaHidden)scrim.setAttribute('aria-hidden',ariaHidden);
-  }
+  const workbench=byId('pf-v19-workbench');
+  if(workbench&&workbench.dataset.page!==workbenchPage)workbench.dataset.page=workbenchPage;
+  if(document.body.dataset.v19Surface!=='workbench')document.body.dataset.v19Surface='workbench';
+  if(document.body.dataset.v19WorkbenchPage!==workbenchPage)document.body.dataset.v19WorkbenchPage=workbenchPage;
   syncMusicState();
 }
 
@@ -441,7 +489,7 @@ function exposeModules(){
     if(!/^[a-z][a-z0-9-]{1,40}$/.test(id)||!(node instanceof Element))throw new Error('Pacefold module needs a safe id and an Element.');
     if(modules.has(id))return false;
     node.dataset.pfV19Module=id;
-    byId('quietDock')?.append(node);
+    byId('pf-v19-workbench-extra')?.append(node);
     modules.set(id,node);
     return true;
   };
@@ -452,7 +500,15 @@ function exposeModules(){
     modules.delete(id);
     return true;
   };
-  window.__PACEFOLD_V19__={release:RELEASE,refreshWeather:()=>refreshWeather(true),registerModule,unregisterModule,reconcile:reconcileSurfaces};
+  window.__PACEFOLD_V19__={
+    release:RELEASE,
+    refreshWeather:()=>refreshWeather(true),
+    registerModule,
+    unregisterModule,
+    showNotes:()=>setWorkbenchPage('notes',{focus:true}),
+    showSound:()=>setWorkbenchPage('sound',{focus:true}),
+    reconcile:reconcileSurfaces
+  };
 }
 
 function mount(){
@@ -469,10 +525,9 @@ function mount(){
 
   if(!byId('pf-v19-weather'))shell.insertBefore(weatherCard(),statusArea);
   ritualGrid();
-  utilityStrip();
+  if(!installWorkbench())return false;
   byId('workline')?.addEventListener('click',guarded('rhythm-state',()=>requestAnimationFrame(updateRitualStates)));
   window.addEventListener('pacefold:ma-prefs',guarded('prefs-state',updateRitualStates));
-  installScrim();
   identityPass();
   observeSurfaces();
   observeIdentity();
