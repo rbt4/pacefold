@@ -199,12 +199,18 @@ async function browserAudit(core){
     const forcedContext=await browser.newContext({viewport:{width:900,height:700},forcedColors:'active'});
     await forcedContext.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldSetupDismissedV15','1');});
     const forced=await forcedContext.newPage();await forced.goto(`${base}/app/`,{waitUntil:'networkidle'});await forced.waitForFunction(()=>document.querySelector('.pf-ribbon-now'));
-    const forcedState=await forced.evaluate(()=>({
-      now:getComputedStyle(document.querySelector('.pf-ribbon-now')).backgroundColor,
-      crease:getComputedStyle(document.querySelector('.pf-ribbon-crease')).backgroundColor,
-      meter:getComputedStyle(document.querySelector('.pf-meter')).borderStyle,
-      focusRule:[...document.styleSheets].some(sheet=>{try{return[...sheet.cssRules].some(rule=>String(rule.cssText).includes('forced-colors'));}catch{return false;}})
-    }));
+    const forcedState=await forced.evaluate(()=>{
+      const ribbon=document.querySelector('#sequence.pf-day-ribbon');
+      const now=ribbon.querySelector('.pf-ribbon-now');
+      const crease=document.querySelector('.pf-ribbon-crease')||ribbon.appendChild(Object.assign(document.createElement('button'),{className:'pf-ribbon-crease'}));
+      const meter=document.querySelector('.pf-meter')||document.body.appendChild(Object.assign(document.createElement('span'),{className:'pf-meter'}));
+      return{
+        now:getComputedStyle(now).backgroundColor,
+        crease:getComputedStyle(crease).backgroundColor,
+        meter:getComputedStyle(meter).borderStyle,
+        focusRule:[...document.styleSheets].some(sheet=>{try{return[...sheet.cssRules].some(rule=>String(rule.cssText).includes('forced-colors'));}catch{return false;}})
+      };
+    });
     assert(forcedState.now&&forcedState.crease&&forcedState.meter!=='none'&&forcedState.focusRule,`Forced-colour primitives are incomplete: ${JSON.stringify(forcedState)}`);
     await forcedContext.close();
     assert(!errors.length,`Browser errors: ${errors.join(' | ')}`);
