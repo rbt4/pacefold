@@ -12,19 +12,22 @@ const dateKey=(offset=0)=>{const d=new Date();d.setDate(d.getDate()+offset);retu
 
 function staticAudit(){
   const runtime=read(path.join(app,'pacefold-v21.js'));
+  const persistence=read(path.join(app,'pacefold-v21-persistence.js'));
   const boot=read(path.join(app,'pacefold-v21-boot.js'));
   const css=read(path.join(app,'pacefold-v21.css'));
   const html=read(path.join(app,'index.html'));
   const landing=read(path.join(site,'index.html'));
   const worker=read(path.join(site,'service-worker.js'));
   assert(read(path.join(site,'pacefold-experience.txt')).trim()==='21.0.0','V21 experience version is missing');
-  assert(!/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime+boot),'Unsafe V21 DOM construction found');
+  assert(!/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime+boot+persistence),'Unsafe V21 DOM construction found');
   assert((html.match(/data-pacefold-v21="21\.0\.0"/g)||[]).length===2,'V21 CSS/runtime injection count is wrong');
   assert((html.match(/data-pacefold-v21-boot="21\.0\.0"/g)||[]).length===1,'V21 boot injection count is wrong');
+  assert((html.match(/data-pacefold-v21-persistence="21\.0\.0"/g)||[]).length===1,'V21 persistence injection count is wrong');
   assert(html.includes('pacefold-experience" content="21.0.0')&&landing.includes('Pacefold 21 · one protected workday folio'),'V21 public markers are stale');
   for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1'])assert(runtime.includes(token),`Missing runtime token ${token}`);
+  assert(persistence.includes('pacefold.v21.settings.v1'),'Extension settings store is missing');
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','.pf21-ribbon-key-now'])assert(css.includes(token),`Missing CSS token ${token}`);
-  for(const asset of ['pacefold-v21.css','pacefold-v21-boot.js','pacefold-v21.js'])assert(worker.includes(asset),`Offline worker omits ${asset}`);
+  for(const asset of ['pacefold-v21.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js'])assert(worker.includes(asset),`Offline worker omits ${asset}`);
 }
 
 function serve(){
@@ -54,7 +57,7 @@ function notes(){const now=new Date(),old=new Date(now-86400000);return[
 function weather(){const now=new Date().toISOString().slice(0,13)+':00';return{current:{temperature_2m:25,apparent_temperature:23,weather_code:0,is_day:1,precipitation:0,rain:0},hourly:{time:[now],temperature_2m:[25],precipitation_probability:[0],weather_code:[0]},daily:{time:[dateKey(),dateKey(1),dateKey(2)],weather_code:[0,1,2],temperature_2m_max:[26,27,30],temperature_2m_min:[17,15,15],precipitation_probability_max:[0,0,3]}};}
 async function contextFor(browser,viewport){
   const context=await browser.newContext({viewport});
-  await context.addInitScript(({settings,entries})=>{localStorage.removeItem('pacefoldOnboardedV15');localStorage.removeItem('pacefoldSetupDismissedV15');localStorage.setItem('pacefoldPrefsV15',JSON.stringify(settings));localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify(entries));},{settings:prefs(),entries:notes()});
+  await context.addInitScript(({settings,entries})=>{localStorage.removeItem('pacefoldOnboardedV15');localStorage.removeItem('pacefoldSetupDismissedV15');localStorage.removeItem('pacefold.v21.settings.v1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify(settings));localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify(entries));},{settings:prefs(),entries:notes()});
   await context.route('**/api.open-meteo.com/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(weather())}));
   return context;
 }
@@ -65,7 +68,7 @@ async function browserAudit(){
     const context=await contextFor(browser,{width:1180,height:920});const page=await context.newPage();
     page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&!/ERR_INTERNET_DISCONNECTED/.test(message.text()))errors.push(message.text());});
     await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>window.__PACEFOLD_V21__?.release==='21.0.0'&&document.getElementById('pf21-dayline')&&document.querySelectorAll('.pf21-calendar-day').length===42&&document.getElementById('pf21-settings'));
+    await page.waitForFunction(()=>window.__PACEFOLD_V21__?.release==='21.0.0'&&window.__PACEFOLD_V21_PERSISTENCE__?.release==='21.0.0'&&document.getElementById('pf21-dayline')&&document.querySelectorAll('.pf21-calendar-day').length===42&&document.getElementById('pf21-settings'));
     const initial=await page.evaluate(()=>{
       const rect=node=>node?.getBoundingClientRect();const now=rect(document.querySelector('#sequence .pf-ribbon-now'));const crease=rect(document.querySelector('#sequence .pf-ribbon-crease'));const counts=window.__PACEFOLD_V21__.noteCounts();
       return{release:document.documentElement.dataset.pacefoldExperience,boot:window.__PACEFOLD_V21_BOOT__,flags:[localStorage.getItem('pacefoldOnboardedV15'),localStorage.getItem('pacefoldSetupDismissedV15')],dayline:document.getElementById('pf21-dayline').textContent,days:document.querySelectorAll('.pf21-calendar-day').length,noted:document.querySelectorAll('.pf21-calendar-day[data-has-notes="true"]').length,stats:document.querySelector('.pf21-calendar-stats')?.textContent,counts,markers:{now:now&&{w:now.width,h:now.height},crease:crease&&{w:crease.width,h:crease.height}},switches:document.querySelectorAll('#pf21-settings [data-pf21-pref]').length,advanced:document.getElementById('panel').dataset.pf21Advanced,status:rect(document.getElementById('statusLine')),horizontal:document.documentElement.scrollWidth<=innerWidth+1};
@@ -79,8 +82,8 @@ async function browserAudit(){
     await page.locator('#brandButton').click();await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));
     assert(await page.locator('#panel [data-settings-view]:visible').count()===0,'Advanced settings leaked into essentials');
     await page.locator('[data-pf21-pref="v21WeatherEnabled"]').uncheck();await page.waitForFunction(()=>getComputedStyle(document.getElementById('pf-v19-weather')).display==='none');
-    await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD_V21__?.release==='21.0.0'&&document.getElementById('pf21-note-calendar'));
-    const persisted=await page.evaluate(()=>({weather:JSON.parse(localStorage.getItem('pacefoldPrefsV15')).v21WeatherEnabled,display:getComputedStyle(document.getElementById('pf-v19-weather')).display,snapshot:Boolean(JSON.parse(localStorage.getItem('pacefold.v21.preferences.v1')||'null')?.prefs)}));
+    await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD_V21__?.release==='21.0.0'&&window.__PACEFOLD_V21_PERSISTENCE__?.release==='21.0.0'&&document.getElementById('pf21-note-calendar'));
+    const persisted=await page.evaluate(()=>({weather:window.__PACEFOLD_V21_PERSISTENCE__.read().v21WeatherEnabled,display:getComputedStyle(document.getElementById('pf-v19-weather')).display,snapshot:Boolean(JSON.parse(localStorage.getItem('pacefold.v21.preferences.v1')||'null')?.prefs)}));
     assert(persisted.weather===false&&persisted.display==='none'&&persisted.snapshot,`Preference reload failed: ${JSON.stringify(persisted)}`);
 
     await page.locator('[data-pf-note-body]').fill('V21 saved note');await page.locator('[data-pf-note-save]').click();await page.waitForFunction(()=>/4 notes/.test(document.querySelector('.pf21-calendar-stats')?.textContent||''));
