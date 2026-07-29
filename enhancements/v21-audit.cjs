@@ -57,7 +57,15 @@ function notes(){const now=new Date(),old=new Date(now-86400000);return[
 function weather(){const now=new Date().toISOString().slice(0,13)+':00';return{current:{temperature_2m:25,apparent_temperature:23,weather_code:0,is_day:1,precipitation:0,rain:0},hourly:{time:[now],temperature_2m:[25],precipitation_probability:[0],weather_code:[0]},daily:{time:[dateKey(),dateKey(1),dateKey(2)],weather_code:[0,1,2],temperature_2m_max:[26,27,30],temperature_2m_min:[17,15,15],precipitation_probability_max:[0,0,3]}};}
 async function contextFor(browser,viewport){
   const context=await browser.newContext({viewport});
-  await context.addInitScript(({settings,entries})=>{localStorage.removeItem('pacefoldOnboardedV15');localStorage.removeItem('pacefoldSetupDismissedV15');localStorage.removeItem('pacefold.v21.settings.v1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify(settings));localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify(entries));},{settings:prefs(),entries:notes()});
+  await context.addInitScript(({settings,entries})=>{
+    if(sessionStorage.getItem('pacefoldV21AuditSeeded')==='1')return;
+    sessionStorage.setItem('pacefoldV21AuditSeeded','1');
+    localStorage.removeItem('pacefoldOnboardedV15');
+    localStorage.removeItem('pacefoldSetupDismissedV15');
+    localStorage.removeItem('pacefold.v21.settings.v1');
+    localStorage.setItem('pacefoldPrefsV15',JSON.stringify(settings));
+    localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify(entries));
+  },{settings:prefs(),entries:notes()});
   await context.route('**/api.open-meteo.com/**',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(weather())}));
   return context;
 }
