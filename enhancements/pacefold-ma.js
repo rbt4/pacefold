@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const RELEASE='18.0.2';
+  const RELEASE='19.0.0';
   const STORAGE_KEY='pacefoldPrefsV15';
   const NOTES_KEY='pacefold.notebook.entries.v2';
   const CATEGORIES_KEY='pacefold.notebook.categories.v1';
@@ -25,6 +25,7 @@
   let reconciledAt=0;
   let quietObserver=null;
   let panelObserver=null;
+  let statusObserver=null;
   let reviewTimer=0;
   let lightTimer=0;
   let lightTheme='';
@@ -263,8 +264,15 @@
   function applyStatus(){
     if(!statusOverride||Date.now()>statusOverride.until){statusOverride=null;return false;}
     const word=document.getElementById('statusWord'),time=document.getElementById('eventTime'),relative=document.getElementById('relativeTime'),name=document.getElementById('eventName');
-    if(word)word.textContent=statusOverride.word;if(time)time.textContent=statusOverride.time||'';if(relative)relative.textContent=statusOverride.relative||'';if(name)name.textContent=statusOverride.name||'';
+    for(const [node,value] of [[word,statusOverride.word],[time,statusOverride.time||''],[relative,statusOverride.relative||''],[name,statusOverride.name||'']])
+      if(node&&node.textContent!==value)node.textContent=value;
     return true;
+  }
+  function installStatusGuard(){
+    const status=document.getElementById('statusLine');if(!status)return;
+    statusObserver?.disconnect();
+    statusObserver=new MutationObserver(()=>{if(statusOverride&&Date.now()<=statusOverride.until)queueMicrotask(applyStatus);});
+    statusObserver.observe(status,{childList:true,subtree:true,characterData:true});
   }
   window.__PACEFOLD_MA_VIEW__={renderRibbon,setMinute,setSecondProgress,applyStatus};
 
@@ -635,7 +643,7 @@
     const panel=document.getElementById('panel'),status=panel?.querySelector('.app-status');if(!status)return;
     let line=status.querySelector('.pf-storage-line');
     if(!line){line=el('span','pf-storage-line');line.append(el('span','k','Local storage'),el('span','v'));status.append(line);}
-    line.querySelector('.v').textContent=storageText;
+    const value=line.querySelector('.v');if(value&&value.textContent!==storageText)value.textContent=storageText;
   }
   function installStorage(){
     estimateStorage();window.addEventListener('appinstalled',requestPersistence);
@@ -659,7 +667,7 @@
     requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('pf-boot')));
   }
   function initialize(){
-    initializeMeters();installDayType();installQuiet();installOptions();installWafer();installWco();installLight();installDrift();installReview();installStorage();installPanelHooks();runSecondFrame();
+    initializeMeters();installDayType();installQuiet();installOptions();installWafer();installWco();installLight();installStatusGuard();installDrift();installReview();installStorage();installPanelHooks();runSecondFrame();
     for(const name of ['pointerdown','keydown','mousedown','touchstart'])document.addEventListener(name,()=>{lastInteractionAt=Date.now();},{passive:true});
     window.addEventListener('pacefold:ma-prefs',()=>{updateDayType();applyQuietState();updateLight();ribbonKey='';});
     setInterval(()=>{setSecondProgress(new Date().getSeconds());applyStatus();if(getPrefs().quietMode)sanitizeQuietDom();},1000);
