@@ -1,0 +1,67 @@
+/* Pacefold 21 compatibility surface.
+   Keeps legacy measurement and accessibility contracts intact while V21 owns the visible UI. */
+
+html.pf-v21-active #statusLine{
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  width:100%!important;
+  height:1px!important;
+  min-height:0!important;
+  margin:-1px 0 0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  clip:auto!important;
+  clip-path:none!important;
+  white-space:nowrap!important;
+  border:0!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+html[data-pf-quiet="true"].pf-v21-active #pf21-dayline,
+html[data-pf-quiet="true"].pf-v21-active #pf21-note-calendar,
+html[data-pf-quiet="true"].pf-v21-active #pf21-settings{
+  visibility:hidden!important;
+}
+
+@media (max-width:720px){
+  html.pf-v21-active .pf-v20-folio>.clock-shell,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.time-row,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.status-area,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>#workline{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    justify-self:stretch!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell{
+    grid-column:1/-1!important;
+    box-sizing:border-box!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather{
+    box-sizing:border-box!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell>#workline{
+    grid-column:1/-1!important;
+  }
+}
+
+@media (max-width:540px){
+  html.pf-v21-active .pf-v20-folio>.clock-shell{
+    width:100vw!important;
+    max-width:100vw!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.time-row,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.status-area,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>#workline{
+    width:calc(100vw - 32px)!important;
+    max-width:calc(100vw - 32px)!important;
+  }
+}
