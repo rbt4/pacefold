@@ -24,3 +24,23 @@ html[data-pf-quiet="true"].pf-v21-active #pf21-note-calendar,
 html[data-pf-quiet="true"].pf-v21-active #pf21-settings{
   visibility:hidden!important;
 }
+
+@media (max-width:720px){
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.time-row,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.status-area,
+  html.pf-v21-active .pf-v20-folio>.clock-shell>#workline{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    justify-self:stretch!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather{
+    box-sizing:border-box!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell>#workline{
+    grid-column:1/-1!important;
+  }
+}
