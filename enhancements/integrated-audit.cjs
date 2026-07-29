@@ -87,7 +87,7 @@ for(const token of [
   'closeNotebook:()=>setNotebookOpen(false,false,false)',
   'workspace.dataset.foldMotion',
   'player.dataset.foldMotion',
-  "surfaceRelease:'18.0.1'",
+  "surfaceRelease:'${RELEASE}'",
   "pacefold-build.txt",
   "pacefold-build\" content=\"${RELEASE}"
 ]){
