@@ -74,6 +74,18 @@ function prepareRuntime(source){
   const quietGuard="    if(document.body?.dataset.quiet==='true'||readPrefs().quietMode)return true;\n";
   source=replaceExactlyOnce(
     source,
+    '  function snapshotPrefs(){\n    const prefs=readPrefs();',
+    "  function snapshotPrefs(){\n    const firstRunSetupVisible=!window.__PACEFOLD_V21_BOOT__?.returning&&setupNodes().some(node=>!node.hidden&&node.getAttribute('aria-hidden')!=='true'&&getComputedStyle(node).display!=='none');\n    if(firstRunSetupVisible)return false;\n    const prefs=readPrefs();",
+    'first-run snapshot guard'
+  );
+  source=replaceExactlyOnce(
+    source,
+    '  function suppressDuplicateSetup(){\n    if(suppressingSetup||!meaningfulPrefs(readPrefs()))return false;',
+    "  function suppressDuplicateSetup(){\n    if(suppressingSetup||!window.__PACEFOLD_V21_BOOT__?.returning||!meaningfulPrefs(readPrefs()))return false;",
+    'first-run setup guard'
+  );
+  source=replaceExactlyOnce(
+    source,
     '  function renderCalendar(force=false){\n    const root=calendar();',
     `  function renderCalendar(force=false){\n${quietGuard}    const root=calendar();`,
     'calendar quiet guard'
@@ -186,7 +198,7 @@ async function verify(){
   if((html.match(/data-pacefold-v21-persistence="21\.0\.0"/g)||[]).length!==1)throw new Error('Pacefold 21 persistence runtime was not injected exactly once');
   if(!html.includes('name="pacefold-experience" content="21.0.0"'))throw new Error('Pacefold 21 app marker is missing');
   for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js'])if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
-  for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'"])if(!runtime.includes(token))throw new Error(`Pacefold 21 runtime token missing: ${token}`);
+  for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'",'firstRunSetupVisible'])if(!runtime.includes(token))throw new Error(`Pacefold 21 runtime token missing: ${token}`);
   if(!persistence.includes('pacefold.v21.settings.v1'))throw new Error('Pacefold 21 extension settings persistence is missing');
   if(!compat.includes('width:100%!important'))throw new Error('Pacefold 21 legacy geometry compatibility is missing');
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','data-pf21-advanced'])if(!css.includes(token))throw new Error(`Pacefold 21 CSS token missing: ${token}`);
