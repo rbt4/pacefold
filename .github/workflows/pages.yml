@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 19.1.0
+name: Validate and deploy Pacefold 20.0.0
 
 on:
   push:
@@ -72,6 +72,7 @@ jobs:
           node --check enhancements/pacefold-theme-boot.js
           node --check enhancements/pacefold-ma.js
           node --check enhancements/pacefold-v19.js
+          node --check enhancements/pacefold-v20.js
           node --check enhancements/inject.mjs
           node --check enhancements/hub-audit.cjs
           node --check enhancements/run-hub-audit.cjs
@@ -79,6 +80,7 @@ jobs:
           node --check enhancements/integrated-audit.cjs
           node --check enhancements/ma-audit.cjs
           node --check enhancements/v19-audit.cjs
+          node --check enhancements/v20-audit.cjs
           test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
           test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
@@ -112,10 +114,11 @@ jobs:
           test "$(grep -o 'data-pacefold-hub-guardian="15.8.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-resilience="15.8.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-flow="15.8.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-theme-boot="19.1.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-ma="19.1.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v19="19.1.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'name="pacefold-landing" content="19.1.0"' _release/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-theme-boot="20.0.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-ma="20.0.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v19="20.0.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v20="20.0.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'name="pacefold-landing" content="20.0.0"' _release/index.html | wc -l)" -eq 1
           test -f _release/pacefold-site-ma.css
           test -f _release/pacefold-site-v19.css
           grep -q 'https://api.open-meteo.com' _release/app/index.html
@@ -132,6 +135,8 @@ jobs:
           test -f _release/app/pacefold-ma.css
           test -f _release/app/pacefold-v19.js
           test -f _release/app/pacefold-v19.css
+          test -f _release/app/pacefold-v20.js
+          test -f _release/app/pacefold-v20.css
           test -f _release/app/fonts/pacefold-ma.woff2
           test "$(stat -c %s _release/app/fonts/pacefold-ma.woff2)" -le 15000
           test -f _release/app/icons/fold-mark.png
@@ -150,7 +155,8 @@ jobs:
           node --check _release/app/pacefold-theme-boot.js
           node --check _release/app/pacefold-ma.js
           node --check _release/app/pacefold-v19.js
-          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js _release/app/pacefold-theme-boot.js _release/app/pacefold-ma.js _release/app/pacefold-v19.js
+          node --check _release/app/pacefold-v20.js
+          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js _release/app/pacefold-theme-boot.js _release/app/pacefold-ma.js _release/app/pacefold-v19.js _release/app/pacefold-v20.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
           node -e "const m=JSON.parse(require('fs').readFileSync('_release/manifest.webmanifest','utf8'));if(JSON.stringify(m.display_override)!==JSON.stringify(['window-controls-overlay','standalone']))process.exit(1)"
@@ -158,6 +164,8 @@ jobs:
           grep -q 'pacefold-site-ma.css' _release/service-worker.js
           grep -q 'pacefold-v19.css' _release/service-worker.js
           grep -q 'pacefold-v19.js' _release/service-worker.js
+          grep -q 'pacefold-v20.css' _release/service-worker.js
+          grep -q 'pacefold-v20.js' _release/service-worker.js
           grep -q 'pacefold-site-v19.css' _release/service-worker.js
           grep -q 'pacefold-theme-boot.js' _release/service-worker.js
           grep -q 'pacefold-revamp.js' _release/service-worker.js
@@ -224,11 +232,22 @@ jobs:
           echo "$status" > /tmp/pacefold-v19-audit.status
           exit 0
 
+      - name: V20 visual, taskbar and backup browser audit
+        continue-on-error: true
+        run: |
+          echo 99 > /tmp/pacefold-v20-audit.status
+          mkdir -p /tmp/pacefold-v20-artifacts
+          set +e
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-v20-artifacts 2>&1 | tee /tmp/pacefold-v20-audit.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > /tmp/pacefold-v20-audit.status
+          exit 0
+
       - name: Upload browser diagnostics and visual captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-19.1-audit-${{ github.run_id }}
+          name: pacefold-20.0-audit-${{ github.run_id }}
           path: |
             /tmp/pacefold-notebook-audit.log
             /tmp/pacefold-notebook-audit.status
@@ -243,6 +262,9 @@ jobs:
             /tmp/pacefold-v19-audit.log
             /tmp/pacefold-v19-audit.status
             /tmp/pacefold-v19-artifacts/
+            /tmp/pacefold-v20-audit.log
+            /tmp/pacefold-v20-audit.status
+            /tmp/pacefold-v20-artifacts/
           if-no-files-found: error
           retention-days: 7
 
@@ -253,11 +275,13 @@ jobs:
           echo "Integrated audit status: $(cat /tmp/pacefold-integrated-audit.status)"
           echo "Ma audit status: $(cat /tmp/pacefold-ma-audit.status)"
           echo "V19 audit status: $(cat /tmp/pacefold-v19-audit.status)"
+          echo "V20 audit status: $(cat /tmp/pacefold-v20-audit.status)"
           test "$(cat /tmp/pacefold-notebook-audit.status)" = "0"
           test "$(cat /tmp/pacefold-resilience-audit.status)" = "0"
           test "$(cat /tmp/pacefold-integrated-audit.status)" = "0"
           test "$(cat /tmp/pacefold-ma-audit.status)" = "0"
           test "$(cat /tmp/pacefold-v19-audit.status)" = "0"
+          test "$(cat /tmp/pacefold-v20-audit.status)" = "0"
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -297,10 +321,11 @@ jobs:
           grep -q 'data-pacefold-hub="15.8.0"' _site/app/index.html
           grep -q 'data-pacefold-resilience="15.8.0"' _site/app/index.html
           grep -q 'data-pacefold-flow="15.8.0"' _site/app/index.html
-          grep -q 'data-pacefold-theme-boot="19.1.0"' _site/app/index.html
-          test "$(grep -o 'data-pacefold-ma="19.1.0"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v19="19.1.0"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'name="pacefold-landing" content="19.1.0"' _site/index.html | wc -l)" -eq 1
+          grep -q 'data-pacefold-theme-boot="20.0.0"' _site/app/index.html
+          test "$(grep -o 'data-pacefold-ma="20.0.0"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v19="20.0.0"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v20="20.0.0"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'name="pacefold-landing" content="20.0.0"' _site/index.html | wc -l)" -eq 1
           test -f _site/pacefold-site-ma.css
           test -f _site/pacefold-site-v19.css
           ! grep -q 'https://graph.microsoft.com' _site/app/index.html
@@ -313,6 +338,8 @@ jobs:
           test -f _site/app/pacefold-ma.css
           test -f _site/app/pacefold-v19.js
           test -f _site/app/pacefold-v19.css
+          test -f _site/app/pacefold-v20.js
+          test -f _site/app/pacefold-v20.css
           test -f _site/app/fonts/pacefold-ma.woff2
           test "$(xxd -p -l 8 _site/app/icons/fold-mark.png)" = "89504e470d0a1a0a"
           test "$(xxd -p -l 8 _site/app/icons/notify-water.png)" = "89504e470d0a1a0a"
@@ -325,7 +352,8 @@ jobs:
           node --check _site/app/pacefold-theme-boot.js
           node --check _site/app/pacefold-ma.js
           node --check _site/app/pacefold-v19.js
-          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _site/app/app.js _site/app/pacefold-hub.js _site/app/pacefold-hub-guardian.js _site/app/pacefold-resilience.js _site/app/pacefold-integrated.js _site/app/pacefold-theme-boot.js _site/app/pacefold-ma.js _site/app/pacefold-v19.js
+          node --check _site/app/pacefold-v20.js
+          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _site/app/app.js _site/app/pacefold-hub.js _site/app/pacefold-hub-guardian.js _site/app/pacefold-resilience.js _site/app/pacefold-integrated.js _site/app/pacefold-theme-boot.js _site/app/pacefold-ma.js _site/app/pacefold-v19.js _site/app/pacefold-v20.js
           node --check _site/service-worker.js
           node --check _site/app/service-worker.js
           node -e "const m=JSON.parse(require('fs').readFileSync('_site/manifest.webmanifest','utf8'));if(JSON.stringify(m.display_override)!==JSON.stringify(['window-controls-overlay','standalone']))process.exit(1)"
@@ -333,6 +361,8 @@ jobs:
           grep -q 'pacefold-site-ma.css' _site/service-worker.js
           grep -q 'pacefold-v19.css' _site/service-worker.js
           grep -q 'pacefold-v19.js' _site/service-worker.js
+          grep -q 'pacefold-v20.css' _site/service-worker.js
+          grep -q 'pacefold-v20.js' _site/service-worker.js
           grep -q 'pacefold-site-v19.css' _site/service-worker.js
           grep -q 'pacefold-theme-boot.js' _site/service-worker.js
           grep -q 'pacefold-revamp.js' _site/service-worker.js

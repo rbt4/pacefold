@@ -24,9 +24,9 @@ function staticAudit(){
   assert(!/\.innerHTML\s*=/.test(runtime),'V19 runtime contains a raw innerHTML assignment');
   assert(!/style\s*=\s*["']/.test(runtime),'V19 runtime contains an inline style string');
   assert((html.match(/data-pacefold-v19=/g)||[]).length===2,'V19 CSS and runtime were not injected exactly once');
-  assert((landing.match(/name="pacefold-landing" content="19\.1\.0"/g)||[]).length===1,'V19.1 landing marker was not injected exactly once');
-  assert(html.includes('pacefold-v19.css?v=19.1.0')&&html.includes('pacefold-v19.js?v=19.1.0'),'V19.1 app assets are not cache-busted');
-  assert(landing.includes('pacefold-site-v19.css?v=19.1.0'),'V19.1 landing stylesheet is not cache-busted');
+  assert((landing.match(/name="pacefold-landing" content="20\.0\.0"/g)||[]).length===1,'V20 landing marker was not injected exactly once');
+  assert(html.includes('pacefold-v19.css?v=20.0.0')&&html.includes('pacefold-v19.js?v=20.0.0'),'Retained V19 app assets are not cache-busted for V20');
+  assert(landing.includes('pacefold-site-v19.css?v=20.0.0'),'V20 landing stylesheet is not cache-busted');
   assert(!/\b(?:Kiroku|Andon|Hansei|Kaizen|Sumi|Sekkei|Washi|Oto|OneNote)\b|Ma ·/i.test(landing),'V19 landing retains a retired product term');
   assert(!html.includes('graph.microsoft.com'),'The V19 app CSP still permits Microsoft Graph');
   assert(core.includes('async function syncCaptureQueue(){return false;}'),'The retired OneNote delivery path is not disabled');
@@ -56,7 +56,7 @@ function staticAudit(){
 
   const staleLanguage=/Japanese restraint|Kiroku ·|Andon ·|Hansei ·|Kaizen ·|Sumi workspace|Ma · Day Ribbon/i;
   assert(!staleLanguage.test(landing),'The public page still markets the retired Japanese-language identity');
-  assert(landing.includes('one workday instrument')&&landing.includes('Workday dashboard')&&landing.includes('permanent notebook'),'The public page does not describe the V19.1 folio');
+  assert(landing.includes('one protected workday folio')&&landing.includes('Workday dashboard')&&landing.includes('automatic JSON backup'),'The public page does not describe the V20 folio');
   return{runtime,css,core};
 }
 
@@ -180,7 +180,7 @@ async function browserAudit(){
     page.on('pageerror',error=>errors.push(error.message));
     page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
     await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0'&&document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length===6);
+    await page.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='20.0.0'&&window.__PACEFOLD_V20__?.release==='20.0.0'&&document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length===6);
     await page.waitForFunction(()=>document.getElementById('pf-v19-weather')?.dataset.ready==='true');
 
     const dashboard=await page.evaluate(()=>({
@@ -205,7 +205,7 @@ async function browserAudit(){
       statusWidth:document.getElementById('statusLine').scrollWidth<=document.getElementById('statusLine').clientWidth+1,
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1
     }));
-    assert(dashboard.release==='19.1.0',`V19.1 release marker is wrong: ${dashboard.release}`);
+    assert(dashboard.release==='20.0.0',`V20 release marker is wrong: ${dashboard.release}`);
     assert(dashboard.weather==='Calgary'&&dashboard.temperature==='12°',`Saved-location weather did not render: ${JSON.stringify(dashboard)}`);
     assert(JSON.stringify(dashboard.rituals)===JSON.stringify(['Water','Timer','Away','Meal','Eyes','Move']),`Rhythm controls were reduced or reordered: ${JSON.stringify(dashboard.rituals)}`);
     assert(dashboard.options===6,'Every rhythm control must retain a visible options path');
@@ -297,7 +297,7 @@ async function browserAudit(){
       text:document.body.textContent||'',
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1
     }));
-    assert(landingState.marker==='19.1.0'&&landingState.horizontal&&landingState.text.includes('one workday instrument')&&landingState.text.includes('permanent notebook')&&!retired.test(landingState.text),`V19.1 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
+    assert(landingState.marker==='20.0.0'&&landingState.horizontal&&landingState.text.includes('one protected workday folio')&&landingState.text.includes('automatic JSON backup')&&!retired.test(landingState.text),`V20 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
     await landingPage.screenshot({path:path.join(artifacts,'pacefold-v19-landing.png'),fullPage:true});
     await landingPage.close();
     await context.close();
@@ -306,7 +306,7 @@ async function browserAudit(){
     const mobile=await mobileBundle.context.newPage();
     mobile.on('pageerror',error=>errors.push(error.message));
     await mobile.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await mobile.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0');
+    await mobile.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='20.0.0'&&window.__PACEFOLD_V20__?.release==='20.0.0');
     const mobileGeometry=await mobile.evaluate(()=>({
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,
       rituals:document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length,
@@ -342,7 +342,7 @@ async function browserAudit(){
     const waferBundle=await prepareContext(browser,{width:340,height:150});
     const wafer=await waferBundle.context.newPage();
     await wafer.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await wafer.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0');
+    await wafer.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='20.0.0'&&window.__PACEFOLD_V20__?.release==='20.0.0');
     const waferGeometry=await wafer.evaluate(()=>({
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,
       vertical:document.documentElement.scrollHeight<=document.documentElement.clientHeight+1,
@@ -359,7 +359,7 @@ async function browserAudit(){
     const reducedBundle=await prepareContext(browser,{width:900,height:700},{reducedMotion:'reduce'});
     const reduced=await reducedBundle.context.newPage();
     await reduced.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await reduced.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='19.1.0');
+    await reduced.waitForFunction(()=>window.__PACEFOLD_V19__?.release==='20.0.0'&&window.__PACEFOLD_V20__?.release==='20.0.0');
     const motion=await reduced.evaluate(()=>{
       const card=document.querySelector('.pf-ritual-slot[data-v19-ritual="true"]');
       return{transition:getComputedStyle(card).transitionDuration,animation:getComputedStyle(card).animationDuration};
@@ -379,11 +379,11 @@ async function browserAudit(){
 async function main(){
   staticAudit();
   if(process.env.PACEFOLD_STATIC_ONLY==='1'){
-    console.log('Pacefold 19.1 static folio audit passed.');
+    console.log('Pacefold 20 retained-folio audit passed.');
     return;
   }
   await browserAudit();
-  console.log('Pacefold 19.1 folio audit passed: saved-location weather, core rhythm actions, a persistent half-height notebook, in-place sound, responsive geometry, reduced motion and extension hooks.');
+  console.log('Pacefold 20 retained-folio audit passed: saved-location weather, core rhythm actions, a persistent half-height notebook, in-place sound, responsive geometry, reduced motion and extension hooks.');
 }
 
 main().catch(error=>{console.error(error?.stack||error);process.exit(1);});

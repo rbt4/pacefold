@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const RELEASE='19.1.0';
+  const RELEASE='20.0.0';
   const STORAGE_KEY='pacefoldPrefsV15';
   const NOTES_KEY='pacefold.notebook.entries.v2';
   const CATEGORIES_KEY='pacefold.notebook.categories.v1';
@@ -158,7 +158,7 @@
     async function setManualBadge(value){
       const prefs=getPrefs();
       if(prefs.quietMode||prefs.taskbarBadge===false||prefs.taskbarBadgeMode==='off')return clearSurface();
-      try{return await nativeSetBadge?.(value);}catch{return undefined;}
+      try{return value==null?await nativeSetBadge?.():await nativeSetBadge?.(value);}catch{return undefined;}
     }
     function minutesUntil(states){
       const candidates=[],now=Date.now();
@@ -173,7 +173,8 @@
     function updateBadge(attention,states){
       const prefs=getPrefs(),mode=prefs.taskbarBadgeMode||'due';
       if(prefs.quietMode||mode==='off'||prefs.taskbarBadge===false){if(badgeKey!=='clear'){badgeKey='clear';void clearSurface();}return true;}
-      const waitingNow=Boolean(attention&&(['due','pending'].includes(attention.signal)||(attention.signal==='active'&&['prayer','away','body'].includes(attention.source)))),minutes=mode==='countdown'&&!waitingNow?minutesUntil(states):0,key=waitingNow?`waiting:${attention.source}`:minutes?`next:${minutes}`:'clear';
+      const flowWaiting=Boolean(document.querySelector('[data-pf-flow-pulse][data-state="new"]'));
+      const waitingNow=Boolean(flowWaiting||attention&&(['due','pending'].includes(attention.signal)||(attention.signal==='active'&&['prayer','away','body'].includes(attention.source)))),minutes=mode==='countdown'&&!waitingNow?minutesUntil(states):0,key=waitingNow?`waiting:${flowWaiting?'flow':attention.source}`:minutes?`next:${minutes}`:'clear';
       if(key===badgeKey)return true;badgeKey=key;
       if(waitingNow)void setManualBadge();else if(minutes)void setManualBadge(minutes);else void clearSurface();
       return true;
@@ -182,7 +183,7 @@
       for(const [key,item] of pending)if(['water','eyes','body'].includes(item.source))pending.delete(key);
       waiting([...pending.values()][0]||null);
     }
-    return{request,updateBadge,setManualBadge,clear:clearSurface,reanchor,_pending:pending};
+    return{request,updateBadge,setManualBadge,clear:clearSurface,reanchor,_pending:pending,_nativeSetBadge:nativeSetBadge,_nativeClearBadge:nativeClearBadge};
   }
   const scheduler=createScheduler();
   window.__PACEFOLD_MA_SCHEDULER__=scheduler;

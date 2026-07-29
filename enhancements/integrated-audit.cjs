@@ -62,7 +62,7 @@ if((stabilityCss.match(/\{/g)||[]).length!==(stabilityCss.match(/\}/g)||[]).leng
 }
 const injectSource=fs.readFileSync(path.join(__dirname,'inject.mjs'),'utf8');
 for(const token of [
-  "const RELEASE='19.1.0'",
+  "const RELEASE='20.0.0'",
   "const origamiMarker='pacefold-17-sumi-fold'",
   "const legacyOrigamiMarkers=['pacefold-16.1-origami-identity','pacefold-16.3-kinetic-origami']",
   "const stabilityMarker='pacefold-17-sumi-workspace'",
@@ -73,7 +73,7 @@ for(const token of [
   "await applyAssetRevision(path.join(targetApp,'index.html'))",
   "await stampWorker(path.join(targetRoot,'service-worker.js'))",
   "await stampWorker(path.join(targetApp,'service-worker.js'))",
-  "pacefold.visual-reset.19.1.0",
+  "pacefold.visual-reset.20.0.0",
   "pacefold.notebook.draft.v1",
   'notebookMotionTimer',
   'notebookAutoCloseTimer',
@@ -95,7 +95,7 @@ for(const token of [
   if(!injectSource.includes(token))throw new Error(`Pacefold unified-desktop injection token missing: ${token}`);
 }
 for(const cacheToken of [
-  'pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp|ma|theme-boot|v19)',
+  'pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp|ma|theme-boot|v19|v20)',
   '?v=${RELEASE}',
   '__PACEFOLD_SURFACE_RELEASE__'
 ]){
@@ -177,7 +177,7 @@ source=source.replace(mobileCapture,`${mobileCapture}
     await mobile.screenshot({path:path.join(artifactRoot,'pacefold-workspace-music-mobile.png'),fullPage:true});`);
 const successLabel='Pacefold 16.0 integrated audit passed:';
 if(!source.includes(successLabel))throw new Error('Pacefold integrated audit success label is missing');
-source=source.replace(successLabel,'Pacefold 19 integrated audit passed:');
+source=source.replace(successLabel,'Pacefold 20 integrated audit passed:');
 const finalErrorGate="if(errors.some(error=>/pacefold|pf-flow|pf-local|Unhandled|TypeError/i.test(error)))throw new Error(`16.0 browser errors: ${errors.join(' | ')}`);";
 if(!source.includes(finalErrorGate))throw new Error('Pacefold final browser-error gate is missing');
 const productRhythmGate=[
@@ -187,7 +187,7 @@ const productRhythmGate=[
   "    await product.evaluate(()=>{localStorage.setItem('pacefoldSetupDismissedV15','1');localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',showWorkline:true,workReminders:true,noodleMinutes:30,prepPreset:'noodles',prepLabel:'Noodles',prepDoneLabel:'Meal prepared',waterTarget:24,sipCadence:30,gazeEnabled:true,bodyEnabled:true,workdaysOnly:false,workHours:'00:00-23:59'}));});",
   "    await product.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'load'});",
   "    await product.waitForSelector('#noodleBtn');await product.waitForSelector('#pf-local-workspace',{state:'attached'});",
-  "    await product.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.surfaceRelease==='19.1.0'&&window.__PACEFOLD_V19__?.release==='19.1.0');",
+  "    await product.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.surfaceRelease==='20.0.0'&&window.__PACEFOLD_V19__?.release==='20.0.0'&&window.__PACEFOLD_V20__?.release==='20.0.0');",
   "    await product.waitForFunction(()=>{const line=document.getElementById('workline');return line&&Number.parseFloat(getComputedStyle(line).opacity)>=.5;},null,{timeout:2000});",
   "    const rhythmHome=await product.evaluate(()=>{const ids=['waterBtn','noodleBtn','awayBtn','lunchBtn','eyesBtn','careBtn'];const visible=id=>{const node=document.getElementById(id);if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};const line=document.getElementById('workline'),bench=document.getElementById('pf-v19-workbench'),workspace=document.getElementById('pf-local-workspace'),player=document.getElementById('pf-local-player');return {notebookOpen:workspace.classList.contains('is-open'),notebookVisible:!workspace.hidden,playerOpen:player.classList.contains('is-open'),playerHidden:player.hidden,benchPage:bench?.dataset.page,visible:ids.filter(visible),labels:ids.map(id=>document.getElementById(id)?.getAttribute('aria-label')||''),opacity:Number.parseFloat(getComputedStyle(line).opacity),noodleText:document.getElementById('noodleText')?.textContent||'',overflow:document.documentElement.scrollWidth>innerWidth+2};});",
   "    assert(rhythmHome.notebookOpen&&rhythmHome.notebookVisible&&!rhythmHome.playerOpen&&rhythmHome.playerHidden&&rhythmHome.benchPage==='notes'&&rhythmHome.visible.length===6&&rhythmHome.opacity>=.5&&!rhythmHome.overflow&&/30m|30-minute/i.test(`${rhythmHome.noodleText} ${rhythmHome.labels[1]}`),`Persistent rhythm home failed: ${JSON.stringify(rhythmHome)}`);",

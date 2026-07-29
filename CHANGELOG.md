@@ -1,5 +1,17 @@
 # Changelog
 
+## 20.0.0 — Protected workday folio
+
+- Rebuilt the upper dashboard and lower notebook as one continuous light folio instead of two visually disconnected surfaces.
+- Restored visible two-digit seconds beside the main clock.
+- Consolidated taskbar badging on an empty flag request so installed Edge can render a dot instead of a numeric `1`.
+- Added synchronized cue markers to the brand, dashboard and browser favicon so attention never depends on the operating-system badge alone.
+- Added a visible automatic-backup control to the notebook rail.
+- Added a user-selected JSON backup file that updates after note and preference changes through the File System Access API.
+- Added guarded automatic recovery when notebook storage is missing or corrupt and the selected backup file remains permitted.
+- Added an explicit reconnect state for Edge sessions that revoke file permission; Pacefold never attempts a background permission prompt.
+- Added a V20 browser gate for desktop/mobile/Wafer geometry, visible seconds, flag badging, fallback markers, backup writes, automatic recovery and reduced motion.
+
 ## 19.1.0 — Persistent notebook folio
 
 - Replaced the centered Notes and Music sheets with one permanent lower workspace.

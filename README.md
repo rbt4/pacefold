@@ -2,14 +2,28 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable dashboard for the shape of a working day. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 19 brings the important functions back into one calm, coherent home:
+Pacefold is a local-first, installable workday folio. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 20 keeps the important functions visible and makes local notes recoverable:
 
-- **Now** — a stable clock, date, next cue, Day Ribbon and saved-location weather share the top of the dashboard;
+- **Now** — a stable clock with visible seconds, date, next cue, Day Ribbon and saved-location weather share the top of the folio;
 - **Rhythm** — Water, Timer, Away, Meal, Eyes and Move are equally visible, tactile controls with their full options intact;
-- **Notebook** — the lower half stays available for notes and local sound without another panel covering the day;
+- **Notebook** — the lower half stays available for notes and local sound, with an automatic backup file you choose;
 - **Growth** — a small module contract lets later tools join the utility area without replacing the clock or creating another layout owner.
 
-OneNote delivery is retired. Quick notes, the full local notebook, Copy day and `pacefold.backup.v1` remain. The Microsoft Graph endpoint is not permitted by the V19 app shell.
+OneNote delivery is retired. Quick notes, the full local notebook, Copy day and `pacefold.backup.v1` remain. The Microsoft Graph endpoint is not permitted by the current app shell.
+
+## Pacefold 20 — protected workday folio
+
+V20 removes the remaining visual seam and gives taskbar attention and notebook recovery one clear owner.
+
+- The dashboard and notebook sit inside one continuous light folio with one border, one shadow and one material system.
+- Two-digit seconds are visible beside the main clock whenever **Seconds** is enabled.
+- Due cues request an empty App Badging flag so installed Edge can render a dot. Pacefold mirrors the same state in the brand, a visible dashboard marker and the browser favicon.
+- The six rhythm controls keep their existing actions and options, with stable source colours and a clear due marker instead of continuous animation.
+- **Choose backup file** opens Edge's file picker. After a file is selected, Pacefold writes a current `pacefold.backup.v1` after notebook and preference changes.
+- The working notebook still lives in this Edge profile's Pacefold site storage; the protected copy lives at the exact folder and filename selected in the file picker.
+- If notebook storage is later missing or corrupt, Pacefold reads that file automatically when permission is still granted.
+- Edge may return file permission to `prompt` after a browser restart. Pacefold then shows **Reconnect backup**; one user click is required because a background permission prompt is prohibited.
+- The JSON file contains safe preferences, notes, categories, playlist definitions, streaming links and rhythm history. Local audio blobs remain excluded.
 
 ## Pacefold 19.1 — persistent workday folio
 
@@ -158,6 +172,7 @@ Notes and player state stay on the current browser profile.
 
 - Clearing Pacefold site data can remove notes and locally stored audio.
 - The JSON backup includes safe preferences, notes, categories, playlist definitions, streaming links and rhythm history.
+- In installed Edge, V20 can keep that JSON current in a file you select. Manual download and import remain available.
 - Audio blobs are not embedded in the JSON backup because that could create extremely large backup files.
 - A playlist can reference only audio still stored in this browser.
 - Browser storage quotas vary by device and administrator policy.
@@ -169,7 +184,8 @@ Keep original audio files elsewhere and download periodic Pacefold JSON backups.
 
 The 15.9 notification corrections remain in place:
 
-- app badges use a nonnumeric attention flag;
+- installed-app badges use one nonnumeric attention flag request;
+- the brand, dashboard marker and favicon mirror the same pending state instead of relying on the taskbar alone;
 - only one current Pacefold toast is retained;
 - repeated cues replace rather than stack;
 - notifications are non-sticky;
@@ -199,17 +215,17 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 19.1.0 deploys, fully close every Pacefold and Edge PWA window once.
+4. After 20.0.0 deploys, fully close every Pacefold and Edge PWA window once.
 5. Reopen Pacefold so the cache-busted dashboard replaces the older surface.
 
 ## Honest platform boundaries
 
-A browser PWA cannot intercept Windows taskbar clicks before focus, distinguish taskbar single-click from double-click, or continuously redraw the pinned icon face. A native Windows companion would be required.
+A browser PWA cannot intercept Windows taskbar clicks before focus, distinguish taskbar single-click from double-click, or continuously redraw the pinned icon face. Installed Edge on Windows supports the App Badging API, but workplace policy and operating-system presentation remain outside Pacefold's control. V20 therefore requests the native dot and mirrors it inside the app and favicon.
 
 Browser timers also cannot guarantee exact delivery while the app is closed, heavily throttled or the laptop is asleep.
 
 ## Version
 
-Pacefold 19.1.0 persistent-folio enhancement layer over the preserved Pacefold 18 cue and data systems, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 20.0.0 protected-folio enhancement layer over the preserved Pacefold 19.1 folio, Pacefold 18 cue and data systems, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.
