@@ -1,0 +1,26 @@
+/* Pacefold 21 compatibility surface.
+   Keeps legacy measurement and accessibility contracts intact while V21 owns the visible UI. */
+
+html.pf-v21-active #statusLine{
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  width:100%!important;
+  height:1px!important;
+  min-height:0!important;
+  margin:-1px 0 0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  clip:auto!important;
+  clip-path:none!important;
+  white-space:nowrap!important;
+  border:0!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+
+html[data-pf-quiet="true"].pf-v21-active #pf21-dayline,
+html[data-pf-quiet="true"].pf-v21-active #pf21-note-calendar,
+html[data-pf-quiet="true"].pf-v21-active #pf21-settings{
+  visibility:hidden!important;
+}
