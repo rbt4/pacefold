@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const RELEASE='19.0.0';
+  const RELEASE='19.1.0';
   const STORAGE_KEY='pacefoldPrefsV15';
   const NOTES_KEY='pacefold.notebook.entries.v2';
   const CATEGORIES_KEY='pacefold.notebook.categories.v1';

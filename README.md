@@ -6,21 +6,22 @@ Pacefold is a local-first, installable dashboard for the shape of a working day.
 
 - **Now** — a stable clock, date, next cue, Day Ribbon and saved-location weather share the top of the dashboard;
 - **Rhythm** — Water, Timer, Away, Meal, Eyes and Move are equally visible, tactile controls with their full options intact;
-- **Utilities** — Quick note, focus sound, Notes and Music stay within reach without occupying the dashboard at rest;
+- **Notebook** — the lower half stays available for notes and local sound without another panel covering the day;
 - **Growth** — a small module contract lets later tools join the utility area without replacing the clock or creating another layout owner.
 
 OneNote delivery is retired. Quick notes, the full local notebook, Copy day and `pacefold.backup.v1` remain. The Microsoft Graph endpoint is not permitted by the V19 app shell.
 
-## Pacefold 19 — workday dashboard
+## Pacefold 19.1 — persistent workday folio
 
-V19 is a product reset, not another decorative layer.
+V19.1 keeps the dashboard reset and replaces its remaining modal interaction with one continuous workspace.
 
-- Replaced the sparse clock canvas and permanent black player lane with one responsive dashboard card.
+- Balanced the window into two attached halves: the workday instrument above and a permanent notebook below.
 - Put live weather beside the clock and bound it to the latitude, longitude and location label already saved in Pacefold preferences.
 - Kept hydration, the configurable preparation timer, away time, desk/away meals, eye care and movement as six first-class controls.
 - Fixed clipped status copy and kept the Day Ribbon as supporting context rather than the whole product.
-- Made Notes and Music focused, mutually exclusive sheets. Both disappear completely when closed.
-- Restyled the music library as part of Pacefold instead of a disconnected black slab. Local audio, queues, playlists and honest streaming bookmarks remain.
+- Kept Notes immediately writable. Save, outside clicks, Escape and app visibility changes do not collapse the notebook.
+- Made Sound a page inside the lower workspace instead of a centered sheet. Local audio, queues, playlists and honest streaming bookmarks remain.
+- Removed the blur scrim, flying-sheet transition, duplicate utility row and ordinary close controls.
 - Removed Japanese product names and ornamental framing from current UI copy. The influence is limited to precise geometry, restraint and short material transitions.
 - Kept Quiet, Wafer, weekday/day types, cue coalescing, drift reconciliation, Fold Review, backup/restore and storage guardrails.
 - Added a V19 release audit for saved-location weather, core rhythm actions, local-only notes, focused music, responsive geometry, reduced motion and the extension contract.
@@ -135,7 +136,7 @@ The integrated document supports:
 
 ## Local music
 
-Music opens as a focused Pacefold sheet and disappears when closed. It does not reserve a permanent bottom lane or use the retired black-slab treatment.
+Sound uses a page inside the persistent lower notebook. It does not open a modal, reserve a black footer lane or cover the clock.
 
 The primary workflow is local audio:
 
@@ -198,7 +199,7 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 19.0.0 deploys, fully close every Pacefold and Edge PWA window once.
+4. After 19.1.0 deploys, fully close every Pacefold and Edge PWA window once.
 5. Reopen Pacefold so the cache-busted dashboard replaces the older surface.
 
 ## Honest platform boundaries
@@ -209,6 +210,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 19.0.0 dashboard enhancement layer over the preserved Pacefold 18 cue and data systems, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 19.1.0 persistent-folio enhancement layer over the preserved Pacefold 18 cue and data systems, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.
