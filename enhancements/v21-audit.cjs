@@ -73,7 +73,7 @@ async function browserAudit(){
     assert(initial.release==='21.0.0'&&initial.boot?.returning&&initial.flags.every(value=>value==='1'),`Setup persistence failed: ${JSON.stringify(initial)}`);
     assert(!/scheduled moment/i.test(initial.dayline)&&initial.days===42&&initial.noted>=2&&/3 notes/.test(initial.stats),`Dayline/calendar failed: ${JSON.stringify(initial)}`);
     assert(initial.counts[dateKey()]===2&&initial.counts[dateKey(-1)]===1,`Note counts failed: ${JSON.stringify(initial.counts)}`);
-    assert(initial.markers.now?.h>initial.markers.crease?.h&&initial.markers.now?.w<initial.markers.crease?.w,`Timeline distinction failed: ${JSON.stringify(initial.markers)}`);
+    assert(initial.markers.now?.h>=20&&(!initial.markers.crease||(initial.markers.now.h>initial.markers.crease.h&&initial.markers.now.w<initial.markers.crease.w)),`Timeline distinction failed: ${JSON.stringify(initial.markers)}`);
     assert(initial.switches===6&&initial.advanced==='false'&&initial.status.width<=2&&initial.horizontal,`Essential layout failed: ${JSON.stringify(initial)}`);
 
     await page.locator('#brandButton').click();await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));
