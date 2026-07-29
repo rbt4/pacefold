@@ -183,7 +183,7 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 18.0 deploys, fully close every Pacefold and Edge PWA window once.
+4. After 18.0.1 deploys, fully close every Pacefold and Edge PWA window once.
 5. Reopen Pacefold so the cache-busted Ma surface replaces the older surface.
 
 ## Honest platform boundaries
@@ -194,6 +194,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 18.0.0 “Ma” enhancement layer over the 17.1 rhythm-first Sumi workspace, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 18.0.1 “Ma” enhancement layer over the 17.1 rhythm-first Sumi workspace, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.

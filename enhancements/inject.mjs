@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-const RELEASE='18.0.0';
+const RELEASE='18.0.1';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-17-layout-floor';
@@ -21,6 +21,7 @@ const maScriptSource=path.join(sourceRoot,'pacefold-ma.js');
 const themeBootSource=path.join(sourceRoot,'pacefold-theme-boot.js');
 const maFontSource=path.join(sourceRoot,'fonts','pacefold-ma.woff2');
 const maFontLicenseSource=path.join(sourceRoot,'fonts','OFL.txt');
+const siteMaCssSource=path.join(sourceRoot,'pacefold-site-ma.css');
 const layoutPatch=`
 
 /* BEGIN ${layoutMarker} */
@@ -75,6 +76,95 @@ async function applyAssetRevision(file){
   );
   html=html.replace(/\s*<meta\s+name=["']pacefold-build["'][^>]*>/gi,'');
   html=html.replace('</head>',`  <meta name="pacefold-build" content="${RELEASE}">\n</head>`);
+  await fs.writeFile(file,html);
+}
+async function applyLandingPage(file){
+  let html=await fs.readFile(file,'utf8');
+  if(html.includes(`<meta name="pacefold-landing" content="${RELEASE}">`))return;
+  html=html.replace(/\s*<meta\s+name=["']pacefold-landing["'][^>]*>/gi,'');
+  const replacements=[
+    [
+      '<meta name="description" content="A quiet workday surface for rhythm, ergonomic care, sound and local capture with optional Microsoft OneNote sync.">',
+      '<meta name="description" content="Pacefold 18 Ma is a private, offline-ready workday clock with a continuous Day Ribbon, quiet cues, local notes and local audio.">',
+      'landing-description'
+    ],
+    [
+      '<link rel="stylesheet" href="./site-style-02.css">',
+      `<link rel="stylesheet" href="./site-style-02.css">\n<link rel="stylesheet" href="./pacefold-site-ma.css?v=${RELEASE}">\n<meta name="pacefold-landing" content="${RELEASE}">`,
+      'landing-assets'
+    ],
+    [
+      '<div class="eyebrow">Ma system · one quiet layer for the workday</div>',
+      '<div class="eyebrow">Pacefold 18 · Ma (間) · the shape of the workday</div>',
+      'landing-eyebrow'
+    ],
+    [
+      '<p class="lead">A calm workday surface for rhythm, ergonomic care, sound and quick capture. Pacefold stays quiet in front; your OneNote notebook can live durably underneath.</p>',
+      '<p class="lead">A calm desktop clock that makes the interval visible. The Day Ribbon shows what has passed and what comes next; notes, local audio and care tools stay folded away until asked.</p>',
+      'landing-lead'
+    ],
+    [
+      '<div class="micro">Local first · offline-ready · automatic updates · Microsoft connection optional</div>',
+      '<div class="micro">Local first · offline-ready · no account · automatic updates</div>',
+      'landing-micro'
+    ],
+    [
+      '<div class="clock-line"><i></i></div>',
+      '<div class="clock-line pf-site-ribbon"><i></i><span class="crease one"></span><span class="crease two"></span><span class="crease three"></span></div>',
+      'landing-ribbon-preview'
+    ],
+    [
+      '<div class="floating-card"><small>Andon</small><strong>Only one cue at a time.</strong><span>Nothing competing for attention.</span></div>',
+      '<div class="floating-card"><small>Ma · interval</small><strong>The day as one quiet ribbon.</strong><span>Spent time, moments and the current instant.</span></div>',
+      'landing-floating-card'
+    ],
+    [
+      '<div class="sectionhead"><div class="eyebrow">Setup that does not depend on a hidden browser event</div><h2>Choose your rhythm. Then install.</h2><p>Pick a profile, preparation routine, display comfort, eye and movement cadence, then install. OneNote remains a separate optional connection so setup never blocks the core clock.</p></div>',
+      '<div class="sectionhead"><div class="eyebrow">Setup that does not depend on a hidden browser event</div><h2>Choose your rhythm. Then install.</h2><p>Pick a profile, preparation routine, display comfort, eye and movement cadence, then install. Everything stays local, and setup never blocks the core clock.</p></div>',
+      'landing-setup'
+    ],
+    [
+      '<div class="wrap"><div class="sectionhead"><div class="eyebrow">One calm surface · four quiet systems</div><h2>Higher capability without dashboard sprawl.</h2><p>Rhythm, Care, Sound and Kiroku share one priority system. The clock remains visually dominant; deeper tools wait in a quiet dock until you ask for them.</p></div>',
+      '<div class="wrap"><div class="sectionhead"><div class="eyebrow">One continuous workday · four quiet systems</div><h2>Higher capability without dashboard sprawl.</h2><p>Ribbon, Care, Sound and Notebook share one priority system. The clock remains visually dominant; deeper tools wait folded away until you ask for them.</p></div>',
+      'landing-features-intro'
+    ],
+    [
+      '<article class="bento"><span class="feature-tag">Oto · sound</span><h3>A layer that yields to the day.</h3><p>Generated offline brown hush, rain and fan textures need no account. Local audio and direct streams are optional. Important Pacefold cues can duck the volume automatically.</p><div class="signal-demo"><i class="dot"></i><span>Offline</span><i class="diamond"></i><span>Ducking</span><i class="square"></i><span>Media keys</span></div></article>',
+      '<article class="bento"><span class="feature-tag">Oto · sound</span><h3>A layer that yields to the day.</h3><p>Local audio stays primary and needs no account. Named streaming links remain secondary. Important Pacefold cues can duck the player without turning sound into another dashboard.</p><div class="signal-demo"><i class="dot"></i><span>Local</span><i class="diamond"></i><span>Ducking</span><i class="square"></i><span>Media keys</span></div></article>',
+      'landing-sound'
+    ],
+    [
+      '<article class="bento wide"><div><span class="feature-tag">Kiroku · OneNote</span><h3>Capture here. Keep it in HSSys.</h3><p>Write a note, task, incident, inspection, JHSC item or follow-up without leaving Pacefold. It saves locally first, then silently appends to one dated page in the OneNote section you choose.</p></div><div class="ledger-lines"><span><b>9:12</b> Follow-up · local</span><span><b>11:06</b> Inspection · queued</span><span><b>2:24</b> Incident · synced</span></div></article>',
+      '<article class="bento wide ma-feature"><div><span class="feature-tag">Ma · Day Ribbon</span><h3>See the interval, not another progress bar.</h3><p>Spent time becomes inked paper. Future time stays raw. Prayer moments, meals and recorded away periods become creases and bands, while Quiet preserves the shape and removes the labels.</p></div><div class="ma-ribbon-demo" aria-hidden="true"><div class="rail"></div><span class="fold a"></span><span class="fold b"></span><span class="fold c"></span><small>08:30 · now · 16:30</small></div></article>',
+      'landing-ma-feature'
+    ],
+    [
+      '<article class="bento wide local-feature"><div><span class="feature-tag">Local first</span><h3>Private by default, connected by choice.</h3><p>No analytics, ads or Pacefold account. Preferences and the activity ledger stay in this browser. If you connect Microsoft, only captures are sent to the OneNote destination you choose.</p></div><div class="local-badges"><span>Offline</span><span>Auto-update</span><span>Optional sync</span><span>No score</span></div></article>',
+      '<article class="bento wide local-feature"><div><span class="feature-tag">Local first</span><h3>Private by default. Portable when you choose.</h3><p>No analytics, ads, account or cloud dependency. Preferences, notes, audio references and the rhythm record stay in this browser. A versioned backup shows its restore changes before writing anything.</p></div><div class="local-badges"><span>Offline</span><span>Auto-update</span><span>Versioned backup</span><span>No score</span></div></article>',
+      'landing-local'
+    ],
+    [
+      '<details open><summary>Will Pacefold update itself?</summary><p>Yes. It checks after launch, periodically while open, when it regains focus and when connectivity returns. Updates wait rather than reloading over setup or an unfinished capture.</p></details><details><summary>Is OneNote sync really silent?</summary><p>After a one-time Microsoft sign-in and destination choice, captures queue locally and retry in the background. Microsoft Entra registration is required, and university policy may require administrator approval. <a href="./onenote-setup.html">Read the exact setup.</a></p></details><details><summary>Does the sound player control Spotify or YouTube?</summary><p>No. Pacefold generates its own offline textures and can play a local file for the session or a direct HTTPS audio source. It does not pretend it can control unrelated streaming sites.</p></details>',
+      '<details open><summary>Will Pacefold update itself?</summary><p>Yes. It checks after launch, while open, when it regains focus and when connectivity returns. After a release, fully close every Pacefold and Edge PWA window once, then reopen it so the new offline shell takes control.</p></details><details><summary>Where do my notes go?</summary><p>They stay in this browser profile. Copy day creates one Markdown handoff for OneNote, Word or email, and the versioned JSON backup carries safe preferences, notes, categories, playlist definitions, links and rhythm history.</p></details><details><summary>Does the sound player control Spotify or YouTube?</summary><p>No. Local audio is primary. Named streaming links are bookmarks, not an embedded streaming dashboard, and Pacefold does not pretend it can control unrelated services.</p></details>',
+      'landing-faq-local'
+    ],
+    [
+      '<details><summary>Can it change my monitor’s colour temperature?</summary><p>It can change only Pacefold’s own interface. Full-display colour temperature belongs to Windows or monitor software, so Pacefold offers a user-initiated shortcut to Night light.</p></details><details><summary>Does it need administrator permission?</summary><p>Edge installation normally stays inside the Windows profile, but workplace policy can disable installation, Microsoft consent, notifications, background activity or badges. Pacefold never bypasses those controls.</p></details>',
+      '<details><summary>Can it change my monitor’s colour temperature?</summary><p>It can change only Pacefold’s own paper and ink temperature, using a deliberately small solar shift across the day. Full-display colour remains under Windows or the monitor.</p></details><details><summary>Does it need administrator permission?</summary><p>Edge installation normally stays inside the Windows profile, but workplace policy can disable installation, notifications, persistent storage, background activity or badges. Pacefold degrades quietly and never bypasses those controls.</p></details>',
+      'landing-faq-boundaries'
+    ],
+    [
+      '<section class="wrap final"><h2>Space for what matters.</h2><p>Start with Pacefold Original or make the rhythm entirely your own.</p>',
+      '<section class="wrap final"><h2>See the shape of your day.</h2><p>Start with Pacefold Original or make the rhythm entirely your own.</p>',
+      'landing-final'
+    ],
+    [
+      '<footer class="wrap footer"><span>Pacefold 15.2.2 · your day, quietly kept</span><span><a href="./privacy.html">Privacy</a> · <a href="./onenote-setup.html">OneNote setup</a> · <a href="https://github.com/rbt4/pacefold">GitHub</a></span></footer>',
+      `<footer class="wrap footer"><span>Pacefold ${RELEASE} · Ma (間)</span><span><a href="./privacy.html">Privacy</a> · <a href="./app/">Open app</a> · <a href="https://github.com/rbt4/pacefold">GitHub</a></span></footer>`,
+      'landing-footer'
+    ]
+  ];
+  for(const [from,to,label] of replacements)html=replaceExactlyOnce(html,from,to,label);
   await fs.writeFile(file,html);
 }
 async function stampWorker(file){
@@ -290,11 +380,11 @@ async function applyMaRevampPatch(file){
       "async function addAudioFiles(files){\n  if(window.__PACEFOLD_MA_STORAGE__&&!await window.__PACEFOLD_MA_STORAGE__.allowAudioImport(files))return;\n  const audioFiles=[...files].filter(file=>file.type.startsWith('audio/'));",
       'ma-storage-guard'
     ],
-    ["  workspace.dataset.release='17.1.0';","  workspace.dataset.release='18.0.0';",'ma-workspace-release'],
-    ["  player.dataset.release='17.1.0';","  player.dataset.release='18.0.0';",'ma-player-release'],
+    ["  workspace.dataset.release='17.1.0';",`  workspace.dataset.release='${RELEASE}';`,'ma-workspace-release'],
+    ["  player.dataset.release='17.1.0';",`  player.dataset.release='${RELEASE}';`,'ma-player-release'],
     [
       "window.__PACEFOLD_REVAMP__={revision:REVISION,surfaceRelease:'17.1.0'",
-      "window.__PACEFOLD_REVAMP__={revision:REVISION,surfaceRelease:'18.0.0'",
+      `window.__PACEFOLD_REVAMP__={revision:REVISION,surfaceRelease:'${RELEASE}'`,
       'ma-revamp-release'
     ]
   ];
@@ -340,13 +430,13 @@ async function applyMaWorker(file,isRoot=false){
   if(!(await exists(file)))return;
   let worker=await fs.readFile(file,'utf8');
   if(isRoot){
-    const cachePattern=/const CACHE_NAME=`pacefold-v\$\{VERSION\}(?:-18\.0\.0)?`;/;
+    const cachePattern=/const CACHE_NAME=`pacefold-v\$\{VERSION\}(?:-18\.0\.\d+)?`;/;
     if(!cachePattern.test(worker))throw new Error('Pacefold worker cache marker is missing');
-    worker=worker.replace(cachePattern,"const CACHE_NAME=`pacefold-v${VERSION}-18.0.0`;");
+    worker=worker.replace(cachePattern,`const CACHE_NAME=\`pacefold-v\${VERSION}-${RELEASE}\`;`);
     if(!worker.includes("'./app/pacefold-ma.css'"))worker=replaceExactlyOnce(
         worker,
         "  './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/app.js'",
-        "  './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/pacefold-hub.css','./app/pacefold-integrated.css','./app/pacefold-revamp.css','./app/pacefold-ma.css','./app/pacefold-theme-boot.js','./app/pacefold-ma.js','./app/pacefold-hub-guardian.js','./app/pacefold-resilience.js','./app/pacefold-hub.js','./app/pacefold-integrated.js','./app/pacefold-revamp.js','./app/pacefold-fold-mark.svg','./app/icons/fold-mark.png','./app/icons/notify-water.png','./app/icons/notify-eyes.png','./app/icons/notify-move.png','./app/icons/notify-prayer.png','./app/icons/notify-meal.png','./app/icons/notify-prepare.png','./app/icons/notify-away.png','./app/fonts/pacefold-ma.woff2','./app/fonts/OFL.txt','./app/app.js'",
+        "  './pacefold-site-ma.css','./app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/pacefold-hub.css','./app/pacefold-integrated.css','./app/pacefold-revamp.css','./app/pacefold-ma.css','./app/pacefold-theme-boot.js','./app/pacefold-ma.js','./app/pacefold-hub-guardian.js','./app/pacefold-resilience.js','./app/pacefold-hub.js','./app/pacefold-integrated.js','./app/pacefold-revamp.js','./app/pacefold-fold-mark.svg','./app/icons/fold-mark.png','./app/icons/notify-water.png','./app/icons/notify-eyes.png','./app/icons/notify-move.png','./app/icons/notify-prayer.png','./app/icons/notify-meal.png','./app/icons/notify-prepare.png','./app/icons/notify-away.png','./app/fonts/pacefold-ma.woff2','./app/fonts/OFL.txt','./app/app.js'",
         'ma-worker-shell'
       );
     worker=worker.replaceAll('caches.match(request)',"caches.match(request,{ignoreSearch:true})");
@@ -364,6 +454,8 @@ await fs.writeFile(temporary,source);
 try{
   await import(`${pathToFileURL(temporary).href}?v=${Date.now()}`);
   const targetApp=path.join(targetRoot,'app');
+  await fs.copyFile(siteMaCssSource,path.join(targetRoot,'pacefold-site-ma.css'));
+  await applyLandingPage(path.join(targetRoot,'index.html'));
   await applyLayoutPatch(path.join(targetApp,'pacefold-revamp.css'));
   await applyOrigamiPatch(path.join(targetApp,'pacefold-revamp.css'));
   await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'));
