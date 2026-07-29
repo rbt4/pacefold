@@ -3,7 +3,9 @@
 
   const RELEASE='21.0.0';
   const SETTINGS_KEY='pacefold.v21.settings.v1';
+  const PREFS_KEY='pacefoldPrefsV15';
   const EXTENSION_KEYS=new Set(['v21WeatherEnabled']);
+  let observer=null;
 
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
   const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:null;
@@ -15,9 +17,20 @@
   };
   const extensionPatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>EXTENSION_KEYS.has(key)));
   const corePatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>!EXTENSION_KEYS.has(key)));
+  const basePrefs=()=>window.__PACEFOLD_MA_CORE__?.getPrefs?.()||object(parse(localStorage.getItem(PREFS_KEY),{}))||{};
 
   function applySurface(settings=read()){
     document.documentElement.dataset.pf21Weather=String(settings.v21WeatherEnabled!==false);
+  }
+
+  function suppressUnrequestedReview(){
+    const review=document.getElementById('pf-fold-review');
+    if(!review||basePrefs().dayCloseEnabled===true)return false;
+    if(!review.hidden)review.hidden=true;
+    if(review.getAttribute('aria-hidden')!=='true')review.setAttribute('aria-hidden','true');
+    if(!review.inert)review.inert=true;
+    review.dataset.pf21Suppressed='true';
+    return true;
   }
 
   function wrapCore(){
@@ -45,6 +58,7 @@
     wrapCore();
     const settings=read();
     applySurface(settings);
+    suppressUnrequestedReview();
     const weather=document.querySelector('[data-pf21-pref="v21WeatherEnabled"]');
     if(weather&&weather.checked!==(settings.v21WeatherEnabled!==false))weather.checked=settings.v21WeatherEnabled!==false;
     window.__PACEFOLD_V21__?.reconcile?.();
@@ -53,13 +67,19 @@
   function initialize(){
     wrapCore();
     applySurface();
+    suppressUnrequestedReview();
+    observer=new MutationObserver(mutations=>{
+      if(mutations.some(item=>item.target instanceof Element&&(item.target.id==='pf-fold-review'||item.target.closest?.('#pf-fold-review'))))suppressUnrequestedReview();
+    });
+    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-hidden']});
     window.addEventListener('storage',event=>{
       if(event.key===SETTINGS_KEY)reconcile();
     });
     window.addEventListener('pacefold:ma-prefs',()=>{
       applySurface();
+      suppressUnrequestedReview();
     });
-    [0,30,100,300,900].forEach(delay=>setTimeout(reconcile,delay));
+    [0,30,100,300,900,2500].forEach(delay=>setTimeout(reconcile,delay));
   }
 
   window.__PACEFOLD_V21_PERSISTENCE__={
@@ -67,7 +87,8 @@
     key:SETTINGS_KEY,
     read,
     write:settings=>{const next=write(settings);reconcile();return next;},
-    reconcile
+    reconcile,
+    suppressUnrequestedReview
   };
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
