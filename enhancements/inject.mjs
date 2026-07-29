@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-const RELEASE='20.0.0';
+const RELEASE='20.0.1';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-17-layout-floor';
@@ -210,7 +210,7 @@ function replaceSectionExactly(source,start,end,replacement,label){
 async function applyRuntimePatch(file){
   let runtime=await fs.readFile(file,'utf8');
   const replacements=[
-    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst NOTEBOOK_DRAFT_KEY='pacefold.notebook.draft.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.20.0.0';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
+    ["const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst WORK_OVERRIDE_KEY", "const STREAM_KEY='pacefold.player.streaming-links.v1';\nconst NOTEBOOK_DRAFT_KEY='pacefold.notebook.draft.v1';\nconst VISUAL_RESET_KEY='pacefold.visual-reset.20.0.1';\nconst WORK_OVERRIDE_KEY",'visual-reset-key'],
     ["let migrateTimer=0;\nlet dbPromise=null;","let migrateTimer=0;\nlet notebookRenderKey='';\nlet playerDrawerRenderKey='';\nlet notebookMotionTimer=0;\nlet notebookAutoCloseTimer=0;\nlet playerMotionTimer=0;\nlet dbPromise=null;",'render-keys'],
     ["function saveNotebookState(){writeJSON(NOTEBOOK_UI_KEY,notebookState);}\nfunction savePlayerState()","function saveNotebookState(){writeJSON(NOTEBOOK_UI_KEY,{...notebookState,open:true});}\nfunction readNotebookDraft(){const value=readJSON(NOTEBOOK_DRAFT_KEY,null);return value&&typeof value==='object'&&!Array.isArray(value)?{body:String(value.body||'').slice(0,8000),at:Number(value.at)||0}:null;}\nfunction writeNotebookDraft(body){const value=String(body||'').slice(0,8000);if(!value){try{localStorage.removeItem(NOTEBOOK_DRAFT_KEY);}catch{}return;}writeJSON(NOTEBOOK_DRAFT_KEY,{body:value,at:Date.now()});}\nfunction clearNotebookDraft(){try{localStorage.removeItem(NOTEBOOK_DRAFT_KEY);}catch{}}\nfunction restoreNotebookDraft(){const field=workspace?.querySelector('[data-pf-note-body]'),draft=readNotebookDraft();if(field&&!field.value&&draft?.body)field.value=draft.body;}\nfunction scheduleNotebookAutoClose(){clearTimeout(notebookAutoCloseTimer);notebookAutoCloseTimer=0;}\nfunction savePlayerState()",'notebook-transient-state'],
     ["function savePlayerState(){writeJSON(PLAYER_KEY,playerState);}","function savePlayerState(){writeJSON(PLAYER_KEY,{...playerState,drawer:false});}",'player-transient-state'],

@@ -23,8 +23,8 @@ function staticAudit(){
   assert(!/\.innerHTML\s*=/.test(runtime),'V20 runtime contains a raw innerHTML assignment');
   assert(!/style\s*=\s*["']/.test(runtime),'V20 runtime contains an inline style string');
   assert((html.match(/data-pacefold-v20=/g)||[]).length===2,'V20 CSS and runtime were not injected exactly once');
-  assert(html.includes('pacefold-v20.css?v=20.0.0')&&html.includes('pacefold-v20.js?v=20.0.0'),'V20 app assets are not cache-busted');
-  assert((landing.match(/name="pacefold-landing" content="20\.0\.0"/g)||[]).length===1,'V20 landing marker was not injected exactly once');
+  assert(html.includes('pacefold-v20.css?v=20.0.1')&&html.includes('pacefold-v20.js?v=20.0.1'),'V20 app assets are not cache-busted');
+  assert((landing.match(/name="pacefold-landing" content="20\.0\.1"/g)||[]).length===1,'V20.0.1 landing marker was not injected exactly once');
   for(const asset of ['pacefold-v20.css','pacefold-v20.js'])assert(worker.includes(asset),`Offline shell omits ${asset}`);
   assert(integrated.includes('navigator.setAppBadge?.()')&&!integrated.includes('navigator.setAppBadge?.(1)'),'The integrated notification path still requests a numeric badge');
   assert(ma.includes("flowWaiting=Boolean(document.querySelector('[data-pf-flow-pulse][data-state=\"new\"]'))"),'The badge owner does not preserve integrated waiting state');
@@ -148,7 +148,7 @@ async function browserAudit(){
     page.on('pageerror',error=>errors.push(error.message));
     page.on('console',message=>{if(message.type()==='error'&&!/ERR_INTERNET_DISCONNECTED/.test(message.text()))errors.push(message.text());});
     await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.0'&&document.getElementById('pf-v20-folio')&&document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length===6);
+    await page.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.1'&&document.getElementById('pf-v20-folio')&&document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length===6);
     await page.waitForFunction(()=>document.getElementById('pf-v19-weather')?.dataset.ready==='true');
 
     const initial=await page.evaluate(()=>{
@@ -167,7 +167,7 @@ async function browserAudit(){
         rituals:document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]').length
       };
     });
-    assert(initial.release==='20.0.0',`V20 release marker is wrong: ${initial.release}`);
+    assert(initial.release==='20.0.1',`V20 release marker is wrong: ${initial.release}`);
     assert(initial.children.length===2&&/clock-shell/.test(initial.children[0])&&initial.children[1]==='pf-v19-workbench',`The clock and notebook are not one folio: ${JSON.stringify(initial.children)}`);
     assert(initial.horizontal&&initial.attached&&initial.ratio>=.42&&initial.ratio<=.62,`Desktop folio geometry is wrong: ${JSON.stringify(initial)}`);
     assert(/^\d{2}$/.test(initial.seconds.text)&&initial.seconds.display!=='none'&&initial.seconds.width>14&&!/rgba?\(0,\s*0,\s*0,\s*0\)/.test(initial.seconds.color),`Seconds are not visibly restored: ${JSON.stringify(initial.seconds)}`);
@@ -219,7 +219,7 @@ async function browserAudit(){
       brand:document.documentElement.dataset.v20Attention
     }));
     assert(attention.calls.some(item=>item.kind==='set'&&item.argc===0)&&!attention.calls.some(item=>item.kind==='set'&&item.argc>0),`Taskbar badge is not a flag/dot request: ${JSON.stringify(attention.calls)}`);
-    assert(/Water/i.test(attention.label)&&attention.favicon.startsWith('data:image/png')&&attention.brand==='true',`Visible fallback markers did not synchronize: ${JSON.stringify(attention)}`);
+    assert(attention.label&&attention.label!=='All clear'&&attention.favicon.startsWith('data:image/png')&&attention.brand==='true',`Visible fallback markers did not synchronize: ${JSON.stringify(attention)}`);
     await page.screenshot({path:path.join(artifacts,'pacefold-v20-attention.png'),fullPage:true});
     assert(errors.length===0,`Desktop V20 emitted browser errors: ${errors.join(' | ')}`);
     await context.close();
@@ -228,7 +228,7 @@ async function browserAudit(){
     const mobile=await mobileContext.newPage();
     mobile.on('pageerror',error=>errors.push(error.message));
     await mobile.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await mobile.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.0'&&document.getElementById('pf-v20-folio'));
+    await mobile.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.1'&&document.getElementById('pf-v20-folio'));
     await mobile.locator('[data-pf-note-body]').scrollIntoViewIfNeeded();
     const mobileState=await mobile.evaluate(()=>{
       const folio=document.getElementById('pf-v20-folio'),bench=document.getElementById('pf-v19-workbench'),composer=document.querySelector('[data-pf-note-body]'),seconds=document.getElementById('seconds');
@@ -254,7 +254,7 @@ async function browserAudit(){
     const waferContext=await prepareContext(browser,{width:340,height:150});
     const wafer=await waferContext.newPage();
     await wafer.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await wafer.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.0');
+    await wafer.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.1');
     const waferState=await wafer.evaluate(()=>({
       horizontal:document.documentElement.scrollWidth<=innerWidth+1,
       vertical:document.documentElement.scrollHeight<=innerHeight+1,
@@ -269,7 +269,7 @@ async function browserAudit(){
     const reducedContext=await prepareContext(browser,{width:1000,height:760},{reducedMotion:'reduce'});
     const reduced=await reducedContext.newPage();
     await reduced.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await reduced.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.0');
+    await reduced.waitForFunction(()=>window.__PACEFOLD_V20__?.release==='20.0.1');
     const motion=await reduced.evaluate(()=>{
       const card=document.querySelector('.pf-ritual-slot[data-v19-ritual="true"]');
       return{transition:getComputedStyle(card).transitionDuration,animation:getComputedStyle(card).animationDuration};

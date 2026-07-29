@@ -1,6 +1,6 @@
-# Pacefold 20.0.0 — protected workday folio
+# Pacefold 20.0.1 — protected workday folio
 
-- Surface version: `20.0.0`
+- Surface version: `20.0.1`
 - Preserved rhythm systems: `18.0.2`
 - Integrated runtime: `15.8.0`
 - Verified core version: `15.2.2`

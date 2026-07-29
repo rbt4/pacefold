@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const RELEASE='20.0.0';
+const RELEASE='20.0.1';
 const WEATHER_KEY='pacefold.v19.weather.v1';
 const WEATHER_TTL=20*60*1000;
 const WEATHER_REFRESH=20*60*1000;

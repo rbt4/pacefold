@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 
-const RELEASE='20.0.0';
+const RELEASE='20.0.1';
 const ENTRY_KEY='pacefold.notebook.entries.v2';
 const CATEGORY_KEY='pacefold.notebook.categories.v1';
 const PREFS_KEY='pacefoldPrefsV15';
@@ -21,6 +21,8 @@ let observer=null;
 let backupTimer=0;
 let backupHandle=null;
 let backupBusy=false;
+let backupDirty=false;
+let pendingBackupReason='change';
 let backupReady=false;
 let lastAttentionKey='';
 let baseFavicon='';
@@ -147,7 +149,7 @@ function recoveryNeeded(){
   if(notebook.valid)return false;
   const notice=safeParse(localStorage.getItem(RECOVERY_NOTICE_KEY),null);
   const meta=backupMeta();
-  return Boolean(notice?.backedUp||meta?.noteCount>0||backupHandle);
+  return Boolean(notice?.backedUp||meta?.noteCount>0||meta?.savedAt);
 }
 
 function backupDatabase(){
@@ -266,7 +268,9 @@ function applyBackup(data,{automatic=false}={}){
   localStorage.setItem(CATEGORY_KEY,JSON.stringify(data.categories));
   localStorage.setItem(PLAYLIST_KEY,JSON.stringify(data.playlists));
   localStorage.setItem(STREAM_KEY,JSON.stringify(data.streamLinks));
-  localStorage.setItem(PREFS_KEY,JSON.stringify(nextPrefs));
+  const core=window.__PACEFOLD_MA_CORE__;
+  if(core?.updatePrefs)core.updatePrefs(nextPrefs);
+  else localStorage.setItem(PREFS_KEY,JSON.stringify(nextPrefs));
   try{localStorage.removeItem(RECOVERY_NOTICE_KEY);}catch{}
   writeBackupMeta({
     noteCount:data.notes.length,
@@ -275,6 +279,7 @@ function applyBackup(data,{automatic=false}={}){
     fileName:backupHandle?.name||backupMeta()?.fileName||'Pacefold backup.json'
   });
   window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{source:'v20-backup-recovery',automatic}}));
+  window.dispatchEvent(new CustomEvent('pacefold:ma-prefs'));
   window.__PACEFOLD_REVAMP__?.reconcile?.();
   setBackupState('synced',automatic?'Notes recovered automatically':`${data.notes.length} notes recovered`);
 }
@@ -299,7 +304,12 @@ async function recoverFromHandle({automatic=false}={}){
 }
 
 async function writeBackup(reason='change'){
-  if(backupBusy||!backupHandle)return false;
+  if(!backupHandle)return false;
+  if(backupBusy){
+    backupDirty=true;
+    pendingBackupReason=reason;
+    return false;
+  }
   const notebook=rawNotebook();
   if(!notebook.valid){
     if(recoveryNeeded())await recoverFromHandle({automatic:true});
@@ -332,10 +342,23 @@ async function writeBackup(reason='change'){
     report('backup-write',error);
     setBackupState('error','Could not update the selected file');
     return false;
-  }finally{backupBusy=false;}
+  }finally{
+    backupBusy=false;
+    if(backupDirty){
+      backupDirty=false;
+      const nextReason=pendingBackupReason;
+      pendingBackupReason='change';
+      scheduleBackup(nextReason,0);
+    }
+  }
 }
 
 function scheduleBackup(reason='change',delay=450){
+  if(backupBusy){
+    backupDirty=true;
+    pendingBackupReason=reason;
+    return;
+  }
   clearTimeout(backupTimer);
   backupTimer=setTimeout(()=>{backupTimer=0;void writeBackup(reason);},Math.max(0,delay));
 }
