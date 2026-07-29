@@ -1,6 +1,6 @@
 # Changelog
 
-## 20.0.0 — Protected workday folio
+## 20.0.1 — Protected workday folio
 
 - Rebuilt the upper dashboard and lower notebook as one continuous light folio instead of two visually disconnected surfaces.
 - Restored visible two-digit seconds beside the main clock.
