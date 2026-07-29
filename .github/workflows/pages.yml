@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 18.0.1
+name: Validate and deploy Pacefold 18.0.2
 
 on:
   push:
@@ -110,9 +110,9 @@ jobs:
           test "$(grep -o 'data-pacefold-hub-guardian="15.8.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-resilience="15.8.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-flow="15.8.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-theme-boot="18.0.1"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-ma="18.0.1"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'name="pacefold-landing" content="18.0.1"' _release/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-theme-boot="18.0.2"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-ma="18.0.2"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'name="pacefold-landing" content="18.0.2"' _release/index.html | wc -l)" -eq 1
           test -f _release/pacefold-site-ma.css
           grep -q 'https://api.open-meteo.com' _release/app/index.html
           grep -q 'https://graph.microsoft.com' _release/app/index.html
@@ -269,9 +269,9 @@ jobs:
           grep -q 'data-pacefold-hub="15.8.0"' _site/app/index.html
           grep -q 'data-pacefold-resilience="15.8.0"' _site/app/index.html
           grep -q 'data-pacefold-flow="15.8.0"' _site/app/index.html
-          grep -q 'data-pacefold-theme-boot="18.0.1"' _site/app/index.html
-          test "$(grep -o 'data-pacefold-ma="18.0.1"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'name="pacefold-landing" content="18.0.1"' _site/index.html | wc -l)" -eq 1
+          grep -q 'data-pacefold-theme-boot="18.0.2"' _site/app/index.html
+          test "$(grep -o 'data-pacefold-ma="18.0.2"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'name="pacefold-landing" content="18.0.2"' _site/index.html | wc -l)" -eq 1
           test -f _site/pacefold-site-ma.css
           grep -q 'https://graph.microsoft.com' _site/app/index.html
           test -f _site/app/pacefold-integrated.js

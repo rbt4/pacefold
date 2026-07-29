@@ -1,6 +1,6 @@
-# Pacefold 18.0.1 “Ma”
+# Pacefold 18.0.2 “Ma”
 
-- Surface version: `18.0.1`
+- Surface version: `18.0.2`
 - Baseline workspace: `17.1.0`
 - Integrated runtime: `15.8.0`
 - Verified core version: `15.2.2`

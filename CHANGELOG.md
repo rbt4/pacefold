@@ -1,5 +1,10 @@
 # Changelog
 
+## 18.0.2 — Settled release gate
+
+- Made the rhythm-home audit wait for the workline’s real settled opacity instead of sampling the 220 ms transition.
+- Kept the 18.0.1 landing-page correction intact and advanced the surface/cache version for a deterministic production deployment.
+
 ## 18.0.1 — Ma landing
 
 - Replaced the stale public-page OneNote claims with the actual 18.x local notebook, Copy day and versioned-backup model.

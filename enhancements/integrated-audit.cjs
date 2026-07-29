@@ -62,7 +62,7 @@ if((stabilityCss.match(/\{/g)||[]).length!==(stabilityCss.match(/\}/g)||[]).leng
 }
 const injectSource=fs.readFileSync(path.join(__dirname,'inject.mjs'),'utf8');
 for(const token of [
-  "const RELEASE='18.0.1'",
+  "const RELEASE='18.0.2'",
   "const origamiMarker='pacefold-17-sumi-fold'",
   "const legacyOrigamiMarkers=['pacefold-16.1-origami-identity','pacefold-16.3-kinetic-origami']",
   "const stabilityMarker='pacefold-17-sumi-workspace'",
@@ -181,7 +181,8 @@ const productRhythmGate=[
   "    await product.evaluate(()=>{localStorage.setItem('pacefoldSetupDismissedV15','1');localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',showWorkline:true,workReminders:true,noodleMinutes:30,prepPreset:'noodles',prepLabel:'Noodles',prepDoneLabel:'Meal prepared',waterTarget:24,sipCadence:30,gazeEnabled:true,bodyEnabled:true,workdaysOnly:false,workHours:'00:00-23:59'}));});",
   "    await product.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'load'});",
   "    await product.waitForSelector('#noodleBtn');await product.waitForSelector('#pf-local-workspace');",
-  "    await product.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.surfaceRelease==='18.0.1');",
+  "    await product.waitForFunction(()=>window.__PACEFOLD_REVAMP__?.surfaceRelease==='18.0.2');",
+  "    await product.waitForFunction(()=>{const line=document.getElementById('workline');return line&&Number.parseFloat(getComputedStyle(line).opacity)>=.5;},null,{timeout:2000});",
   "    const rhythmHome=await product.evaluate(()=>{const ids=['waterBtn','noodleBtn','awayBtn','lunchBtn','eyesBtn'];const visible=id=>{const node=document.getElementById(id);if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0;};const line=document.getElementById('workline');return {notebookOpen:document.getElementById('pf-local-workspace').classList.contains('is-open'),playerOpen:document.getElementById('pf-local-player').classList.contains('is-open'),visible:ids.filter(visible),labels:ids.map(id=>document.getElementById(id)?.getAttribute('aria-label')||''),opacity:Number.parseFloat(getComputedStyle(line).opacity),noodleText:document.getElementById('noodleText')?.textContent||'',overflow:document.documentElement.scrollWidth>innerWidth+2};});",
   "    assert(!rhythmHome.notebookOpen&&!rhythmHome.playerOpen&&rhythmHome.visible.length===5&&rhythmHome.opacity>=.5&&!rhythmHome.overflow&&/30m|30-minute/i.test(`${rhythmHome.noodleText} ${rhythmHome.labels[1]}`),`Original rhythm home failed: ${JSON.stringify(rhythmHome)}`);",
   "    await product.screenshot({path:path.join(artifactRoot,'pacefold-rhythm-home.png'),fullPage:true});"
