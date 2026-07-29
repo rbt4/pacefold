@@ -15,19 +15,22 @@ function staticAudit(){
   const persistence=read(path.join(app,'pacefold-v21-persistence.js'));
   const boot=read(path.join(app,'pacefold-v21-boot.js'));
   const css=read(path.join(app,'pacefold-v21.css'));
+  const compat=read(path.join(app,'pacefold-v21-compat.css'));
   const html=read(path.join(app,'index.html'));
   const landing=read(path.join(site,'index.html'));
   const worker=read(path.join(site,'service-worker.js'));
   assert(read(path.join(site,'pacefold-experience.txt')).trim()==='21.0.0','V21 experience version is missing');
   assert(!/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime+boot+persistence),'Unsafe V21 DOM construction found');
   assert((html.match(/data-pacefold-v21="21\.0\.0"/g)||[]).length===2,'V21 CSS/runtime injection count is wrong');
+  assert((html.match(/data-pacefold-v21-compat="21\.0\.0"/g)||[]).length===1,'V21 compatibility CSS injection count is wrong');
   assert((html.match(/data-pacefold-v21-boot="21\.0\.0"/g)||[]).length===1,'V21 boot injection count is wrong');
   assert((html.match(/data-pacefold-v21-persistence="21\.0\.0"/g)||[]).length===1,'V21 persistence injection count is wrong');
   assert(html.includes('pacefold-experience" content="21.0.0')&&landing.includes('Pacefold 21 · one protected workday folio'),'V21 public markers are stale');
-  for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1'])assert(runtime.includes(token),`Missing runtime token ${token}`);
+  for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'"])assert(runtime.includes(token),`Missing runtime token ${token}`);
   assert(persistence.includes('pacefold.v21.settings.v1'),'Extension settings store is missing');
+  assert(compat.includes('width:100%!important')&&compat.includes('opacity:0!important'),'Legacy geometry compatibility is missing');
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','.pf21-ribbon-key-now'])assert(css.includes(token),`Missing CSS token ${token}`);
-  for(const asset of ['pacefold-v21.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js'])assert(worker.includes(asset),`Offline worker omits ${asset}`);
+  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js'])assert(worker.includes(asset),`Offline worker omits ${asset}`);
 }
 
 function serve(){
@@ -78,14 +81,14 @@ async function browserAudit(){
     await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
     await page.waitForFunction(()=>window.__PACEFOLD_V21__?.release==='21.0.0'&&window.__PACEFOLD_V21_PERSISTENCE__?.release==='21.0.0'&&document.getElementById('pf21-dayline')&&document.querySelectorAll('.pf21-calendar-day').length===42&&document.getElementById('pf21-settings'));
     const initial=await page.evaluate(()=>{
-      const rect=node=>node?.getBoundingClientRect();const now=rect(document.querySelector('#sequence .pf-ribbon-now'));const crease=rect(document.querySelector('#sequence .pf-ribbon-crease'));const counts=window.__PACEFOLD_V21__.noteCounts();
-      return{release:document.documentElement.dataset.pacefoldExperience,boot:window.__PACEFOLD_V21_BOOT__,flags:[localStorage.getItem('pacefoldOnboardedV15'),localStorage.getItem('pacefoldSetupDismissedV15')],dayline:document.getElementById('pf21-dayline').textContent,days:document.querySelectorAll('.pf21-calendar-day').length,noted:document.querySelectorAll('.pf21-calendar-day[data-has-notes="true"]').length,stats:document.querySelector('.pf21-calendar-stats')?.textContent,counts,markers:{now:now&&{w:now.width,h:now.height},crease:crease&&{w:crease.width,h:crease.height}},switches:document.querySelectorAll('#pf21-settings [data-pf21-pref]').length,advanced:document.getElementById('panel').dataset.pf21Advanced,status:rect(document.getElementById('statusLine')),horizontal:document.documentElement.scrollWidth<=innerWidth+1};
+      const rect=node=>node?.getBoundingClientRect();const now=rect(document.querySelector('#sequence .pf-ribbon-now'));const crease=rect(document.querySelector('#sequence .pf-ribbon-crease'));const counts=window.__PACEFOLD_V21__.noteCounts();const statusNode=document.getElementById('statusLine'),statusStyle=getComputedStyle(statusNode);
+      return{release:document.documentElement.dataset.pacefoldExperience,boot:window.__PACEFOLD_V21_BOOT__,flags:[localStorage.getItem('pacefoldOnboardedV15'),localStorage.getItem('pacefoldSetupDismissedV15')],dayline:document.getElementById('pf21-dayline').textContent,days:document.querySelectorAll('.pf21-calendar-day').length,noted:document.querySelectorAll('.pf21-calendar-day[data-has-notes="true"]').length,stats:document.querySelector('.pf21-calendar-stats')?.textContent,counts,markers:{now:now&&{w:now.width,h:now.height},crease:crease&&{w:crease.width,h:crease.height}},switches:document.querySelectorAll('#pf21-settings [data-pf21-pref]').length,advanced:document.getElementById('panel').dataset.pf21Advanced,status:{...rect(statusNode).toJSON(),opacity:Number(statusStyle.opacity),pointer:statusStyle.pointerEvents},horizontal:document.documentElement.scrollWidth<=innerWidth+1};
     });
     assert(initial.release==='21.0.0'&&initial.boot?.returning&&initial.flags.every(value=>value==='1'),`Setup persistence failed: ${JSON.stringify(initial)}`);
     assert(!/scheduled moment/i.test(initial.dayline)&&initial.days===42&&initial.noted>=2&&/3 notes/.test(initial.stats),`Dayline/calendar failed: ${JSON.stringify(initial)}`);
     assert(initial.counts[dateKey()]===2&&initial.counts[dateKey(-1)]===1,`Note counts failed: ${JSON.stringify(initial.counts)}`);
     assert(initial.markers.now?.h>=20&&(!initial.markers.crease||(initial.markers.now.h>initial.markers.crease.h&&initial.markers.now.w<initial.markers.crease.w)),`Timeline distinction failed: ${JSON.stringify(initial.markers)}`);
-    assert(initial.switches===6&&initial.advanced==='false'&&initial.status.width<=2&&initial.horizontal,`Essential layout failed: ${JSON.stringify(initial)}`);
+    assert(initial.switches===6&&initial.advanced==='false'&&initial.status.width>500&&initial.status.height<=1&&initial.status.opacity===0&&initial.status.pointer==='none'&&initial.horizontal,`Essential layout failed: ${JSON.stringify(initial)}`);
 
     await page.locator('#brandButton').click();await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));
     assert(await page.locator('#panel [data-settings-view]:visible').count()===0,'Advanced settings leaked into essentials');
