@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 18.0.0
+name: Validate and deploy Pacefold 18.0.1
 
 on:
   push:
@@ -110,8 +110,10 @@ jobs:
           test "$(grep -o 'data-pacefold-hub-guardian="15.8.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-resilience="15.8.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-flow="15.8.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-theme-boot="18.0.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-ma="18.0.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-theme-boot="18.0.1"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-ma="18.0.1"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'name="pacefold-landing" content="18.0.1"' _release/index.html | wc -l)" -eq 1
+          test -f _release/pacefold-site-ma.css
           grep -q 'https://api.open-meteo.com' _release/app/index.html
           grep -q 'https://graph.microsoft.com' _release/app/index.html
           grep -q 'https://www.youtube-nocookie.com' _release/app/index.html
@@ -144,6 +146,7 @@ jobs:
           node --check _release/app/service-worker.js
           node -e "const m=JSON.parse(require('fs').readFileSync('_release/manifest.webmanifest','utf8'));if(JSON.stringify(m.display_override)!==JSON.stringify(['window-controls-overlay','standalone']))process.exit(1)"
           grep -q 'pacefold-ma.css' _release/service-worker.js
+          grep -q 'pacefold-site-ma.css' _release/service-worker.js
           grep -q 'pacefold-theme-boot.js' _release/service-worker.js
           grep -q 'pacefold-revamp.js' _release/service-worker.js
           grep -q 'fonts/pacefold-ma.woff2' _release/service-worker.js
@@ -266,8 +269,10 @@ jobs:
           grep -q 'data-pacefold-hub="15.8.0"' _site/app/index.html
           grep -q 'data-pacefold-resilience="15.8.0"' _site/app/index.html
           grep -q 'data-pacefold-flow="15.8.0"' _site/app/index.html
-          grep -q 'data-pacefold-theme-boot="18.0.0"' _site/app/index.html
-          test "$(grep -o 'data-pacefold-ma="18.0.0"' _site/app/index.html | wc -l)" -eq 2
+          grep -q 'data-pacefold-theme-boot="18.0.1"' _site/app/index.html
+          test "$(grep -o 'data-pacefold-ma="18.0.1"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'name="pacefold-landing" content="18.0.1"' _site/index.html | wc -l)" -eq 1
+          test -f _site/pacefold-site-ma.css
           grep -q 'https://graph.microsoft.com' _site/app/index.html
           test -f _site/app/pacefold-integrated.js
           test -f _site/app/pacefold-integrated.css
@@ -290,6 +295,7 @@ jobs:
           node --check _site/app/service-worker.js
           node -e "const m=JSON.parse(require('fs').readFileSync('_site/manifest.webmanifest','utf8'));if(JSON.stringify(m.display_override)!==JSON.stringify(['window-controls-overlay','standalone']))process.exit(1)"
           grep -q 'pacefold-ma.css' _site/service-worker.js
+          grep -q 'pacefold-site-ma.css' _site/service-worker.js
           grep -q 'pacefold-theme-boot.js' _site/service-worker.js
           grep -q 'pacefold-revamp.js' _site/service-worker.js
           grep -q 'fonts/pacefold-ma.woff2' _site/service-worker.js

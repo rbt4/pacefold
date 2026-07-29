@@ -1,5 +1,12 @@
 # Changelog
 
+## 18.0.1 — Ma landing
+
+- Replaced the stale public-page OneNote claims with the actual 18.x local notebook, Copy day and versioned-backup model.
+- Added the Day Ribbon to the public visual preview and feature story.
+- Updated the public install, notification, local-audio, storage and managed-device boundaries.
+- Added the landing stylesheet to the offline shell and advanced the cache-busting surface release.
+
 ## 18.0.0 — Ma
 
 - Replaced the scheduled-moment dot strip with a continuous workday ribbon showing spent time, future time, the current instant, hour ticks, creases and recorded session bands.
