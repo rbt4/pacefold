@@ -26,6 +26,7 @@ html[data-pf-quiet="true"].pf-v21-active #pf21-settings{
 }
 
 @media (max-width:720px){
+  html.pf-v21-active .pf-v20-folio>.clock-shell,
   html.pf-v21-active .pf-v20-folio>.clock-shell>.time-row,
   html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather,
   html.pf-v21-active .pf-v20-folio>.clock-shell>.status-area,
@@ -34,6 +35,10 @@ html[data-pf-quiet="true"].pf-v21-active #pf21-settings{
     max-width:none!important;
     min-width:0!important;
     justify-self:stretch!important;
+  }
+
+  html.pf-v21-active .pf-v20-folio>.clock-shell{
+    box-sizing:border-box!important;
   }
 
   html.pf-v21-active .pf-v20-folio>.clock-shell>.pf-v19-weather{
