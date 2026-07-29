@@ -44,7 +44,7 @@ const landingHtml=fs.readFileSync(path.join(site,'index.html'),'utf8');
 if((injectedHtml.match(/data-pacefold-theme-boot=/g)||[]).length!==1)fail('Theme boot was not injected exactly once');
 if((injectedHtml.match(/data-pacefold-ma=/g)||[]).length!==2)fail('Ma stylesheet and runtime were not injected exactly once');
 if(injectedHtml.indexOf('pacefold-theme-boot.js')>injectedHtml.indexOf('app-style-01.css'))fail('Theme boot does not precede the first stylesheet');
-if((landingHtml.match(/name="pacefold-landing" content="18\.0\.1"/g)||[]).length!==1)fail('Ma landing page was not injected exactly once');
+if((landingHtml.match(/name="pacefold-landing" content="18\.0\.2"/g)||[]).length!==1)fail('Ma landing page was not injected exactly once');
 if(!landingHtml.includes('Ma · Day Ribbon')||!landingHtml.includes('Where do my notes go?'))fail('Ma landing page does not describe the 18.x product');
 if(/OneNote sync really silent|Kiroku · OneNote|Pacefold 15\.2\.2 · your day/.test(landingHtml))fail('Ma landing page retains stale product claims');
 if(!fs.existsSync(path.join(site,'pacefold-site-ma.css')))fail('Ma landing stylesheet is missing');
@@ -56,4 +56,4 @@ const injectedWorker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8')
 for(const asset of ['pacefold-site-ma.css','pacefold-ma.css','pacefold-ma.js','pacefold-theme-boot.js','pacefold-hub-guardian.js','pacefold-resilience.js','pacefold-hub.js','pacefold-integrated.js','pacefold-revamp.js','pacefold-fold-mark.svg','fonts/pacefold-ma.woff2'])if(!injectedWorker.includes(asset))fail(`Offline shell omits ${asset}`);
 if(!injectedWorker.includes('caches.match(request,{ignoreSearch:true})'))fail('Offline worker does not resolve cache-busted asset URLs');
 fs.cpSync(core,debug,{recursive:true});run('node',[path.join(debug,'scripts','build.mjs'),debug],{env:{PACEFOLD_DEBUG:'1'}});const debugApp=fs.readFileSync(path.join(debug,'app','app.js'),'utf8');if(!debugApp.includes('const DEBUG_BUILD=true;'))fail('Debug build flag was not enabled for audits');
-console.log(JSON.stringify({version,sha256:actualSha,parts:parts.length,hubPins:'verified',coreValidation:'passed',surface:'18.0.1 Ma',trustedTypes:'core and injected surfaces',offlineMaAssets:'verified',landingPage:'18.0.1',debugAuditBuild:'enabled'},null,2));
+console.log(JSON.stringify({version,sha256:actualSha,parts:parts.length,hubPins:'verified',coreValidation:'passed',surface:'18.0.2 Ma',trustedTypes:'core and injected surfaces',offlineMaAssets:'verified',landingPage:'18.0.2',debugAuditBuild:'enabled'},null,2));
