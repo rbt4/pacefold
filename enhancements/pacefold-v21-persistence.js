@@ -3,7 +3,6 @@
 
   const RELEASE='21.0.0';
   const SETTINGS_KEY='pacefold.v21.settings.v1';
-  const PREFS_KEY='pacefoldPrefsV15';
   const EXTENSION_KEYS=new Set(['v21WeatherEnabled']);
   let observer=null;
 
@@ -17,7 +16,6 @@
   };
   const extensionPatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>EXTENSION_KEYS.has(key)));
   const corePatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>!EXTENSION_KEYS.has(key)));
-  const basePrefs=()=>window.__PACEFOLD_MA_CORE__?.getPrefs?.()||object(parse(localStorage.getItem(PREFS_KEY),{}))||{};
 
   function applySurface(settings=read()){
     document.documentElement.dataset.pf21Weather=String(settings.v21WeatherEnabled!==false);
@@ -25,11 +23,13 @@
 
   function suppressUnrequestedReview(){
     const review=document.getElementById('pf-fold-review');
-    if(!review||basePrefs().dayCloseEnabled===true)return false;
-    if(!review.hidden)review.hidden=true;
-    if(review.getAttribute('aria-hidden')!=='true')review.setAttribute('aria-hidden','true');
-    if(!review.inert)review.inert=true;
-    review.dataset.pf21Suppressed='true';
+    if(!review)return false;
+    const dismiss=[...review.querySelectorAll('button')].find(button=>/close|dismiss|later|skip|done|continue/i.test(`${button.textContent||''} ${button.getAttribute('aria-label')||''}`));
+    if(dismiss&&!review.dataset.pf21Dismissing){
+      review.dataset.pf21Dismissing='true';
+      dismiss.click();
+    }
+    if(review.isConnected)review.remove();
     return true;
   }
 
@@ -69,7 +69,7 @@
     applySurface();
     suppressUnrequestedReview();
     observer=new MutationObserver(mutations=>{
-      if(mutations.some(item=>item.target instanceof Element&&(item.target.id==='pf-fold-review'||item.target.closest?.('#pf-fold-review'))))suppressUnrequestedReview();
+      if(mutations.some(item=>item.target instanceof Element&&(item.target.id==='pf-fold-review'||item.target.closest?.('#pf-fold-review')))||document.getElementById('pf-fold-review'))suppressUnrequestedReview();
     });
     observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-hidden']});
     window.addEventListener('storage',event=>{
