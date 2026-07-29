@@ -1,5 +1,19 @@
 # Changelog
 
+## 19.0.0 — Workday dashboard reset
+
+- Rebuilt the home surface around the clock, next cue, Day Ribbon and weather instead of a sparse interval canvas.
+- Bound weather to the latitude, longitude and location label already saved in Pacefold preferences, with a 20-minute cache and quiet offline fallback.
+- Presented Water, Timer, Away, Meal, Eyes and Move as six equal first-class controls without changing core completion ownership.
+- Fixed status clipping and removed the permanent player lane from the resting dashboard.
+- Rebuilt Notes and Music as mutually exclusive focused sheets; replaced the disconnected black player slab with the Pacefold surface language.
+- Retired OneNote delivery, removed its visible setup and action routes, disabled queued sync, and removed Microsoft Graph from the app CSP.
+- Removed Japanese product names and theme labels from the current interface while retaining restrained geometry and material motion.
+- Added Notes and Music utilities plus a small registered module contract for later dashboard additions.
+- Restyled the public page around the all-in-one workday dashboard and truthful local-first boundaries.
+- Added a deterministic V19 browser suite covering saved-location weather, preserved rhythm actions, local-only notes, focused music, responsive geometry, reduced motion and extension hooks.
+- Kept the verified 15.2.2 archive unchanged and cache-busted every injected asset and worker with the 19.0.0 surface release.
+
 ## 18.0.2 — Settled release gate
 
 - Made the rhythm-home audit wait for the workline’s real settled opacity instead of sampling the 220 ms transition.

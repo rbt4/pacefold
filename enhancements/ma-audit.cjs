@@ -118,7 +118,7 @@ async function browserAudit(core){
     for(let index=1;index<scheduler.length;index+=1)assert(scheduler[index].at-scheduler[index-1].at>=4,`Cue gap invariant failed: ${JSON.stringify(scheduler)}`);
     const drift=await page.evaluate(()=>window.__PACEFOLD_MA_AUDIT__.simulateGap(4));
     assert(drift.lines===1&&drift.backlogDeliveries===0,`Drift simulation failed: ${JSON.stringify(drift)}`);
-    await page.waitForTimeout(120);
+    await page.waitForFunction(()=>/Back after 4h/i.test(document.getElementById('statusLine')?.innerText||''),null,{timeout:2500});
     const driftState=await page.evaluate(()=>({status:document.getElementById('statusLine')?.innerText,notices:window.__maNotices.length,prefs:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}')}));
     assert(/Back after 4h/i.test(driftState.status),`Four-hour drift did not produce one consolidated status: ${driftState.status}`);
     assert(driftState.notices===0,`Four-hour drift delivered ${driftState.notices} backlog cue(s)`);
@@ -172,7 +172,7 @@ async function browserAudit(core){
     await offlinePage.goto(`${base}/app/`,{waitUntil:'domcontentloaded'});
     await offlinePage.waitForFunction(()=>window.__PACEFOLD_MA_CORE__&&document.querySelector('#sequence.pf-day-ribbon'),null,{timeout:12000});
     const offline=await offlinePage.evaluate(async()=>({themeBoot:Boolean(document.documentElement.dataset.pfTheme),font:(await document.fonts.load('16px "Pacefold Ma"')).length>0,ma:window.__PACEFOLD_MA_AUDIT__?.release}));
-    assert(offline.themeBoot&&offline.font&&offline.ma==='18.0.2',`Ma first-run cache failed offline: ${JSON.stringify(offline)}`);
+    assert(offline.themeBoot&&offline.font&&offline.ma==='19.0.0',`Ma first-run cache failed offline: ${JSON.stringify(offline)}`);
     await offlinePage.close();
     await context.setOffline(false);
     await context.close();
@@ -213,7 +213,8 @@ async function browserAudit(core){
     });
     assert(forcedState.now&&forcedState.crease&&forcedState.meter!=='none'&&forcedState.focusRule,`Forced-colour primitives are incomplete: ${JSON.stringify(forcedState)}`);
     await forcedContext.close();
-    assert(!errors.length,`Browser errors: ${errors.join(' | ')}`);
+    const unexpectedErrors=errors.filter(error=>!/net::ERR_INTERNET_DISCONNECTED/i.test(error));
+    assert(!unexpectedErrors.length,`Browser errors: ${unexpectedErrors.join(' | ')}`);
   }finally{
     await browser.close().catch(()=>{});
     server.closeAllConnections?.();server.close();
@@ -223,7 +224,7 @@ async function browserAudit(core){
 async function main(){
   const {core}=staticAudit();
   await browserAudit(core);
-  console.log('Pacefold 18.0 Ma audit passed: scheduler, drift, ribbon cost, wafer geometry, WCO fallback, forced colours, boot, preferences, Quiet and single-copy injection.');
+  console.log('Pacefold 19 preserved-core audit passed: scheduler, drift, ribbon cost, wafer geometry, WCO fallback, forced colours, boot, preferences, Quiet and single-copy injection.');
 }
 
 main().catch(error=>{console.error(error?.stack||error);process.exit(1);});

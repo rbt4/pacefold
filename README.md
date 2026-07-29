@@ -2,13 +2,28 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 18.0 makes the interval around each moment visible while keeping the 17.1 rhythm-first hierarchy:
+Pacefold is a local-first, installable dashboard for the shape of a working day. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 19 brings the important functions back into one calm, coherent home:
 
-- **Rhythm** — the clock, scheduled moments, Noodles/custom prep, water, away, meals, eye care and movement are the home surface;
-- **Notebook** — the paper sheet folds out only when requested, preserves drafts, and folds closed after saving or leaving it;
-- **Music** — the black local library opens above the player and closes back to the rhythm clock.
+- **Now** — a stable clock, date, next cue, Day Ribbon and saved-location weather share the top of the dashboard;
+- **Rhythm** — Water, Timer, Away, Meal, Eyes and Move are equally visible, tactile controls with their full options intact;
+- **Utilities** — Quick note, focus sound, Notes and Music stay within reach without occupying the dashboard at rest;
+- **Growth** — a small module contract lets later tools join the utility area without replacing the clock or creating another layout owner.
 
-There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
+OneNote delivery is retired. Quick notes, the full local notebook, Copy day and `pacefold.backup.v1` remain. The Microsoft Graph endpoint is not permitted by the V19 app shell.
+
+## Pacefold 19 — workday dashboard
+
+V19 is a product reset, not another decorative layer.
+
+- Replaced the sparse clock canvas and permanent black player lane with one responsive dashboard card.
+- Put live weather beside the clock and bound it to the latitude, longitude and location label already saved in Pacefold preferences.
+- Kept hydration, the configurable preparation timer, away time, desk/away meals, eye care and movement as six first-class controls.
+- Fixed clipped status copy and kept the Day Ribbon as supporting context rather than the whole product.
+- Made Notes and Music focused, mutually exclusive sheets. Both disappear completely when closed.
+- Restyled the music library as part of Pacefold instead of a disconnected black slab. Local audio, queues, playlists and honest streaming bookmarks remain.
+- Removed Japanese product names and ornamental framing from current UI copy. The influence is limited to precise geometry, restraint and short material transitions.
+- Kept Quiet, Wafer, weekday/day types, cue coalescing, drift reconciliation, Fold Review, backup/restore and storage guardrails.
+- Added a V19 release audit for saved-location weather, core rhythm actions, local-only notes, focused music, responsive geometry, reduced motion and the extension contract.
 
 ## Pacefold 18.0 — Ma
 
@@ -116,11 +131,11 @@ The integrated document supports:
 - a versioned `pacefold.backup.v1` containing safe preferences, notes, categories, playlist definitions, streaming links and rhythm history;
 - a dry-run restore diff before any local data is changed.
 
-**Copy day** is the intended handoff. At the end of the day, copy the assembled document and paste it into OneNote, Word, email or any other destination. Pacefold does not pretend that a cloud handoff succeeded when it did not.
+**Copy day** is the intended handoff. At the end of the day, copy the assembled document and paste it into another notes app, a document, email or any other destination. Pacefold does not pretend that a cloud handoff succeeded when it did not.
 
-## Separate local music bar
+## Local music
 
-The bottom-most player is intentionally black and visually separate from the notebook while remaining part of the same app.
+Music opens as a focused Pacefold sheet and disappears when closed. It does not reserve a permanent bottom lane or use the retired black-slab treatment.
 
 The primary workflow is local audio:
 
@@ -183,8 +198,8 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 18.0.2 deploys, fully close every Pacefold and Edge PWA window once.
-5. Reopen Pacefold so the cache-busted Ma surface replaces the older surface.
+4. After 19.0.0 deploys, fully close every Pacefold and Edge PWA window once.
+5. Reopen Pacefold so the cache-busted dashboard replaces the older surface.
 
 ## Honest platform boundaries
 
@@ -194,6 +209,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 18.0.2 “Ma” enhancement layer over the 17.1 rhythm-first Sumi workspace, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 19.0.0 dashboard enhancement layer over the preserved Pacefold 18 cue and data systems, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.

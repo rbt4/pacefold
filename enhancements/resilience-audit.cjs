@@ -128,7 +128,7 @@ async function main(){
     });
     if(journal.length!==1||journal[0].count!==30||/abc123|example\.com|secret\.example/.test(journal[0].message))throw new Error(`Error journal did not deduplicate/redact: ${JSON.stringify(journal)}`);
 
-    console.log(`Pacefold ${VERSION} hardening audit passed: lossless recovery, setup stability, false-positive rejection, duplicate-root repair, settled OneNote locking and deduplicated diagnostics.`);
+    console.log(`Pacefold ${VERSION} hardening audit passed: lossless recovery, setup stability, false-positive rejection, duplicate-root repair, settled capture locking and deduplicated diagnostics.`);
   }finally{
     if(browser)await browser.close().catch(()=>{});
     server.closeAllConnections?.();

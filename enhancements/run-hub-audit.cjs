@@ -28,6 +28,15 @@ if(major>15||minor>=8){
     .replaceAll('notify-away.svg','notify-away.png');
 }
 const generatedHub=fs.readFileSync(path.join(root,'app','pacefold-hub.js'),'utf8');
+const appShell=fs.readFileSync(path.join(root,'app','index.html'),'utf8');
+if(appShell.includes('data-pacefold-v19=')){
+  const legacyHosts="for(const host of ['www.youtube-nocookie.com','open.spotify.com','music.amazon.ca','graph.microsoft.com'])";
+  if(!source.includes(legacyHosts))throw new Error('Baseline CSP host assertion is missing');
+  source=source.replace(
+    legacyHosts,
+    "if(appShell.includes('graph.microsoft.com'))throw new Error('Retired Microsoft Graph endpoint remains in the V19 CSP');for(const host of ['www.youtube-nocookie.com','open.spotify.com','music.amazon.ca'])"
+  );
+}
 if(!/\bHSSys\b/.test(generatedHub)){
   const legacy="synced.notebook!=='HSSys'";
   if(!source.includes(legacy))throw new Error('Baseline OneNote destination assertion is missing');

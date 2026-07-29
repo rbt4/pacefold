@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-const RELEASE='18.0.2';
+const RELEASE='19.0.0';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-17-layout-floor';
@@ -22,6 +22,9 @@ const themeBootSource=path.join(sourceRoot,'pacefold-theme-boot.js');
 const maFontSource=path.join(sourceRoot,'fonts','pacefold-ma.woff2');
 const maFontLicenseSource=path.join(sourceRoot,'fonts','OFL.txt');
 const siteMaCssSource=path.join(sourceRoot,'pacefold-site-ma.css');
+const v19CssSource=path.join(sourceRoot,'pacefold-v19.css');
+const v19ScriptSource=path.join(sourceRoot,'pacefold-v19.js');
+const siteV19CssSource=path.join(sourceRoot,'pacefold-site-v19.css');
 const layoutPatch=`
 
 /* BEGIN ${layoutMarker} */
@@ -71,7 +74,7 @@ async function applyStabilityPatch(file){
 async function applyAssetRevision(file){
   let html=await fs.readFile(file,'utf8');
   html=html.replace(
-    /((?:\.\/)?pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp|ma|theme-boot)\.(?:css|js))\?v=[^"'&<\s]+/g,
+    /((?:\.\/)?pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp|ma|theme-boot|v19)\.(?:css|js))\?v=[^"'&<\s]+/g,
     (_,asset)=>`${asset}?v=${RELEASE}`
   );
   html=html.replace(/\s*<meta\s+name=["']pacefold-build["'][^>]*>/gi,'');
@@ -85,22 +88,22 @@ async function applyLandingPage(file){
   const replacements=[
     [
       '<meta name="description" content="A quiet workday surface for rhythm, ergonomic care, sound and local capture with optional Microsoft OneNote sync.">',
-      '<meta name="description" content="Pacefold 18 Ma is a private, offline-ready workday clock with a continuous Day Ribbon, quiet cues, local notes and local audio.">',
+      '<meta name="description" content="Pacefold 19 is a private, offline-ready workday dashboard for the clock, timers, hydration, weather, care cues, local notes and local audio.">',
       'landing-description'
     ],
     [
       '<link rel="stylesheet" href="./site-style-02.css">',
-      `<link rel="stylesheet" href="./site-style-02.css">\n<link rel="stylesheet" href="./pacefold-site-ma.css?v=${RELEASE}">\n<meta name="pacefold-landing" content="${RELEASE}">`,
+      `<link rel="stylesheet" href="./site-style-02.css">\n<link rel="stylesheet" href="./pacefold-site-ma.css?v=${RELEASE}">\n<link rel="stylesheet" href="./pacefold-site-v19.css?v=${RELEASE}">\n<meta name="pacefold-landing" content="${RELEASE}">`,
       'landing-assets'
     ],
     [
       '<div class="eyebrow">Ma system · one quiet layer for the workday</div>',
-      '<div class="eyebrow">Pacefold 18 · Ma (間) · the shape of the workday</div>',
+      '<div class="eyebrow">Pacefold 19 · one workday instrument</div>',
       'landing-eyebrow'
     ],
     [
       '<p class="lead">A calm workday surface for rhythm, ergonomic care, sound and quick capture. Pacefold stays quiet in front; your OneNote notebook can live durably underneath.</p>',
-      '<p class="lead">A calm desktop clock that makes the interval visible. The Day Ribbon shows what has passed and what comes next; notes, local audio and care tools stay folded away until asked.</p>',
+      '<p class="lead">The clock, next cue, weather, hydration, timers and care controls finally live in one coherent dashboard. Notes and music stay available without taking over the workday.</p>',
       'landing-lead'
     ],
     [
@@ -115,7 +118,7 @@ async function applyLandingPage(file){
     ],
     [
       '<div class="floating-card"><small>Andon</small><strong>Only one cue at a time.</strong><span>Nothing competing for attention.</span></div>',
-      '<div class="floating-card"><small>Ma · interval</small><strong>The day as one quiet ribbon.</strong><span>Spent time, moments and the current instant.</span></div>',
+      '<div class="floating-card"><small>Workday dashboard</small><strong>Everything important stays in reach.</strong><span>Clock, weather, timers and quiet care.</span></div>',
       'landing-floating-card'
     ],
     [
@@ -125,17 +128,17 @@ async function applyLandingPage(file){
     ],
     [
       '<div class="wrap"><div class="sectionhead"><div class="eyebrow">One calm surface · four quiet systems</div><h2>Higher capability without dashboard sprawl.</h2><p>Rhythm, Care, Sound and Kiroku share one priority system. The clock remains visually dominant; deeper tools wait in a quiet dock until you ask for them.</p></div>',
-      '<div class="wrap"><div class="sectionhead"><div class="eyebrow">One continuous workday · four quiet systems</div><h2>Higher capability without dashboard sprawl.</h2><p>Ribbon, Care, Sound and Notebook share one priority system. The clock remains visually dominant; deeper tools wait folded away until you ask for them.</p></div>',
+      '<div class="wrap"><div class="sectionhead"><div class="eyebrow">One dashboard · the whole workday</div><h2>Capability without the pile of panels.</h2><p>The clock, weather, timers, hydration and care controls share one visual and scheduling system. Notes and music open as focused sheets, then return cleanly to the dashboard.</p></div>',
       'landing-features-intro'
     ],
     [
       '<article class="bento"><span class="feature-tag">Oto · sound</span><h3>A layer that yields to the day.</h3><p>Generated offline brown hush, rain and fan textures need no account. Local audio and direct streams are optional. Important Pacefold cues can duck the volume automatically.</p><div class="signal-demo"><i class="dot"></i><span>Offline</span><i class="diamond"></i><span>Ducking</span><i class="square"></i><span>Media keys</span></div></article>',
-      '<article class="bento"><span class="feature-tag">Oto · sound</span><h3>A layer that yields to the day.</h3><p>Local audio stays primary and needs no account. Named streaming links remain secondary. Important Pacefold cues can duck the player without turning sound into another dashboard.</p><div class="signal-demo"><i class="dot"></i><span>Local</span><i class="diamond"></i><span>Ducking</span><i class="square"></i><span>Media keys</span></div></article>',
+      '<article class="bento"><span class="feature-tag">Music</span><h3>A utility, not another app.</h3><p>A compact dashboard control opens a focused local-audio sheet. Files stay in this browser, while streaming links remain honest bookmarks rather than unreliable embedded services.</p><div class="signal-demo"><i class="dot"></i><span>Local</span><i class="diamond"></i><span>Focused</span><i class="square"></i><span>Offline</span></div></article>',
       'landing-sound'
     ],
     [
       '<article class="bento wide"><div><span class="feature-tag">Kiroku · OneNote</span><h3>Capture here. Keep it in HSSys.</h3><p>Write a note, task, incident, inspection, JHSC item or follow-up without leaving Pacefold. It saves locally first, then silently appends to one dated page in the OneNote section you choose.</p></div><div class="ledger-lines"><span><b>9:12</b> Follow-up · local</span><span><b>11:06</b> Inspection · queued</span><span><b>2:24</b> Incident · synced</span></div></article>',
-      '<article class="bento wide ma-feature"><div><span class="feature-tag">Ma · Day Ribbon</span><h3>See the interval, not another progress bar.</h3><p>Spent time becomes inked paper. Future time stays raw. Prayer moments, meals and recorded away periods become creases and bands, while Quiet preserves the shape and removes the labels.</p></div><div class="ma-ribbon-demo" aria-hidden="true"><div class="rail"></div><span class="fold a"></span><span class="fold b"></span><span class="fold c"></span><small>08:30 · now · 16:30</small></div></article>',
+      '<article class="bento wide ma-feature"><div><span class="feature-tag">Day Ribbon</span><h3>See the workday without losing the controls.</h3><p>The ribbon keeps the current instant, scheduled moments and recorded pauses visible. The six rhythm controls remain directly beneath it, so the visual never replaces the function.</p></div><div class="ma-ribbon-demo" aria-hidden="true"><div class="rail"></div><span class="fold a"></span><span class="fold b"></span><span class="fold c"></span><small>08:30 · now · 16:30</small></div></article>',
       'landing-ma-feature'
     ],
     [
@@ -145,7 +148,7 @@ async function applyLandingPage(file){
     ],
     [
       '<details open><summary>Will Pacefold update itself?</summary><p>Yes. It checks after launch, periodically while open, when it regains focus and when connectivity returns. Updates wait rather than reloading over setup or an unfinished capture.</p></details><details><summary>Is OneNote sync really silent?</summary><p>After a one-time Microsoft sign-in and destination choice, captures queue locally and retry in the background. Microsoft Entra registration is required, and university policy may require administrator approval. <a href="./onenote-setup.html">Read the exact setup.</a></p></details><details><summary>Does the sound player control Spotify or YouTube?</summary><p>No. Pacefold generates its own offline textures and can play a local file for the session or a direct HTTPS audio source. It does not pretend it can control unrelated streaming sites.</p></details>',
-      '<details open><summary>Will Pacefold update itself?</summary><p>Yes. It checks after launch, while open, when it regains focus and when connectivity returns. After a release, fully close every Pacefold and Edge PWA window once, then reopen it so the new offline shell takes control.</p></details><details><summary>Where do my notes go?</summary><p>They stay in this browser profile. Copy day creates one Markdown handoff for OneNote, Word or email, and the versioned JSON backup carries safe preferences, notes, categories, playlist definitions, links and rhythm history.</p></details><details><summary>Does the sound player control Spotify or YouTube?</summary><p>No. Local audio is primary. Named streaming links are bookmarks, not an embedded streaming dashboard, and Pacefold does not pretend it can control unrelated services.</p></details>',
+      '<details open><summary>Will Pacefold update itself?</summary><p>Yes. It checks after launch, while open, when it regains focus and when connectivity returns. After a release, fully close every Pacefold and Edge PWA window once, then reopen it so the new offline shell takes control.</p></details><details><summary>Where do my notes go?</summary><p>They stay in this browser profile. Copy day creates one Markdown handoff for another notes app, a document or email, and the versioned JSON backup carries safe preferences, notes, categories, playlist definitions, links and rhythm history.</p></details><details><summary>Does the sound player control Spotify or YouTube?</summary><p>No. Local audio is primary. Named streaming links are bookmarks, not an embedded streaming dashboard, and Pacefold does not pretend it can control unrelated services.</p></details>',
       'landing-faq-local'
     ],
     [
@@ -155,13 +158,28 @@ async function applyLandingPage(file){
     ],
     [
       '<section class="wrap final"><h2>Space for what matters.</h2><p>Start with Pacefold Original or make the rhythm entirely your own.</p>',
-      '<section class="wrap final"><h2>See the shape of your day.</h2><p>Start with Pacefold Original or make the rhythm entirely your own.</p>',
+      '<section class="wrap final"><h2>Run the whole workday from one place.</h2><p>Start with Pacefold Original or make every rhythm your own.</p>',
       'landing-final'
     ],
     [
       '<footer class="wrap footer"><span>Pacefold 15.2.2 · your day, quietly kept</span><span><a href="./privacy.html">Privacy</a> · <a href="./onenote-setup.html">OneNote setup</a> · <a href="https://github.com/rbt4/pacefold">GitHub</a></span></footer>',
-      `<footer class="wrap footer"><span>Pacefold ${RELEASE} · Ma (間)</span><span><a href="./privacy.html">Privacy</a> · <a href="./app/">Open app</a> · <a href="https://github.com/rbt4/pacefold">GitHub</a></span></footer>`,
+      `<footer class="wrap footer"><span>Pacefold ${RELEASE} · one workday instrument</span><span><a href="./privacy.html">Privacy</a> · <a href="./app/">Open app</a> · <a href="https://github.com/rbt4/pacefold">GitHub</a></span></footer>`,
       'landing-footer'
+    ],
+    [
+      '<article class="bento signal-feature"><span class="feature-tag">Andon</span><h3>Quiet until one thing matters.</h3><p>The clock carries the signal first. The taskbar stays empty until something is due, and a single notification action can clear it without opening Pacefold.</p><div class="signal-demo"><i class="diamond"></i><span>Moment</span><i class="dot"></i><span>Sip</span><i class="square"></i><span>Prep</span></div></article>',
+      '<article class="bento signal-feature"><span class="feature-tag">Cue engine</span><h3>Quiet until one thing matters.</h3><p>One scheduler coalesces the day instead of stacking interruptions. The dashboard shows the current priority and lets lower-priority cues wait, decay or disappear cleanly.</p><div class="signal-demo"><i class="diamond"></i><span>Moment</span><i class="dot"></i><span>Sip</span><i class="square"></i><span>Timer</span></div></article>',
+      'landing-cue-engine'
+    ],
+    [
+      '<article class="bento ledger-feature"><span class="feature-tag">Kiroku</span><h3>An honest local ledger.</h3><p>Prayer or meditation pauses, desk meals, away lunches and bathroom breaks stay separate. Overlapping off-desk time is merged instead of inflated.</p><div class="ledger-lines"><span><b>10:14</b> Midday pause · 8m</span><span><b>12:32</b> Desk meal · 19m</span><span><b>2:08</b> Away · 4m</span></div></article>',
+      '<article class="bento ledger-feature"><span class="feature-tag">Day log</span><h3>An honest local record.</h3><p>Prayer or meditation pauses, desk meals, away lunches and bathroom breaks stay separate. Overlapping off-desk time is merged instead of inflated.</p><div class="ledger-lines"><span><b>10:14</b> Midday pause · 8m</span><span><b>12:32</b> Desk meal · 19m</span><span><b>2:08</b> Away · 4m</span></div></article>',
+      'landing-day-log'
+    ],
+    [
+      '<section class="section">\n  <div class="wrap"><div class="sectionhead"><div class="eyebrow">Designed by behaviour, not decoration</div><h2>Japanese restraint in the way it works.</h2><p>The influence lives in the operating logic rather than ornamental clichés.</p></div>\n  <div class="principles"><article class="principle"><span class="jp">Ma</span><h3>Protect the interval</h3><p>Useful pauses belong inside a sustainable workday.</p></article><article class="principle"><span class="jp">Andon</span><h3>Signal exceptions</h3><p>Remain quiet until one cue genuinely needs attention.</p></article><article class="principle"><span class="jp">Kiroku</span><h3>Keep the record</h3><p>Maintain a private, accurate local timeline.</p></article><article class="principle"><span class="jp">Kaizen</span><h3>One improvement</h3><p>Offer one optional adjustment, never a score.</p></article><article class="principle"><span class="jp">Hansei</span><h3>Close the day</h3><p>Reflect calmly and move on without judgment.</p></article></div></div>\n</section>',
+      '<section class="section pf19-principles">\n  <div class="wrap"><div class="sectionhead"><div class="eyebrow">A Pacefold language of its own</div><h2>Calm function, visible structure.</h2><p>The influence remains in the folds, restraint and material response—not in borrowed labels or decorative themes.</p></div>\n  <div class="principles"><article class="principle"><span class="jp">01</span><h3>Keep the core visible</h3><p>Clock, weather and rhythm controls stay on the home surface.</p></article><article class="principle"><span class="jp">02</span><h3>Open one thing</h3><p>Notes and music become focused sheets, never overlapping apps.</p></article><article class="principle"><span class="jp">03</span><h3>Move with purpose</h3><p>Only state changes animate, and reduced motion loses no function.</p></article><article class="principle"><span class="jp">04</span><h3>Own the data</h3><p>Workday state remains local, portable and understandable.</p></article></div></div>\n</section>',
+      'landing-own-language'
     ]
   ];
   for(const [from,to,label] of replacements)html=replaceExactlyOnce(html,from,to,label);
@@ -179,6 +197,13 @@ function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
   if(first<0||source.indexOf(from,first+1)>=0)throw new Error(`Pacefold runtime patch ${label} expected exactly one source match`);
   return source.slice(0,first)+to+source.slice(first+from.length);
+}
+function replaceSectionExactly(source,start,end,replacement,label){
+  const first=source.indexOf(start);
+  const second=first<0?-1:source.indexOf(start,first+start.length);
+  const finish=first<0?-1:source.indexOf(end,first+start.length);
+  if(first<0||second>=0||finish<0)throw new Error(`Pacefold runtime section ${label} expected one ordered source match`);
+  return source.slice(0,first)+replacement+source.slice(finish);
 }
 async function applyRuntimePatch(file){
   let runtime=await fs.readFile(file,'utf8');
@@ -357,6 +382,118 @@ async function applyMaCorePatch(file){
   await fs.writeFile(file,runtime);
 }
 
+async function applyV19CorePatch(file){
+  let runtime=await fs.readFile(file,'utf8');
+  if(runtime.includes('window.__PACEFOLD_V19_CORE__='))return;
+  runtime=replaceExactlyOnce(
+    runtime,
+    "foldMode=['capture','care','sound','onenote'].includes(mode)?mode:'capture';",
+    "foldMode=['capture','care','sound'].includes(mode)?mode:'capture';",
+    'v19-local-fold-modes'
+  );
+  runtime=replaceSectionExactly(
+    runtime,
+    '  function renderCaptureFold(){',
+    '  function renderCareFold(){',
+    `  function renderCaptureFold(){
+    $('foldKicker').textContent='Quick note';$('foldTitle').textContent='Capture without leaving the day';const recent=[...prefs.captures].filter(item=>item.day===dayKey(new Date())).slice(-6).reverse(),storageWarning=storageState==='Local'?'':\`<p class="storage-warning" role="alert">Pacefold can't save to this browser. Notes will be lost when you close this window.</p>\`;
+    setHTML($('foldBody'),\`\${storageWarning}<form class="capture-form" id="captureForm"><textarea class="capture-input" id="captureInput" maxlength="1200" placeholder="A note, task, follow-up, decision or useful wording…">\${escapeHtml(captureDraft)}</textarea><div class="kind-row">\${CAPTURE_KINDS.map(kind=>\`<button class="kind-chip \${captureDraftKind===kind?'active':''}" data-capture-kind="\${kind}" type="button">\${kindLabel(kind)}</button>\`).join('')}</div><div class="capture-actions"><span class="capture-status">Saved on this device</span><button class="capture-save" type="submit" \${captureDraft.trim()?'':'disabled'}>Keep this</button></div></form>\${recent.length?\`<div class="fold-section"><span class="fold-section-title">Today</span><div class="capture-list">\${recent.map(item=>\`<div class="capture-row"><time>\${new Date(item.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</time><p>\${escapeHtml(item.text)}</p><em>\${kindLabel(item.kind)} · local</em></div>\`).join('')}</div></div>\`:'<div class="capture-empty">Nothing captured today.</div>'}<p class="drawer-note"><strong>Local by design.</strong> Quick notes stay in this browser. The full Notes sheet adds categories, editing, Copy day and a versioned backup.</p>\`);
+  }
+`,
+    'v19-local-capture'
+  );
+  runtime=replaceExactlyOnce(
+    runtime,
+    "$('foldKicker').textContent='Ma · care';",
+    "$('foldKicker').textContent='Body reset';",
+    'v19-care-language'
+  );
+  runtime=replaceExactlyOnce(
+    runtime,
+    "$('foldKicker').textContent='Oto · optional';",
+    "$('foldKicker').textContent='Focus sound';",
+    'v19-sound-language'
+  );
+  runtime=replaceSectionExactly(
+    runtime,
+    '  function renderOneNoteFold(){',
+    '  function renderFold(){',
+    "  function renderOneNoteFold(){renderCaptureFold();}\n",
+    'v19-remove-onenote-fold'
+  );
+  runtime=replaceExactlyOnce(
+    runtime,
+    "function renderFold(){if(!$('foldDrawer')||$('foldDrawer').hidden)return;if(foldMode==='care')renderCareFold();else if(foldMode==='sound')renderSoundFold();else if(foldMode==='onenote')renderOneNoteFold();else renderCaptureFold();}",
+    "function renderFold(){if(!$('foldDrawer')||$('foldDrawer').hidden)return;if(foldMode==='care')renderCareFold();else if(foldMode==='sound')renderSoundFold();else renderCaptureFold();}",
+    'v19-fold-routing'
+  );
+  runtime=replaceSectionExactly(
+    runtime,
+    '  function saveCapture(){',
+    '\n\n  function buildNoiseBuffer',
+    `  function saveCapture(){
+    const textValue=captureDraft.trim();if(!textValue){toast('Write something first');return false;}const createdAt=Date.now(),item={id:\`\${createdAt.toString(36)}-\${Math.random().toString(36).slice(2,8)}\`,text:textValue.slice(0,1200),kind:CAPTURE_KINDS.includes(captureDraftKind)?captureDraftKind:'inbox',createdAt,day:dayKey(new Date(createdAt)),syncedAt:0,syncError:''};
+    prefs.captureKind=item.kind;prefs.captures=[...prefs.captures,item].slice(-300);const saved=save();if(saved){captureDraft='';try{localStorage.removeItem(CAPTURE_DRAFT_KEY);}catch(_){ }renderFold();toast('Captured locally');}else{toast('Held in this window · not saving');renderFold();}renderQuietDock();return saved;
+  }`,
+    'v19-local-capture-save'
+  );
+  runtime=replaceSectionExactly(
+    runtime,
+    '  async function syncCaptureQueue(interactive=false){',
+    '  async function disconnectOneNote()',
+    "  async function syncCaptureQueue(){return false;}\n",
+    'v19-disable-onenote-delivery'
+  );
+  runtime=replaceExactlyOnce(
+    runtime,
+    "$('syncBtn').addEventListener('click',e=>{e.stopPropagation();openFold('onenote');});",
+    "$('syncBtn').addEventListener('click',e=>{e.stopPropagation();openFold('capture');});",
+    'v19-disable-onenote-route'
+  );
+  runtime=replaceSectionExactly(
+    runtime,
+    '      <div class="section-title">Kiroku · capture & OneNote</div>',
+    '      <div class="section-title">Oto · sound layer</div>',
+    `      <div class="section-title">Local notes</div>
+      <div class="app-status"><span class="k">Today</span><span class="v">\${todayCaptures} capture\${todayCaptures===1?'':'s'}</span><span class="k">Storage</span><span class="v">This browser</span><span class="k">Handoff</span><span class="v">Copy day or backup</span></div>
+      <div class="actions"><button class="action wide" data-action="openCapture" type="button">Capture a note or follow-up</button></div>
+      <div class="signal-note">Quick notes stay on this device. Open Notes for categories, editing, Copy day and the versioned backup.</div>
+`,
+    'v19-local-notes-settings'
+  );
+  for(const [before,after,label] of [
+    ["[['auto','Auto'],['desk','Sekkei'],['paper','Washi'],['dark','Sumi'],['moss','Moss'],['dusk','Dusk'],['custom','Custom']]","[['auto','Auto'],['desk','Clear'],['paper','Soft'],['dark','Dark'],['moss','Moss'],['dusk','Dusk'],['custom','Custom']]",'v19-theme-language'],
+    ['<div class="section-title">Andon · silent cue</div>','<div class="section-title">Cue delivery</div>','v19-cue-language'],
+    ['<div class="section-title">Ma · today</div>','<div class="section-title">Today</div>','v19-today-language'],
+    ['<div class="section-title">Ma · workday rhythm</div>','<div class="section-title">Workday rhythm</div>','v19-rhythm-language'],
+    ['<div class="section-title">Oto · sound layer</div>','<div class="section-title">Focus sound</div>','v19-player-language'],
+    ['<div class="section-title">Kiroku · private timeline</div>','<div class="section-title">Day history</div>','v19-history-language'],
+    ['<div class="section-title">Hansei · day close</div>','<div class="section-title">Day close</div>','v19-close-language'],
+    ['<div class="section-title">Kaizen · one improvement</div>','<div class="section-title">One useful adjustment</div>','v19-improvement-language'],
+    ['<div class="section-title">Andon · signal check</div>','<div class="section-title">Cue test</div>','v19-signal-language'],
+    ["else if(a==='openOneNote'){openFold('onenote');return;}","else if(a==='openOneNote'){openFold('capture');return;}",'v19-settings-onenote-route']
+  ])runtime=replaceExactlyOnce(runtime,before,after,label);
+  runtime=replaceExactlyOnce(
+    runtime,
+    `      [/^Ma · today|^Kiroku · private timeline|^Hansei|^Kaizen/,'today'],
+      [/^Rhythm profile|^Islamic calculation|^Personal schedule|^Ma · workday rhythm|^Meal & break flow/,'rhythm'],
+      [/^Display$|^Display comfort|^Care ·|^Kiroku · capture|^Oto ·/,'tools'],
+      [/^Andon · silent cue|^App, updates|^Andon · signal check/,'app']`,
+    `      [/^Today|^Day history|^Day close|^One useful adjustment/,'today'],
+      [/^Rhythm profile|^Islamic calculation|^Personal schedule|^Workday rhythm|^Meal & break flow/,'rhythm'],
+      [/^Display$|^Display comfort|^Care ·|^Local notes|^Focus sound/,'tools'],
+      [/^Cue delivery|^App, updates|^Cue test/,'app']`,
+    'v19-settings-groups'
+  );
+  runtime=replaceExactlyOnce(
+    runtime,
+    "window.__PACEFOLD_MA_CORE__={getPrefs:",
+    "window.__PACEFOLD_V19_CORE__={localNotesOnly:true,weatherUsesSavedLocation:true};\n  window.__PACEFOLD_MA_CORE__={getPrefs:",
+    'v19-core-contract'
+  );
+  await fs.writeFile(file,runtime);
+}
+
 async function applyMaRevampPatch(file){
   let runtime=await fs.readFile(file,'utf8');
   const replacements=[
@@ -404,6 +541,25 @@ async function installMaAssets(targetApp){
   ]);
 }
 
+async function installV19Assets(targetApp){
+  await Promise.all([
+    fs.copyFile(v19CssSource,path.join(targetApp,'pacefold-v19.css')),
+    fs.copyFile(v19ScriptSource,path.join(targetApp,'pacefold-v19.js'))
+  ]);
+}
+
+async function applyV19HubPatch(file){
+  let runtime=await fs.readFile(file,'utf8');
+  if(runtime.includes('pacefoldV19Weather'))return;
+  runtime=replaceExactlyOnce(
+    runtime,
+    "fetch('https://api.open-meteo.com/v1/forecast?latitude=43.6532&longitude=-79.3832&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3',{signal:controller.signal})",
+    "fetch((()=>{const pacefoldV19Weather=readJson('pacefoldPrefsV15',{}),url=new URL('https://api.open-meteo.com/v1/forecast');url.searchParams.set('latitude',String(Number.isFinite(Number(pacefoldV19Weather.lat))?Number(pacefoldV19Weather.lat):43.6532));url.searchParams.set('longitude',String(Number.isFinite(Number(pacefoldV19Weather.lng))?Number(pacefoldV19Weather.lng):-79.3832));url.searchParams.set('current','temperature_2m,apparent_temperature,weather_code');url.searchParams.set('daily','weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max');url.searchParams.set('timezone','auto');url.searchParams.set('forecast_days','3');return url.href;})(),{signal:controller.signal})",
+    'v19-saved-location-hub-weather'
+  );
+  await fs.writeFile(file,runtime);
+}
+
 async function applyMaHtml(file){
   let html=await fs.readFile(file,'utf8');
   html=html
@@ -415,6 +571,27 @@ async function applyMaHtml(file){
   html=replaceExactlyOnce(html,'<link rel="stylesheet" href="./app-style-01.css">',`${boot}\n<link rel="stylesheet" href="./app-style-01.css">`,'ma-theme-boot-tag');
   html=replaceExactlyOnce(html,'</head>',`${style}\n</head>`,'ma-style-tag');
   html=replaceExactlyOnce(html,'<script src="./app.js" defer></script>',`${script}\n<script src="./app.js" defer></script>`,'ma-script-order');
+  await fs.writeFile(file,html);
+}
+
+async function applyV19Html(file){
+  let html=await fs.readFile(file,'utf8');
+  html=html
+    .replace(/\s*<link[^>]+data-pacefold-v19[^>]*>/gi,'')
+    .replace(/\s*<script[^>]+data-pacefold-v19[^>]*><\/script>/gi,'')
+    .replaceAll(' https://graph.microsoft.com','');
+  const legacyDescription='<meta name="description" content="A quiet workday rhythm clock with local capture, optional OneNote sync, ergonomic resets and an optional sound layer.">';
+  const v19Description='<meta name="description" content="A private workday dashboard for the clock, weather, timers, hydration, care cues, local notes and local audio.">';
+  if(html.includes(legacyDescription))html=replaceExactlyOnce(html,legacyDescription,v19Description,'v19-app-description');
+  else if(!html.includes(v19Description))throw new Error('Pacefold V19 app description is missing');
+  const legacyKicker='<span class="fold-kicker" id="foldKicker">Kiroku</span>';
+  const v19Kicker='<span class="fold-kicker" id="foldKicker">Quick note</span>';
+  if(html.includes(legacyKicker))html=replaceExactlyOnce(html,legacyKicker,v19Kicker,'v19-capture-kicker');
+  else if(!html.includes(v19Kicker))throw new Error('Pacefold V19 capture label is missing');
+  const style=`<link rel="stylesheet" href="./pacefold-v19.css?v=${RELEASE}" data-pacefold-v19="${RELEASE}">`;
+  const script=`<script defer src="./pacefold-v19.js?v=${RELEASE}" data-pacefold-v19="${RELEASE}"></script>`;
+  html=replaceExactlyOnce(html,'</head>',`${style}\n</head>`,'v19-style-tag');
+  html=replaceExactlyOnce(html,'</body>',`${script}\n</body>`,'v19-script-tag');
   await fs.writeFile(file,html);
 }
 
@@ -430,13 +607,13 @@ async function applyMaWorker(file,isRoot=false){
   if(!(await exists(file)))return;
   let worker=await fs.readFile(file,'utf8');
   if(isRoot){
-    const cachePattern=/const CACHE_NAME=`pacefold-v\$\{VERSION\}(?:-18\.0\.\d+)?`;/;
+    const cachePattern=/const CACHE_NAME=`pacefold-v\$\{VERSION\}(?:-\d+\.\d+\.\d+)?`;/;
     if(!cachePattern.test(worker))throw new Error('Pacefold worker cache marker is missing');
     worker=worker.replace(cachePattern,`const CACHE_NAME=\`pacefold-v\${VERSION}-${RELEASE}\`;`);
     if(!worker.includes("'./app/pacefold-ma.css'"))worker=replaceExactlyOnce(
         worker,
         "  './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/app.js'",
-        "  './pacefold-site-ma.css','./app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/pacefold-hub.css','./app/pacefold-integrated.css','./app/pacefold-revamp.css','./app/pacefold-ma.css','./app/pacefold-theme-boot.js','./app/pacefold-ma.js','./app/pacefold-hub-guardian.js','./app/pacefold-resilience.js','./app/pacefold-hub.js','./app/pacefold-integrated.js','./app/pacefold-revamp.js','./app/pacefold-fold-mark.svg','./app/icons/fold-mark.png','./app/icons/notify-water.png','./app/icons/notify-eyes.png','./app/icons/notify-move.png','./app/icons/notify-prayer.png','./app/icons/notify-meal.png','./app/icons/notify-prepare.png','./app/icons/notify-away.png','./app/fonts/pacefold-ma.woff2','./app/fonts/OFL.txt','./app/app.js'",
+        "  './pacefold-site-ma.css','./pacefold-site-v19.css','./app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/pacefold-hub.css','./app/pacefold-integrated.css','./app/pacefold-revamp.css','./app/pacefold-ma.css','./app/pacefold-v19.css','./app/pacefold-theme-boot.js','./app/pacefold-ma.js','./app/pacefold-hub-guardian.js','./app/pacefold-resilience.js','./app/pacefold-hub.js','./app/pacefold-integrated.js','./app/pacefold-revamp.js','./app/pacefold-v19.js','./app/pacefold-fold-mark.svg','./app/icons/fold-mark.png','./app/icons/notify-water.png','./app/icons/notify-eyes.png','./app/icons/notify-move.png','./app/icons/notify-prayer.png','./app/icons/notify-meal.png','./app/icons/notify-prepare.png','./app/icons/notify-away.png','./app/fonts/pacefold-ma.woff2','./app/fonts/OFL.txt','./app/app.js'",
         'ma-worker-shell'
       );
     worker=worker.replaceAll('caches.match(request)',"caches.match(request,{ignoreSearch:true})");
@@ -454,7 +631,9 @@ await fs.writeFile(temporary,source);
 try{
   await import(`${pathToFileURL(temporary).href}?v=${Date.now()}`);
   const targetApp=path.join(targetRoot,'app');
+  await applyV19HubPatch(path.join(targetApp,'pacefold-hub.js'));
   await fs.copyFile(siteMaCssSource,path.join(targetRoot,'pacefold-site-ma.css'));
+  await fs.copyFile(siteV19CssSource,path.join(targetRoot,'pacefold-site-v19.css'));
   await applyLandingPage(path.join(targetRoot,'index.html'));
   await applyLayoutPatch(path.join(targetApp,'pacefold-revamp.css'));
   await applyOrigamiPatch(path.join(targetApp,'pacefold-revamp.css'));
@@ -463,9 +642,12 @@ try{
   await applyRuntimePatch(path.join(targetApp,'pacefold-revamp.js'));
   await applyMaRevampPatch(path.join(targetApp,'pacefold-revamp.js'));
   await applyMaCorePatch(path.join(targetApp,'app.js'));
+  await applyV19CorePatch(path.join(targetApp,'app.js'));
   await installMaAssets(targetApp);
+  await installV19Assets(targetApp);
   await applyAssetRevision(path.join(targetApp,'index.html'));
   await applyMaHtml(path.join(targetApp,'index.html'));
+  await applyV19Html(path.join(targetApp,'index.html'));
   await applyMaManifest(path.join(targetRoot,'manifest.webmanifest'));
   await applyMaManifest(path.join(targetRoot,'manifest.json'));
   await applyMaManifest(path.join(targetApp,'manifest.webmanifest'));
@@ -476,7 +658,7 @@ try{
   await stampWorker(path.join(targetApp,'service-worker.js'));
   await fs.writeFile(path.join(targetRoot,'pacefold-build.txt'),`${RELEASE}\n`);
   await fs.writeFile(path.join(targetApp,'pacefold-build.txt'),`${RELEASE}\n`);
-  console.log(`Installed Pacefold ${RELEASE}: made the interval visible through the Day Ribbon and protected it with one cue scheduler.`);
+  console.log(`Installed Pacefold ${RELEASE}: rebuilt the clock, weather and rhythm controls as one workday instrument.`);
 }finally{
   await fs.rm(temporary,{force:true});
 }
