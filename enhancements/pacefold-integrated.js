@@ -187,6 +187,10 @@ function observeFoldSources(progress,sequence){
   foldObserver.observe(sequence,{attributes:true,childList:true,subtree:true,characterData:true});
 }
 function updateFoldStrip(){
+  if(window.__PACEFOLD_MA_VIEW__){
+    document.querySelector('.fold-strip[data-pf-fold-strip]')?.remove();
+    return;
+  }
   const progress=document.querySelector('.progress');
   const sequence=document.querySelector('.sequence');
   if(!progress||!sequence)return;
@@ -309,6 +313,12 @@ function scheduleSnoozeWake(){
 }
 async function syncBadge(state=readCue()){
   cueState=state;
+  const prefs=safeParse(localStorage.getItem('pacefoldPrefsV15'),{});
+  if(prefs.quietMode){
+    await clearBadge();
+    document.title='Clock';
+    return;
+  }
   if(cueState.waiting&&!cueState.acknowledged&&!cueState.snoozed)await setBadge();
   else await clearBadge();
   const attention=cueState.waiting&&!cueState.acknowledged&&!cueState.snoozed;

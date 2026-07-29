@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 
-const RELEASE='17.1.0';
+const RELEASE='18.0.0';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const layoutMarker='pacefold-17-layout-floor';
@@ -16,6 +16,11 @@ const origamiSource=path.join(sourceRoot,'pacefold-origami.css');
 const origamiPolishSource=path.join(sourceRoot,'pacefold-origami-polish.css');
 const stabilitySource=path.join(sourceRoot,'pacefold-desktop-stability.css');
 const markSource=path.join(sourceRoot,'pacefold-fold-mark.svg');
+const maCssSource=path.join(sourceRoot,'pacefold-ma.css');
+const maScriptSource=path.join(sourceRoot,'pacefold-ma.js');
+const themeBootSource=path.join(sourceRoot,'pacefold-theme-boot.js');
+const maFontSource=path.join(sourceRoot,'fonts','pacefold-ma.woff2');
+const maFontLicenseSource=path.join(sourceRoot,'fonts','OFL.txt');
 const layoutPatch=`
 
 /* BEGIN ${layoutMarker} */
@@ -65,7 +70,7 @@ async function applyStabilityPatch(file){
 async function applyAssetRevision(file){
   let html=await fs.readFile(file,'utf8');
   html=html.replace(
-    /((?:\.\/)?pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp)\.(?:css|js))\?v=[^"'&<\s]+/g,
+    /((?:\.\/)?pacefold-(?:hub(?:-guardian)?|resilience|integrated|revamp|ma|theme-boot)\.(?:css|js))\?v=[^"'&<\s]+/g,
     (_,asset)=>`${asset}?v=${RELEASE}`
   );
   html=html.replace(/\s*<meta\s+name=["']pacefold-build["'][^>]*>/gi,'');
@@ -123,6 +128,232 @@ async function applyRuntimePatch(file){
   await fs.writeFile(file,runtime);
 }
 
+async function applyMaCorePatch(file){
+  let runtime=await fs.readFile(file,'utf8');
+  if(runtime.includes('window.__PACEFOLD_MA_CORE__='))return;
+  const replacements=[
+    [
+      "    lat:43.62,lng:-79.51,locationLabel:'Toronto',lastSeenAt:0,\n    offsets:{fajr:0,dhuhr:0,asr:0,maghrib:0,isha:0},acknowledged:{},snoozed:{}",
+      "    schemaVersion:18,minCueGap:4,focusGraceMinutes:25,workWeek:null,todayOverride:null,quietMode:false,quietRestore:null,skipToday:{},waferLaunches:0,waferPromptDismissed:false,foldReviewDismissed:false,foldReviewLastDate:'',storagePersistAsked:false,maLastCueAt:0,waitingCue:null,awaySnoozedUntil:0,\n    lat:43.62,lng:-79.51,locationLabel:'Toronto',lastSeenAt:0,\n    offsets:{fajr:0,dhuhr:0,asr:0,maghrib:0,isha:0},acknowledged:{},snoozed:{}",
+      'ma-defaults'
+    ],
+    [
+      "    p.clarity=p.clarity==='clear'?'clear':'discreet';",
+      "    p.clarity=['clear','discreet','wafer'].includes(p.clarity)?p.clarity:'discreet';",
+      'ma-wafer-normalize'
+    ],
+    [
+      "    p.workHours=/^\\d{2}:\\d{2}-\\d{2}:\\d{2}$/.test(String(p.workHours))?p.workHours:DEFAULTS.workHours;",
+      "    p.workHours=/^\\d{2}:\\d{2}-\\d{2}:\\d{2}$/.test(String(p.workHours))?p.workHours:DEFAULTS.workHours;\n    p.schemaVersion=Math.max(18,clamp(p.schemaVersion,0,999,18));p.minCueGap=clamp(p.minCueGap,1,30,4);p.focusGraceMinutes=clamp(p.focusGraceMinutes,5,120,25);p.workWeek=p.workWeek&&typeof p.workWeek==='object'&&!Array.isArray(p.workWeek)?p.workWeek:null;p.todayOverride=p.todayOverride&&typeof p.todayOverride==='object'?p.todayOverride:null;p.quietMode=Boolean(p.quietMode);p.quietRestore=p.quietRestore&&typeof p.quietRestore==='object'?p.quietRestore:null;p.skipToday=p.skipToday&&typeof p.skipToday==='object'?p.skipToday:{};p.waferLaunches=clamp(p.waferLaunches,0,3,0);p.waferPromptDismissed=Boolean(p.waferPromptDismissed);p.foldReviewDismissed=Boolean(p.foldReviewDismissed);p.foldReviewLastDate=typeof p.foldReviewLastDate==='string'?p.foldReviewLastDate:'';p.storagePersistAsked=Boolean(p.storagePersistAsked);p.maLastCueAt=clamp(p.maLastCueAt,0,Number.MAX_SAFE_INTEGER,0);p.waitingCue=p.waitingCue&&typeof p.waitingCue==='object'?p.waitingCue:null;p.awaySnoozedUntil=clamp(p.awaySnoozedUntil,0,Number.MAX_SAFE_INTEGER,0);",
+      'ma-pref-normalize'
+    ],
+    [
+      "  function applyComfort(now,h){document.body.dataset.comfort=resolvedComfort(now,h);document.body.dataset.comfortStrength=String(prefs.comfortStrength);}",
+      "  function applyComfort(now,h){document.body.dataset.comfort='continuous';document.body.dataset.comfortStrength='0';}",
+      'ma-continuous-comfort'
+    ],
+    [
+      "  function workRange(){const [a,b]=prefs.workHours.split('-');return{start:parseClock(a),end:parseClock(b)};}",
+      "  function maDayConfig(now=new Date()){const fallback=prefs.workHours.split('-'),row=prefs.workWeek?.[now.getDay()]||prefs.workWeek?.[String(now.getDay())]||{start:fallback[0],end:fallback[1],type:(!prefs.workdaysOnly||now.getDay()>=1&&now.getDay()<=5)?'desk':'off'},override=prefs.todayOverride&&prefs.todayOverride.date===dayKey(now)?prefs.todayOverride:null,type=['desk','field','half','off'].includes(override?.type)?override.type:['desk','field','half','off'].includes(row.type)?row.type:'desk';return{start:/^\\d{2}:\\d{2}$/.test(String(row.start))?row.start:fallback[0],end:/^\\d{2}:\\d{2}$/.test(String(row.end))?row.end:fallback[1],type};}\n  function currentDayType(now=new Date()){return maDayConfig(now).type;}\n  function cueSkipped(source,now=new Date()){return prefs.skipToday?.[source]===dayKey(now);}\n  function workRange(now=new Date()){const day=maDayConfig(now),start=parseClock(day.start);let end=parseClock(day.end);if(day.type==='half'&&end>start+3)end=start+(end-start)/2;return{start,end};}",
+      'ma-work-range'
+    ],
+    [
+      "  function isConfiguredWorkday(now){const day=now.getDay();return !prefs.workdaysOnly||(day>=1&&day<=5);}",
+      "  function isConfiguredWorkday(now){return currentDayType(now)!=='off';}",
+      'ma-workday-type'
+    ],
+    [
+      "due=(prefs.workReminders&&within&&!paused&&!complete&&since>=plan.cadence*60000&&Date.now()>=prefs.waterGraceUntil)||testRoutine==='water'",
+      "due=(prefs.workReminders&&within&&!paused&&!complete&&!cueSkipped('water',now)&&since>=plan.cadence*60000&&Date.now()>=prefs.waterGraceUntil)||testRoutine==='water'",
+      'ma-water-skip'
+    ],
+    [
+      "due=prefs.gazeEnabled&&prefs.workReminders&&within&&!paused&&Date.now()>=prefs.gazeSnoozedUntil&&elapsed>=prefs.gazeCadence*60000",
+      "due=prefs.gazeEnabled&&prefs.workReminders&&within&&currentDayType(now)!=='field'&&!cueSkipped('eyes',now)&&!paused&&Date.now()>=prefs.gazeSnoozedUntil&&elapsed>=prefs.gazeCadence*60000",
+      'ma-eyes-day-type'
+    ],
+    [
+      "const due=prefs.bodyEnabled&&prefs.workReminders&&within&&!paused&&!active&&Date.now()>=prefs.bodySnoozedUntil&&elapsed>=prefs.bodyCadence*60000;",
+      "const due=prefs.bodyEnabled&&prefs.workReminders&&within&&currentDayType(now)!=='field'&&!cueSkipped('body',now)&&!paused&&!active&&Date.now()>=prefs.bodySnoozedUntil&&elapsed>=prefs.bodyCadence*60000;",
+      'ma-body-day-type'
+    ],
+    [
+      "  function attentionFor(prayer,water,noodle,away,lunch,gaze,body){\n    if(testPrayer!=='none')return{signal:testPrayer,source:'prayer'};",
+      "  function attentionFor(prayer,water,noodle,away,lunch,gaze,body){\n    const field=currentDayType(new Date())==='field';\n    if(testPrayer!=='none')return{signal:testPrayer,source:'prayer'};",
+      'ma-attention-field'
+    ],
+    ["    if(noodle.ready)return{signal:'due',source:'noodle'};","    if(noodle.ready&&!field)return{signal:'due',source:'noodle'};",'ma-attention-noodle'],
+    ["    if(body&&body.due)return{signal:'due',source:'body'};","    if(body&&body.due&&!field)return{signal:'due',source:'body'};",'ma-attention-body'],
+    ["    if(gaze&&gaze.due)return{signal:'due',source:'eyes'};","    if(gaze&&gaze.due&&!field)return{signal:'due',source:'eyes'};",'ma-attention-eyes'],
+    ["    if(away.active)return{signal:away.long?'due':'active',source:'away'};","    if(away.active&&!field)return{signal:away.long?'due':'active',source:'away'};",'ma-attention-away'],
+    ["    if(body&&body.active)return{signal:'active',source:'body'};","    if(body&&body.active&&!field)return{signal:'active',source:'body'};",'ma-attention-body-active'],
+    [
+      "  function updateAppBadge(attention,states){\n    const mode=prefs.taskbarBadgeMode||'due'",
+      "  function updateAppBadge(attention,states){\n    if(window.__PACEFOLD_MA_SCHEDULER__?.updateBadge?.(attention,states))return;\n    const mode=prefs.taskbarBadgeMode||'due'",
+      'ma-badge-owner'
+    ],
+    [
+      "  async function showSystemNotification(key,text,source='prayer',test=false,specOnly=false){",
+      "  async function deliverSystemNotification(key,text,source='prayer',test=false,specOnly=false){",
+      'ma-delivery-helper'
+    ],
+    [
+      "  function notifyOnce(key,text,source='prayer'){void showSystemNotification(key,text,source,false);}",
+      "  window.__PACEFOLD_MA_DELIVER__=deliverSystemNotification;\n  async function showSystemNotification(key,text,source='prayer',test=false,specOnly=false){if(!test&&window.__PACEFOLD_MA_SCHEDULER__?.request)return window.__PACEFOLD_MA_SCHEDULER__.request(key,text,source,test,specOnly);return deliverSystemNotification(key,text,source,test,specOnly);}\n  function notifyOnce(key,text,source='prayer'){void showSystemNotification(key,text,source,false);}",
+      'ma-scheduler-owner'
+    ],
+    [
+      "  function renderSequence(h,state){\n    const rows=scheduleForDate(new Date());",
+      "  function renderSequence(h,state){\n    const rows=scheduleForDate(new Date());\n    try{if(window.__PACEFOLD_MA_VIEW__?.renderRibbon?.({h,state,rows,range:workRange(),dayType:currentDayType(new Date())}))return;}catch(error){reportError(error,'ma-ribbon');}",
+      'ma-ribbon-hook'
+    ],
+    [
+      "    waterBtn.setAttribute('aria-label',water.complete?`Hydration pace met for the ${water.target}-ounce workday target`:`Take two to three sips, then click to log sip break ${Math.min(water.sips+1,water.total)} of ${water.total}`);",
+      "    waterBtn.setAttribute('aria-label',water.complete?`Hydration pace met for the ${water.target}-ounce workday target`:`Take two to three sips, then click to log sip break ${Math.min(water.sips+1,water.total)} of ${water.total}`);$('waterMeter').style.setProperty('--pf-meter',`${(water.progress*100).toFixed(2)}%`);",
+      'ma-water-meter'
+    ],
+    [
+      "    $('noodleRing').style.setProperty('--timer-progress',noodle.progress.toFixed(4));",
+      "    $('noodleRing').style.setProperty('--timer-progress',noodle.progress.toFixed(4));$('noodleRing').style.setProperty('--pf-meter',`${(noodle.progress*100).toFixed(2)}%`);",
+      'ma-noodle-meter'
+    ],
+    [
+      "    awayBtn.setAttribute('aria-label',away.active?`Away break active for ${mmss(away.elapsed)}; click when back`:`Start an away break; ${away.count} logged today`);",
+      "    awayBtn.setAttribute('aria-label',away.active?`Away break active for ${mmss(away.elapsed)}; click when back`:`Start an away break; ${away.count} logged today`);awayBtn.querySelector('.away-glyph')?.style.setProperty('--pf-meter',away.active?'100%':away.count?'66%':'0%');",
+      'ma-away-meter'
+    ],
+    [
+      "    $('lunchMeter').style.setProperty('--lunch-progress',lunch.progress.toFixed(4));",
+      "    $('lunchMeter').style.setProperty('--lunch-progress',lunch.progress.toFixed(4));$('lunchMeter').style.setProperty('--pf-meter',`${(lunch.progress*100).toFixed(2)}%`);",
+      'ma-lunch-meter'
+    ],
+    [
+      "    eyesText.textContent=gaze.paused?'Eyes paused':gaze.due?'Look far · 20s':prefs.gazeEnabled?`Eyes ${Math.ceil(gaze.remaining/60000)}m`:'Eyes off';",
+      "    eyesBtn.querySelector('.eye-glyph')?.style.setProperty('--pf-meter',`${(gaze.due?100:Math.max(0,Math.min(100,100-gaze.remaining/Math.max(1,prefs.gazeCadence*60000)*100))).toFixed(2)}%`);eyesText.textContent=gaze.paused?'Eyes paused':gaze.due?'Look far · 20s':prefs.gazeEnabled?`Eyes ${Math.ceil(gaze.remaining/60000)}m`:'Eyes off';",
+      'ma-eyes-meter'
+    ],
+    [
+      "    $('careText').textContent=body.active?`Move ${mmss(Math.max(0,60000-body.activeElapsed))}`:body.due?'Move now':prefs.bodyEnabled?`Move ${Math.ceil(body.remaining/60000)}m`:'Care off';",
+      "    $('careBtn').querySelector('.care-glyph')?.style.setProperty('--pf-meter',`${(body.due||body.active?100:Math.max(0,Math.min(100,100-body.remaining/Math.max(1,prefs.bodyCadence*60000)*100))).toFixed(2)}%`);$('careText').textContent=body.active?`Move ${mmss(Math.max(0,60000-body.activeElapsed))}`:body.due?'Move now':prefs.bodyEnabled?`Move ${Math.ceil(body.remaining/60000)}m`:'Care off';",
+      'ma-body-meter'
+    ],
+    [
+      "    $('minute').textContent=String(m).padStart(2,'0');$('seconds').textContent=String(s).padStart(2,'0');$('date').textContent=now.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});",
+      "    const minuteText=String(m).padStart(2,'0');if(!window.__PACEFOLD_MA_VIEW__?.setMinute?.($('minute'),minuteText))$('minute').textContent=minuteText;$('seconds').textContent=String(s).padStart(2,'0');window.__PACEFOLD_MA_VIEW__?.setSecondProgress?.(s);$('date').textContent=now.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});",
+      'ma-time-type'
+    ],
+    [
+      "    document.title=prefs.timeFormat==='24'?`${String(H).padStart(2,'0')}:${String(m).padStart(2,'0')}`:`${H%12||12}:${String(m).padStart(2,'0')} ${H>=12?'PM':'AM'}`;",
+      "    document.title=prefs.quietMode?'Clock':prefs.timeFormat==='24'?`${String(H).padStart(2,'0')}:${String(m).padStart(2,'0')}`:`${H%12||12}:${String(m).padStart(2,'0')} ${H>=12?'PM':'AM'}`;",
+      'ma-quiet-title'
+    ],
+    [
+      "document.body.dataset.signal=attention.signal;document.body.dataset.source=attention.source;document.body.dataset.prayerSignal=prayer.signal;",
+      "document.body.dataset.signal=attention.signal;document.body.dataset.source=attention.source;document.body.dataset.prayerSignal=prayer.signal;document.body.dataset.dayType=currentDayType(now);document.body.dataset.quiet=String(Boolean(prefs.quietMode));",
+      'ma-body-state'
+    ],
+    [
+      "    $('progressFill').style.width=`${(Math.min(1,Math.max(0,(h-b.prev[1])/((b.next[1]-b.prev[1])||1)))*100).toFixed(2)}%`;",
+      "    window.__PACEFOLD_MA_VIEW__?.applyStatus?.();\n    $('progressFill').style.width=`${(Math.min(1,Math.max(0,(h-b.prev[1])/((b.next[1]-b.prev[1])||1)))*100).toFixed(2)}%`;",
+      'ma-status-override'
+    ],
+    [
+      "  if(debugEnabled){\n    window.pacefoldPreview",
+      "  function reconcileMaDrift(now=Date.now()){const day=dayKey(new Date(now));prefs.waterLastAt=now;prefs.gazeLastAt=now;prefs.bodyLastAt=now;prefs.waitingCue=null;if(prefs.noodleStart){const total=(prefs.noodleDurationAtStart||prefs.noodleMinutes||30)*60000;if(prefs.noodleStart+total<=now){prefs.noodleStart=0;prefs.noodleDurationAtStart=0;prefs.noodleDone=day;}}if(prefs.lunchStart){const mode=prefs.lunchModeAtStart||prefs.lunchMode||'desk',minutes=prefs.lunchDurationAtStart||(mode==='away'?prefs.awayLunchMinutes:prefs.deskLunchMinutes)||20,end=prefs.lunchStart+minutes*60000;if(end<=now){prefs.lunchSessions=[...(prefs.lunchSessions||[]),{mode,start:prefs.lunchStart,end,minutes}].slice(-10);prefs.lunchStart=0;prefs.lunchDurationAtStart=0;prefs.lunchLoggedMinutes=minutes;prefs.lunchDone=day;}}save();render();return JSON.parse(JSON.stringify(prefs));}\n  window.__PACEFOLD_MA_CORE__={getPrefs:()=>JSON.parse(JSON.stringify(prefs)),updatePrefs:patch=>{prefs=normalizePrefs({...prefs,...(patch||{})});LAT=Number.isFinite(prefs.lat)?prefs.lat:LAT;LNG=Number.isFinite(prefs.lng)?prefs.lng:LNG;times=computeTimes(new Date());save();render();return JSON.parse(JSON.stringify(prefs));},reconcileDrift:reconcileMaDrift,render,workRange,currentDayType};\n  if(debugEnabled){\n    window.pacefoldPreview",
+      'ma-core-api'
+    ]
+  ];
+  for(const [from,to,label] of replacements)runtime=replaceExactlyOnce(runtime,from,to,label);
+  await fs.writeFile(file,runtime);
+}
+
+async function applyMaRevampPatch(file){
+  let runtime=await fs.readFile(file,'utf8');
+  const replacements=[
+    [
+      "  const lines=[`# Pacefold — ${longDate(date)}`,''];",
+      "  const rhythm=window.__PACEFOLD_MA_EXPORT__?.rhythmMarkdown?.(date)||'';const lines=[`# Pacefold — ${longDate(date)}`,'',...(rhythm?rhythm.trimEnd().split('\\n'):[])];",
+      'ma-copy-day'
+    ],
+    [
+      "function exportBackup(){downloadFile(`pacefold-backup-${localDate()}.json`,'application/json',JSON.stringify({version:REVISION,exportedAt:new Date().toISOString(),entries:entries(),categories:customCategories(),playlists,streamLinks},null,2));showStatus('Local backup downloaded.','success');}",
+      "function exportBackup(){if(window.__PACEFOLD_MA_BACKUP__)return window.__PACEFOLD_MA_BACKUP__.exportBackup({entries:entries(),categories:customCategories(),playlists,streamLinks},showStatus);downloadFile(`pacefold-backup-${localDate()}.json`,'application/json',JSON.stringify({version:REVISION,exportedAt:new Date().toISOString(),entries:entries(),categories:customCategories(),playlists,streamLinks},null,2));showStatus('Local backup downloaded.','success');}",
+      'ma-backup-export'
+    ],
+    [
+      "async function importBackup(file){\n  const text=await file.text();const data=JSON.parse(text);if(!Array.isArray(data.entries))throw new Error('Backup does not contain notes.');",
+      "async function importBackup(file){\n  if(window.__PACEFOLD_MA_BACKUP__)return window.__PACEFOLD_MA_BACKUP__.restoreBackup(file,{snapshot:()=>({entries:entries(),categories:customCategories(),playlists,streamLinks}),apply:data=>{writeEntries(data.entries);writeJSON(CATEGORY_KEY,data.categories);playlists=data.playlists;savePlaylists();streamLinks=data.streamLinks;saveStreamLinks();renderNotebook();renderPlayerDrawer();}},showStatus);\n  const text=await file.text();const data=JSON.parse(text);if(!Array.isArray(data.entries))throw new Error('Backup does not contain notes.');",
+      'ma-backup-restore'
+    ],
+    [
+      "async function addAudioFiles(files){\n  const audioFiles=[...files].filter(file=>file.type.startsWith('audio/'));",
+      "async function addAudioFiles(files){\n  if(window.__PACEFOLD_MA_STORAGE__&&!await window.__PACEFOLD_MA_STORAGE__.allowAudioImport(files))return;\n  const audioFiles=[...files].filter(file=>file.type.startsWith('audio/'));",
+      'ma-storage-guard'
+    ],
+    ["  workspace.dataset.release='17.1.0';","  workspace.dataset.release='18.0.0';",'ma-workspace-release'],
+    ["  player.dataset.release='17.1.0';","  player.dataset.release='18.0.0';",'ma-player-release'],
+    [
+      "window.__PACEFOLD_REVAMP__={revision:REVISION,surfaceRelease:'17.1.0'",
+      "window.__PACEFOLD_REVAMP__={revision:REVISION,surfaceRelease:'18.0.0'",
+      'ma-revamp-release'
+    ]
+  ];
+  for(const [from,to,label] of replacements)runtime=replaceExactlyOnce(runtime,from,to,label);
+  await fs.writeFile(file,runtime);
+}
+
+async function installMaAssets(targetApp){
+  const fontDir=path.join(targetApp,'fonts');
+  await fs.mkdir(fontDir,{recursive:true});
+  await Promise.all([
+    fs.copyFile(maCssSource,path.join(targetApp,'pacefold-ma.css')),
+    fs.copyFile(maScriptSource,path.join(targetApp,'pacefold-ma.js')),
+    fs.copyFile(themeBootSource,path.join(targetApp,'pacefold-theme-boot.js')),
+    fs.copyFile(maFontSource,path.join(fontDir,'pacefold-ma.woff2')),
+    fs.copyFile(maFontLicenseSource,path.join(fontDir,'OFL.txt'))
+  ]);
+}
+
+async function applyMaHtml(file){
+  let html=await fs.readFile(file,'utf8');
+  html=html
+    .replace(/\s*<link[^>]+data-pacefold-ma[^>]*>/gi,'')
+    .replace(/\s*<script[^>]+data-pacefold-(?:ma|theme-boot)[^>]*><\/script>/gi,'');
+  const boot=`<script src="./pacefold-theme-boot.js?v=${RELEASE}" data-pacefold-theme-boot="${RELEASE}"></script>`;
+  const style=`<link rel="stylesheet" href="./pacefold-ma.css?v=${RELEASE}" data-pacefold-ma="${RELEASE}">`;
+  const script=`<script defer src="./pacefold-ma.js?v=${RELEASE}" data-pacefold-ma="${RELEASE}"></script>`;
+  html=replaceExactlyOnce(html,'<link rel="stylesheet" href="./app-style-01.css">',`${boot}\n<link rel="stylesheet" href="./app-style-01.css">`,'ma-theme-boot-tag');
+  html=replaceExactlyOnce(html,'</head>',`${style}\n</head>`,'ma-style-tag');
+  html=replaceExactlyOnce(html,'<script src="./app.js" defer></script>',`${script}\n<script src="./app.js" defer></script>`,'ma-script-order');
+  await fs.writeFile(file,html);
+}
+
+async function applyMaManifest(file){
+  if(!(await exists(file)))return;
+  const manifest=JSON.parse(await fs.readFile(file,'utf8'));
+  manifest.display='standalone';
+  manifest.display_override=['window-controls-overlay','standalone'];
+  await fs.writeFile(file,`${JSON.stringify(manifest,null,2)}\n`);
+}
+
+async function applyMaWorker(file,isRoot=false){
+  if(!(await exists(file)))return;
+  let worker=await fs.readFile(file,'utf8');
+  if(isRoot){
+    const cachePattern=/const CACHE_NAME=`pacefold-v\$\{VERSION\}(?:-18\.0\.0)?`;/;
+    if(!cachePattern.test(worker))throw new Error('Pacefold worker cache marker is missing');
+    worker=worker.replace(cachePattern,"const CACHE_NAME=`pacefold-v${VERSION}-18.0.0`;");
+    if(!worker.includes("'./app/pacefold-ma.css'"))worker=replaceExactlyOnce(
+        worker,
+        "  './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/app.js'",
+        "  './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/pacefold-hub.css','./app/pacefold-integrated.css','./app/pacefold-revamp.css','./app/pacefold-ma.css','./app/pacefold-theme-boot.js','./app/pacefold-ma.js','./app/pacefold-hub-guardian.js','./app/pacefold-resilience.js','./app/pacefold-hub.js','./app/pacefold-integrated.js','./app/pacefold-revamp.js','./app/pacefold-fold-mark.svg','./app/icons/fold-mark.png','./app/icons/notify-water.png','./app/icons/notify-eyes.png','./app/icons/notify-move.png','./app/icons/notify-prayer.png','./app/icons/notify-meal.png','./app/icons/notify-prepare.png','./app/icons/notify-away.png','./app/fonts/pacefold-ma.woff2','./app/fonts/OFL.txt','./app/app.js'",
+        'ma-worker-shell'
+      );
+    worker=worker.replaceAll('caches.match(request)',"caches.match(request,{ignoreSearch:true})");
+  }
+  await fs.writeFile(file,worker);
+}
+
 const prefix='inject-runtime.mjs.gz.b64.part-';
 const parts=(await fs.readdir(sourceRoot)).filter(name=>name.startsWith(prefix)).sort();
 if(!parts.length)throw new Error('Pacefold inject runtime segments are missing');
@@ -138,12 +369,22 @@ try{
   await applyStabilityPatch(path.join(targetApp,'pacefold-revamp.css'));
   await fs.copyFile(markSource,path.join(targetApp,'pacefold-fold-mark.svg'));
   await applyRuntimePatch(path.join(targetApp,'pacefold-revamp.js'));
+  await applyMaRevampPatch(path.join(targetApp,'pacefold-revamp.js'));
+  await applyMaCorePatch(path.join(targetApp,'app.js'));
+  await installMaAssets(targetApp);
   await applyAssetRevision(path.join(targetApp,'index.html'));
+  await applyMaHtml(path.join(targetApp,'index.html'));
+  await applyMaManifest(path.join(targetRoot,'manifest.webmanifest'));
+  await applyMaManifest(path.join(targetRoot,'manifest.json'));
+  await applyMaManifest(path.join(targetApp,'manifest.webmanifest'));
+  await applyMaManifest(path.join(targetApp,'manifest.json'));
+  await applyMaWorker(path.join(targetRoot,'service-worker.js'),true);
+  await applyMaWorker(path.join(targetApp,'service-worker.js'),false);
   await stampWorker(path.join(targetRoot,'service-worker.js'));
   await stampWorker(path.join(targetApp,'service-worker.js'));
   await fs.writeFile(path.join(targetRoot,'pacefold-build.txt'),`${RELEASE}\n`);
   await fs.writeFile(path.join(targetApp,'pacefold-build.txt'),`${RELEASE}\n`);
-  console.log(`Installed Pacefold ${RELEASE}: restored rhythm-first clock with a transient notebook and exclusive local audio.`);
+  console.log(`Installed Pacefold ${RELEASE}: made the interval visible through the Day Ribbon and protected it with one cue scheduler.`);
 }finally{
   await fs.rm(temporary,{force:true});
 }

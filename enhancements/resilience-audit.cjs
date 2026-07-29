@@ -35,7 +35,7 @@ async function main(){
     if(!guardian.includes(`const VERSION='${VERSION}'`)||!guardian.includes('restoreAfterStableSetupExit')||!guardian.includes('setupTextPanelVisible')||!guardian.includes('maskLegacyFalsePositives'))throw new Error(`${VERSION} guardian stabilization is missing`);
 
     await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
-    browser=await chromium.launch({headless:true});
+    browser=await chromium.launch({headless:true,executablePath:process.env.PACEFOLD_CHROMIUM_PATH||undefined});
 
     const recoveryContext=await browser.newContext();
     const recoveryPage=await recoveryContext.newPage();

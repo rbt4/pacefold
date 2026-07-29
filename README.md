@@ -2,13 +2,29 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core owns schedules, cues, preferences and offline behaviour. Pacefold 17.1 puts the original workday rhythm back in charge:
+Pacefold is a local-first, installable workday rhythm system. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 18.0 makes the interval around each moment visible while keeping the 17.1 rhythm-first hierarchy:
 
 - **Rhythm** — the clock, scheduled moments, Noodles/custom prep, water, away, meals, eye care and movement are the home surface;
 - **Notebook** — the paper sheet folds out only when requested, preserves drafts, and folds closed after saving or leaving it;
 - **Music** — the black local library opens above the player and closes back to the rhythm clock.
 
 There is no separate notebook popup and OneNote is no longer part of the primary notes workflow.
+
+## Pacefold 18.0 — Ma
+
+The signature Day Ribbon is one continuous view of the configured workday. Spent time is inked paper, future time is raw paper, the current instant is a hairline, and recorded moments become creases or bands. Quiet keeps the shape of the day while removing its labels.
+
+- One cue scheduler coalesces prayer, meal, preparation, water, eye and movement delivery behind a four-minute default gap. The verified core remains the only owner of cue completion.
+- Returning after sleep or lock produces one plain summary, drops stale low-priority backlog and re-anchors those cadences without changing day totals.
+- `workWeek` adds Desk, Field, Half day and Off schedules per weekday. A one-click status control changes today without rewriting the saved week.
+- Wafer density reduces a roughly 340 × 150 installed window to the clock, one status line and a three-pixel ribbon, with a visible edge control for everything else.
+- Quiet is a one-click surface control. It restores the previous privacy, density and notification settings exactly when turned off.
+- Every ritual has a visible options chevron for mode, duration, snooze and skip-today actions. Existing Shift-click paths remain available.
+- Fold Review adds the finished ribbon, three plain totals and one carry-forward line to the existing daily handoff. It has no score, streak or encouragement copy.
+- Backup is now the versioned `pacefold.backup.v1` format and shows an add/overwrite/skip diff before restore.
+- Storage use is checked before local-audio import. Persistence requests and unavailable browser capabilities fail quietly.
+- A local variable-font subset keeps clock digits tabular, while solar elevation adjusts paper and ink temperature by a deliberately small amount every ten minutes.
+- Edge can use Window Controls Overlay with a standalone fallback. Forced colours, reduced motion, reduced transparency and first-paint transition suppression are part of the release floor.
 
 ## Pacefold 17.1 — rhythm-first return
 
@@ -97,8 +113,8 @@ The integrated document supports:
 - headings, bold, italics, bullets and checkbox syntax;
 - daily copy as a structured Markdown document;
 - daily `.md` download;
-- full note/category/playlist/link backup as JSON;
-- JSON backup import and merge.
+- a versioned `pacefold.backup.v1` containing safe preferences, notes, categories, playlist definitions, streaming links and rhythm history;
+- a dry-run restore diff before any local data is changed.
 
 **Copy day** is the intended handoff. At the end of the day, copy the assembled document and paste it into OneNote, Word, email or any other destination. Pacefold does not pretend that a cloud handoff succeeded when it did not.
 
@@ -125,10 +141,11 @@ Streaming is secondary. Pacefold stores optional named web links, but it does no
 Notes and player state stay on the current browser profile.
 
 - Clearing Pacefold site data can remove notes and locally stored audio.
-- The JSON backup includes notes, categories, playlist definitions and streaming links.
+- The JSON backup includes safe preferences, notes, categories, playlist definitions, streaming links and rhythm history.
 - Audio blobs are not embedded in the JSON backup because that could create extremely large backup files.
 - A playlist can reference only audio still stored in this browser.
 - Browser storage quotas vary by device and administrator policy.
+- Settings shows one approximate local-storage line, and audio import stops before crossing the browser storage guardrail.
 
 Keep original audio files elsewhere and download periodic Pacefold JSON backups.
 
@@ -141,9 +158,12 @@ The 15.9 notification corrections remain in place:
 - repeated cues replace rather than stack;
 - notifications are non-sticky;
 - work hours suppress badges, open notifications and waiting-cue emphasis;
+- waiting-cue state expires after the configured due window instead of persisting;
 - overnight work windows and active weekdays remain supported.
 
-The verified core remains the only owner of completing the actual cue. Notebook and player actions do not complete reminders accidentally.
+Pacefold does not use Periodic Background Sync or Notification Triggers. Edge support and managed-device policy are not dependable enough for them. Browser notifications can only be delivered while the browser gives the app execution time.
+
+The verified core remains the only owner of completing the actual cue. The ribbon, notebook, player and review remain read-only observers.
 
 ## Desktop workspace
 
@@ -163,8 +183,8 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 17.1 deploys, fully close every Pacefold and Edge PWA window once.
-5. Reopen Pacefold so the cache-busted Sumi workspace replaces the older surface.
+4. After 18.0 deploys, fully close every Pacefold and Edge PWA window once.
+5. Reopen Pacefold so the cache-busted Ma surface replaces the older surface.
 
 ## Honest platform boundaries
 
@@ -174,6 +194,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 17.1.0 rhythm-first Sumi workspace over the Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 18.0.0 “Ma” enhancement layer over the 17.1 rhythm-first Sumi workspace, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.

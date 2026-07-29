@@ -253,13 +253,6 @@ function pollForOneNoteAdapter(){
     if(installOneNoteGuard()||attempts>=120){clearInterval(adapterPoll);adapterPoll=0;}
   },500);
 }
-function installStyles(){
-  if(document.getElementById('pf-resilience-style'))return;
-  const style=document.createElement('style');
-  style.id='pf-resilience-style';
-  style.textContent=`#pf-hub-root .pf-resilience-busy{opacity:.72;cursor:progress}#pf-hub-root [aria-busy="true"]{pointer-events:none}`;
-  document.head.append(style);
-}
 function relevantError(value){
   const text=String(value?.stack||value?.message||value||'');
   return /pacefold|pf-hub|pf-notebook|pf-resilience/i.test(text);
@@ -267,7 +260,6 @@ function relevantError(value){
 
 validateNotebookStorage();
 pruneRecoveries();
-installStyles();
 pollForOneNoteAdapter();
 document.addEventListener('click',lockAction,true);
 document.addEventListener('submit',lockSubmit,true);

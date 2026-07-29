@@ -1,5 +1,26 @@
 # Changelog
 
+## 18.0.0 — Ma
+
+- Replaced the scheduled-moment dot strip with a continuous workday ribbon showing spent time, future time, the current instant, hour ticks, creases and recorded session bands.
+- Kept the legacy 17.1 sequence as the runtime fallback if the ribbon module fails.
+- Added a local variable-font subset, tabular clock figures, per-digit minute folds, a discreet seconds ticker and a no-seconds wafer mode.
+- Unified water, preparation, meal, away, eye and movement progress under the registered `--pf-meter` property with no JavaScript animation loops.
+- Added continuous, low-excursion solar light temperature with contrast and forced-colour neutralization.
+- Added the 340 × 150 wafer layout, a visible edge affordance and a two-launch, one-time suggestion that is never auto-applied.
+- Enabled Window Controls Overlay with standalone fallback and live geometry-change handling.
+- Added forced-colour visibility, ink focus rings, reduced-motion/transparency handling, and transition-free first paint with prepaint theme selection.
+- Added one priority scheduler with cue coalescing, a configurable minimum gap, one deferral at most, focus suppression and decaying waiting state.
+- Reconciled sleep and lock drift with one consolidated return line, no stale backlog delivery, cadence re-anchoring and silent timer resolution.
+- Added per-weekday hours and Desk, Field, Half day and Off modes with a temporary one-click override for today.
+- Added Fold Review and a rhythm block above the existing Copy day Markdown without scores, streaks or grades.
+- Made Quiet a one-click reversible preset covering document title, labels, badges, toasts, ribbon detail and notification detail.
+- Added visible ritual option menus for modes, duration presets, snooze and skip today.
+- Promoted backup and restore to `pacefold.backup.v1`, excluded secrets and audio blobs, and required a dry-run diff before writes.
+- Added storage estimates, pre-import quota guardrails and a one-time best-effort persistence request.
+- Added the Ma audit suite for scheduler ownership, cue gaps, drift, ribbon cost, wafer geometry, WCO fallback, forced colours, boot, preference retention and Quiet DOM safety.
+- Kept the verified 15.2.2 archive unchanged and cache-busted every injected asset and worker with the 18.0.0 surface release.
+
 ## 17.1.0 — Rhythm-first return
 
 - Restored the clock and its original workday rhythm as Pacefold's default home surface.
