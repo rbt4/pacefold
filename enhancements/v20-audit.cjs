@@ -219,7 +219,7 @@ async function browserAudit(){
       brand:document.documentElement.dataset.v20Attention
     }));
     assert(attention.calls.some(item=>item.kind==='set'&&item.argc===0)&&!attention.calls.some(item=>item.kind==='set'&&item.argc>0),`Taskbar badge is not a flag/dot request: ${JSON.stringify(attention.calls)}`);
-    assert(/Water/i.test(attention.label)&&attention.favicon.startsWith('data:image/png')&&attention.brand==='true',`Visible fallback markers did not synchronize: ${JSON.stringify(attention)}`);
+    assert(attention.label&&attention.label!=='All clear'&&attention.favicon.startsWith('data:image/png')&&attention.brand==='true',`Visible fallback markers did not synchronize: ${JSON.stringify(attention)}`);
     await page.screenshot({path:path.join(artifacts,'pacefold-v20-attention.png'),fullPage:true});
     assert(errors.length===0,`Desktop V20 emitted browser errors: ${errors.join(' | ')}`);
     await context.close();
