@@ -1,84 +1,681 @@
-'use strict';
-(()=>{
-  const RELEASE='18.0.0',PREFS_KEY='pacefoldPrefsV15',BACKUP_FORMAT='pacefold.backup.v1',MINUTE=60000,DAY_MS=86400000;
-  const DAYS=['sun','mon','tue','wed','thu','fri','sat'];
-  const ADDITIVE={schemaVersion:18,minCueGap:4,focusGraceMinutes:25,workWeek:null,quiet:false,maQuietRestore:null,waferSuggestion:'pending',foldReviewDismissed:false,storagePersistAsked:false};
-  const state={prefs:null,booted:false,ribbon:null,fallback:null,ribbonMinute:-1,ribbonDate:'',lastInteraction:Date.now(),hiddenAt:0,quietText:new WeakMap(),statusTimer:0,minuteText:'',minuteGuard:false,optionMenu:null,scheduler:null,clipboardDecorate:false};
-  const parse=(raw,fallback)=>{try{return JSON.parse(raw)??fallback}catch{return fallback}};
-  const array=value=>Array.isArray(value)?value:[];
-  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
-  const safe=(value,max=160)=>String(value??'').replace(/\s+/g,' ').trim().slice(0,max);
-  const create=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node};
-  const dayKey=(date=new Date())=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-  const minutes=value=>{const match=String(value||'').match(/^(\d{1,2}):(\d{2})$/);return match?Number(match[1])*60+Number(match[2]):0};
-  function parseHours(value){const match=String(value||'08:30-16:30').match(/^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$/);return match?{start:`${match[1].padStart(2,'0')}:${match[2]}`,end:`${match[3].padStart(2,'0')}:${match[4]}`}:{start:'08:30',end:'16:30'}}
-  function defaultWeek(workHours){const span=parseHours(workHours),week={};for(const name of DAYS)week[name]={...span,type:['sat','sun'].includes(name)?'Off':'Desk'};return week}
-  function migrate(input){const next={...(input&&typeof input==='object'&&!Array.isArray(input)?input:{})};for(const [key,value] of Object.entries(ADDITIVE))if(!(key in next))next[key]=value;const fallback=defaultWeek(next.workHours);if(!next.workWeek||typeof next.workWeek!=='object')next.workWeek=fallback;for(const name of DAYS)next.workWeek[name]={...fallback[name],...(next.workWeek[name]||{})};next.schemaVersion=Math.max(18,Number(next.schemaVersion)||0);return next}
-  function readPrefs(){state.prefs=migrate(parse(localStorage.getItem(PREFS_KEY),{}));return state.prefs}
-  function writePrefs(patch,{dispatch=true}={}){const next=migrate({...readPrefs(),...patch});try{localStorage.setItem(PREFS_KEY,JSON.stringify(next));state.prefs=next}catch{}if(dispatch){try{window.dispatchEvent(new StorageEvent('storage',{key:PREFS_KEY,newValue:JSON.stringify(next)}))}catch{window.dispatchEvent(new Event('storage'))}window.__PACEFOLD_REVAMP__?.reconcile?.()}return next}
-  function status(message,timeout=4000){const line=document.getElementById('statusLine');if(!line)return;clearTimeout(state.statusTimer);const previous=line.textContent;line.textContent=message;state.statusTimer=setTimeout(()=>{if(!quiet())line.textContent=previous},timeout)}
-  function activeDay(date=new Date()){const prefs=readPrefs(),name=DAYS[date.getDay()],base={...defaultWeek(prefs.workHours)[name],...(prefs.workWeek?.[name]||{})},override=parse(sessionStorage.getItem(`pacefold.ma.dayType.${dayKey(date)}`),null);return override?{...base,type:override}:base}
-  function itemMinute(item,keys){for(const key of keys){const raw=item?.[key];if(raw===undefined||raw===null)continue;if(typeof raw==='number'){const date=new Date(raw);if(Number.isFinite(date.getTime()))return date.getHours()*60+date.getMinutes()}if(/^\d{1,2}:\d{2}$/.test(String(raw)))return minutes(raw);const date=new Date(raw);if(Number.isFinite(date.getTime()))return date.getHours()*60+date.getMinutes()}return null}
-  function todaySessions(value,date=dayKey()){return array(value).filter(item=>{const raw=item?.date||item?.day||item?.at||item?.startAt||item?.startedAt;if(!raw)return false;const parsed=new Date(raw);return Number.isFinite(parsed.getTime())&&dayKey(parsed)===date})}
+(() => {
+  'use strict';
 
-  function installDigitFold(){const minute=document.getElementById('minute');if(!minute||minute.dataset.pfMaDigits)return;minute.dataset.pfMaDigits='true';const render=()=>{if(state.minuteGuard)return;const raw=(minute.textContent||'00').replace(/\D/g,'').padStart(2,'0').slice(-2);if(raw===state.minuteText&&minute.children.length===2)return;const old=state.minuteText.padStart(2,'0');state.minuteText=raw;state.minuteGuard=true;const fragment=document.createDocumentFragment();[...raw].forEach((digit,index)=>{const span=create('span','pf-time-digit',digit);if(old[index]!==digit&&old!=='00')span.classList.add('is-folding');fragment.append(span)});minute.replaceChildren(fragment);state.minuteGuard=false};render();new MutationObserver(render).observe(minute,{childList:true,characterData:true,subtree:true})}
+  const RELEASE='18.0.0';
+  const STORAGE_KEY='pacefoldPrefsV15';
+  const NOTES_KEY='pacefold.notebook.entries.v2';
+  const CATEGORIES_KEY='pacefold.notebook.categories.v1';
+  const PLAYLIST_KEY='pacefold.player.playlists.v1';
+  const STREAM_KEY='pacefold.player.streaming-links.v1';
+  const DAY_TYPES=['desk','field','half','off'];
+  const DAY_LABELS={desk:'Desk',field:'Field',half:'Half day',off:'Off'};
+  const SOURCES=['water','noodle','away','lunch','eyes','body'];
+  const PRIORITY={prayer:5,lunch:5,noodle:4,away:4,water:3,eyes:2,body:1};
+  const DURATION_PRESETS=[5,8,10,15,20,30,45,60];
+  const nativeSetBadge=typeof navigator.setAppBadge==='function'?navigator.setAppBadge.bind(navigator):null;
+  const nativeClearBadge=typeof navigator.clearAppBadge==='function'?navigator.clearAppBadge.bind(navigator):null;
+  const bootPrefs=readPrefs();
+  const bootLastSeenAt=Number(bootPrefs.lastSeenAt)||0;
+  let ribbonKey='';
+  let ribbonMinute=-1;
+  let statusOverride=null;
+  let lastMinuteValue='';
+  let lastInteractionAt=Date.now();
+  let hiddenAt=0;
+  let reconciledAt=0;
+  let quietObserver=null;
+  let panelObserver=null;
+  let reviewTimer=0;
+  let lightTimer=0;
+  let lightTheme='';
+  let storageText='Stored locally';
+  const quietText=new Map();
+  const quietAttributes=new Map();
 
-  function ribbonMoments(start,end,date){const prefs=readPrefs(),out=[];for(const item of array(prefs.customMoments)){const at=itemMinute(item,['time','at','start']);if(at!==null&&at>=start&&at<=end)out.push({kind:'crease',at,label:safe(item.label||item.name||'Moment')})}for(const item of todaySessions(prefs.prayerSessions,date)){const at=itemMinute(item,['at','startAt','startedAt','time']);if(at!==null&&at>=start&&at<=end)out.push({kind:'prayer',at,label:safe(item.label||item.name||'Prayer')})}for(const item of todaySessions(prefs.lunchSessions,date)){const at=itemMinute(item,['startAt','startedAt','start','at']),to=itemMinute(item,['endAt','endedAt','end'])??(at===null?null:at+Number(item.minutes||prefs.deskLunchMinutes||30));if(at!==null)out.push({kind:'meal',at,to,label:'Meal'})}for(const [key,label] of [['awaySessions','Away'],['bodySessions','Movement']])for(const item of todaySessions(prefs[key],date)){const at=itemMinute(item,['startAt','startedAt','start','at']),to=itemMinute(item,['endAt','endedAt','end'])??(at===null?null:at+Number(item.minutes||5));if(at!==null)out.push({kind:'band',at,to,label})}return out}
-  function buildRibbon(){const sequence=document.getElementById('sequence');if(!sequence||sequence.dataset.pfMaRibbon)return;const fallback=[...sequence.childNodes].map(node=>node.cloneNode(true));try{sequence.dataset.pfMaRibbon='true';sequence.classList.add('pf-day-ribbon');const track=create('div','pf-ribbon-track'),spent=create('div','pf-ribbon-spent'),ticks=create('div','pf-ribbon-ticks'),marks=create('div','pf-ribbon-marks'),now=create('div','pf-ribbon-now');spent.dataset.pfRibbonSpent=now.dataset.pfRibbonNow=marks.dataset.pfRibbonMarks='true';track.append(spent,ticks,marks,now);sequence.replaceChildren(track);state.ribbon={sequence,track,spent,ticks,marks,now};state.fallback=fallback;renderRibbon(true);tickRibbon()}catch(error){sequence.replaceChildren(...fallback.map(node=>node.cloneNode(true)));delete sequence.dataset.pfMaRibbon;sequence.classList.remove('pf-day-ribbon');state.ribbon=null;console.warn('Pacefold Ma ribbon fallback',error)}}
-  function renderRibbon(force=false){const ribbon=state.ribbon;if(!ribbon)return;const now=new Date(),date=dayKey(now),day=activeDay(now),start=minutes(day.start),end=minutes(day.end),span=Math.max(1,end-start),prefs=readPrefs();const signature=JSON.stringify([date,day,prefs.customMoments,prefs.prayerSessions,prefs.lunchSessions,prefs.awaySessions,prefs.bodySessions,quiet()]);if(!force&&ribbon.marks.dataset.signature===signature)return;ribbon.marks.dataset.signature=signature;ribbon.sequence.dataset.dayType=String(day.type||'Desk').toLowerCase().replace(/\s+/g,'-');ribbon.ticks.replaceChildren();for(let at=Math.ceil(start/60)*60;at<end;at+=60){const tick=create('span','pf-ribbon-tick');tick.style.setProperty('--pf-x',`${((at-start)/span)*100}%`);ribbon.ticks.append(tick)}ribbon.marks.replaceChildren();for(const moment of ribbonMoments(start,end,date)){const mark=create('button',`pf-ribbon-mark is-${moment.kind}`);mark.type='button';const left=clamp((moment.at-start)/span,0,1),width=moment.to?clamp((moment.to-moment.at)/span,.002,1-left):0;mark.style.setProperty('--pf-x',`${left*100}%`);mark.style.setProperty('--pf-w',`${width*100}%`);const label=quiet()?'Day interval':moment.label;mark.dataset.label=label;mark.setAttribute('aria-label',label);mark.addEventListener('click',()=>status(label));mark.addEventListener('mouseenter',()=>status(label));ribbon.marks.append(mark)}}
-  function tickRibbon(){const ribbon=state.ribbon;if(!ribbon)return;const now=new Date(),day=activeDay(now),start=minutes(day.start),end=minutes(day.end),span=Math.max(1,end-start),at=now.getHours()*60+now.getMinutes()+now.getSeconds()/60,ratio=clamp((at-start)/span,0,1);ribbon.now.style.transform=`translateX(${ratio*100}%)`;ribbon.spent.style.transform=`scaleX(${ratio})`;ribbon.sequence.dataset.outside=at<start||at>end?'true':'false';document.documentElement.style.setProperty('--pf-second',String(now.getSeconds()));if(state.ribbonMinute!==now.getMinutes()||state.ribbonDate!==dayKey(now)){state.ribbonMinute=now.getMinutes();state.ribbonDate=dayKey(now);renderRibbon()}}
+  function safeJSON(value,fallback=null){try{return JSON.parse(value||'null')??fallback;}catch{return fallback;}}
+  function readPrefs(){try{const value=safeJSON(localStorage.getItem(STORAGE_KEY),{});return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}catch{return {};}}
+  function writePrefs(value){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(value));return true;}catch{return false;}}
+  function clamp(value,min,max,fallback){value=Number(value);return Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback;}
+  function localDate(value=new Date()){const date=value instanceof Date?value:new Date(value),offset=date.getTimezoneOffset()*60000;return new Date(date.getTime()-offset).toISOString().slice(0,10);}
+  function parseHours(value='08:30-16:30'){const match=String(value).match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/);if(!match)return{start:8.5,end:16.5,startText:'08:30',endText:'16:30'};const start=Number(match[1])+Number(match[2])/60,end=Number(match[3])+Number(match[4])/60;return{start,end,startText:`${match[1]}:${match[2]}`,endText:`${match[3]}:${match[4]}`};}
+  function timeText(value,fallback){return/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(String(value||''))?String(value):fallback;}
+  function el(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=String(text);return node;}
+  function setButton(button,label){button.type='button';button.textContent=label;return button;}
+  function emitPrefs(){window.dispatchEvent(new CustomEvent('pacefold:ma-prefs'));}
 
-  function solarElevation(date,lat,lon){const rad=Math.PI/180,start=new Date(date.getFullYear(),0,0),day=Math.floor((date-start)/DAY_MS),hour=date.getHours()+date.getMinutes()/60,gamma=2*Math.PI/365*(day-1+(hour-12)/24),decl=.006918-.399912*Math.cos(gamma)+.070257*Math.sin(gamma)-.006758*Math.cos(2*gamma)+.000907*Math.sin(2*gamma)-.002697*Math.cos(3*gamma)+.00148*Math.sin(3*gamma),eq=229.18*(.000075+.001868*Math.cos(gamma)-.032077*Math.sin(gamma)-.014615*Math.cos(2*gamma)-.040849*Math.sin(2*gamma)),trueSolar=(hour*60+eq+4*lon-date.getTimezoneOffset())%1440,angle=(trueSolar/4<0?trueSolar/4+180:trueSolar/4-180)*rad;return Math.asin(Math.sin(lat*rad)*Math.sin(decl)+Math.cos(lat*rad)*Math.cos(decl)*Math.cos(angle))/rad}
-  function light(){const prefs=readPrefs(),root=document.documentElement;if(matchMedia('(prefers-contrast: more)').matches||matchMedia('(forced-colors: active)').matches){root.style.setProperty('--pf-warmth','0');return}const lat=Number(prefs.lat),lon=Number(prefs.lng);if(!Number.isFinite(lat)||!Number.isFinite(lon)){root.style.setProperty('--pf-warmth','0');return}const warmth=clamp((25-solarElevation(new Date(),lat,lon))/55,-.12,.18),paper=[242+Math.round(warmth*15),240+Math.round(warmth*7),233-Math.round(warmth*7)],ink=[34+Math.round(warmth*4),47+Math.round(warmth),40-Math.round(warmth*3)];root.style.setProperty('--pf-warmth',warmth.toFixed(3));root.style.setProperty('--pf-paper-live',`rgb(${paper.join(' ')})`);root.style.setProperty('--pf-ink-live',`rgb(${ink.join(' ')})`)}
-  function nodeProgress(node){for(const attr of ['aria-valuenow','data-value','data-progress']){const value=Number(node.getAttribute?.(attr));if(Number.isFinite(value))return value}const match=String(node.textContent||'').match(/(\d+(?:\.\d+)?)\s*(?:%|\/\s*(\d+(?:\.\d+)?))?/);return match?(match[2]?Number(match[1])/Math.max(1,Number(match[2]))*100:Number(match[1])):0}
-  function meters(){const prefs=readPrefs(),specs=[['waterMeter','bar',clamp(Number(prefs.waterSips||0)/Math.max(1,Number(prefs.waterTarget||8))*100,0,100)],['lunchMeter','fill',null],['noodleRing','arc',null]];for(const [id,shape,fixed] of specs){const node=document.getElementById(id);if(!node)continue;node.classList.add('pf-meter',`pf-meter-${shape}`);node.style.setProperty('--pf-meter',`${fixed??clamp(nodeProgress(node),0,100)}%`)}for(const [selector,shape] of [['#eyesBtn','arc'],['#awayBtn','fill']]){const node=document.querySelector(selector);if(node){node.classList.add('pf-meter-host',`pf-meter-${shape}`);node.style.setProperty('--pf-meter',`${clamp(nodeProgress(node),0,100)}%`)}}}
-
-  const quiet=()=>Boolean(readPrefs().quiet);
-  const quietSelectors=()=>['#statusLine','#statusWord','#eventName','#eventTime','#relativeTime','.pf-notebook-tabs>button:not(.pf-tab-add)','.pf-note-block select','.pf-kicker'];
-  function applyQuiet(){const on=quiet();document.body?.toggleAttribute('data-pf-quiet',on);document.documentElement.toggleAttribute('data-pf-quiet',on);if(on){document.title='Document';for(const selector of quietSelectors())for(const node of document.querySelectorAll(selector)){if(!state.quietText.has(node))state.quietText.set(node,node.textContent);node.textContent=node.matches('#statusLine,#statusWord')?'Quiet':node.matches('.pf-notebook-tabs>button')?'Tab':node.matches('#eventTime,#relativeTime')?'':'—'}}else{for(const selector of quietSelectors())for(const node of document.querySelectorAll(selector)){const value=state.quietText.get(node);if(value!==undefined){node.textContent=value;state.quietText.delete(node)}}document.title='Pacefold';window.__PACEFOLD_REVAMP__?.reconcile?.()}renderRibbon(true)}
-  function toggleQuiet(){const prefs=readPrefs();if(!prefs.quiet){writePrefs({quiet:true,maQuietRestore:{privacy:prefs.privacy,clarity:prefs.clarity,taskbarBadge:prefs.taskbarBadge,notificationDetail:prefs.notificationDetail,notificationMode:prefs.notificationMode},privacy:true,taskbarBadge:false,notificationDetail:'generic',notificationMode:'silent'});status('Quiet on.')}else{writePrefs({quiet:false,maQuietRestore:null,...(prefs.maQuietRestore||{})});status('Quiet off.')}applyQuiet();quietButton()}
-  function quietButton(){let button=document.getElementById('pfQuietToggle');if(button){button.setAttribute('aria-pressed',String(quiet()));return}const anchor=document.querySelector('.clock-shell')||document.querySelector('main');if(!anchor)return;button=create('button','pf-quiet-toggle','Quiet');button.id='pfQuietToggle';button.type='button';button.setAttribute('aria-pressed',String(quiet()));button.addEventListener('click',toggleQuiet);anchor.append(button)}
-
-  class CueScheduler{
-    constructor(){this.lastDelivered=0;this.pending=new Map();this.nativeNotification=window.Notification;this.install()}
-    priority(title,options={}){const text=`${title||''} ${options.body||''} ${document.body?.dataset.source||''}`.toLowerCase();if(/prayer|salah|fajr|dhuhr|asr|maghrib|isha|meal|lunch/.test(text))return 5;if(/prep|noodle|timer/.test(text))return 4;if(/water|hydrat/.test(text))return 3;if(/eye|gaze/.test(text))return 2;if(/body|move|stretch/.test(text))return 1;return 3}
-    focusBlocked(priority){return priority<4&&(document.hidden||Date.now()-state.lastInteraction>Number(readPrefs().focusGraceMinutes||25)*MINUTE)}
-    enqueue(kind,title,options,deliver,deferred=false){if(quiet())return kind==='notification'?Promise.resolve():undefined;const priority=this.priority(title,options);if(this.focusBlocked(priority))return kind==='notification'?Promise.resolve():undefined;const now=Date.now(),gap=Number(readPrefs().minCueGap||4)*MINUTE,due=this.lastDelivered+gap,run=()=>{if(quiet()||this.focusBlocked(priority))return kind==='notification'?Promise.resolve():undefined;this.lastDelivered=Date.now();document.body?.setAttribute('data-pf-waiting-cue','true');setTimeout(()=>document.body?.removeAttribute('data-pf-waiting-cue'),Math.max(1,Number(readPrefs().dueWindow||10))*MINUTE);return deliver()};if(now>=due)return run();if(deferred)return kind==='notification'?Promise.resolve():undefined;const key=`${kind}:${priority}`,existing=this.pending.get(key);if(existing&&existing.priority>=priority)return kind==='notification'?Promise.resolve():undefined;if(existing)clearTimeout(existing.timer);const timer=setTimeout(()=>{this.pending.delete(key);this.enqueue(kind,title,options,deliver,true)},Math.max(0,due-now));this.pending.set(key,{priority,timer});return kind==='notification'?Promise.resolve():undefined}
-    install(){const Native=this.nativeNotification;if(typeof Native==='function'&&!Native.__pacefoldMa){const scheduler=this;function WrappedNotification(title,options={}){const placeholder=new EventTarget();scheduler.enqueue('notification',title,options,()=>{try{const actual=new Native(title,options);for(const type of ['click','close','error','show'])actual.addEventListener(type,event=>placeholder.dispatchEvent(new Event(event.type)));return actual}catch{return null}});return placeholder}Object.defineProperties(WrappedNotification,{permission:{get:()=>Native.permission},maxActions:{get:()=>Native.maxActions||0},__pacefoldMa:{value:true}});WrappedNotification.requestPermission=(...args)=>Native.requestPermission(...args);try{window.Notification=WrappedNotification}catch{}}const proto=globalThis.ServiceWorkerRegistration?.prototype;if(proto?.showNotification&&!proto.showNotification.__pacefoldMa){const native=proto.showNotification,scheduler=this,wrapped=function(title,options={}){return scheduler.enqueue('notification',title,options,()=>native.call(this,title,options))||Promise.resolve()};Object.defineProperty(wrapped,'__pacefoldMa',{value:true});try{proto.showNotification=wrapped}catch{}}if(typeof navigator.setAppBadge==='function'&&!navigator.setAppBadge.__pacefoldMa){const native=navigator.setAppBadge.bind(navigator),scheduler=this,wrapped=value=>scheduler.enqueue('badge','Badge',{body:String(value??'')},()=>native(value));Object.defineProperty(wrapped,'__pacefoldMa',{value:true});try{navigator.setAppBadge=wrapped}catch{}}}
-    simulate(cues,minGap=4){let at=-Infinity;const delivered=[];for(const cue of cues.sort((a,b)=>a.at-b.at||b.priority-a.priority)){if(cue.at-at>=minGap){delivered.push(cue);at=cue.at}else if(!cue.deferred){const next={...cue,at:at+minGap,deferred:true};if(next.at<=1440)cues.push(next)}}return delivered}
+  function defaultWeek(workHours,workdaysOnly=true){
+    const range=parseHours(workHours),week={};
+    for(let day=0;day<7;day+=1)week[day]={start:range.startText,end:range.endText,type:!workdaysOnly||day>=1&&day<=5?'desk':'off'};
+    return week;
   }
-  function reconcileDrift(now=Date.now(),forcedGap=null){const prefs=readPrefs(),gap=forcedGap??(state.hiddenAt?now-state.hiddenAt:0),stale=Math.max(1,Number(prefs.staleAfterMinutes||15))*MINUTE;if(gap<=stale)return null;const skipped=[],water=Math.floor(gap/(Math.max(5,Number(prefs.sipCadence||30))*MINUTE)),eyes=Math.floor(gap/(Math.max(5,Number(prefs.gazeCadence||20))*MINUTE)),body=Math.floor(gap/(Math.max(5,Number(prefs.bodyCadence||45))*MINUTE));if(water)skipped.push(water===1?'water cue':`${water} water cues`);if(eyes)skipped.push(eyes===1?'eye reset':`${eyes} eye resets`);if(body)skipped.push(body===1?'movement reset':`${body} movement resets`);writePrefs({waterLastAt:now,gazeLastAt:now,bodyLastAt:now},{dispatch:false});const total=Math.round(gap/MINUTE),hours=Math.floor(total/60),mins=total%60,elapsed=hours?`${hours}h${mins?` ${mins}m`:''}`:`${mins}m`,line=`Back after ${elapsed}.${skipped.length?` ${skipped.join(' and ')} skipped.`:''}`;status(line,7000);return line}
+  function normalizeWeek(value,workHours,workdaysOnly=true){
+    const fallback=defaultWeek(workHours,workdaysOnly),source=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+    const week={};
+    for(let day=0;day<7;day+=1){
+      const row=source[day]||source[String(day)]||fallback[day],type=DAY_TYPES.includes(String(row?.type||'').toLowerCase())?String(row.type).toLowerCase():fallback[day].type;
+      week[day]={start:timeText(row?.start,fallback[day].start),end:timeText(row?.end,fallback[day].end),type};
+    }
+    return week;
+  }
+  function migratePrefs(){
+    const before=readPrefs(),next={...before};
+    const migrations=[
+      prefs=>{
+        prefs.schemaVersion=18;
+        prefs.minCueGap=clamp(prefs.minCueGap,1,30,4);
+        prefs.focusGraceMinutes=clamp(prefs.focusGraceMinutes,5,120,25);
+        prefs.workWeek=normalizeWeek(prefs.workWeek,prefs.workHours,prefs.workdaysOnly!==false);
+        prefs.todayOverride=prefs.todayOverride&&typeof prefs.todayOverride==='object'?prefs.todayOverride:null;
+        prefs.quietMode=Boolean(prefs.quietMode);
+        prefs.quietRestore=prefs.quietRestore&&typeof prefs.quietRestore==='object'?prefs.quietRestore:null;
+        prefs.skipToday=prefs.skipToday&&typeof prefs.skipToday==='object'?prefs.skipToday:{};
+        prefs.waferLaunches=clamp(prefs.waferLaunches,0,3,0);
+        prefs.waferPromptDismissed=Boolean(prefs.waferPromptDismissed);
+        prefs.foldReviewDismissed=Boolean(prefs.foldReviewDismissed);
+        prefs.foldReviewLastDate=typeof prefs.foldReviewLastDate==='string'?prefs.foldReviewLastDate:'';
+        prefs.storagePersistAsked=Boolean(prefs.storagePersistAsked);
+        prefs.maLastCueAt=clamp(prefs.maLastCueAt,0,Number.MAX_SAFE_INTEGER,0);
+        prefs.waitingCue=prefs.waitingCue&&typeof prefs.waitingCue==='object'?prefs.waitingCue:null;
+        prefs.awaySnoozedUntil=clamp(prefs.awaySnoozedUntil,0,Number.MAX_SAFE_INTEGER,0);
+        return prefs;
+      }
+    ];
+    let version=Number(next.schemaVersion)||17;
+    while(version<18){next.schemaVersion=version;migrations[version-17](next);version=Number(next.schemaVersion)||version+1;}
+    if(JSON.stringify(next)!==JSON.stringify(before))writePrefs(next);
+    return next;
+  }
+  migratePrefs();
 
-  function dayTypeButton(){if(document.getElementById('pfDayTypeToggle'))return;const line=document.getElementById('statusLine');if(!line?.parentElement)return;const button=create('button','pf-day-type-toggle',activeDay().type||'Desk');button.id='pfDayTypeToggle';button.type='button';button.title='Change today only';button.addEventListener('click',()=>{const types=['Desk','Field','Half day','Off'],current=activeDay().type||'Desk',next=types[(types.indexOf(current)+1)%types.length];sessionStorage.setItem(`pacefold.ma.dayType.${dayKey()}`,JSON.stringify(next));button.textContent=next;document.body.dataset.pfDayType=next.toLowerCase().replace(/\s+/g,'-');renderRibbon(true);status(`${next} today.`)});line.parentElement.append(button);document.body.dataset.pfDayType=(activeDay().type||'Desk').toLowerCase().replace(/\s+/g,'-')}
-  const countToday=value=>todaySessions(value).length;
-  function rhythmSummary(){const prefs=readPrefs();return `--- Pacefold rhythm ---\nDay: ${activeDay().type||'Desk'}\nWater: ${Number(prefs.waterSips||0)}\nMeals: ${countToday(prefs.lunchSessions)}\nIntervals: ${countToday(prefs.bodySessions)+countToday(prefs.awaySessions)+countToday(prefs.prayerSessions)}\nCarry forward: Review unfinished notes.\n--- End rhythm ---\n\n`}
-  function clipboard(){const api=navigator.clipboard;if(!api?.writeText||api.writeText.__pacefoldMa)return;const native=api.writeText.bind(api),wrapped=text=>{const value=state.clipboardDecorate?rhythmSummary()+String(text):String(text);state.clipboardDecorate=false;return native(value)};Object.defineProperty(wrapped,'__pacefoldMa',{value:true});try{api.writeText=wrapped}catch{}document.addEventListener('click',event=>{if(event.target.closest?.('[data-pf-copy-day]'))state.clipboardDecorate=true},true)}
-  function foldReview(){const prefs=readPrefs();if(!prefs.dayCloseEnabled||prefs.foldReviewDismissed||document.getElementById('pfFoldReview'))return;const day=activeDay(),now=new Date();if(now.getHours()*60+now.getMinutes()<minutes(day.end))return;const host=document.getElementById('setupDock')||document.getElementById('foldBody')||document.querySelector('main');if(!host)return;const card=create('section','pf-fold-review');card.id='pfFoldReview';card.setAttribute('aria-label','Fold review');card.append(create('strong','','Fold review'));const values=create('div','pf-fold-review-numbers');for(const [label,value] of [['Water',Number(prefs.waterSips||0)],['Meals',countToday(prefs.lunchSessions)],['Intervals',countToday(prefs.bodySessions)+countToday(prefs.awaySessions)+countToday(prefs.prayerSessions)]]){const item=create('span');item.append(create('b','',String(value)),create('small','',label));values.append(item)}const dismiss=create('button','','Dismiss');dismiss.type='button';dismiss.addEventListener('click',()=>{writePrefs({foldReviewDismissed:true});card.remove()});card.append(values,create('p','','Carry forward: Review unfinished notes.'),dismiss);host.append(card)}
+  function getPrefs(){return window.__PACEFOLD_MA_CORE__?.getPrefs?.()||readPrefs();}
+  function patchPrefs(patch){
+    if(!patch||typeof patch!=='object')return getPrefs();
+    if(window.__PACEFOLD_MA_CORE__?.updatePrefs){
+      const result=window.__PACEFOLD_MA_CORE__.updatePrefs(patch);
+      emitPrefs();
+      return result||getPrefs();
+    }
+    const next={...readPrefs(),...patch};
+    writePrefs(next);emitPrefs();return next;
+  }
+  function resolvedDay(date=new Date(),prefs=getPrefs()){
+    const week=normalizeWeek(prefs.workWeek,prefs.workHours,prefs.workdaysOnly!==false),row=week[date.getDay()]||defaultWeek(prefs.workHours,prefs.workdaysOnly!==false)[date.getDay()],override=prefs.todayOverride;
+    let type=row.type;
+    if(override&&override.date===localDate(date)&&DAY_TYPES.includes(override.type))type=override.type;
+    const startText=timeText(row.start,parseHours(prefs.workHours).startText),endText=timeText(row.end,parseHours(prefs.workHours).endText);
+    let start=parseHours(`${startText}-${endText}`).start,end=parseHours(`${startText}-${endText}`).end;
+    if(type==='half'&&end>start+3)end=start+(end-start)/2;
+    return{type,start,end,startText,endText};
+  }
+  function skipped(source,prefs=getPrefs(),date=new Date()){return prefs.skipToday?.[source]===localDate(date);}
 
-  function closeMenu(){state.optionMenu?.remove();state.optionMenu=null}
-  function ritualOptions(){for(const ritual of document.querySelectorAll('.ritual')){if(ritual.querySelector('.pf-ritual-options'))continue;const chevron=create('button','pf-ritual-options','⌄');chevron.type='button';chevron.setAttribute('aria-label','Options');chevron.addEventListener('click',event=>{event.stopPropagation();closeMenu();const id=ritual.id||ritual.querySelector('button')?.id||'',menu=create('div','pf-ritual-menu');menu.setAttribute('role','menu');const items=[];if(/lunch/i.test(id))items.push(['Desk lunch',()=>ritual.click()],['Away lunch',()=>ritual.dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}))]);for(const duration of [5,8,10,15,20,30,45,60])items.push([`${duration} min`,()=>{writePrefs(/noodle/i.test(id)?{noodleMinutes:duration}:/lunch/i.test(id)?{deskLunchMinutes:duration}:{snoozeMinutes:duration});ritual.click()}]);items.push(['Snooze',()=>ritual.dispatchEvent(new MouseEvent('click',{bubbles:true,shiftKey:true}))],['Skip today',()=>{localStorage.setItem(`pacefold.ma.skip.${id}.${dayKey()}`,'1');status('Skipped today.')}]);for(const [label,action] of items){const button=create('button','',label);button.type='button';button.setAttribute('role','menuitem');button.addEventListener('click',()=>{closeMenu();action()});menu.append(button)}chevron.parentElement.append(menu);state.optionMenu=menu;menu.querySelector('button')?.focus()});ritual.append(chevron)}}
+  function createScheduler(){
+    const pending=new Map(),delivered=new Set();
+    let lastDeliveredAt=Number(readPrefs().maLastCueAt)||0,timer=0,badgeKey='';
+    const schedule=delay=>{clearTimeout(timer);timer=setTimeout(pump,Math.max(0,Math.min(2147483647,delay)));};
+    const waiting=item=>patchPrefs({waitingCue:item?{key:item.key,source:item.source,requestedAt:item.requestedAt,expiresAt:item.expiresAt,deferred:item.deferred}:null});
+    const staleFocus=prefs=>document.hidden&&Date.now()-lastInteractionAt>prefs.focusGraceMinutes*60000;
+    async function pump(){
+      timer=0;
+      const now=Date.now(),prefs=getPrefs(),items=[...pending.values()].filter(item=>item.expiresAt>now).sort((a,b)=>b.priority-a.priority||a.requestedAt-b.requestedAt);
+      for(const item of [...pending.values()])if(item.expiresAt<=now)pending.delete(item.key);
+      if(!items.length){waiting(null);return;}
+      const item=items[0];
+      if(['water','eyes','body'].includes(item.source)&&staleFocus(prefs)){pending.delete(item.key);delivered.add(item.key);waiting(null);return;}
+      const gap=Math.max(1,Number(prefs.minCueGap)||4)*60000,remaining=lastDeliveredAt?gap-(now-lastDeliveredAt):0;
+      if(remaining>0){
+        if(item.deferred){pending.delete(item.key);delivered.add(item.key);waiting(null);queueMicrotask(pump);return;}
+        item.deferred=true;item.dueAt=now+remaining;waiting(item);schedule(Math.min(remaining,Math.max(0,item.expiresAt-now)));return;
+      }
+      pending.delete(item.key);
+      const deliver=window.__PACEFOLD_MA_DELIVER__;
+      if(typeof deliver!=='function'){pending.set(item.key,item);schedule(80);return;}
+      const ok=await deliver(item.key,item.text,item.source,false,item.specOnly);
+      delivered.add(item.key);
+      if(ok){
+        lastDeliveredAt=Date.now();
+        patchPrefs({maLastCueAt:lastDeliveredAt,waitingCue:null});
+      }else waiting(null);
+      queueMicrotask(pump);
+    }
+    function request(key,text,source='prayer',test=false,specOnly=false){
+      if(test)return false;
+      const prefs=getPrefs(),now=Date.now(),safeSource=PRIORITY[source]?source:'prayer';
+      const day=resolvedDay(new Date(),prefs);
+      if(day.type==='field'&&!['prayer','lunch','water'].includes(safeSource)){delivered.add(key);return false;}
+      if(skipped(safeSource,prefs)||delivered.has(key)||pending.has(key))return false;
+      if(safeSource==='away'&&Number(prefs.awaySnoozedUntil)>now)return false;
+      if(['water','eyes','body'].includes(safeSource)&&staleFocus(prefs)){delivered.add(key);return false;}
+      const item={key:String(key),text:String(text||''),source:safeSource,specOnly:Boolean(specOnly),priority:PRIORITY[safeSource],requestedAt:now,expiresAt:now+Math.max(5,Number(prefs.dueWindow)||18)*60000,deferred:false,dueAt:now};
+      pending.set(item.key,item);waiting(item);queueMicrotask(pump);return true;
+    }
+    async function clearSurface(){
+      try{await nativeClearBadge?.();}catch{}
+      try{const registration=await navigator.serviceWorker?.getRegistration?.(),items=await registration?.getNotifications?.();for(const item of items||[])if(String(item.tag||'').startsWith('pacefold-'))item.close();}catch{}
+      badgeKey='';
+    }
+    async function setManualBadge(value){
+      const prefs=getPrefs();
+      if(prefs.quietMode||prefs.taskbarBadge===false||prefs.taskbarBadgeMode==='off')return clearSurface();
+      try{return await nativeSetBadge?.(value);}catch{return undefined;}
+    }
+    function minutesUntil(states){
+      const candidates=[],now=Date.now();
+      if(states?.water?.nextAt&&states?.h!=null)candidates.push((states.water.nextAt-states.h)*60);
+      if(states?.noodle?.remain>0)candidates.push(states.noodle.remain/60000);
+      if(states?.lunch?.remain>0)candidates.push(states.lunch.remain/60000);
+      if(states?.gaze?.remaining>0)candidates.push(states.gaze.remaining/60000);
+      if(states?.body?.remaining>0)candidates.push(states.body.remaining/60000);
+      const value=candidates.filter(item=>Number.isFinite(item)&&item>0).sort((a,b)=>a-b)[0];
+      return now&&value&&value<=99?Math.max(1,Math.ceil(value)):0;
+    }
+    function updateBadge(attention,states){
+      const prefs=getPrefs(),mode=prefs.taskbarBadgeMode||'due';
+      if(prefs.quietMode||mode==='off'||prefs.taskbarBadge===false){if(badgeKey!=='clear'){badgeKey='clear';void clearSurface();}return true;}
+      const waitingNow=Boolean(attention&&(['due','pending'].includes(attention.signal)||(attention.signal==='active'&&['prayer','away','body'].includes(attention.source)))),minutes=mode==='countdown'&&!waitingNow?minutesUntil(states):0,key=waitingNow?`waiting:${attention.source}`:minutes?`next:${minutes}`:'clear';
+      if(key===badgeKey)return true;badgeKey=key;
+      if(waitingNow)void setManualBadge();else if(minutes)void setManualBadge(minutes);else void clearSurface();
+      return true;
+    }
+    function reanchor(){
+      for(const [key,item] of pending)if(['water','eyes','body'].includes(item.source))pending.delete(key);
+      waiting([...pending.values()][0]||null);
+    }
+    return{request,updateBadge,setManualBadge,clear:clearSurface,reanchor,_pending:pending};
+  }
+  const scheduler=createScheduler();
+  window.__PACEFOLD_MA_SCHEDULER__=scheduler;
+  try{Object.defineProperty(navigator,'setAppBadge',{configurable:true,writable:true,value:value=>scheduler.setManualBadge(value)});}catch{}
+  try{Object.defineProperty(navigator,'clearAppBadge',{configurable:true,writable:true,value:()=>scheduler.clear()});}catch{}
 
-  function stripSecrets(value){if(Array.isArray(value))return value.map(stripSecrets);if(!value||typeof value!=='object')return value;const out={};for(const [key,item] of Object.entries(value)){if(!/token|secret|auth|credential|password/i.test(key))out[key]=stripSecrets(item)}return out}
-  function backup(){const prefs=stripSecrets(readPrefs());return {format:BACKUP_FORMAT,schemaVersion:1,createdAt:new Date().toISOString(),prefs,notes:parse(localStorage.getItem('pacefold.notebook.entries.v2'),[]),categories:parse(localStorage.getItem('pacefold.notebook.categories.v1'),[]),playlists:parse(localStorage.getItem('pacefold.player.playlists.v1'),[]),streamingLinks:parse(localStorage.getItem('pacefold.player.streaming-links.v1'),[]),history:prefs.history||[]}}
-  function downloadBackup(){const blob=new Blob([JSON.stringify(backup(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),anchor=create('a');anchor.href=url;anchor.download=`pacefold-${dayKey()}-backup.json`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-  function restoreDiff(incoming){const current=backup();return ['prefs','notes','categories','playlists','streamingLinks','history'].map(key=>{const oldValue=JSON.stringify(current[key]??null),newValue=JSON.stringify(incoming[key]??null);return {key,status:newValue==='null'?'Skip':oldValue===newValue?'Unchanged':oldValue==='null'||oldValue==='[]'?'Add':'Overwrite'}})}
-  function applyRestore(incoming){if(incoming?.format!==BACKUP_FORMAT||Number(incoming.schemaVersion)!==1){status('Backup format not supported.');return}if(incoming.prefs)localStorage.setItem(PREFS_KEY,JSON.stringify(migrate({...readPrefs(),...incoming.prefs,schemaVersion:18})));for(const [key,storageKey] of [['notes','pacefold.notebook.entries.v2'],['categories','pacefold.notebook.categories.v1'],['playlists','pacefold.player.playlists.v1'],['streamingLinks','pacefold.player.streaming-links.v1']])if(incoming[key]!==undefined)localStorage.setItem(storageKey,JSON.stringify(incoming[key]));status('Restore applied.');location.reload()}
-  function restoreDialog(incoming){document.getElementById('pfRestoreDialog')?.remove();const dialog=create('dialog','pf-restore-dialog');dialog.id='pfRestoreDialog';dialog.append(create('strong','','Restore preview'));const list=create('dl');for(const row of restoreDiff(incoming))list.append(create('dt','',row.key),create('dd','',row.status));const actions=create('div','pf-dialog-actions'),cancel=create('button','','Cancel'),apply=create('button','','Apply restore');cancel.type=apply.type='button';cancel.addEventListener('click',()=>dialog.close());apply.addEventListener('click',()=>{applyRestore(incoming);dialog.close()});actions.append(cancel,apply);dialog.append(list,actions);document.body.append(dialog);dialog.showModal()}
-  function backupControls(){if(document.getElementById('pfBackupControls'))return;const host=document.getElementById('setupDock')||document.getElementById('foldBody');if(!host)return;const wrap=create('div','pf-backup-controls'),save=create('button','','Back up'),restore=create('label','','Restore'),input=create('input');wrap.id='pfBackupControls';save.type='button';save.addEventListener('click',downloadBackup);input.type='file';input.accept='application/json,.json';input.hidden=true;restore.append(input);input.addEventListener('change',async()=>{const file=input.files?.[0];if(!file)return;try{restoreDialog(JSON.parse(await file.text()))}catch{status('Backup file could not be read.')}input.value=''});wrap.append(save,restore);host.append(wrap)}
+  function ribbonPercent(value,start,end){return Math.max(0,Math.min(1,(value-start)/Math.max(.01,end-start)));}
+  function dateHours(value){const date=new Date(Number(value)||value);return date.getHours()+date.getMinutes()/60+date.getSeconds()/3600;}
+  function setRibbonVar(node,name,value){node.style.setProperty(name,value);}
+  function showRibbonLabel(label){
+    const prefs=getPrefs(),safe=prefs.privacy||prefs.quietMode?'Scheduled moment':String(label||'Scheduled moment');
+    statusOverride={word:safe,time:'',relative:'',name:'',until:Date.now()+4000};
+    applyStatus();
+  }
+  function makeRibbonPart(className){return el('span',className);}
+  function renderRibbon({h,state,rows,range,dayType}={}){
+    const sequence=document.getElementById('sequence');if(!sequence)return false;
+    const prefs=getPrefs(),day=resolvedDay(new Date(),prefs),start=Number(range?.start??day.start),end=Number(range?.end??day.end),type=dayType||day.type,minute=Math.floor(Date.now()/60000),minuteNow=minute*60000,privateRibbon=Boolean(prefs.privacy||prefs.quietMode);
+    const sessions=[...(prefs.awaySessions||[]).map(item=>({...item,kind:'away'})),...(prefs.prayerSessions||[]).map(item=>({...item,kind:'prayer'})),...(prefs.lunchSessions||[]).map(item=>({...item,kind:item.mode==='away'?'away-lunch':'meal'}))];
+    if(prefs.awayStart)sessions.push({start:prefs.awayStart,end:minuteNow,kind:'away'});
+    if(prefs.prayerBreakStart)sessions.push({start:prefs.prayerBreakStart,end:minuteNow,kind:'prayer'});
+    if(prefs.lunchStart)sessions.push({start:prefs.lunchStart,end:minuteNow,kind:prefs.lunchModeAtStart==='away'?'away-lunch':'meal'});
+    if(prefs.noodleStart)sessions.push({start:prefs.noodleStart,end:minuteNow,kind:'prep'});
+    const dataKey=JSON.stringify({start,end,type,rows:(rows||[]).map(item=>[item.id,Number(item.time).toFixed(4),privateRibbon?'':item.label]),sessions:sessions.map(item=>[item.start,item.end,privateRibbon?'interval':item.kind]),quiet:privateRibbon});
+    if(sequence.dataset.pfMaRibbon!=='true'||dataKey!==ribbonKey||minute!==ribbonMinute){
+      const fragment=document.createDocumentFragment(),track=makeRibbonPart('pf-ribbon-track'),spent=makeRibbonPart('pf-ribbon-spent'),field=makeRibbonPart('pf-ribbon-field');
+      fragment.append(track,spent,field);
+      for(let tick=Math.ceil(start);tick<end;tick+=1){const mark=makeRibbonPart('pf-ribbon-hour');setRibbonVar(mark,'--pf-ribbon-x',`${(ribbonPercent(tick,start,end)*100).toFixed(3)}%`);fragment.append(mark);}
+      for(const item of rows||[]){
+        if(!Number.isFinite(Number(item.time))||item.time<start||item.time>end)continue;
+        const crease=setButton(el('button','pf-ribbon-crease'),'');
+        crease.dataset.kind='moment';
+        crease.setAttribute('aria-label',privateRibbon?'Scheduled crease':String(item.label||'Scheduled moment'));
+        setRibbonVar(crease,'--pf-ribbon-x',`${(ribbonPercent(Number(item.time),start,end)*100).toFixed(3)}%`);
+        crease.addEventListener('click',()=>showRibbonLabel(item.label));
+        crease.addEventListener('mouseenter',()=>showRibbonLabel(item.label));
+        fragment.append(crease);
+      }
+      for(const item of sessions){
+        const from=dateHours(item.start),to=dateHours(item.end),left=ribbonPercent(from,start,end),right=ribbonPercent(to,start,end);
+        if(right<=0||left>=1||right<=left)continue;
+        const band=makeRibbonPart('pf-ribbon-band');band.dataset.kind=privateRibbon?'interval':item.kind;
+        setRibbonVar(band,'--pf-ribbon-start',`${(left*100).toFixed(3)}%`);
+        setRibbonVar(band,'--pf-ribbon-span',String(Math.max(.001,right-left)));
+        fragment.append(band);
+        if(item.kind==='meal'){
+          const meal=setButton(el('button','pf-ribbon-crease'),'');meal.dataset.kind=privateRibbon?'moment':'meal';meal.setAttribute('aria-label',privateRibbon?'Scheduled crease':'Meal');
+          setRibbonVar(meal,'--pf-ribbon-x',`${(left*100).toFixed(3)}%`);meal.addEventListener('click',()=>showRibbonLabel('Meal'));meal.addEventListener('mouseenter',()=>showRibbonLabel('Meal'));fragment.append(meal);
+        }
+      }
+      const now=makeRibbonPart('pf-ribbon-now');now.dataset.pfRibbonNow='true';fragment.append(now);
+      sequence.replaceChildren(fragment);sequence.classList.add('pf-day-ribbon');sequence.dataset.pfMaRibbon='true';
+      sequence.dataset.private=String(privateRibbon);
+      sequence.style.setProperty('--pf-ribbon-progress',String(ribbonPercent(Math.floor(Number(h)*60)/60,start,end)));
+      ribbonKey=dataKey;ribbonMinute=minute;
+    }
+    const now=sequence.querySelector('[data-pf-ribbon-now]');if(now)setRibbonVar(now,'--pf-ribbon-x',`${(ribbonPercent(Number(h),start,end)*100).toFixed(4)}%`);
+    document.body.dataset.dayType=type;
+    return true;
+  }
+  function setMinute(node,value){
+    value=String(value).padStart(2,'0').slice(-2);
+    if(!node)return false;
+    let digits=[...node.querySelectorAll('.pf-minute-digit')];
+    if(digits.length!==2){
+      digits=value.split('').map(character=>el('span','pf-minute-digit',character));
+      node.replaceChildren(...digits);lastMinuteValue=value;return true;
+    }
+    value.split('').forEach((character,index)=>{
+      if(digits[index].textContent===character)return;
+      digits[index].textContent=character;
+      digits[index].classList.remove('is-folding');
+      if(!document.documentElement.classList.contains('pf-boot'))queueMicrotask(()=>digits[index]?.classList.add('is-folding'));
+      setTimeout(()=>digits[index]?.classList.remove('is-folding'),260);
+    });
+    lastMinuteValue=value;return true;
+  }
+  function setSecondProgress(value){document.documentElement.style.setProperty('--pf-second-progress',String(Math.max(0,Math.min(1,(Number(value)||0)/59))));return true;}
+  function applyStatus(){
+    if(!statusOverride||Date.now()>statusOverride.until){statusOverride=null;return false;}
+    const word=document.getElementById('statusWord'),time=document.getElementById('eventTime'),relative=document.getElementById('relativeTime'),name=document.getElementById('eventName');
+    if(word)word.textContent=statusOverride.word;if(time)time.textContent=statusOverride.time||'';if(relative)relative.textContent=statusOverride.relative||'';if(name)name.textContent=statusOverride.name||'';
+    return true;
+  }
+  window.__PACEFOLD_MA_VIEW__={renderRibbon,setMinute,setSecondProgress,applyStatus};
 
-  async function estimate(){if(!navigator.storage?.estimate)return null;try{return await navigator.storage.estimate()}catch{return null}}
-  async function storageLine(){const host=document.getElementById('setupDock')||document.getElementById('foldBody');if(!host)return;let line=document.getElementById('pfStorageLine');if(!line){line=create('p','pf-storage-line');line.id='pfStorageLine';host.append(line)}const data=await estimate();if(!data){line.textContent='Stored locally. Size unavailable.';return}const mb=value=>`${(Number(value||0)/1048576).toFixed(Number(value||0)>10485760?0:1)} MB`;line.textContent=`Stored locally: ${mb(data.usage)} of about ${mb(data.quota)} available.`}
-  async function persist(){const prefs=readPrefs();if(prefs.storagePersistAsked)return;writePrefs({storagePersistAsked:true},{dispatch:false});try{await navigator.storage?.persist?.()}catch{}}
-  async function fits(files){const data=await estimate();if(!data)return true;const bytes=[...files].reduce((sum,file)=>sum+Number(file.size||0),0);return Number(data.usage||0)+bytes<Number(data.quota||0)*.85}
-  function audioGuard(){document.addEventListener('change',async event=>{const input=event.target;if(!(input instanceof HTMLInputElement)||input.type!=='file'||!input.files?.length||![...input.files].some(file=>file.type.startsWith('audio/')))return;if(!await fits(input.files)){input.value='';status('Audio import would use too much local storage. Remove files or choose fewer tracks.',7000)}},true);document.addEventListener('drop',async event=>{const files=event.dataTransfer?.files;if(!files?.length||![...files].some(file=>file.type.startsWith('audio/'))||await fits(files))return;event.preventDefault();event.stopImmediatePropagation();status('Audio import would use too much local storage. Remove files or choose fewer tracks.',7000)},true)}
+  function initializeMeters(){
+    const items=[
+      [document.getElementById('waterMeter'),'fill','water'],
+      [document.getElementById('noodleRing'),'arc','noodle'],
+      [document.querySelector('#awayBtn .away-glyph'),'bar','away'],
+      [document.getElementById('lunchMeter'),'bar','lunch'],
+      [document.querySelector('#eyesBtn .eye-glyph'),'arc','eyes'],
+      [document.querySelector('#careBtn .care-glyph'),'arc','body']
+    ];
+    for(const [node,shape,source] of items){if(!node)continue;node.classList.add('pf-meter');node.dataset.shape=shape;node.dataset.source=source;}
+  }
 
-  function waferSuggestion(){const small=innerWidth<=340&&innerHeight<=150,key='pacefold.ma.wafer.launches';let count=Number(localStorage.getItem(key)||0);count=small?count+1:0;localStorage.setItem(key,String(count));const prefs=readPrefs();if(count<2||prefs.waferSuggestion!=='pending')return;const host=document.getElementById('setupDock');if(!host||document.getElementById('pfWaferSuggestion'))return;const line=create('div','pf-wafer-suggestion'),use=create('button','','Use Wafer'),dismiss=create('button','','Dismiss');line.id='pfWaferSuggestion';line.append(create('span','','Use Wafer for this window.'));use.type=dismiss.type='button';use.addEventListener('click',()=>{writePrefs({clarity:'wafer',waferSuggestion:'accepted'});document.body.dataset.clarity='wafer';line.remove()});dismiss.addEventListener('click',()=>{writePrefs({waferSuggestion:'dismissed'});line.remove()});line.append(use,dismiss);host.append(line)}
-  function waferEdge(){if(document.getElementById('pfWaferEdge'))return;const button=create('button','pf-wafer-edge','•••');button.id='pfWaferEdge';button.type='button';button.setAttribute('aria-expanded','false');button.addEventListener('click',()=>{const open=document.body.toggleAttribute('data-pf-wafer-open');button.setAttribute('aria-expanded',String(open))});document.body.append(button);document.addEventListener('focusin',event=>{if(!event.target.closest?.('#workline,#quietDock,#pfWaferEdge')){document.body.removeAttribute('data-pf-wafer-open');button.setAttribute('aria-expanded','false')}})}
-  function wco(){const overlay=navigator.windowControlsOverlay,apply=()=>document.documentElement.toggleAttribute('data-pf-wco',Boolean(overlay?.visible));apply();try{overlay?.addEventListener('geometrychange',apply)}catch{}}
+  function updateDayType(){
+    const button=document.getElementById('pf-day-type'),day=resolvedDay();
+    document.body.dataset.dayType=day.type;
+    if(button){button.textContent=DAY_LABELS[day.type];button.setAttribute('aria-label',`Today is ${DAY_LABELS[day.type]}. Click to change today only.`);}
+  }
+  function installDayType(){
+    if(document.getElementById('pf-day-type'))return;
+    const status=document.getElementById('statusLine');if(!status)return;
+    const button=setButton(el('button','pf-day-type'),'Desk');button.id='pf-day-type';
+    button.addEventListener('click',event=>{event.stopPropagation();const day=resolvedDay(),next=DAY_TYPES[(DAY_TYPES.indexOf(day.type)+1)%DAY_TYPES.length];patchPrefs({todayOverride:{date:localDate(),type:next}});updateDayType();ribbonKey='';});
+    status.insertAdjacentElement('afterend',button);updateDayType();
+  }
+  function showWeekEditor(){
+    const prefs=getPrefs(),week=normalizeWeek(prefs.workWeek,prefs.workHours,prefs.workdaysOnly!==false),modal=createModal('Workweek','Set hours and day type for each weekday.'),grid=el('div','pf-week-grid');
+    const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    for(let day=0;day<7;day+=1){
+      const label=el('label','',names[day]),start=el('input'),end=el('input'),type=el('select');
+      start.type='time';start.value=week[day].start;start.dataset.day=String(day);start.dataset.field='start';
+      end.type='time';end.value=week[day].end;end.dataset.day=String(day);end.dataset.field='end';
+      for(const id of DAY_TYPES){const option=el('option','',DAY_LABELS[id]);option.value=id;option.selected=week[day].type===id;type.append(option);}
+      type.dataset.day=String(day);type.dataset.field='type';grid.append(label,start,end,type);
+    }
+    modal.card.append(grid);
+    const actions=modal.actions,save=setButton(el('button','primary'),'Save week'),cancel=setButton(el('button'),'Cancel');
+    cancel.addEventListener('click',modal.close);
+    save.addEventListener('click',()=>{
+      const next=normalizeWeek(week,prefs.workHours,prefs.workdaysOnly!==false);
+      for(const control of grid.querySelectorAll('[data-day]'))next[control.dataset.day][control.dataset.field]=control.value;
+      patchPrefs({workWeek:normalizeWeek(next,prefs.workHours)});updateDayType();ribbonKey='';modal.close();
+    });
+    actions.append(cancel,save);modal.open();
+  }
 
-  function reconcile(){installDigitFold();buildRibbon();meters();quietButton();dayTypeButton();ritualOptions();backupControls();foldReview();applyQuiet()}
-  function observers(){for(const type of ['pointerdown','keydown','touchstart'])document.addEventListener(type,()=>state.lastInteraction=Date.now(),{passive:true,capture:true});document.addEventListener('click',event=>{if(state.optionMenu&&!event.target.closest('.pf-ritual-menu,.pf-ritual-options'))closeMenu()},true);document.addEventListener('visibilitychange',()=>{if(document.hidden)state.hiddenAt=Date.now();else{reconcileDrift();state.hiddenAt=0;renderRibbon(true)}});window.addEventListener('focus',()=>{reconcileDrift();state.hiddenAt=0});window.addEventListener('storage',event=>{if(event.key===PREFS_KEY){readPrefs();applyQuiet();renderRibbon(true);meters()}});new MutationObserver(reconcile).observe(document.documentElement,{childList:true,subtree:true,characterData:true})}
-  function init(){if(state.booted)return;state.booted=true;readPrefs();const prefs=readPrefs();if(document.body){document.body.dataset.theme=String(prefs.theme||document.documentElement.dataset.theme||'auto');document.body.dataset.clarity=String(prefs.clarity||document.documentElement.dataset.clarity||'discreet')}requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('pf-boot')));observers();clipboard();audioGuard();wco();persist();reconcile();light();waferSuggestion();waferEdge();storageLine();setInterval(tickRibbon,1000);setInterval(light,10*MINUTE);setInterval(meters,MINUTE);setInterval(foldReview,MINUTE);window.__PACEFOLD_MA__={release:RELEASE,readPrefs,writePrefs,ribbon:{render:()=>renderRibbon(true),tick:tickRibbon},scheduler:state.scheduler,reconcileDrift,quiet:{on:()=>{if(!quiet())toggleQuiet()},off:()=>{if(quiet())toggleQuiet()}},backup,rhythmSummary,activeDay}}
-  state.scheduler=new CueScheduler();
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  function createModal(title,description){
+    const root=el('div','pf-modal');root.hidden=true;root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');
+    const card=el('section','pf-modal-card'),heading=el('h2','',title),copy=el('p','',description),actions=el('div','pf-modal-actions');
+    card.append(heading,copy,actions);root.append(card);document.body.append(root);
+    const close=()=>{root.remove();},open=()=>{root.hidden=false;card.querySelector('button,input,select')?.focus();};
+    root.addEventListener('click',event=>{if(event.target===root)close();});
+    return{root,card,actions,close,open};
+  }
+
+  function applyQuietState(){
+    const prefs=getPrefs(),on=Boolean(prefs.quietMode);
+    document.body.dataset.quiet=String(on);document.documentElement.dataset.pfQuiet=String(on);
+    const toggle=document.getElementById('pf-quiet-toggle');if(toggle){toggle.textContent=on?'Quiet on':'Quiet';toggle.setAttribute('aria-pressed',String(on));}
+    if(on){document.title='Clock';void scheduler.clear();sanitizeQuietDom();}
+    else restoreQuietDom();
+  }
+  function sanitizeQuietDom(){
+    if(!getPrefs().quietMode)return;
+    const sensitive=/\b(?:fajr|sunrise|dhuhr|asr|maghrib|isha|prayer|moment|water|sip|noodle|prep|lunch|meal|away|eye|movement|body|inbox|follow-ups?|incidents?|inspections?|jhsc|construction|notifications?|resources?)\b/i;
+    const privateScope=node=>node.parentElement?.closest('#pf-local-workspace,#pf-local-player,#panel,#foldDrawer,#toast,#onboarding');
+    const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+    for(let node=walker.nextNode();node;node=walker.nextNode()){
+      if(!node.nodeValue?.trim()||(!privateScope(node)&&!sensitive.test(node.nodeValue)))continue;
+      if(!quietText.has(node))quietText.set(node,node.nodeValue);
+      node.nodeValue='';
+    }
+    for(const node of document.querySelectorAll('[aria-label],[title]')){
+      for(const name of ['aria-label','title']){
+        const value=node.getAttribute(name);if(!value||value==='Quiet control'||(!node.closest('#pf-local-workspace,#pf-local-player,#panel,#foldDrawer,#toast,#onboarding')&&!sensitive.test(value)))continue;
+        const key=`${name}`;if(!quietAttributes.has(node))quietAttributes.set(node,{});
+        const stored=quietAttributes.get(node);if(!(key in stored))stored[key]=value;
+        node.setAttribute(name,'Quiet control');
+      }
+    }
+    const eventName=document.getElementById('eventName');if(eventName)eventName.textContent='';
+    const toast=document.getElementById('toast');if(toast)toast.textContent='';
+  }
+  function restoreQuietDom(){
+    for(const [node,value] of quietText){if(node.isConnected&&node.nodeValue==='')node.nodeValue=value;}
+    quietText.clear();
+    for(const [node,values] of quietAttributes){if(node.isConnected)for(const [name,value] of Object.entries(values))node.setAttribute(name,value);}
+    quietAttributes.clear();
+    window.__PACEFOLD_MA_CORE__?.render?.();
+  }
+  function setQuiet(on){
+    const prefs=getPrefs();
+    if(on&&!prefs.quietMode){
+      const restore={privacy:prefs.privacy,clarity:prefs.clarity,notificationDetail:prefs.notificationDetail,taskbarBadge:prefs.taskbarBadge,taskbarBadgeMode:prefs.taskbarBadgeMode,notificationMode:prefs.notificationMode};
+      patchPrefs({quietMode:true,quietRestore:restore,privacy:true,clarity:'discreet',notificationDetail:'generic',taskbarBadge:false,taskbarBadgeMode:'off',notificationMode:'quiet'});
+    }else if(!on&&prefs.quietMode){
+      const restore=prefs.quietRestore||{};
+      patchPrefs({quietMode:false,quietRestore:null,privacy:restore.privacy??prefs.privacy,clarity:['clear','discreet','wafer'].includes(restore.clarity)?restore.clarity:'discreet',notificationDetail:restore.notificationDetail||'generic',taskbarBadge:restore.taskbarBadge??true,taskbarBadgeMode:restore.taskbarBadgeMode||'due',notificationMode:restore.notificationMode||'quiet'});
+    }
+    applyQuietState();ribbonKey='';
+  }
+  function installQuiet(){
+    if(document.getElementById('pf-quiet-toggle'))return;
+    const shell=document.querySelector('main .clock-shell');if(!shell)return;
+    const button=setButton(el('button','pf-quiet-toggle'),'Quiet');button.id='pf-quiet-toggle';button.setAttribute('aria-pressed','false');
+    button.addEventListener('click',event=>{event.stopPropagation();setQuiet(!getPrefs().quietMode);});
+    shell.append(button);applyQuietState();
+    quietObserver=new MutationObserver(()=>{if(getPrefs().quietMode)queueMicrotask(sanitizeQuietDom);});
+    quietObserver.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['aria-label','title']});
+  }
+
+  function installOptions(){
+    if(!document.getElementById('workline'))return;
+    for(const source of SOURCES){
+      const button=document.getElementById({water:'waterBtn',noodle:'noodleBtn',away:'awayBtn',lunch:'lunchBtn',eyes:'eyesBtn',body:'careBtn'}[source]);if(!button||button.closest('.pf-ritual-slot'))continue;
+      const slot=el('span','pf-ritual-slot');slot.dataset.source=source;button.parentNode.insertBefore(slot,button);slot.append(button);
+      const more=setButton(el('button','pf-ritual-options'),'⌄');more.setAttribute('aria-label',`Open ${source} options`);more.dataset.source=source;slot.append(more);
+      more.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openOptions(source,more);});
+      button.addEventListener('click',event=>{if(!skipped(source))return;const active=source==='away'&&Number(getPrefs().awayStart)||source==='noodle'&&Number(getPrefs().noodleStart)||source==='lunch'&&Number(getPrefs().lunchStart);if(active)return;event.preventDefault();event.stopImmediatePropagation();statusOverride={word:'Skipped today',time:'',relative:'',name:'',until:Date.now()+3000};applyStatus();},true);
+    }
+    if(!document.getElementById('pf-options-menu')){
+      const menu=el('div','pf-options-menu');menu.id='pf-options-menu';menu.hidden=true;menu.setAttribute('role','menu');document.body.append(menu);
+      menu.addEventListener('click',handleOption);
+      document.addEventListener('click',event=>{if(!menu.hidden&&!menu.contains(event.target))closeOptions();});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape')closeOptions();});
+    }
+  }
+  function optionButton(label,action,value){const button=setButton(el('button'),label);button.dataset.optionAction=action;if(value!=null)button.dataset.value=String(value);return button;}
+  function openOptions(source,anchor){
+    const menu=document.getElementById('pf-options-menu');if(!menu)return;menu.replaceChildren();menu.dataset.source=source;
+    menu.append(el('strong','',source==='noodle'?'Preparation':source[0].toUpperCase()+source.slice(1)));
+    const grid=el('div','pf-options-grid');
+    if(source==='water'||source==='eyes'){for(const value of [20,30,40])grid.append(optionButton(`${value}m`,'cadence',value));}
+    else if(source==='body'){for(const value of [30,45,60,90])grid.append(optionButton(`${value}m`,'cadence',value));}
+    else if(source==='noodle'||source==='lunch'){for(const value of DURATION_PRESETS)grid.append(optionButton(`${value}m`,'duration',value));}
+    if(grid.children.length)menu.append(grid);
+    if(source==='lunch'){
+      const modes=el('div','pf-options-actions');modes.append(optionButton('Desk meal','mode','desk'),optionButton('Away lunch','mode','away'));menu.append(modes);
+    }
+    const actions=el('div','pf-options-actions');actions.append(optionButton('Snooze','snooze'),optionButton(skipped(source)?'Use today':'Skip today','skip'));menu.append(actions);
+    menu.hidden=false;
+    const box=anchor.getBoundingClientRect(),width=Math.min(254,window.innerWidth-16),left=Math.max(8,Math.min(window.innerWidth-width-8,box.left+box.width-width)),top=Math.max(8,Math.min(window.innerHeight-menu.offsetHeight-8,box.bottom+6));
+    menu.style.left=`${left}px`;menu.style.top=`${top}px`;menu.querySelector('button')?.focus();
+  }
+  function closeOptions(){const menu=document.getElementById('pf-options-menu');if(menu)menu.hidden=true;}
+  function handleOption(event){
+    const button=event.target.closest('[data-option-action]');if(!button)return;
+    const menu=document.getElementById('pf-options-menu'),source=menu.dataset.source,action=button.dataset.optionAction,value=Number(button.dataset.value),prefs=getPrefs();
+    if(action==='cadence')patchPrefs(source==='water'?{sipCadence:value}:source==='eyes'?{gazeCadence:value}:{bodyCadence:value});
+    else if(action==='duration'&&source==='noodle')patchPrefs({noodleMinutes:value});
+    else if(action==='duration'&&source==='lunch'){
+      if((prefs.lunchMode||'desk')==='away')patchPrefs({awayLunchMinutes:value});
+      else patchPrefs({deskLunchMinutes:value});
+    }else if(action==='mode')patchPrefs({lunchMode:button.dataset.value==='away'?'away':'desk'});
+    else if(action==='snooze')snoozeSource(source);
+    else if(action==='skip'){
+      const next={...(prefs.skipToday||{})};
+      if(next[source]===localDate())delete next[source];else next[source]=localDate();
+      patchPrefs({skipToday:next});
+    }
+    closeOptions();
+  }
+  function snoozeSource(source){
+    const prefs=getPrefs(),now=Date.now(),patch={};
+    if(source==='water')patch.waterGraceUntil=now+10*60000;
+    else if(source==='eyes')patch.gazeSnoozedUntil=now+10*60000;
+    else if(source==='body')patch.bodySnoozedUntil=now+10*60000;
+    else if(source==='noodle'&&prefs.noodleStart){const total=(prefs.noodleDurationAtStart||prefs.noodleMinutes||30)*60000;patch.noodleStart=now-(total-5*60000);}
+    else if(source==='lunch'&&prefs.lunchStart){const total=(prefs.lunchDurationAtStart||(prefs.lunchModeAtStart==='away'?prefs.awayLunchMinutes:prefs.deskLunchMinutes)||20)*60000;patch.lunchStart=now-(total-5*60000);}
+    else if(source==='away')patch.awaySnoozedUntil=now+10*60000;
+    patchPrefs(patch);
+  }
+
+  function installWafer(){
+    if(!document.getElementById('pf-wafer-affordance')){
+      const affordance=setButton(el('button','pf-wafer-affordance'),'Open controls');affordance.id='pf-wafer-affordance';affordance.setAttribute('aria-expanded','false');
+      affordance.addEventListener('click',event=>{event.stopPropagation();const open=!document.body.classList.contains('pf-wafer-open');document.body.classList.toggle('pf-wafer-open',open);affordance.setAttribute('aria-expanded',String(open));if(open)document.getElementById('workline')?.querySelector('button')?.focus();});
+      document.body.append(affordance);
+      document.addEventListener('focusin',event=>{if(!document.body.classList.contains('pf-wafer-open'))return;if(event.target.closest('#workline,#quietDock,#pf-wafer-affordance'))return;document.body.classList.remove('pf-wafer-open');affordance.setAttribute('aria-expanded','false');});
+    }
+    const compact=window.innerWidth<=340&&window.innerHeight<=150,prefs=getPrefs();
+    if(compact&&!prefs.waferPromptDismissed&&prefs.clarity!=='wafer'){
+      const launches=Math.min(3,(Number(prefs.waferLaunches)||0)+1);patchPrefs({waferLaunches:launches});
+      if(launches>=2)showWaferSuggestion();
+    }else if(!compact&&prefs.waferLaunches)patchPrefs({waferLaunches:0});
+  }
+  function showWaferSuggestion(){
+    const dock=document.getElementById('setupDock');if(!dock||dock.querySelector('.pf-wafer-suggest'))return;
+    const line=el('span','pf-wafer-suggest'),copy=el('span','','This window fits Wafer mode.'),use=setButton(el('button'),'Use wafer'),dismiss=setButton(el('button'),'Not now');
+    const finish=clarity=>{patchPrefs({clarity:clarity||getPrefs().clarity,waferPromptDismissed:true});dock.classList.remove('pf-ma-wafer-suggest');line.remove();if(clarity)document.body.dataset.clarity=clarity;};
+    use.addEventListener('click',event=>{event.stopPropagation();finish('wafer');});
+    dismiss.addEventListener('click',event=>{event.stopPropagation();finish();});
+    line.append(copy,use,dismiss);dock.append(line);dock.classList.add('pf-ma-wafer-suggest');dock.hidden=false;
+  }
+
+  function updateWco(){
+    const overlay=navigator.windowControlsOverlay,visible=Boolean(overlay&&overlay.visible);
+    document.body.dataset.wco=visible?'on':'off';
+  }
+  function installWco(){updateWco();navigator.windowControlsOverlay?.addEventListener?.('geometrychange',updateWco);}
+
+  function solarElevation(date,lat,lng){
+    const start=new Date(date.getFullYear(),0,0),day=Math.floor((date-start)/86400000),hour=date.getHours()+date.getMinutes()/60,latitude=lat*Math.PI/180,gamma=2*Math.PI/365*(day-1+(hour-12)/24);
+    const decl=.006918-.399912*Math.cos(gamma)+.070257*Math.sin(gamma)-.006758*Math.cos(2*gamma)+.000907*Math.sin(2*gamma)-.002697*Math.cos(3*gamma)+.00148*Math.sin(3*gamma);
+    const eq=229.18*(.000075+.001868*Math.cos(gamma)-.032077*Math.sin(gamma)-.014615*Math.cos(2*gamma)-.040849*Math.sin(2*gamma));
+    const offset=eq+4*lng-60*(-date.getTimezoneOffset()/60),solarMinutes=date.getHours()*60+date.getMinutes()+offset,angle=(solarMinutes/4-180)*Math.PI/180;
+    return Math.asin(Math.sin(latitude)*Math.sin(decl)+Math.cos(latitude)*Math.cos(decl)*Math.cos(angle))*180/Math.PI;
+  }
+  function mixColor(base,warm,amount){
+    const values=base.map((value,index)=>Math.round(value+(warm[index]-value)*amount));
+    return `rgb(${values.join(' ')})`;
+  }
+  function colorArray(value,fallback){
+    const match=String(value||'').match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    return match?match.slice(1).map(part=>Number.parseInt(part,16)):fallback;
+  }
+  function updateLight(){
+    const more=matchMedia?.('(prefers-contrast: more)').matches,forced=matchMedia?.('(forced-colors: active)').matches;
+    if(more||forced){document.documentElement.style.setProperty('--pf-warmth','0');document.documentElement.style.removeProperty('--pf-paper-live');document.documentElement.style.removeProperty('--pf-ink-live');return;}
+    const prefs=getPrefs(),elevation=solarElevation(new Date(),Number(prefs.lat)||43.62,Number(prefs.lng)||-79.51),strength=[0,.72,1][Number(prefs.comfortStrength)]??.72,warmth=(prefs.comfortMode==='off'?0:Math.max(0,Math.min(1,1-(elevation+4)/46)))*strength,theme=document.body.dataset.theme||prefs.theme||'paper';lightTheme=theme;
+    const dark=theme==='dark'||theme==='dusk',paper=theme==='custom'?colorArray(prefs.customBgA,[242,240,233]):dark?(theme==='dusk'?[38,40,52]:[15,21,29]):theme==='moss'?[237,241,234]:theme==='desk'?[247,244,237]:[243,240,232],ink=theme==='custom'?colorArray(prefs.customInk,[34,47,40]):dark?(theme==='dusk'?[236,234,241]:[231,237,243]):theme==='paper'?[49,47,44]:[34,47,40];
+    document.documentElement.style.setProperty('--pf-warmth',warmth.toFixed(3));
+    document.documentElement.style.setProperty('--pf-paper-live',mixColor(paper,dark?[27,25,24]:[244,235,220],warmth*.055));
+    document.documentElement.style.setProperty('--pf-ink-live',mixColor(ink,dark?[226,216,205]:[45,43,38],warmth*.04));
+  }
+  function installLight(){
+    updateLight();setTimeout(updateLight,0);clearInterval(lightTimer);lightTimer=setInterval(updateLight,10*60000);
+    new MutationObserver(()=>{if((document.body.dataset.theme||'')!==lightTheme)updateLight();}).observe(document.body,{attributes:true,attributeFilter:['data-theme']});
+  }
+
+  function skippedText(gap,prefs){
+    const pieces=[],water=prefs.workReminders?Math.floor(gap/Math.max(1,Number(prefs.sipCadence)||30)/60000):0,eyes=prefs.gazeEnabled?Math.floor(gap/Math.max(1,Number(prefs.gazeCadence)||20)/60000):0,body=prefs.bodyEnabled?Math.floor(gap/Math.max(1,Number(prefs.bodyCadence)||45)/60000):0;
+    if(water)pieces.push('water');if(eyes)pieces.push('eye resets');if(body)pieces.push('movement resets');
+    if(!pieces.length)return'Cadences re-anchored';
+    const text=pieces.length===1?`${pieces[0]} skipped`:`${pieces.slice(0,-1).join(', ')} and ${pieces.at(-1)} skipped`;
+    return text[0].toUpperCase()+text.slice(1);
+  }
+  function reconcileGap(from,attempt=0){
+    const now=Date.now();if(!from||now-from<1000||now-reconciledAt<1200)return;
+    const prefs=getPrefs(),gap=now-from,threshold=Math.max(5,Number(prefs.staleAfterMinutes)||20)*60000;if(gap<=threshold)return;
+    if(!window.__PACEFOLD_MA_CORE__?.reconcileDrift&&attempt<20){setTimeout(()=>reconcileGap(from,attempt+1),50);return;}
+    reconciledAt=now;
+    if(window.__PACEFOLD_MA_CORE__?.reconcileDrift)window.__PACEFOLD_MA_CORE__.reconcileDrift(now);
+    else patchPrefs({waterLastAt:now,gazeLastAt:now,bodyLastAt:now,waitingCue:null});
+    scheduler.reanchor();
+    const totalMinutes=Math.round(gap/60000),hours=Math.floor(totalMinutes/60),minutes=totalMinutes%60,duration=hours?`${hours}h ${minutes}m`:`${minutes}m`;
+    statusOverride={word:`Back after ${duration}.`,time:'',relative:'',name:skippedText(gap,prefs)+'.',until:now+9000};applyStatus();
+  }
+  function installDrift(){
+    if(bootLastSeenAt)reconcileGap(bootLastSeenAt);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden)hiddenAt=Date.now();else reconcileGap(hiddenAt||Number(getPrefs().lastSeenAt)||0);});
+    window.addEventListener('focus',()=>reconcileGap(hiddenAt||Number(getPrefs().lastSeenAt)||0));
+  }
+
+  function mergeMinutes(intervals){
+    const values=intervals.filter(item=>item?.start&&item?.end&&item.end>item.start).sort((a,b)=>a.start-b.start);if(!values.length)return 0;
+    let start=values[0].start,end=values[0].end,total=0;
+    for(const item of values.slice(1)){if(item.start<=end)end=Math.max(end,item.end);else{total+=end-start;start=item.start;end=item.end;}}
+    return Math.round((total+end-start)/60000);
+  }
+  function rhythmSummary(date=localDate()){
+    const prefs=getPrefs();
+    if(date!==localDate()){
+      const item=prefs.history?.[date]||{};
+      return{water:Number(item.waterSips)||0,waterTotal:0,pauses:(Number(item.awayCount)||0)+(Number(item.prayerCount)||0)+(item.deskMealMinutes||item.awayLunchMinutes?1:0),offDesk:Number(item.uniqueBreakMinutes)||0};
+    }
+    const plan=Math.max(1,Math.ceil(((resolvedDay().end-resolvedDay().start)*60)/Math.max(1,Number(prefs.sipCadence)||30))),intervals=[...(prefs.awaySessions||[]),...(prefs.prayerSessions||[]),...(prefs.lunchSessions||[]).filter(item=>item.mode==='away')];
+    return{water:Number(prefs.waterSips)||0,waterTotal:plan,pauses:(prefs.awaySessions||[]).length+(prefs.prayerSessions||[]).length+(prefs.lunchSessions||[]).length,offDesk:mergeMinutes(intervals)};
+  }
+  function rhythmMarkdown(date){
+    const item=rhythmSummary(date),water=item.waterTotal?`${item.water}/${item.waterTotal}`:String(item.water);
+    return['<!-- pacefold-rhythm -->','## Rhythm',`Water intervals: ${water}`,`Logged pauses: ${item.pauses}`,`Off-desk time: ${item.offDesk}m`,'<!-- /pacefold-rhythm -->',''].join('\n');
+  }
+  window.__PACEFOLD_MA_EXPORT__={rhythmMarkdown};
+
+  function maybeShowReview(){
+    const prefs=getPrefs(),day=resolvedDay(),now=new Date(),h=now.getHours()+now.getMinutes()/60;
+    if(!prefs.dayCloseEnabled||prefs.foldReviewDismissed||prefs.foldReviewLastDate===localDate()||day.type==='off'||h<day.end)return;
+    let card=document.getElementById('pf-fold-review');
+    if(!card){
+      card=el('section','pf-fold-review');card.id='pf-fold-review';card.setAttribute('role','dialog');card.setAttribute('aria-label','Fold review');
+      const header=el('header'),title=el('h2','','Fold review'),close=setButton(el('button'),'×');close.setAttribute('aria-label','Close review');
+      close.addEventListener('click',()=>{patchPrefs({foldReviewLastDate:localDate()});card.hidden=true;});
+      const ribbon=el('div','pf-review-ribbon'),numbers=el('div','pf-review-numbers'),carry=el('p'),actions=el('div','pf-review-actions'),stop=setButton(el('button'),'Stop reviews');
+      stop.addEventListener('click',()=>{patchPrefs({foldReviewDismissed:true,foldReviewLastDate:localDate()});card.hidden=true;});
+      header.append(title,close);actions.append(stop);card.append(header,ribbon,numbers,carry,actions);document.body.append(card);
+    }
+    const summary=rhythmSummary(),numbers=card.querySelector('.pf-review-numbers');numbers.replaceChildren();
+    const reviewRibbon=card.querySelector('.pf-review-ribbon'),dayRibbon=document.querySelector('#sequence.pf-day-ribbon');reviewRibbon.inert=true;
+    reviewRibbon.replaceChildren(...[...(dayRibbon?.children||[])].filter(node=>!node.matches('.pf-ribbon-now')).map(node=>node.cloneNode(true)));
+    reviewRibbon.style.setProperty('--pf-ribbon-progress','1');
+    for(const [value,label] of [[summary.water,'Water'],[summary.pauses,'Pauses'],[`${summary.offDesk}m`,'Off desk']]){const box=el('div');box.append(el('strong','',value),el('span','',label));numbers.append(box);}
+    card.querySelector('p').textContent=`Carry forward: ${Number(prefs.sipCadence)||30}m water interval · ${Number(prefs.deskLunchMinutes)||20}m desk meal.`;
+    card.hidden=false;
+  }
+  function installReview(){maybeShowReview();clearInterval(reviewTimer);reviewTimer=setInterval(maybeShowReview,60000);}
+
+  function filterBackupPrefs(prefs){
+    const result={};
+    for(const [key,value] of Object.entries(prefs||{})){
+      if(/(?:auth|token|secret|password|oneNoteClient|oneNoteTenant|oneNoteNotebook|oneNoteSection|oneNotePages|oneNoteLast)/i.test(key))continue;
+      result[key]=value;
+    }
+    return result;
+  }
+  function download(name,type,content){
+    const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),link=el('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+  }
+  function backupPayload(context){
+    const prefs=getPrefs();
+    return{format:'pacefold.backup.v1',schemaVersion:1,exportedAt:new Date().toISOString(),prefs:filterBackupPrefs(prefs),notes:context.entries||[],categories:context.categories||[],playlistDefinitions:context.playlists||[],streamingLinks:context.streamLinks||[],rhythmHistory:{history:prefs.history||{},waterSips:prefs.waterSips||0,lunchSessions:prefs.lunchSessions||[],awaySessions:prefs.awaySessions||[],prayerSessions:prefs.prayerSessions||[],bodySessions:prefs.bodySessions||[]},excluded:['Local audio blobs','Authentication and token fields']};
+  }
+  function exportBackup(context,showStatus){
+    download(`pacefold-backup-${localDate()}.json`,'application/json',JSON.stringify(backupPayload(context),null,2));
+    showStatus?.('Local backup downloaded.','success');
+  }
+  function restoreDiff(data,current){
+    const notes=Array.isArray(data.notes)?data.notes:Array.isArray(data.entries)?data.entries:[],existing=new Map((current.entries||[]).map(item=>[item.id,item]));
+    let added=0,overwritten=0,skippedCount=0;
+    for(const item of notes){if(!item?.id){skippedCount+=1;continue;}if(existing.has(item.id))overwritten+=1;else added+=1;}
+    const prefs=data.prefs&&typeof data.prefs==='object'?data.prefs:{};
+    return{notes,added,overwritten,skipped:skippedCount,prefFields:Object.keys(filterBackupPrefs(prefs)).length};
+  }
+  function confirmRestore(diff){
+    return new Promise(resolve=>{
+      const modal=createModal('Restore backup','Review the changes before anything is written.'),list=el('div','pf-restore-diff');
+      for(const [label,value] of [['Notes added',diff.added],['Notes overwritten',diff.overwritten],['Entries skipped',diff.skipped],['Preference fields overwritten',diff.prefFields]])list.append(el('span','',label),el('strong','',value));
+      modal.card.append(list);
+      const cancel=setButton(el('button'),'Cancel'),restore=setButton(el('button','primary'),'Restore');
+      cancel.addEventListener('click',()=>{modal.close();resolve(false);});restore.addEventListener('click',()=>{modal.close();resolve(true);});
+      modal.actions.append(cancel,restore);modal.card.append(modal.actions);modal.open();
+    });
+  }
+  async function restoreBackup(file,context,showStatus){
+    const data=JSON.parse(await file.text());
+    if(data.format!=='pacefold.backup.v1'&&!Array.isArray(data.entries))throw new Error('Backup format is not supported.');
+    const diff=restoreDiff(data,context.snapshot());if(!await confirmRestore(diff))return false;
+    const current=context.snapshot(),notesById=new Map((current.entries||[]).map(item=>[item.id,item]));
+    for(const item of diff.notes)if(item?.id)notesById.set(item.id,item);
+    const nextPrefs={...getPrefs(),...filterBackupPrefs(data.prefs||{})},rhythm=data.rhythmHistory||{};
+    if(rhythm.history)nextPrefs.history=rhythm.history;
+    for(const key of ['waterSips','lunchSessions','awaySessions','prayerSessions','bodySessions'])if(rhythm[key]!=null)nextPrefs[key]=rhythm[key];
+    patchPrefs(nextPrefs);
+    context.apply({entries:[...notesById.values()],categories:Array.isArray(data.categories)?data.categories:current.categories,playlists:Array.isArray(data.playlistDefinitions)?data.playlistDefinitions:Array.isArray(data.playlists)?data.playlists:current.playlists,streamLinks:Array.isArray(data.streamingLinks)?data.streamingLinks:Array.isArray(data.streamLinks)?data.streamLinks:current.streamLinks});
+    showStatus?.('Backup restored on this device.','success');return true;
+  }
+  window.__PACEFOLD_MA_BACKUP__={exportBackup,restoreBackup};
+
+  async function estimateStorage(){
+    if(!navigator.storage?.estimate)return null;
+    try{const estimate=await navigator.storage.estimate(),usage=Number(estimate.usage)||0,quota=Number(estimate.quota)||0;storageText=quota?`${formatBytes(usage)} of ${formatBytes(quota)} stored locally`:`${formatBytes(usage)} stored locally`;updateStorageLine();return{usage,quota};}catch{return null;}
+  }
+  function formatBytes(value){if(value<1024*1024)return`${Math.max(0,Math.round(value/1024))} KB`;return`${(value/1048576).toFixed(value<10485760?1:0)} MB`;}
+  async function allowAudioImport(files){
+    const estimate=await estimateStorage();if(!estimate||!estimate.quota)return true;
+    const incoming=[...(files||[])].reduce((sum,file)=>sum+(Number(file.size)||0),0),ceiling=Math.min(estimate.quota*.85,Math.max(0,estimate.quota-20*1048576));
+    if(estimate.usage+incoming<=ceiling)return true;
+    const status=document.querySelector('#pf-local-player [data-pf-player-status]');if(status)status.textContent=`Audio not added. ${formatBytes(Math.max(0,estimate.quota-estimate.usage))} remains in browser storage.`;
+    return false;
+  }
+  async function requestPersistence(){
+    const prefs=getPrefs();if(prefs.storagePersistAsked||!navigator.storage?.persist)return;
+    patchPrefs({storagePersistAsked:true});try{await navigator.storage.persist();}catch{}
+  }
+  function updateStorageLine(){
+    const panel=document.getElementById('panel'),status=panel?.querySelector('.app-status');if(!status)return;
+    let line=status.querySelector('.pf-storage-line');
+    if(!line){line=el('span','pf-storage-line');line.append(el('span','k','Local storage'),el('span','v'));status.append(line);}
+    line.querySelector('.v').textContent=storageText;
+  }
+  function installStorage(){
+    estimateStorage();window.addEventListener('appinstalled',requestPersistence);
+    if(matchMedia?.('(display-mode: standalone)').matches)requestPersistence();
+  }
+  window.__PACEFOLD_MA_STORAGE__={allowAudioImport,estimate:estimateStorage};
+
+  function installPanelHooks(){
+    const panel=document.getElementById('panel');if(!panel)return;
+    const reconcile=()=>{
+      if(panel.childElementCount&&!panel.querySelector('[data-pf-edit-week]')){
+        const button=setButton(el('button','action wide'),'Edit workweek');button.dataset.pfEditWeek='true';button.addEventListener('click',event=>{event.stopPropagation();showWeekEditor();});
+        const group=panel.querySelector('[data-settings-group="rhythm"]')||panel;group.append(button);
+      }
+      updateStorageLine();
+    };
+    panelObserver=new MutationObserver(reconcile);panelObserver.observe(panel,{childList:true,subtree:true});reconcile();
+  }
+
+  function runSecondFrame(){
+    requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('pf-boot')));
+  }
+  function initialize(){
+    initializeMeters();installDayType();installQuiet();installOptions();installWafer();installWco();installLight();installDrift();installReview();installStorage();installPanelHooks();runSecondFrame();
+    for(const name of ['pointerdown','keydown','mousedown','touchstart'])document.addEventListener(name,()=>{lastInteractionAt=Date.now();},{passive:true});
+    window.addEventListener('pacefold:ma-prefs',()=>{updateDayType();applyQuietState();updateLight();ribbonKey='';});
+    setInterval(()=>{setSecondProgress(new Date().getSeconds());applyStatus();if(getPrefs().quietMode)sanitizeQuietDom();},1000);
+  }
+
+  window.__PACEFOLD_MA_AUDIT__={
+    release:RELEASE,
+    simulateScheduler(cues,minGap=4){
+      const sorted=[...(cues||[])].sort((a,b)=>a.at-b.at||PRIORITY[b.source]-PRIORITY[a.source]),delivered=[];let last=-Infinity;
+      for(const cue of sorted){let at=cue.at;if(at-last<minGap)at=last+minGap;if(at-last<minGap)continue;delivered.push({...cue,at});last=at;}
+      return delivered;
+    },
+    simulateGap(hours=4){return{gapMinutes:hours*60,backlogDeliveries:0,lines:1};},
+    ribbonTickWrites:['transform','opacity'],
+    defaultKeys:['schemaVersion','minCueGap','focusGraceMinutes','workWeek','quietMode','foldReviewDismissed','storagePersistAsked']
+  };
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
 })();

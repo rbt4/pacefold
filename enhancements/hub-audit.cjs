@@ -74,7 +74,7 @@ async function main(){
 
     mark('browser-start');
     await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
-    browser=await chromium.launch({headless:true});
+    browser=await chromium.launch({headless:true,executablePath:process.env.PACEFOLD_CHROMIUM_PATH||undefined});
     const context=await browser.newContext({viewport:{width:1280,height:800}});
     await context.addInitScript(()=>{
       window.__externalOpenCount=0;

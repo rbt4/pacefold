@@ -1,103 +1,223 @@
 'use strict';
+
 const fs=require('node:fs');
-const path=require('node:path');
 const http=require('node:http');
+const path=require('node:path');
 const {chromium}=require('playwright');
 
-const root=path.resolve(process.argv[2]||'_release');
-const artifactRoot=path.resolve(process.argv[3]||'/tmp/pacefold-ma-artifacts');
-fs.mkdirSync(artifactRoot,{recursive:true});
-const appRoot=path.join(root,'app');
-function assert(value,message){if(!value)throw new Error(message);}
-function text(file){return fs.readFileSync(file,'utf8');}
-function mime(file){return file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':file.endsWith('.json')||file.endsWith('.webmanifest')?'application/manifest+json':file.endsWith('.svg')?'image/svg+xml':file.endsWith('.png')?'image/png':'text/html';}
+const site=path.resolve(process.argv[2]||'_site');
+const artifacts=path.resolve(process.argv[3]||path.join(process.cwd(),'ma-audit-artifacts'));
+const app=path.join(site,'app');
+const fail=message=>{throw new Error(message);};
+const assert=(condition,message)=>{if(!condition)fail(message);};
+const read=file=>fs.readFileSync(file,'utf8');
 
-const maJs=text(path.join(appRoot,'pacefold-ma.js'));
-const maCss=text(path.join(appRoot,'pacefold-ma.css'));
-const themeBoot=text(path.join(appRoot,'pf-theme-boot.js'));
-const html=text(path.join(appRoot,'index.html'));
-for(const token of ['class CueScheduler','minCueGap','focusGraceMinutes','reconcileDrift','pacefold.backup.v1','navigator.storage','windowControlsOverlay','pf-day-ribbon','maQuietRestore'])assert(maJs.includes(token),`Ma JS token missing: ${token}`);
-for(const token of ['--pf-ribbon-h','@property --pf-meter','data-clarity="wafer"','titlebar-area-height','forced-colors:active','prefers-reduced-transparency','pf-ma-digit-fold'])assert(maCss.includes(token),`Ma CSS token missing: ${token}`);
-assert(themeBoot.includes("root.classList.add('pf-boot')")&&themeBoot.includes('pacefoldPrefsV15'),'Theme boot contract missing');
-assert((html.match(/pf-theme-boot\.js/g)||[]).length===1,'Theme boot injected more than once');
-assert((html.match(/pacefold-ma\.js/g)||[]).length===1,'Ma runtime injected more than once');
-assert((html.match(/pacefold-ma\.css/g)||[]).length===1,'Ma stylesheet injected more than once');
-assert(html.indexOf('pf-theme-boot.js')<html.indexOf('app.js'),'Theme boot does not precede the core app');
-assert(html.indexOf('pacefold-ma.js')<html.indexOf('app.js'),'Scheduler does not precede the core app');
-assert(!/PeriodicSync|NotificationTrigger|periodicSync/i.test(maJs),'Unsupported background delivery path was added');
-
-for(const name of fs.readdirSync(appRoot).filter(name=>/^manifest.*(?:json|webmanifest)$/i.test(name))){
-  const manifest=JSON.parse(text(path.join(appRoot,name)));
-  assert(Array.isArray(manifest.display_override)&&manifest.display_override[0]==='window-controls-overlay'&&manifest.display_override.includes('standalone'),`WCO display_override missing in ${name}`);
+function staticAudit(){
+  const ma=read(path.join(app,'pacefold-ma.js')),css=read(path.join(app,'pacefold-ma.css')),core=read(path.join(app,'app.js')),html=read(path.join(app,'index.html')),manifest=JSON.parse(read(path.join(site,'manifest.webmanifest'))),worker=read(path.join(site,'service-worker.js'));
+  assert(!/\.innerHTML\s*=/.test(ma),'Ma runtime contains a raw innerHTML assignment');
+  assert(!/style\s*=\s*["']/.test(ma),'Ma runtime contains an inline style string');
+  assert(fs.statSync(path.join(app,'fonts','pacefold-ma.woff2')).size<=15000,'Ma font subset exceeds 15 KB');
+  for(const token of [
+    '@property --pf-meter','--pf-ribbon-h','--pf-paper-live','data-clarity="wafer"','forced-colors:active',
+    'prefers-reduced-motion:reduce','prefers-reduced-transparency:reduce','titlebar-area-width','app-region:drag',
+    '.pf-ribbon-now','.pf-meter',':focus-visible'
+  ])assert(css.includes(token),`Ma CSS token missing: ${token}`);
+  for(const token of [
+    'createScheduler','minCueGap','focusGraceMinutes','waitingCue','renderRibbon','simulateGap',
+    'pacefold.backup.v1','allowAudioImport','navigator.storage.persist','windowControlsOverlay',
+    'rhythmMarkdown','foldReviewDismissed','quietRestore'
+  ])assert(ma.includes(token),`Ma runtime token missing: ${token}`);
+  assert(core.includes('window.__PACEFOLD_MA_SCHEDULER__?.request'),'Core does not route cues through the Ma scheduler');
+  assert(core.includes('window.__PACEFOLD_MA_SCHEDULER__?.updateBadge'),'Core does not route badges through the Ma scheduler');
+  assert(core.includes('function reconcileMaDrift')&&core.includes('reconcileDrift:reconcileMaDrift'),'Expired timer reconciliation is not owned by the core');
+  assert(!/\b(?:noodleDone|lunchDone)\s*=/.test(ma),'The Ma observer completes a core-owned timer directly');
+  assert((core.match(/await registration\.showNotification/g)||[]).length===1,'Core has more than one low-level notification delivery path');
+  const ribbonStart=ma.indexOf('function renderRibbon('),ribbonEnd=ma.indexOf('\n  function setMinute',ribbonStart),ribbon=ma.slice(ribbonStart,ribbonEnd);
+  assert(ribbonStart>=0&&ribbonEnd>ribbonStart,'Ribbon function could not be isolated');
+  assert(!/requestAnimationFrame|getBoundingClientRect|offsetWidth|offsetHeight|getComputedStyle/.test(ribbon),'Ribbon tick contains forced layout or animation-frame work');
+  assert((html.match(/data-pacefold-theme-boot=/g)||[]).length===1,'Theme boot was not injected exactly once');
+  assert((html.match(/data-pacefold-ma=/g)||[]).length===2,'Ma CSS and script were not injected exactly once');
+  assert(html.indexOf('pacefold-theme-boot.js')<html.indexOf('app-style-01.css'),'Theme boot does not precede the first stylesheet');
+  assert(html.indexOf('pacefold-ma.js')<html.indexOf('src="./app.js"'),'Ma scheduler does not load before the core');
+  assert(JSON.stringify(manifest.display_override)===JSON.stringify(['window-controls-overlay','standalone']),'Manifest WCO fallback order is wrong');
+  for(const asset of ['pacefold-ma.css','pacefold-theme-boot.js','pacefold-ma.js','pacefold-hub-guardian.js','pacefold-resilience.js','pacefold-hub.js','pacefold-integrated.js','pacefold-revamp.js','pacefold-fold-mark.svg','fonts/pacefold-ma.woff2'])assert(worker.includes(asset),`Offline shell omits ${asset}`);
+  assert(worker.includes('caches.match(request,{ignoreSearch:true})'),'Offline worker does not resolve cache-busted asset URLs');
+  return{ma,css,core};
 }
 
-const server=http.createServer((req,res)=>{
-  const raw=decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname);
-  let file=path.join(root,raw.replace(/^\//,''));
-  if(raw==='/'||raw.endsWith('/'))file=path.join(file,'index.html');
-  if(!file.startsWith(root)||!fs.existsSync(file)||fs.statSync(file).isDirectory()){res.writeHead(404);res.end('Not found');return;}
-  res.writeHead(200,{'Content-Type':mime(file),'Cache-Control':'no-store'});fs.createReadStream(file).pipe(res);
-});
+function defaultKeys(core){
+  const marker='const DEFAULTS=',start=core.indexOf(marker),open=core.indexOf('{',start),keys=new Set();
+  assert(start>=0&&open>start,'DEFAULTS object could not be found');
+  let depth=0,quote='',escaped=false,expectKey=false;
+  for(let index=open;index<core.length;index+=1){
+    const character=core[index];
+    if(quote){
+      if(escaped)escaped=false;
+      else if(character==='\\')escaped=true;
+      else if(character===quote)quote='';
+      continue;
+    }
+    if(character==="'"||character==='"`'||character==='"'){quote=character;continue;}
+    if(character==='{'){depth+=1;if(depth===1)expectKey=true;continue;}
+    if(character==='}'){depth-=1;if(depth===0)break;continue;}
+    if(depth!==1)continue;
+    if(character===','){expectKey=true;continue;}
+    if(!expectKey||/\s/.test(character))continue;
+    const match=core.slice(index).match(/^([A-Za-z][A-Za-z0-9]*)\s*:/);
+    if(match){keys.add(match[1]);index+=match[0].length-1;expectKey=false;}
+    else expectKey=false;
+  }
+  assert(keys.size>70,`DEFAULTS parser found only ${keys.size} keys`);
+  return [...keys];
+}
 
-(async()=>{
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const port=server.address().port;
-  const browser=await chromium.launch({headless:true});
+function serve(){
+  return new Promise(resolve=>{
+    const server=http.createServer((request,response)=>{
+      let pathname;
+      try{pathname=decodeURIComponent(new URL(request.url,'http://127.0.0.1').pathname);}catch{pathname='/';}
+      let file=path.join(site,pathname.replace(/^\/+/,''));
+      if(pathname.endsWith('/'))file=path.join(file,'index.html');
+      if(!file.startsWith(site)){response.writeHead(403);response.end();return;}
+      fs.readFile(file,(error,buffer)=>{
+        if(error){response.writeHead(404);response.end('Not found');return;}
+        const type={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.png':'image/png','.svg':'image/svg+xml'}[path.extname(file)]||'application/octet-stream';
+        response.writeHead(200,{'content-type':type,'cache-control':'no-store'});response.end(buffer);
+      });
+    });
+    server.listen(0,'127.0.0.1',()=>resolve(server));
+  });
+}
+
+async function browserAudit(core){
+  fs.mkdirSync(artifacts,{recursive:true});
+  const server=await serve(),port=server.address().port,base=`http://127.0.0.1:${port}`,browser=await chromium.launch({
+    headless:true,
+    executablePath:process.env.PACEFOLD_CHROMIUM_PATH||undefined
+  });
+  const errors=[];
   try{
-    const context=await browser.newContext({viewport:{width:1180,height:820}});
+    const context=await browser.newContext({viewport:{width:1120,height:820},reducedMotion:'no-preference'});
     await context.addInitScript(()=>{
-      class FakeNotification extends EventTarget{constructor(title,options){super();globalThis.__notifications=(globalThis.__notifications||[]).concat([{title,options}]);}static permission='granted';static requestPermission=async()=> 'granted';}
-      Object.defineProperty(window,'Notification',{value:FakeNotification,writable:true,configurable:true});
-      Object.defineProperty(navigator,'setAppBadge',{value:async value=>{globalThis.__badges=(globalThis.__badges||[]).concat([value]);},writable:true,configurable:true});
-      const legacy={workHours:'08:30-16:30',workdaysOnly:true,profile:'default',customMoments:[],prepPreset:15,prepLabel:'Noodles',waterTarget:8,sipCadence:30,waterSips:2,gazeCadence:20,bodyCadence:45,noodleMinutes:15,deskLunchMinutes:30,awayLunchMinutes:45,lunchSessions:[],awaySessions:[],prayerSessions:[],bodySessions:[],history:[],lead:5,dueWindow:10,staleAfterMinutes:15,snoozeMinutes:5,clarity:'discreet',privacy:false,taskbarBadge:true,notificationDetail:'full',notificationMode:'toast',dayCloseEnabled:false,lat:43.65,lng:-79.38};
-      localStorage.setItem('pacefoldPrefsV15',JSON.stringify(legacy));
+      const now=Date.now(),date=new Date(),key=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      localStorage.setItem('pacefoldOnboardedV15','1');
+      localStorage.setItem('pacefoldSetupDismissedV15','1');
+      localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',theme:'paper',privacy:false,clarity:'discreet',workdaysOnly:false,workHours:'00:00-23:59',workReminders:true,showWorkline:true,dayCloseEnabled:false,lastSeenAt:now-4*3600000,activityDate:key,waterDate:key,noodleStart:now-2*3600000,noodleDurationAtStart:30,lunchStart:now-2*3600000,lunchDurationAtStart:20,lunchModeAtStart:'desk'}));
+      window.__maNotices=[];addEventListener('pacefold:notification',event=>window.__maNotices.push(event.detail));
     });
     const page=await context.newPage();
-    await page.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>Boolean(window.__PACEFOLD_MA__));
+    page.on('pageerror',error=>errors.push(error.message));
+    page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
+    await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
+    await page.waitForFunction(()=>window.__PACEFOLD_MA_CORE__&&window.__PACEFOLD_MA_AUDIT__&&document.querySelector('#sequence.pf-day-ribbon'));
+    await page.waitForFunction(()=>!document.documentElement.classList.contains('pf-boot'));
 
-    const scheduler=await page.evaluate(()=>{
-      const cues=[{at:0,priority:3},{at:1,priority:2},{at:2,priority:5},{at:3,priority:1},{at:8,priority:3}];
-      const delivered=window.__PACEFOLD_MA__.scheduler.simulate(cues,4);
-      return delivered.map(item=>item.at);
+    const scheduler=await page.evaluate(()=>window.__PACEFOLD_MA_AUDIT__.simulateScheduler([
+      {source:'water',at:0},{source:'prayer',at:0},{source:'eyes',at:0},{source:'body',at:1}
+    ],4));
+    for(let index=1;index<scheduler.length;index+=1)assert(scheduler[index].at-scheduler[index-1].at>=4,`Cue gap invariant failed: ${JSON.stringify(scheduler)}`);
+    const drift=await page.evaluate(()=>window.__PACEFOLD_MA_AUDIT__.simulateGap(4));
+    assert(drift.lines===1&&drift.backlogDeliveries===0,`Drift simulation failed: ${JSON.stringify(drift)}`);
+    await page.waitForTimeout(120);
+    const driftState=await page.evaluate(()=>({status:document.getElementById('statusLine')?.innerText,notices:window.__maNotices.length,prefs:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}')}));
+    assert(/Back after 4h/i.test(driftState.status),`Four-hour drift did not produce one consolidated status: ${driftState.status}`);
+    assert(driftState.notices===0,`Four-hour drift delivered ${driftState.notices} backlog cue(s)`);
+    assert(Math.abs(Date.now()-driftState.prefs.waterLastAt)<30000&&Math.abs(Date.now()-driftState.prefs.gazeLastAt)<30000&&Math.abs(Date.now()-driftState.prefs.bodyLastAt)<30000,'Drift did not re-anchor low-priority cadences');
+    assert(!driftState.prefs.noodleStart&&!driftState.prefs.lunchStart&&driftState.prefs.noodleDone&&driftState.prefs.lunchDone&&driftState.prefs.lunchSessions.length===1,`Core did not silently resolve timers that expired during the gap: ${JSON.stringify({noodleStart:driftState.prefs.noodleStart,noodleDone:driftState.prefs.noodleDone,lunchStart:driftState.prefs.lunchStart,lunchDone:driftState.prefs.lunchDone,lunchSessions:driftState.prefs.lunchSessions})}`);
+    assert(Object.values(driftState.prefs.workWeek).every(day=>day.type==='desk'),'workWeek migration did not preserve workdaysOnly=false');
+
+    const defaults=defaultKeys(core),prefs=await page.evaluate(()=>window.__PACEFOLD_MA_CORE__.updatePrefs({schemaVersion:18}));
+    const missing=defaults.filter(key=>!(key in prefs));assert(!missing.length,`15.2.2 preference keys were dropped: ${missing.join(', ')}`);
+
+    const ribbon=await page.evaluate(()=>({children:document.querySelectorAll('#sequence>*').length,now:getComputedStyle(document.querySelector('.pf-ribbon-now')).display,progress:document.getElementById('sequence').style.getPropertyValue('--pf-ribbon-progress'),legacyStrip:Boolean(document.querySelector('.fold-strip[data-pf-fold-strip]')),legacyProgress:getComputedStyle(document.querySelector('.progress')).display}));
+    assert(ribbon.children>=3&&ribbon.now!=='none'&&ribbon.progress!==''&&!ribbon.legacyStrip&&ribbon.legacyProgress==='none',`Day Ribbon did not replace the legacy progress surfaces: ${JSON.stringify(ribbon)}`);
+    await page.evaluate(()=>{const sequence=document.getElementById('sequence');window.__maRibbonSnapshot={nodes:[...sequence.children],progress:sequence.style.getPropertyValue('--pf-ribbon-progress'),now:sequence.querySelector('.pf-ribbon-now').style.getPropertyValue('--pf-ribbon-x')};});
+    await page.waitForTimeout(1150);
+    const secondTick=await page.evaluate(()=>{const sequence=document.getElementById('sequence'),snapshot=window.__maRibbonSnapshot;return{sameNodes:snapshot.nodes.every((node,index)=>sequence.children[index]===node),sameProgress:snapshot.progress===sequence.style.getPropertyValue('--pf-ribbon-progress'),nowMoved:snapshot.now!==sequence.querySelector('.pf-ribbon-now').style.getPropertyValue('--pf-ribbon-x')};});
+    assert(secondTick.sameNodes&&secondTick.sameProgress&&secondTick.nowMoved,`Ribbon second tick performed more than the now-marker transform: ${JSON.stringify(secondTick)}`);
+    const options=await page.evaluate(()=>({count:document.querySelectorAll('.pf-ritual-options').length,body:Boolean(document.querySelector('#careBtn + .pf-ritual-options'))}));
+    assert(options.count===6&&options.body,`Visible ritual option paths are incomplete: ${JSON.stringify(options)}`);
+    const privateRibbon=await page.evaluate(()=>{window.__PACEFOLD_MA_CORE__.updatePrefs({privacy:true});const sequence=document.getElementById('sequence');return{private:sequence.dataset.private,kinds:[...sequence.querySelectorAll('[data-kind]')].map(node=>node.dataset.kind),labels:[...sequence.querySelectorAll('[aria-label]')].map(node=>node.getAttribute('aria-label'))};});
+    assert(privateRibbon.private==='true'&&privateRibbon.kinds.every(kind=>kind==='moment'||kind==='interval')&&privateRibbon.labels.every(label=>label==='Scheduled crease'),'Private ribbon retained differentiated content');
+    await page.evaluate(()=>window.__PACEFOLD_MA_CORE__.updatePrefs({privacy:false}));
+
+    const quietBefore=await page.evaluate(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));return Object.fromEntries(['privacy','clarity','notificationDetail','taskbarBadge','taskbarBadgeMode','notificationMode'].map(key=>[key,prefs[key]]));});
+    await page.locator('#pf-quiet-toggle').click();
+    await page.waitForFunction(()=>document.body.dataset.quiet==='true');
+    await page.evaluate(()=>{const marker=document.createElement('span');marker.textContent='Research';document.getElementById('pf-local-workspace').append(marker);});
+    await page.waitForTimeout(80);
+    const quiet=await page.evaluate(()=>{
+      const text=document.body.textContent||'',labels=[...document.querySelectorAll('[aria-label],[title]')].flatMap(node=>[node.getAttribute('aria-label'),node.getAttribute('title')]).filter(Boolean).join(' ');
+      return{text,labels,title:document.title,event:document.getElementById('eventName')?.textContent,badge:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').taskbarBadgeMode};
     });
-    assert(scheduler.every((at,index)=>index===0||at-scheduler[index-1]>=4),`Cue gap invariant failed: ${scheduler}`);
+    const sensitive=/\b(?:fajr|dhuhr|asr|maghrib|isha|prayer|water|sip|noodle|prep|lunch|meal|away|eye|movement|inbox|follow-ups?|incidents?|inspections?|jhsc|construction|notifications?|resources?)\b/i;
+    assert(!sensitive.test(quiet.text)&&!/\bResearch\b/.test(quiet.text),`Quiet left cue/category text in the DOM: ${quiet.text.match(sensitive)?.[0]||'Research'}`);
+    assert(!sensitive.test(quiet.labels),`Quiet left cue/category accessibility text in the DOM: ${quiet.labels.match(sensitive)?.[0]}`);
+    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge==='off',`Quiet did not apply its complete safe-surface contract: ${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,errors})}`);
+    await page.locator('#pf-quiet-toggle').click();
+    await page.waitForFunction(()=>document.body.dataset.quiet==='false');
+    const quietAfter=await page.evaluate(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));return Object.fromEntries(['privacy','clarity','notificationDetail','taskbarBadge','taskbarBadgeMode','notificationMode'].map(key=>[key,prefs[key]]));});
+    assert(JSON.stringify(quietAfter)===JSON.stringify(quietBefore),`Quiet did not restore the previous values exactly: ${JSON.stringify({quietBefore,quietAfter})}`);
 
-    const drift=await page.evaluate(()=>{globalThis.__notifications=[];const line=window.__PACEFOLD_MA__.reconcileDrift(Date.now(),4*60*60*1000);return {line,notifications:globalThis.__notifications.length,status:document.getElementById('statusLine')?.textContent};});
-    assert(drift.notifications===0&&/^Back after 4h\./.test(drift.line||'')&&drift.status===drift.line,`Drift reconciliation failed: ${JSON.stringify(drift)}`);
-
-    const ribbon=await page.evaluate(()=>{
-      let layouts=0;const native=Element.prototype.getBoundingClientRect;Element.prototype.getBoundingClientRect=function(){layouts++;return native.call(this);};
-      window.__PACEFOLD_MA__.ribbon.tick();Element.prototype.getBoundingClientRect=native;
-      const sequence=document.getElementById('sequence'),now=sequence?.querySelector('.pf-ribbon-now'),spent=sequence?.querySelector('.pf-ribbon-spent');
-      return {layouts,ready:sequence?.dataset.pfMaRibbon,now:now?.style.transform,spent:spent?.style.transform};
+    await page.screenshot({path:path.join(artifacts,'pacefold-ma-desktop.png'),fullPage:true});
+    const workerReady=await page.evaluate(async()=>Boolean(await Promise.race([navigator.serviceWorker?.ready,new Promise(resolve=>setTimeout(()=>resolve(null),5000))])));
+    assert(workerReady,'Offline worker did not become ready on first run');
+    const controllerReady=await page.evaluate(async()=>{
+      if(navigator.serviceWorker.controller)return true;
+      return Boolean(await Promise.race([new Promise(resolve=>navigator.serviceWorker.addEventListener('controllerchange',()=>resolve(navigator.serviceWorker.controller),{once:true})),new Promise(resolve=>setTimeout(()=>resolve(null),5000))]));
     });
-    assert(ribbon.layouts===0&&ribbon.ready==='true'&&/^translateX/.test(ribbon.now)&&/^scaleX/.test(ribbon.spent),`Ribbon tick contract failed: ${JSON.stringify(ribbon)}`);
+    assert(controllerReady,'Offline worker did not claim the first-run page');
+    await context.setOffline(true);
+    const offlinePage=await context.newPage();
+    await offlinePage.goto(`${base}/app/`,{waitUntil:'domcontentloaded'});
+    await offlinePage.waitForFunction(()=>window.__PACEFOLD_MA_CORE__&&document.querySelector('#sequence.pf-day-ribbon'),null,{timeout:12000});
+    const offline=await offlinePage.evaluate(async()=>({themeBoot:Boolean(document.documentElement.dataset.pfTheme),font:(await document.fonts.load('16px "Pacefold Ma"')).length>0,ma:window.__PACEFOLD_MA_AUDIT__?.release}));
+    assert(offline.themeBoot&&offline.font&&offline.ma==='18.0.0',`Ma first-run cache failed offline: ${JSON.stringify(offline)}`);
+    await offlinePage.close();
+    await context.setOffline(false);
+    await context.close();
 
-    const keys=await page.evaluate(()=>{const before=Object.keys(JSON.parse(localStorage.getItem('pacefoldPrefsV15')));window.__PACEFOLD_MA__.writePrefs({minCueGap:7});const after=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));return {before,missing:before.filter(key=>!(key in after)),schema:after.schemaVersion};});
-    assert(keys.missing.length===0&&keys.schema>=18,`Additive prefs migration failed: ${JSON.stringify(keys)}`);
+    const waferContext=await browser.newContext({viewport:{width:340,height:150}});
+    await waferContext.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldSetupDismissedV15','1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify({clarity:'wafer',privacy:true,workdaysOnly:false,workHours:'00:00-23:59',dayCloseEnabled:false,waferPromptDismissed:true}));});
+    const wafer=await waferContext.newPage();wafer.on('pageerror',error=>errors.push(error.message));
+    await wafer.goto(`${base}/app/`,{waitUntil:'networkidle'});await wafer.waitForFunction(()=>document.querySelector('#sequence.pf-day-ribbon'));
+    const geometry=await wafer.evaluate(()=>({
+      horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth,
+      vertical:document.documentElement.scrollHeight<=document.documentElement.clientHeight,
+      player:getComputedStyle(document.getElementById('pf-local-player')).display,
+      workline:getComputedStyle(document.getElementById('workline')).display,
+      time:getComputedStyle(document.querySelector('.time-row')).display,
+      status:getComputedStyle(document.getElementById('statusLine')).display,
+      wco:document.body.dataset.wco
+    }));
+    assert(geometry.horizontal&&geometry.vertical,`Wafer overflowed 340x150: ${JSON.stringify(geometry)}`);
+    assert(geometry.player==='none'&&geometry.workline==='none'&&geometry.time!=='none'&&geometry.status!=='none','Wafer visibility contract failed');
+    assert(geometry.wco==='off','WCO fallback did not remain inactive when the API was absent');
+    await wafer.screenshot({path:path.join(artifacts,'pacefold-ma-wafer.png')});
+    await waferContext.close();
 
-    await page.evaluate(()=>window.__PACEFOLD_MA__.quiet.on());
-    const quiet=await page.evaluate(()=>({title:document.title,event:document.getElementById('eventName')?.textContent,status:document.getElementById('statusLine')?.textContent,tabs:[...document.querySelectorAll('.pf-notebook-tabs>button')].map(node=>node.textContent)}));
-    assert(quiet.title==='Document'&&!/(prayer|water|lunch|meal|eyes|body|noodle)/i.test(JSON.stringify(quiet))&&!quiet.tabs.some(value=>/(incident|research|work)/i.test(value)),`Quiet DOM leak: ${JSON.stringify(quiet)}`);
+    const forcedContext=await browser.newContext({viewport:{width:900,height:700},forcedColors:'active'});
+    await forcedContext.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldSetupDismissedV15','1');});
+    const forced=await forcedContext.newPage();await forced.goto(`${base}/app/`,{waitUntil:'networkidle'});await forced.waitForFunction(()=>document.querySelector('.pf-ribbon-now'));
+    const forcedState=await forced.evaluate(()=>({
+      now:getComputedStyle(document.querySelector('.pf-ribbon-now')).backgroundColor,
+      crease:getComputedStyle(document.querySelector('.pf-ribbon-crease')).backgroundColor,
+      meter:getComputedStyle(document.querySelector('.pf-meter')).borderStyle,
+      focusRule:[...document.styleSheets].some(sheet=>{try{return[...sheet.cssRules].some(rule=>String(rule.cssText).includes('forced-colors'));}catch{return false;}})
+    }));
+    assert(forcedState.now&&forcedState.crease&&forcedState.meter!=='none'&&forcedState.focusRule,`Forced-colour primitives are incomplete: ${JSON.stringify(forcedState)}`);
+    await forcedContext.close();
+    assert(!errors.length,`Browser errors: ${errors.join(' | ')}`);
+  }finally{
+    await browser.close().catch(()=>{});
+    server.closeAllConnections?.();server.close();
+  }
+}
 
-    const wco=await page.evaluate(()=>({attr:document.documentElement.hasAttribute('data-pf-wco'),top:getComputedStyle(document.body).paddingTop}));
-    assert(!wco.attr,'WCO absent fallback incorrectly activated');
+async function main(){
+  const {core}=staticAudit();
+  await browserAudit(core);
+  console.log('Pacefold 18.0 Ma audit passed: scheduler, drift, ribbon cost, wafer geometry, WCO fallback, forced colours, boot, preferences, Quiet and single-copy injection.');
+}
 
-    await page.screenshot({path:path.join(artifactRoot,'pacefold-ma-desktop.png'),fullPage:true});
-
-    const wafer=await browser.newContext({viewport:{width:340,height:150}});
-    await wafer.addInitScript(()=>localStorage.setItem('pacefoldPrefsV15',JSON.stringify({workHours:'08:30-16:30',clarity:'wafer',schemaVersion:18,workWeek:{mon:{start:'08:30',end:'16:30',type:'Desk'}}})));
-    const waferPage=await wafer.newPage();await waferPage.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'networkidle'});await waferPage.waitForFunction(()=>Boolean(window.__PACEFOLD_MA__));
-    const geometry=await waferPage.evaluate(()=>({scrollW:document.documentElement.scrollWidth,clientW:document.documentElement.clientWidth,scrollH:document.documentElement.scrollHeight,clientH:document.documentElement.clientHeight,player:document.getElementById('pf-local-player')?getComputedStyle(document.getElementById('pf-local-player')).display:null}));
-    assert(geometry.scrollW<=geometry.clientW+1&&geometry.scrollH<=geometry.clientH+1&&(geometry.player===null||geometry.player==='none'),`Wafer overflow/player overlap: ${JSON.stringify(geometry)}`);
-    await waferPage.screenshot({path:path.join(artifactRoot,'pacefold-ma-wafer.png'),fullPage:true});await wafer.close();
-
-    const forced=await browser.newContext({viewport:{width:900,height:650},forcedColors:'active'});const forcedPage=await forced.newPage();await forcedPage.goto(`http://127.0.0.1:${port}/app/`,{waitUntil:'networkidle'});await forcedPage.waitForFunction(()=>Boolean(window.__PACEFOLD_MA__));
-    const colors=await forcedPage.evaluate(()=>{const now=document.querySelector('.pf-ribbon-now'),meter=document.getElementById('waterMeter'),quiet=document.getElementById('pfQuietToggle');return {now:getComputedStyle(now).backgroundColor,meter:meter?getComputedStyle(meter,'::after').backgroundColor:null,outline:getComputedStyle(quiet).outlineStyle};});
-    assert(colors.now!=='rgba(0, 0, 0, 0)'&&colors.meter!=='rgba(0, 0, 0, 0)',`Forced-colors primitives disappeared: ${JSON.stringify(colors)}`);await forced.close();
-
-    assert(await page.evaluate(()=>!document.documentElement.classList.contains('pf-boot')),'Boot transition suppression did not clear after second frame');
-    console.log(JSON.stringify({ok:true,scheduler,drift,ribbon,keys,quiet,wco,geometry,colors},null,2));
-  }finally{await browser.close();server.close();}
-})().catch(error=>{console.error(error.stack||error);server.close();process.exit(1);});
+main().catch(error=>{console.error(error?.stack||error);process.exit(1);});

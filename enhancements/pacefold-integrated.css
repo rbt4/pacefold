@@ -222,6 +222,8 @@ body[data-theme="paper"]{--muted:#665f57}
 body.reveal .fold-strip{height:22px;margin-bottom:24px}
 body.reveal .fold-crease::after{opacity:.78}
 .pf-onboarding-pause-help{max-width:42rem;margin:.65rem 0 0;color:var(--muted);font-size:.88rem;line-height:1.45}
+#pf-hub-root .pf-resilience-busy{opacity:.72;cursor:progress}
+#pf-hub-root [aria-busy="true"]{pointer-events:none}
 @keyframes pf-flow-breathe{0%,100%{transform:scale(.82);opacity:.5}50%{transform:scale(1.18);opacity:1}}
 @media (max-width:760px){
   #pf-flow-dock{bottom:max(6px,env(safe-area-inset-bottom));width:calc(100vw - 12px)}
