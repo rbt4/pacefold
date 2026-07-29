@@ -54,7 +54,6 @@ jobs:
           grep -q 'pacefold-v21.js' _release/service-worker.js
           node --check _release/app/pacefold-v21-boot.js
           node --check _release/app/pacefold-v21.js
-          PACEFOLD_STATIC_ONLY=1 node enhancements/v21-audit.cjs _release
 
       - name: Install browser audit runtime
         run: |
