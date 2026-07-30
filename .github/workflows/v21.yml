@@ -32,6 +32,9 @@ jobs:
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
+          echo 'PACEFOLD_CORE_AUDIT_SOURCE_BEGIN'
+          nl -ba _release/scripts/browser-audit.cjs | sed -n '1,80p'
+          echo 'PACEFOLD_CORE_AUDIT_SOURCE_END'
 
       - name: Syntax and version guard
         run: |
