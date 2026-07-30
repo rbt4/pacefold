@@ -1,0 +1,265 @@
+/* Pacefold 21.3 — Dayflow: private workday intelligence and a rebuilt Daybook. */
+
+html.pf-v21-dayflow-active{
+  --pf23-ink:#17312a;
+  --pf23-ink-soft:#435850;
+  --pf23-muted:#7c8b85;
+  --pf23-faint:#aeb8b4;
+  --pf23-line:rgba(23,49,42,.105);
+  --pf23-line-strong:rgba(23,49,42,.17);
+  --pf23-green:#285f50;
+  --pf23-green-deep:#1c493d;
+  --pf23-green-soft:#e9f1ed;
+  --pf23-blue:#4a7d8c;
+  --pf23-blue-soft:#eaf1f3;
+  --pf23-field:#789264;
+  --pf23-field-soft:#edf2e8;
+  --pf23-focus:#397565;
+  --pf23-away:#b78754;
+  --pf23-away-soft:#f5eee5;
+  --pf23-note:#6e7290;
+  --pf23-surface:#fbfaf7;
+  --pf23-raised:#fff;
+  --pf23-soft:#f4f6f2;
+  --pf23-shadow:0 16px 42px rgba(27,52,44,.065),0 2px 6px rgba(27,52,44,.025);
+}
+
+html.pf-v21-dayflow-active .pf-v20-folio{
+  overflow:visible!important;
+}
+
+/* Live workday recap */
+html.pf-v21-dayflow-active .pf21-dayflow{
+  position:relative;
+  z-index:2;
+  display:grid;
+  gap:14px;
+  margin:0;
+  padding:19px 28px 18px 34px;
+  border-top:1px solid var(--pf23-line);
+  border-bottom:1px solid var(--pf23-line-strong);
+  color:var(--pf23-ink);
+  background:
+    radial-gradient(circle at 90% -40%,rgba(74,125,140,.07),transparent 31%),
+    linear-gradient(180deg,#fff 0,var(--pf23-surface) 100%);
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:22px;
+  bottom:22px;
+  width:3px;
+  border-radius:0 999px 999px 0;
+  background:linear-gradient(180deg,var(--pf23-green),var(--pf23-blue));
+  opacity:.72;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:22px;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-title{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-title>span{
+  color:var(--pf23-green);
+  font:720 8px/1.2 "Pacefold Ma",system-ui,sans-serif;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-title h2{
+  margin:0;
+  color:var(--pf23-ink);
+  font:650 19px/1.15 "Pacefold Ma",system-ui,sans-serif;
+  letter-spacing:-.02em;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-title p{
+  margin:0;
+  color:var(--pf23-muted);
+  font:500 10px/1.45 "Pacefold Ma",system-ui,sans-serif;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+  flex-wrap:wrap;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-actions button,
+html.pf-v21-dayflow-active .pf21-live-badge{
+  min-height:31px;
+  padding:0 11px;
+  border:1px solid var(--pf23-line);
+  border-radius:9px;
+  color:var(--pf23-ink-soft);
+  background:rgba(255,255,255,.78);
+  font:650 9px/1 "Pacefold Ma",system-ui,sans-serif;
+  box-shadow:none;
+}
+
+html.pf-v21-dayflow-active .pf21-live-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--pf23-green-deep);
+  background:var(--pf23-green-soft);
+}
+
+html.pf-v21-dayflow-active .pf21-live-badge::before{
+  content:"";
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#4da274;
+  box-shadow:0 0 0 3px rgba(77,162,116,.11);
+}
+
+html.pf-v21-dayflow-active .pf21-focus-toggle{
+  color:#fff!important;
+  border-color:var(--pf23-green)!important;
+  background:var(--pf23-green)!important;
+}
+
+html.pf-v21-dayflow-active .pf21-focus-toggle[data-active="true"]{
+  color:var(--pf23-green-deep)!important;
+  background:var(--pf23-green-soft)!important;
+  box-shadow:inset 0 0 0 1px rgba(40,95,80,.08)!important;
+}
+
+html.pf-v21-dayflow-active .pf21-dayflow-actions button:hover{
+  transform:translateY(-1px);
+  border-color:var(--pf23-line-strong);
+}
+
+html.pf-v21-dayflow-active .pf21-flow-rhythm{
+  display:grid;
+  gap:6px;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-track{
+  position:relative;
+  height:18px;
+  overflow:hidden;
+  border:1px solid var(--pf23-line);
+  border-radius:999px;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 calc(12.5% - 1px),rgba(23,49,42,.055) calc(12.5% - 1px) 12.5%),
+    #f0f2ef;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-track::before{
+  content:"";
+  position:absolute;
+  inset:7px 8px;
+  border-radius:999px;
+  background:rgba(23,49,42,.08);
+}
+
+html.pf-v21-dayflow-active .pf21-flow-segments{
+  position:absolute;
+  inset:3px 8px;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-segment{
+  position:absolute;
+  left:var(--pf21-left);
+  width:var(--pf21-width);
+  top:0;
+  bottom:0;
+  min-width:3px;
+  border-radius:999px;
+  background:var(--pf23-green);
+  opacity:.92;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-segment[data-type="field"]{background:var(--pf23-field)}
+html.pf-v21-dayflow-active .pf21-flow-segment[data-type="focus"]{background:var(--pf23-focus);box-shadow:0 0 0 2px rgba(57,117,101,.1)}
+html.pf-v21-dayflow-active .pf21-flow-segment[data-type="away"]{background:var(--pf23-away)}
+html.pf-v21-dayflow-active .pf21-flow-segment[data-type="meal"]{background:#d2a34f}
+
+html.pf-v21-dayflow-active .pf21-flow-now{
+  position:absolute;
+  z-index:2;
+  left:var(--pf21-now);
+  top:1px;
+  bottom:1px;
+  width:2px;
+  border-radius:999px;
+  background:var(--pf23-ink);
+  transform:translateX(-1px);
+}
+
+html.pf-v21-dayflow-active .pf21-flow-now::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:2px;
+  width:6px;
+  height:6px;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:var(--pf23-ink);
+  transform:translateX(-50%);
+}
+
+html.pf-v21-dayflow-active .pf21-flow-axis{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  color:var(--pf23-muted);
+  font:560 8px/1 "Pacefold Ma",system-ui,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-axis span:nth-child(2){justify-self:center;color:var(--pf23-green)}
+html.pf-v21-dayflow-active .pf21-flow-axis span:last-child{justify-self:end}
+
+html.pf-v21-dayflow-active .pf21-flow-stream{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:7px;
+  min-width:0;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-event{
+  position:relative;
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  min-height:48px;
+  padding:7px 8px;
+  border:1px solid var(--pf23-line);
+  border-radius:11px;
+  background:rgba(255,255,255,.65);
+}
+
+html.pf-v21-dayflow-active .pf21-flow-event-mark{
+  display:grid;
+  place-items:center;
+  width:22px;
+  height:22px;
+  border-radius:8px;
+  color:var(--pf23-green-deep);
+  background:var(--pf23-green-soft);
+  font:750 8px/1 "Pacefold Ma",system-ui,sans-serif;
+}
+
+html.pf-v21-dayflow-active .pf21-flow-event[data-type="field"] .pf21-flow-event-mark{color:#526b40;background:var(--pf23-field-soft)}
+html.pf-v21-dayflow-active .pf21-flow-event[data-type="away"] .pf21-flow-event-mark,
+html.pf-v21-dayflow-active .pf21-flow-event[data-type="meal"] .pf21-flow-event-mark{color:#8a653f;background:var(--pf23-away-soft)}
+html.pf-v21-dayflow-active .pf21-flow-event[data-type="note"] .pf21-flow-event-mark{color:#575b78;background:#eeedf4}
+
