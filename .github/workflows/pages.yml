@@ -88,10 +88,24 @@ jobs:
           ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-minimal.css enhancements/pacefold-v21-precision.js
           ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v21-precision.js
 
-      - name: Build and static audit
+      - name: Build verified core
         run: |
           PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
+
+      - name: Install browser audit runtime
+        run: |
+          npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
+          /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Browser application and installed-upgrade audit
+        run: |
+          node enhancements/patch-core-audit.cjs _release/scripts/browser-audit.cjs
+          node --check _release/scripts/browser-audit.cjs
+          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
+
+      - name: Inject and audit Pacefold 21.2 surface
+        run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
           test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
@@ -114,17 +128,6 @@ jobs:
           node --check _release/app/pacefold-v21-precision.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
-
-      - name: Install browser audit runtime
-        run: |
-          npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
-          /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
-
-      - name: Browser application and installed-upgrade audit
-        run: |
-          node enhancements/patch-core-audit.cjs _release/scripts/browser-audit.cjs
-          node --check _release/scripts/browser-audit.cjs
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
 
       - name: Full Pacefold browser audit matrix
         run: |
