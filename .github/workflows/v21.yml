@@ -1,8 +1,8 @@
-name: Validate Pacefold 21.1.2 experience
+name: Validate Pacefold 21.2 minimal experience
 
 on:
   push:
-    branches: [main, pacefold-21-rebuild, pacefold-21-1-refinement, pacefold-21-1-precision-r2, agent/pacefold-21-1-2-live-polish]
+    branches: [main, agent/pacefold-21-2-minimal-redesign]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -35,7 +35,7 @@ jobs:
 
       - name: Syntax and version guard
         run: |
-          test "$(cat enhancements/VERSION)" = "21.1.2"
+          test "$(cat enhancements/VERSION)" = "21.2.0"
           node --check enhancements/pacefold-v21-boot.js
           node --check enhancements/pacefold-v21.js
           node --check enhancements/pacefold-v21-refine.js
@@ -47,19 +47,25 @@ jobs:
           grep -q 'grid-template-columns:repeat(3' enhancements/pacefold-v21-refine.css
           grep -q 'pf-v21-precision-active' enhancements/pacefold-v21-precision.css
           grep -q 'pf21-dayline\[data-empty="true"\]' enhancements/pacefold-v21-precision.css
-          grep -q "const RELEASE='21.1.2'" enhancements/pacefold-v21-precision.js
-          grep -q "const REVISION='polish-r3'" enhancements/pacefold-v21-precision.js
-          grep -q 'installPolishStyles' enhancements/pacefold-v21-precision.js
+          grep -q 'pf-v21-minimal-active' enhancements/pacefold-v21-minimal.css
+          grep -q -- '--pf22-surface' enhancements/pacefold-v21-minimal.css
+          grep -q 'pf21-brand-subline' enhancements/pacefold-v21-minimal.css
+          grep -q "const EXPERIENCE='21.2.0'" enhancements/pacefold-v21-precision.js
+          grep -q "const RELEASE='21.2.0'" enhancements/pacefold-v21-precision.js
+          grep -q "const REVISION='minimal-r1'" enhancements/pacefold-v21-precision.js
+          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-minimal.css enhancements/pacefold-v21-precision.js
 
       - name: Inject Pacefold 21 twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-experience.txt)" = "21.1.0"
-          test "$(grep -o 'data-pacefold-v21="21.1.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-boot="21.1.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-refine="21.1.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-precision="21.1.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(cat _release/pacefold-experience.txt)" = "21.2.0"
+          test "$(grep -o 'data-pacefold-v21="21.2.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-boot="21.2.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v21-refine="21.2.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-precision="21.2.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _release/app/index.html | wc -l)" -eq 1
+          test -f _release/app/pacefold-v21-minimal.css
           grep -q 'pacefold-v21.css' _release/service-worker.js
           grep -q 'pacefold-v21-boot.js' _release/service-worker.js
           grep -q 'pacefold-v21.js' _release/service-worker.js
@@ -67,7 +73,8 @@ jobs:
           grep -q 'pacefold-v21-refine.js' _release/service-worker.js
           grep -q 'pacefold-v21-precision.css' _release/service-worker.js
           grep -q 'pacefold-v21-precision.js' _release/service-worker.js
-          grep -q 'revision:21.1.2' _release/service-worker.js
+          grep -q 'pacefold-v21-minimal.css' _release/service-worker.js
+          grep -q 'revision:21.2.0' _release/service-worker.js
           node --check _release/app/pacefold-v21-boot.js
           node --check _release/app/pacefold-v21.js
           node --check _release/app/pacefold-v21-refine.js
@@ -87,7 +94,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.1.2-audit-${{ github.run_id }}
+          name: pacefold-21.2-minimal-audit-${{ github.run_id }}
           path: /tmp/pacefold-v21-artifacts/
           if-no-files-found: warn
           retention-days: 7

@@ -1,21 +1,36 @@
 (() => {
   'use strict';
 
-  const RELEASE='21.0.0';
+  const RELEASE='21.2.0';
   const SETTINGS_KEY='pacefold.v21.settings.v1';
   const EXTENSION_KEYS=new Set(['v21WeatherEnabled']);
+  const METADATA_KEYS=new Set(['version','savedAt']);
   let observer=null;
 
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
   const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:null;
-  const read=()=>object(parse(localStorage.getItem(SETTINGS_KEY),{}))||{};
+  const rawRead=()=>object(parse(localStorage.getItem(SETTINGS_KEY),{}))||{};
+  const extensionPatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>EXTENSION_KEYS.has(key)));
+  const corePatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>!EXTENSION_KEYS.has(key)));
+  const read=()=>extensionPatch(rawRead());
   const write=value=>{
-    const next=object(value)||{};
+    const next=extensionPatch(value);
     localStorage.setItem(SETTINGS_KEY,JSON.stringify({...next,version:RELEASE,savedAt:new Date().toISOString()}));
     return next;
   };
-  const extensionPatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>EXTENSION_KEYS.has(key)));
-  const corePatch=patch=>Object.fromEntries(Object.entries(object(patch)||{}).filter(([key])=>!EXTENSION_KEYS.has(key)));
+
+  function sanitizeStore(){
+    const rawText=localStorage.getItem(SETTINGS_KEY);
+    if(!rawText)return false;
+    const raw=object(parse(rawText,{}))||{};
+    const next=extensionPatch(raw);
+    const contaminated=Object.keys(raw).some(key=>!EXTENSION_KEYS.has(key)&&!METADATA_KEYS.has(key));
+    if(!contaminated&&raw.version===RELEASE)return false;
+    try{
+      localStorage.setItem(SETTINGS_KEY,JSON.stringify({...next,version:RELEASE,savedAt:raw.savedAt||new Date().toISOString()}));
+      return true;
+    }catch{return false;}
+  }
 
   function applySurface(settings=read()){
     document.documentElement.dataset.pf21Weather=String(settings.v21WeatherEnabled!==false);
@@ -46,8 +61,9 @@
       const base=corePatch(patch);
       let next=Object.keys(base).length&&originalUpdate?originalUpdate(base):originalGet();
       if(Object.keys(extension).length)write({...read(),...extension});
-      next={...next,...read()};
-      applySurface(next);
+      const extensionState=read();
+      next={...next,...extensionState};
+      applySurface(extensionState);
       return next;
     };
     core.__pacefoldV21Persistence=true;
@@ -55,6 +71,7 @@
   }
 
   function reconcile(){
+    sanitizeStore();
     wrapCore();
     const settings=read();
     applySurface(settings);
@@ -65,6 +82,7 @@
   }
 
   function initialize(){
+    sanitizeStore();
     wrapCore();
     applySurface();
     suppressUnrequestedReview();
@@ -88,6 +106,7 @@
     read,
     write:settings=>{const next=write(settings);reconcile();return next;},
     reconcile,
+    sanitizeStore,
     suppressUnrequestedReview
   };
 

@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const RELEASE='21.1.0';
+  const RELEASE='21.2.0';
   const SNAPSHOT_KEY='pacefold.v21.preferences.v1';
   const SETTINGS_KEY='pacefold.v21.settings.v1';
   let frame=0;
@@ -15,7 +15,7 @@
   const dataset=(node,name,value)=>{if(node&&node.dataset[name]!==value)node.dataset[name]=value;};
 
   function report(scope,error){
-    try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`v21.1-${scope}`,error);}catch{}
+    try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`v21.2-${scope}`,error);}catch{}
   }
 
   function guarded(scope,callback){

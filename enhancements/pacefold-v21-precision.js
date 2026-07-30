@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const EXPERIENCE='21.1.0';
-  const RELEASE='21.1.2';
-  const REVISION='polish-r3';
+  const EXPERIENCE='21.2.0';
+  const RELEASE='21.2.0';
+  const REVISION='minimal-r1';
   const CORE='15.2.2';
   const PREFS_KEY='pacefoldPrefsV15';
   let frame=0;
@@ -38,65 +38,35 @@
     return window.__PACEFOLD_MA_CORE__?.getPrefs?.()||object(parse(localStorage.getItem(PREFS_KEY),{}))||{};
   }
 
-  function installPolishStyles(){
-    if(document.documentElement.dataset.pacefoldPolishRules===REVISION)return true;
-    const sheet=[...document.styleSheets].find(item=>item.href?.includes('pacefold-v21-precision.css'));
-    if(!sheet)return false;
-    const rules=[
-      'html.pf-v21-precision-active .pf-v20-folio{width:min(1040px,calc(100vw - 24px))!important}',
-      'html.pf-v21-precision-active .pf-v20-folio>.clock-shell{column-gap:24px!important;row-gap:0!important;padding:18px 24px 13px!important}',
-      'html.pf-v21-precision-active .product-mark{margin-bottom:4px!important}',
-      'html.pf-v21-precision-active .date{margin-top:4px!important}',
-      'html[data-pf21-weather="false"].pf-v21-precision-active .pf-v20-folio>.clock-shell{padding-top:14px!important}',
-      'html[data-pf21-weather="false"].pf-v21-precision-active .time-main{font-size:clamp(64px,6.7vw,84px)!important}',
-      'html[data-pf21-weather="false"].pf-v21-precision-active .status-area{margin-top:5px!important}',
-      'html.pf-v21-precision-active .status-area{gap:10px!important;margin-top:10px!important}',
-      'html.pf-v21-precision-active .pf21-dayline{min-height:60px!important;padding:10px 12px!important;border-radius:15px!important}',
-      'html.pf-v21-precision-active .pf21-dayline-copy{column-gap:12px!important;row-gap:2px!important}',
-      'html.pf-v21-precision-active .pf21-dayline-kicker{padding:5px 8px!important;font-size:9px!important;line-height:1.1!important}',
-      'html.pf-v21-precision-active .pf21-dayline-title{font-size:13px!important;line-height:1.25!important}',
-      'html.pf-v21-precision-active .pf21-dayline-detail{font-size:10.5px!important;line-height:1.35!important;letter-spacing:0!important}',
-      'html.pf-v21-precision-active #sequence.pf-day-ribbon{height:31px!important;min-height:31px!important;margin:1px 6px 0!important}',
-      'html.pf-v21-precision-active .pf21-ribbon-meta{margin-top:-2px!important;padding-inline:7px!important;font-size:9px!important}',
-      'html.pf-v21-precision-active #workline{gap:8px!important;margin-top:10px!important}',
-      'html.pf-v21-precision-active .pf-ritual-slot[data-v19-ritual="true"]{min-height:70px!important;border-radius:14px!important}',
-      'html.pf-v21-precision-active .pf-ritual-slot[data-v19-ritual="true"]>button:not(.pf-ritual-options){min-height:51px!important;padding:8px 10px 9px!important}',
-      'html.pf-v21-precision-active .pf-v20-folio>.pf-v19-workbench{min-height:0!important}',
-      'html.pf-v21-precision-active .pf-v19-workbench-rail{padding:8px!important}',
-      'html.pf-v21-precision-active .pf-v19-workbench-tab{min-height:38px!important;border-radius:10px!important}',
-      'html.pf-v21-precision-active .pf21-note-calendar{margin:10px 0 12px!important;padding:12px!important;border-radius:15px!important}',
-      'html.pf-v21-precision-active .pf21-calendar-summary{gap:8px 12px!important;margin-bottom:10px!important}',
-      'html.pf-v21-precision-active .pf21-calendar-stats{font-size:10px!important;line-height:1.3!important}',
-      'html.pf-v21-precision-active .pf21-calendar-grid{gap:4px!important}',
-      'html.pf-v21-precision-active .pf21-calendar-day{min-height:32px!important;border-radius:8px!important}',
-      'html.pf-v21-precision-active #pf-v19-workbench .pf-note-composer textarea{min-height:126px!important;font-size:13px!important;line-height:26px!important}',
-      'html.pf-v21-precision-active #panel #pf21-settings{padding:14px!important;border-radius:16px!important}',
-      'html.pf-v21-precision-active .pf21-setting-switch{min-height:48px!important;padding:9px 11px!important;border-radius:12px!important}',
-      'html.pf-v21-precision-active .pf21-settings-footer{align-items:center!important;gap:8px 12px!important;flex-wrap:wrap!important}',
-      'html.pf-v21-precision-active .pf21-settings-version{font-weight:700!important;color:var(--pf212-green-deep)!important}',
-      'html.pf-v21-precision-active .pf21-version-detail{display:block!important;flex-basis:100%!important;margin-left:auto!important;color:var(--pf212-muted)!important;font-size:9px!important;line-height:1.3!important;text-align:right!important}',
-      '@media(max-width:720px){html.pf-v21-precision-active .pf-v20-folio{width:calc(100vw - 12px)!important}html.pf-v21-precision-active .pf-v20-folio>.clock-shell{padding:14px 13px 12px!important}html.pf-v21-precision-active .pf21-dayline{min-height:58px!important;padding:9px!important}html.pf-v21-precision-active .pf21-dayline-title{font-size:12px!important}html.pf-v21-precision-active .pf21-dayline-detail{font-size:9.5px!important}html.pf-v21-precision-active #workline{gap:6px!important}html.pf-v21-precision-active .pf21-note-calendar{padding:10px!important}html.pf-v21-precision-active .pf21-calendar-day{min-height:30px!important}}',
-      '@media(max-width:420px){html.pf-v21-precision-active .pf21-dayline-copy{column-gap:8px!important}html.pf-v21-precision-active .pf21-dayline-kicker{font-size:8px!important}html.pf-v21-precision-active .pf21-dayline-detail{font-size:9px!important}html.pf-v21-precision-active .pf21-calendar-grid{gap:3px!important}}'
-    ];
-    try{
-      for(const rule of rules)sheet.insertRule(rule,sheet.cssRules.length);
-      dataset(document.documentElement,'pacefoldPolishRules',REVISION);
-      return true;
-    }catch(error){report('polish-rules',error);return false;}
+  function decorateBrand(){
+    const brand=document.querySelector('.product-mark');
+    if(!brand)return false;
+    let subline=brand.querySelector('.pf21-brand-subline');
+    if(!subline){
+      subline=document.createElement('small');
+      subline.className='pf21-brand-subline';
+      brand.append(subline);
+    }
+    if(compact(subline.textContent)!=='Focus · rhythm · flow')subline.textContent='Focus · rhythm · flow';
+    attribute(brand,'title','Pacefold — a quiet workday rhythm');
+    return true;
   }
 
   function patchSurface(){
-    installPolishStyles();
-    document.documentElement.classList.add('pf-v21-precision-active');
+    document.documentElement.lang='en';
+    document.documentElement.classList.add('pf-v21-precision-active','pf-v21-minimal-active');
     dataset(document.documentElement,'pacefoldPrecision',REVISION);
+    dataset(document.documentElement,'pacefoldMinimal',REVISION);
     dataset(document.documentElement,'pacefoldExperience',EXPERIENCE);
     dataset(document.documentElement,'pacefoldUpdate',RELEASE);
     dataset(document.body,'pacefoldPrecision',REVISION);
+    dataset(document.body,'pacefoldMinimal',REVISION);
     dataset(document.body,'pacefoldExperience',EXPERIENCE);
     dataset(document.body,'pacefoldUpdate',RELEASE);
     window.__PACEFOLD_VERSION__={experience:EXPERIENCE,update:RELEASE,revision:REVISION,offlineCore:CORE};
     const title=compact(document.title);
-    if(!title||/15\.2\.2|15\.8\.0|21\.0\.0|21\.1\.0|Pacefold/i.test(title))document.title=`Pacefold ${EXPERIENCE} · update ${RELEASE}`;
+    if(!title||/15\.2\.2|15\.8\.0|21\.[012]\.|Pacefold/i.test(title))document.title=`Pacefold — Quiet Workday Rhythm · ${EXPERIENCE}`;
+    decorateBrand();
   }
 
   function decorateDayline(){
@@ -150,7 +120,14 @@
   }
 
   function decorateRhythm(){
-    const descriptions={water:'Log a water sip',noodle:'Start or manage the personal timer',away:'Start or end an away break',lunch:'Start or end a meal break',eyes:'Start a short distance-vision reset',body:'Start an ergonomic movement reset'};
+    const descriptions={
+      water:'Log a water sip',
+      noodle:'Start or manage the personal timer',
+      away:'Start or end an away break',
+      lunch:'Start or end a meal break',
+      eyes:'Start a short distance-vision reset',
+      body:'Start an ergonomic movement reset'
+    };
     let count=0;
     for(const slot of document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]')){
       count+=1;
@@ -199,8 +176,8 @@
     const version=settings.querySelector('.pf21-settings-version');
     if(version){
       if(compact(version.textContent)!==`Pacefold ${EXPERIENCE}`)version.textContent=`Pacefold ${EXPERIENCE}`;
-      attribute(version,'title',`Experience ${EXPERIENCE}. Update ${RELEASE}. Verified offline engine ${CORE}.`);
-      attribute(version,'aria-label',`Pacefold experience ${EXPERIENCE}. Update ${RELEASE}. Verified offline engine ${CORE}.`);
+      attribute(version,'title',`Experience ${EXPERIENCE}. Verified offline engine ${CORE}.`);
+      attribute(version,'aria-label',`Pacefold experience ${EXPERIENCE}. Verified offline engine ${CORE}.`);
       dataset(version,'experience',EXPERIENCE);
       dataset(version,'update',RELEASE);
       dataset(version,'offlineCore',CORE);
@@ -210,7 +187,7 @@
         detail.className='pf21-version-detail';
         version.insertAdjacentElement('afterend',detail);
       }
-      const copy=`Update ${RELEASE} · verified offline engine ${CORE}`;
+      const copy=`Minimal redesign · verified offline engine ${CORE}`;
       if(compact(detail.textContent)!==copy)detail.textContent=copy;
     }
     return true;
@@ -238,7 +215,13 @@
   function initialize(){
     reconcile();
     observer=new MutationObserver(()=>queue());
-    observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','hidden','aria-label','aria-selected','data-active','data-attention','data-empty','data-note-level','data-selected','data-state','data-signal','data-source']});
+    observer.observe(document.documentElement,{
+      childList:true,
+      subtree:true,
+      characterData:true,
+      attributes:true,
+      attributeFilter:['class','hidden','aria-label','aria-selected','data-active','data-attention','data-empty','data-note-level','data-selected','data-state','data-signal','data-source']
+    });
     window.addEventListener('resize',guarded('resize',queue),{passive:true});
     window.addEventListener('pacefold:ma-prefs',guarded('prefs',queue));
     window.addEventListener('pacefold:storage-changed',guarded('storage',queue));
