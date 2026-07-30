@@ -1,8 +1,8 @@
-name: Validate Pacefold 21 experience
+name: Validate Pacefold 21.1.2 experience
 
 on:
   push:
-    branches: [pacefold-21-rebuild, pacefold-21-1-refinement, pacefold-21-1-precision-r2]
+    branches: [main, pacefold-21-rebuild, pacefold-21-1-refinement, pacefold-21-1-precision-r2, agent/pacefold-21-1-2-live-polish]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -35,7 +35,7 @@ jobs:
 
       - name: Syntax and version guard
         run: |
-          test "$(cat enhancements/VERSION)" = "21.1.1"
+          test "$(cat enhancements/VERSION)" = "21.1.2"
           node --check enhancements/pacefold-v21-boot.js
           node --check enhancements/pacefold-v21.js
           node --check enhancements/pacefold-v21-refine.js
@@ -47,6 +47,9 @@ jobs:
           grep -q 'grid-template-columns:repeat(3' enhancements/pacefold-v21-refine.css
           grep -q 'pf-v21-precision-active' enhancements/pacefold-v21-precision.css
           grep -q 'pf21-dayline\[data-empty="true"\]' enhancements/pacefold-v21-precision.css
+          grep -q "const RELEASE='21.1.2'" enhancements/pacefold-v21-precision.js
+          grep -q "const REVISION='polish-r3'" enhancements/pacefold-v21-precision.js
+          grep -q 'installPolishStyles' enhancements/pacefold-v21-precision.js
 
       - name: Inject Pacefold 21 twice
         run: |
@@ -64,7 +67,7 @@ jobs:
           grep -q 'pacefold-v21-refine.js' _release/service-worker.js
           grep -q 'pacefold-v21-precision.css' _release/service-worker.js
           grep -q 'pacefold-v21-precision.js' _release/service-worker.js
-          grep -q 'revision:21.1.1' _release/service-worker.js
+          grep -q 'revision:21.1.2' _release/service-worker.js
           node --check _release/app/pacefold-v21-boot.js
           node --check _release/app/pacefold-v21.js
           node --check _release/app/pacefold-v21-refine.js
@@ -84,7 +87,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21-audit-${{ github.run_id }}
+          name: pacefold-21.1.2-audit-${{ github.run_id }}
           path: /tmp/pacefold-v21-artifacts/
           if-no-files-found: warn
           retention-days: 7

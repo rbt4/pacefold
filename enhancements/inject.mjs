@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const RELEASE='21.1.0';
-const REVISION='21.1.1';
+const REVISION='21.1.2';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const targetApp=path.join(targetRoot,'app');
@@ -101,8 +101,8 @@ function prepareRuntime(source){
   );
   source=replaceExactlyOnce(
     source,
-    '      cell.dataset.hasNotes=String(count>0);\n      cell.append(create(\'span\',\'pf21-calendar-number\',date.getDate()));',
-    '      cell.dataset.hasNotes=String(count>0);\n      cell.dataset.noteLevel=String(count<=0?0:count===1?1:count<=3?2:count<=6?3:4);\n      cell.append(create(\'span\',\'pf21-calendar-number\',date.getDate()));',
+    "      cell.dataset.hasNotes=String(count>0);\n      cell.append(create('span','pf21-calendar-number',date.getDate()));",
+    "      cell.dataset.hasNotes=String(count>0);\n      cell.dataset.noteLevel=String(count<=0?0:count===1?1:count<=3?2:count<=6?3:4);\n      cell.append(create('span','pf21-calendar-number',date.getDate()));",
     'calendar note intensity'
   );
   source=replaceExactlyOnce(
@@ -171,6 +171,7 @@ async function patchAppHtml(file){
 
 function nextCacheName(name){
   if(name.includes(REVISION))return name;
+  if(/-21\.1\.1$/.test(name))return name.replace(/-21\.1\.1$/,`-${REVISION}`);
   if(/-21\.1\.0$/.test(name))return name.replace(/-21\.1\.0$/,`-${REVISION}`);
   if(/-21\.0\.0$/.test(name))return name.replace(/-21\.0\.0$/,`-${REVISION}`);
   if(/-20\.0\.1$/.test(name))return name.replace(/-20\.0\.1$/,`-${REVISION}`);
@@ -254,7 +255,7 @@ async function verify(){
   for(const token of ['pf-v21-1-active','grid-template-columns:repeat(3','data-note-level'])if(!refineCss.includes(token))throw new Error(`Pacefold 21.1 CSS token missing: ${token}`);
   for(const token of ["const RELEASE='21.1.0'",'__PACEFOLD_V21_REFINEMENT__','patchStoredVersion','refineCalendar'])if(!refineRuntime.includes(token))throw new Error(`Pacefold 21.1 runtime token missing: ${token}`);
   for(const token of ['pf-v21-precision-active','.pf21-dayline[data-empty="true"]','.pf-ritual-slot[data-v19-ritual="true"]'])if(!precisionCss.includes(token))throw new Error(`Pacefold precision CSS token missing: ${token}`);
-  for(const token of ["const REVISION='precision-r2'",'__PACEFOLD_V21_PRECISION__','decorateDayline','decorateRibbon','decorateCalendar'])if(!precisionRuntime.includes(token))throw new Error(`Pacefold precision runtime token missing: ${token}`);
+  for(const token of ["const RELEASE='21.1.2'","const REVISION='polish-r3'",'installPolishStyles','__PACEFOLD_V21_PRECISION__','decorateDayline','decorateRibbon','decorateCalendar'])if(!precisionRuntime.includes(token))throw new Error(`Pacefold precision runtime token missing: ${token}`);
 }
 
 await Promise.all([syntaxCheck(bootSource),syntaxCheck(scriptSource),syntaxCheck(persistenceSource),syntaxCheck(refineScriptSource),syntaxCheck(precisionScriptSource)]);
@@ -266,4 +267,4 @@ await patchWorker(path.join(targetApp,'service-worker.js'),{root:false});
 await fs.writeFile(path.join(targetRoot,'pacefold-experience.txt'),`${RELEASE}\n`);
 await fs.writeFile(path.join(targetApp,'pacefold-experience.txt'),`${RELEASE}\n`);
 await verify();
-console.log(`Installed Pacefold ${RELEASE} ${REVISION}: precision hierarchy, clearer timeline states, calmer rhythm controls and refined focus behavior.`);
+console.log(`Installed Pacefold ${RELEASE} revision ${REVISION}: live version clarity, tighter visual rhythm and refreshed offline assets.`);
