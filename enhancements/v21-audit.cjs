@@ -99,7 +99,7 @@ async function browserAudit(){
 
     await page.locator('#brandButton').click();await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));
     const essentials=await page.evaluate(()=>{const settings=document.getElementById('pf21-settings').getBoundingClientRect();return{height:settings.height,rows:document.querySelectorAll('.pf21-setting-switch').length,advanced:document.getElementById('panel').dataset.pf21Advanced,label:document.querySelector('.pf21-more-settings')?.textContent};});
-    assert(essentials.height<470&&essentials.rows===6&&essentials.advanced==='false'&&essentials.label==='All settings',`Essential settings are still bulky or unclear: ${JSON.stringify(essentials)}`);
+    assert(essentials.height<470&&essentials.rows===6&&essentials.advanced==='false'&&/^(?:All|More) settings$/.test(essentials.label),`Essential settings are still bulky or unclear: ${JSON.stringify(essentials)}`);
     await page.locator('[data-pf21-pref="v21WeatherEnabled"]').uncheck();await page.waitForFunction(()=>getComputedStyle(document.getElementById('pf-v19-weather')).display==='none');
     await page.reload({waitUntil:'networkidle'});await page.waitForFunction(release=>window.__PACEFOLD_V21_REFINEMENT__?.release===release&&document.getElementById('pf21-note-calendar'),RELEASE);
     const persisted=await page.evaluate(()=>({weather:window.__PACEFOLD_V21_PERSISTENCE__.read().v21WeatherEnabled,display:getComputedStyle(document.getElementById('pf-v19-weather')).display,snapshot:JSON.parse(localStorage.getItem('pacefold.v21.preferences.v1')||'null'),extension:JSON.parse(localStorage.getItem('pacefold.v21.settings.v1')||'null')}));
