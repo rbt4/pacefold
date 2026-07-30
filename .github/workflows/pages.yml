@@ -68,7 +68,6 @@ jobs:
             enhancements/pacefold-v21.js \
             enhancements/pacefold-v21-persistence.js \
             enhancements/pacefold-v21-refine.js \
-            enhancements/pacefold-v21-precision.js \
             enhancements/inject.mjs \
             enhancements/hub-audit.cjs \
             enhancements/run-hub-audit.cjs \
@@ -82,13 +81,16 @@ jobs:
             enhancements/patch-core-audit.cjs; do node --check "$file"; done
           test "$(cat enhancements/VERSION)" = "21.3.0"
           test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
-          grep -q "const EXPERIENCE='21.3.0'" enhancements/pacefold-v21-precision.js
-          grep -q "const REVISION='dayflow-r1'" enhancements/pacefold-v21-precision.js
-          grep -q 'pacefold.dayflow.v1' enhancements/pacefold-v21-precision.js
-          grep -q 'pf21-dayflow' enhancements/pacefold-v21-dayflow.css
-          grep -q 'pf21-daybook' enhancements/pacefold-v21-dayflow.css
-          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-dayflow.css enhancements/pacefold-v21-precision.js
-          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v21-precision.js
+          cat enhancements/pacefold-v21-dayflow-runtime.part-*.js > /tmp/pacefold-dayflow.js
+          cat enhancements/pacefold-v21-dayflow.part-*.css > /tmp/pacefold-dayflow.css
+          node --check /tmp/pacefold-dayflow.js
+          grep -q "const EXPERIENCE='21.3.0'" /tmp/pacefold-dayflow.js
+          grep -q "const REVISION='dayflow-r1'" /tmp/pacefold-dayflow.js
+          grep -q 'pacefold.dayflow.v1' /tmp/pacefold-dayflow.js
+          grep -q 'pf21-dayflow' /tmp/pacefold-dayflow.css
+          grep -q 'pf21-daybook' /tmp/pacefold-dayflow.css
+          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' /tmp/pacefold-dayflow.css /tmp/pacefold-dayflow.js
+          ! grep -E -q '\.innerHTML[[:space:]]*=' /tmp/pacefold-dayflow.js
 
       - name: Build verified core
         run: |
