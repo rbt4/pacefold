@@ -260,7 +260,7 @@ async function verify(){
     'data-pacefold-v21':2,'data-pacefold-v21-compat':1,'data-pacefold-v21-boot':1,'data-pacefold-v21-persistence':1,'data-pacefold-v21-refine':2,'data-pacefold-v21-precision':2,'data-pacefold-v21-minimal':1,'data-pacefold-v21-minimal-responsive':1,'data-pacefold-v21-dayflow':1
   };
   for(const [name,count] of Object.entries(expected))if((html.match(new RegExp(`${name}="${escaped}"`,'g'))||[]).length!==count)throw new Error(`${name} injection count is wrong`);
-  if(!html.includes(`name="pacefold-experience" content="${RELEASE}"`))throw new Error('Pacefold 21.3 app marker is missing');
+  if(!html.includes(`name="pacefold-experience" content="${RELEASE}"`))throw new Error('Pacefold 21.3.1 app marker is missing');
   const assets=['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js','pacefold-v21-precision.css','pacefold-v21-precision.js','pacefold-v21-minimal.css','pacefold-v21-minimal-responsive.css','pacefold-v21-dayflow.css'];
   for(const asset of assets)if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Pacefold Dayflow cache revision is missing');
@@ -273,7 +273,7 @@ async function verify(){
   for(const token of ['pf-v21-1-active','grid-template-columns:repeat(3','data-note-level'])if(!files.refineCss.includes(token))throw new Error(`Refinement CSS token missing: ${token}`);
   for(const token of ['__PACEFOLD_V21_REFINEMENT__','patchStoredVersion','refineCalendar'])if(!files.refineRuntime.includes(token))throw new Error(`Refinement runtime token missing: ${token}`);
   for(const token of ['pf-v21-precision-active','.pf21-dayline[data-empty="true"]','.pf-ritual-slot[data-v19-ritual="true"]'])if(!files.precisionCss.includes(token))throw new Error(`Precision CSS token missing: ${token}`);
-  for(const token of ["const EXPERIENCE='21.3.0'","const REVISION='dayflow-r1'",'pacefold.dayflow.v1','__PACEFOLD_DAYFLOW__','pf21-daybook','toggleFocus'])if(!files.precisionRuntime.includes(token))throw new Error(`Dayflow runtime token missing: ${token}`);
+  for(const token of ["const EXPERIENCE='21.3.1'","const REVISION='dayflow-r2'",'pacefold.dayflow.v1','__PACEFOLD_DAYFLOW__','pf21-daybook','toggleFocus'])if(!files.precisionRuntime.includes(token))throw new Error(`Dayflow runtime token missing: ${token}`);
   for(const token of ['pf-v21-minimal-active','--pf22-surface','#workline','.pf21-note-calendar','.pf21-brand-subline'])if(!files.minimalCss.includes(token))throw new Error(`Minimal CSS token missing: ${token}`);
   for(const token of ['data-pf21-weather="false"','.pf-notebook-tools','flex-wrap:wrap'])if(!files.responsiveCss.includes(token))throw new Error(`Responsive CSS token missing: ${token}`);
   for(const token of ['pf21-dayflow','pf21-daybook','pf21-analytics-ring','pf21-build-status'])if(!files.dayflowCss.includes(token))throw new Error(`Dayflow CSS token missing: ${token}`);
