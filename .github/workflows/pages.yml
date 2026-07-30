@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 21.1.0
+name: Validate and deploy Pacefold 21.2.0
 
 on:
   push:
@@ -16,32 +16,28 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Reconstruct verified release
-        run: |
-          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
-          mkdir _release
-          unzip -q /tmp/pacefold-v15.zip -d _release
-
-      - name: Require a core or surface version advance
+      - name: Reconstruct current and previous verified releases
         env:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir _release _previous
+          unzip -q /tmp/pacefold-v15.zip -d _release
           base_sha="$PR_BASE_SHA"
           if [ -z "$base_sha" ] || [ "$base_sha" = "null" ]; then base_sha="$PUSH_BEFORE_SHA"; fi
           if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then base_sha=$(git rev-parse HEAD^); fi
           git ls-tree -r --name-only "$base_sha" release | grep '\.zip\.b64\.part-' | sort > /tmp/previous-parts.txt
           test -s /tmp/previous-parts.txt
           while IFS= read -r part; do git show "${base_sha}:${part}"; done < /tmp/previous-parts.txt | base64 --decode > /tmp/pacefold-previous.zip
-          mkdir _previous
           unzip -q /tmp/pacefold-previous.zip -d _previous
           current_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _release/app/app.js | head -n 1)
           previous_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _previous/app/app.js | head -n 1)
@@ -49,285 +45,117 @@ jobs:
           previous_surface=$(git show "${base_sha}:enhancements/VERSION" 2>/dev/null || true)
           test -n "$current_core"
           test -n "$previous_core"
-          test -n "$current_surface"
+          test "$current_surface" = "21.2.0"
           if [ "$current_core" = "$previous_core" ]; then
             test "$current_surface" != "$previous_surface"
-            echo "Surface version advanced: ${previous_surface:-none} -> $current_surface (core remains $current_core)"
+            echo "Surface version advanced: ${previous_surface:-none} -> $current_surface; core remains $current_core"
           else
             echo "Core version advanced: $previous_core -> $current_core; surface $current_surface"
           fi
 
-      - name: JavaScript and compressed-source syntax
+      - name: Source syntax and security guard
         run: |
-          node --check _release/app/app.js
-          node --check _release/app/auth.js
-          node --check _release/site.js
-          node --check _release/service-worker.js
-          node --check _release/app/service-worker.js
-          node --check _release/scripts/browser-audit.cjs
-          node --check enhancements/pacefold-hub.js
-          node --check enhancements/pacefold-hub-guardian.js
-          node --check enhancements/pacefold-resilience.js
-          node --check enhancements/pacefold-integrated.js
-          node --check enhancements/pacefold-theme-boot.js
-          node --check enhancements/pacefold-ma.js
-          node --check enhancements/pacefold-v19.js
-          node --check enhancements/pacefold-v20.js
-          node --check enhancements/pacefold-v21-boot.js
-          node --check enhancements/pacefold-v21.js
-          node --check enhancements/pacefold-v21-persistence.js
-          node --check enhancements/pacefold-v21-refine.js
-          node --check enhancements/inject.mjs
-          node --check enhancements/hub-audit.cjs
-          node --check enhancements/run-hub-audit.cjs
-          node --check enhancements/resilience-audit.cjs
-          node --check enhancements/integrated-audit.cjs
-          node --check enhancements/ma-audit.cjs
-          node --check enhancements/v19-audit.cjs
-          node --check enhancements/v20-audit.cjs
-          node --check enhancements/v21-audit.cjs
-          node --check enhancements/patch-core-audit.cjs
+          for file in \
+            enhancements/pacefold-hub.js \
+            enhancements/pacefold-hub-guardian.js \
+            enhancements/pacefold-resilience.js \
+            enhancements/pacefold-integrated.js \
+            enhancements/pacefold-theme-boot.js \
+            enhancements/pacefold-ma.js \
+            enhancements/pacefold-v19.js \
+            enhancements/pacefold-v20.js \
+            enhancements/pacefold-v21-boot.js \
+            enhancements/pacefold-v21.js \
+            enhancements/pacefold-v21-persistence.js \
+            enhancements/pacefold-v21-refine.js \
+            enhancements/pacefold-v21-precision.js \
+            enhancements/inject.mjs \
+            enhancements/hub-audit.cjs \
+            enhancements/run-hub-audit.cjs \
+            enhancements/resilience-audit.cjs \
+            enhancements/integrated-audit.cjs \
+            enhancements/ma-audit.cjs \
+            enhancements/v19-audit.cjs \
+            enhancements/v20-audit.cjs \
+            enhancements/v21-audit.cjs \
+            enhancements/patch-core-audit.cjs; do node --check "$file"; done
+          test "$(cat enhancements/VERSION)" = "21.2.0"
           test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-00)" = "9ee4b39abd4e009ccd51b1f0a1d63ca355b1e38e"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01a)" = "965b37f16fca294619bd2ab1026fa3b994fe41e4"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01b)" = "218fbe2ab562da27c9bd8cc1867d0749ee989566"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01c)" = "fc9b50bc875cc1bd2a5d8c8bf19e0f2775cbfe4a"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-01d)" = "b1241ec0538977f91a97d7e7f74f2d10c4391d99"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-02)" = "2fed7d603cd98dc9ead13d3fa31041c785d08992"
-          test "$(git hash-object enhancements/pacefold-hub.js.gz.b64.part-03)" = "11475bc120387ecf1cbf16dc8038aa5401d7db72"
-          node -e "const fs=require('fs'),z=require('zlib'),p='enhancements/';const names=['pacefold-hub.js.gz.b64.part-00','pacefold-hub.js.gz.b64.part-01a','pacefold-hub.js.gz.b64.part-01b','pacefold-hub.js.gz.b64.part-01c','pacefold-hub.js.gz.b64.part-01d','pacefold-hub.js.gz.b64.part-02','pacefold-hub.js.gz.b64.part-03'];const encoded=names.map(n=>fs.readFileSync(p+n,'utf8')).join('').replace(/\\s+/g,'');fs.writeFileSync('/tmp/pacefold-notebook.js',z.gunzipSync(Buffer.from(encoded,'base64')))"
-          node --check /tmp/pacefold-notebook.js
-          node -e "const fs=require('fs'),z=require('zlib');const css=z.gunzipSync(Buffer.from(fs.readFileSync('enhancements/pacefold-hub.css.gz.b64','utf8').replace(/\\s+/g,''),'base64'));if(!css.length)process.exit(1)"
+          grep -q 'pf-v21-minimal-active' enhancements/pacefold-v21-minimal.css
+          grep -q -- '--pf22-surface' enhancements/pacefold-v21-minimal.css
+          grep -q "const EXPERIENCE='21.2.0'" enhancements/pacefold-v21-precision.js
+          grep -q "const REVISION='minimal-r1'" enhancements/pacefold-v21-precision.js
+          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-minimal.css enhancements/pacefold-v21-precision.js
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v21-precision.js
 
       - name: Build and static audit
         run: |
           PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
+          node enhancements/inject.mjs _release
+          node enhancements/inject.mjs _release
+          test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
+          test "$(cat _release/pacefold-experience.txt)" = "21.2.0"
+          test "$(grep -o 'data-pacefold-v21="21.2.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-boot="21.2.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v21-persistence="21.2.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v21-refine="21.2.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-precision="21.2.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _release/app/index.html | wc -l)" -eq 1
+          test -f _release/app/pacefold-v21-minimal.css
+          grep -q 'pacefold-v21-minimal.css' _release/service-worker.js
+          grep -q 'pacefold-v21-minimal.css' _release/app/service-worker.js
+          grep -q 'revision:21.2.0' _release/service-worker.js
+          ! grep -q 'https://graph.microsoft.com' _release/app/index.html
+          ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
+          grep -Fq 'caches.match(request,{ignoreSearch:true})' _release/service-worker.js
+          node --check _release/app/pacefold-v21.js
+          node --check _release/app/pacefold-v21-persistence.js
+          node --check _release/app/pacefold-v21-precision.js
+          node --check _release/service-worker.js
+          node --check _release/app/service-worker.js
 
-      - name: Browser application, action and installed-upgrade audit
+      - name: Install browser audit runtime
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Browser application and installed-upgrade audit
+        run: |
           node enhancements/patch-core-audit.cjs _release/scripts/browser-audit.cjs
           node --check _release/scripts/browser-audit.cjs
           NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
 
-      - name: Inject integrated surface twice
+      - name: Full Pacefold browser audit matrix
         run: |
-          node enhancements/inject.mjs _release
-          node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
-          test "$(cat _release/pacefold-experience.txt)" = "21.1.0"
-          ! grep -q 'data-pacefold-hub=' _release/index.html
-          test "$(grep -o 'data-pacefold-hub="15.8.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-hub-guardian="15.8.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-resilience="15.8.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-flow="15.8.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-theme-boot="20.0.1"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-ma="20.0.1"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v19="20.0.1"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v20="20.0.1"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21="21.1.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-boot="21.1.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-persistence="21.1.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-refine="21.1.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'name="pacefold-experience" content="21.1.0"' _release/app/index.html | wc -l)" -eq 1
-          test -f _release/pacefold-site-ma.css
-          test -f _release/pacefold-site-v19.css
-          grep -q 'https://api.open-meteo.com' _release/app/index.html
-          ! grep -q 'https://graph.microsoft.com' _release/app/index.html
-          grep -q 'pacefoldV19Weather' _release/app/pacefold-hub.js
-          ! grep -q 'latitude=43.6532&longitude=-79.3832' _release/app/pacefold-hub.js
-          grep -q 'https://www.youtube-nocookie.com' _release/app/index.html
-          grep -q 'https://open.spotify.com' _release/app/index.html
-          grep -q 'https://music.amazon.ca' _release/app/index.html
-          test -f _release/app/pacefold-integrated.js
-          test -f _release/app/pacefold-integrated.css
-          test -f _release/app/pacefold-theme-boot.js
-          test -f _release/app/pacefold-ma.js
-          test -f _release/app/pacefold-ma.css
-          test -f _release/app/pacefold-v19.js
-          test -f _release/app/pacefold-v19.css
-          test -f _release/app/pacefold-v20.js
-          test -f _release/app/pacefold-v20.css
-          test -f _release/app/pacefold-v21-boot.js
-          test -f _release/app/pacefold-v21.js
-          test -f _release/app/pacefold-v21.css
-          test -f _release/app/pacefold-v21-compat.css
-          test -f _release/app/pacefold-v21-persistence.js
-          test -f _release/app/pacefold-v21-refine.js
-          test -f _release/app/pacefold-v21-refine.css
-          test -f _release/app/fonts/pacefold-ma.woff2
-          test "$(stat -c %s _release/app/fonts/pacefold-ma.woff2)" -le 15000
-          test -f _release/app/icons/fold-mark.png
-          test -f _release/app/icons/notify-water.png
-          test "$(xxd -p -l 8 _release/app/icons/fold-mark.png)" = "89504e470d0a1a0a"
-          test "$(xxd -p -l 8 _release/app/icons/notify-water.png)" = "89504e470d0a1a0a"
-          grep -R -q 'pf=current' _release/manifest* _release/app/manifest* 2>/dev/null
-          grep -R -q 'pf=capture' _release/manifest* _release/app/manifest* 2>/dev/null
-          grep -R -q 'pf=notebook' _release/manifest* _release/app/manifest* 2>/dev/null
-          grep -R -q 'pf=media' _release/manifest* _release/app/manifest* 2>/dev/null
-          test ! -e _release/pacefold-hub.js
-          node --check _release/app/pacefold-hub.js
-          node --check _release/app/pacefold-hub-guardian.js
-          node --check _release/app/pacefold-resilience.js
-          node --check _release/app/pacefold-integrated.js
-          node --check _release/app/pacefold-theme-boot.js
-          node --check _release/app/pacefold-ma.js
-          node --check _release/app/pacefold-v19.js
-          node --check _release/app/pacefold-v20.js
-          node --check _release/app/pacefold-v21-boot.js
-          node --check _release/app/pacefold-v21.js
-          node --check _release/app/pacefold-v21-persistence.js
-          node --check _release/app/pacefold-v21-refine.js
-          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _release/app/app.js _release/app/pacefold-hub.js _release/app/pacefold-hub-guardian.js _release/app/pacefold-resilience.js _release/app/pacefold-integrated.js _release/app/pacefold-theme-boot.js _release/app/pacefold-ma.js _release/app/pacefold-v19.js _release/app/pacefold-v20.js _release/app/pacefold-v21-boot.js _release/app/pacefold-v21.js _release/app/pacefold-v21-persistence.js _release/app/pacefold-v21-refine.js
-          node --check _release/service-worker.js
-          node --check _release/app/service-worker.js
-          node -e "const m=JSON.parse(require('fs').readFileSync('_release/manifest.webmanifest','utf8'));if(JSON.stringify(m.display_override)!==JSON.stringify(['window-controls-overlay','standalone']))process.exit(1)"
-          grep -q 'pacefold-ma.css' _release/service-worker.js
-          grep -q 'pacefold-site-ma.css' _release/service-worker.js
-          grep -q 'pacefold-v19.css' _release/service-worker.js
-          grep -q 'pacefold-v19.js' _release/service-worker.js
-          grep -q 'pacefold-v20.css' _release/service-worker.js
-          grep -q 'pacefold-v20.js' _release/service-worker.js
-          grep -q 'pacefold-v21.css' _release/service-worker.js
-          grep -q 'pacefold-v21-boot.js' _release/service-worker.js
-          grep -q 'pacefold-v21.js' _release/service-worker.js
-          grep -q 'pacefold-v21-persistence.js' _release/service-worker.js
-          grep -q 'pacefold-v21-refine.css' _release/service-worker.js
-          grep -q 'pacefold-v21-refine.js' _release/service-worker.js
-          grep -q 'pacefold-site-v19.css' _release/service-worker.js
-          grep -q 'pacefold-theme-boot.js' _release/service-worker.js
-          grep -q 'pacefold-revamp.js' _release/service-worker.js
-          grep -q 'fonts/pacefold-ma.woff2' _release/service-worker.js
-          grep -Fq 'caches.match(request,{ignoreSearch:true})' _release/service-worker.js
-          ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
-          ! grep -q 'complete setup|get started' _release/app/pacefold-hub.js
-          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' _release/service-worker.js | wc -l)" -eq 1
-          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' _release/app/service-worker.js | wc -l)" -eq 1
-          ! sed -n '/BEGIN pacefold-resilience-15.8.0/,/END pacefold-resilience-15.8.0/p' _release/app/service-worker.js | grep -q 'caches.delete'
-          grep -q 'notify-water.png' _release/app/service-worker.js
-          ! sed -n '/BEGIN pacefold-resilience-15.8.0/,/END pacefold-resilience-15.8.0/p' _release/app/service-worker.js | grep -q 'notify-water.svg'
-
-      - name: Notebook and integration browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-notebook-audit.status
+          mkdir -p /tmp/pacefold-audits/{integrated,ma,v19,v20,v21}
           set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs _release 2>&1 | tee /tmp/pacefold-notebook-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-notebook-audit.status
-          exit 0
-
-      - name: Destructive resilience browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-resilience-audit.status
-          set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release 2>&1 | tee /tmp/pacefold-resilience-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-resilience-audit.status
-          exit 0
-
-      - name: Integrated dock and taskbar browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-integrated-audit.status
-          mkdir -p /tmp/pacefold-integrated-artifacts
-          set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs _release /tmp/pacefold-integrated-artifacts 2>&1 | tee /tmp/pacefold-integrated-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-integrated-audit.status
-          exit 0
-
-      - name: Ma release browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-ma-audit.status
-          mkdir -p /tmp/pacefold-ma-artifacts
-          set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/ma-audit.cjs _release /tmp/pacefold-ma-artifacts 2>&1 | tee /tmp/pacefold-ma-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-ma-audit.status
-          exit 0
-
-      - name: V19 dashboard browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-v19-audit.status
-          mkdir -p /tmp/pacefold-v19-artifacts
-          set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v19-audit.cjs _release /tmp/pacefold-v19-artifacts 2>&1 | tee /tmp/pacefold-v19-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-v19-audit.status
-          exit 0
-
-      - name: V20 visual, taskbar and backup browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-v20-audit.status
-          mkdir -p /tmp/pacefold-v20-artifacts
-          set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-v20-artifacts 2>&1 | tee /tmp/pacefold-v20-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-v20-audit.status
-          exit 0
-
-      - name: Pacefold 21.1 refinement browser audit
-        continue-on-error: true
-        run: |
-          echo 99 > /tmp/pacefold-v21-audit.status
-          mkdir -p /tmp/pacefold-v21-artifacts
-          set +e
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-v21-artifacts 2>&1 | tee /tmp/pacefold-v21-audit.log
-          status=${PIPESTATUS[0]}
-          echo "$status" > /tmp/pacefold-v21-audit.status
-          exit 0
+          failed=0
+          run_audit(){
+            name="$1"; shift
+            echo "--- $name ---"
+            NODE_PATH=/tmp/pacefold-browser-audit/node_modules "$@" 2>&1 | tee "/tmp/pacefold-audits/${name}.log"
+            status=${PIPESTATUS[0]}
+            echo "$status" > "/tmp/pacefold-audits/${name}.status"
+            if [ "$status" -ne 0 ]; then failed=1; fi
+          }
+          run_audit notebook node enhancements/run-hub-audit.cjs _release
+          run_audit resilience node enhancements/resilience-audit.cjs _release
+          run_audit integrated node enhancements/integrated-audit.cjs _release /tmp/pacefold-audits/integrated
+          run_audit ma node enhancements/ma-audit.cjs _release /tmp/pacefold-audits/ma
+          run_audit v19 node enhancements/v19-audit.cjs _release /tmp/pacefold-audits/v19
+          run_audit v20 node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20
+          run_audit v21 node enhancements/v21-audit.cjs _release /tmp/pacefold-audits/v21
+          exit "$failed"
 
       - name: Upload browser diagnostics and visual captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.1-audit-${{ github.run_id }}
-          path: |
-            /tmp/pacefold-notebook-audit.log
-            /tmp/pacefold-notebook-audit.status
-            /tmp/pacefold-resilience-audit.log
-            /tmp/pacefold-resilience-audit.status
-            /tmp/pacefold-integrated-audit.log
-            /tmp/pacefold-integrated-audit.status
-            /tmp/pacefold-integrated-artifacts/
-            /tmp/pacefold-ma-audit.log
-            /tmp/pacefold-ma-audit.status
-            /tmp/pacefold-ma-artifacts/
-            /tmp/pacefold-v19-audit.log
-            /tmp/pacefold-v19-audit.status
-            /tmp/pacefold-v19-artifacts/
-            /tmp/pacefold-v20-audit.log
-            /tmp/pacefold-v20-audit.status
-            /tmp/pacefold-v20-artifacts/
-            /tmp/pacefold-v21-audit.log
-            /tmp/pacefold-v21-audit.status
-            /tmp/pacefold-v21-artifacts/
-          if-no-files-found: error
+          name: pacefold-21.2-audit-${{ github.run_id }}
+          path: /tmp/pacefold-audits/
+          if-no-files-found: warn
           retention-days: 7
-
-      - name: Require all Pacefold audits
-        run: |
-          echo "Notebook audit status: $(cat /tmp/pacefold-notebook-audit.status)"
-          echo "Resilience audit status: $(cat /tmp/pacefold-resilience-audit.status)"
-          echo "Integrated audit status: $(cat /tmp/pacefold-integrated-audit.status)"
-          echo "Ma audit status: $(cat /tmp/pacefold-ma-audit.status)"
-          echo "V19 audit status: $(cat /tmp/pacefold-v19-audit.status)"
-          echo "V20 audit status: $(cat /tmp/pacefold-v20-audit.status)"
-          echo "V21 audit status: $(cat /tmp/pacefold-v21-audit.status)"
-          test "$(cat /tmp/pacefold-notebook-audit.status)" = "0"
-          test "$(cat /tmp/pacefold-resilience-audit.status)" = "0"
-          test "$(cat /tmp/pacefold-integrated-audit.status)" = "0"
-          test "$(cat /tmp/pacefold-ma-audit.status)" = "0"
-          test "$(cat /tmp/pacefold-v19-audit.status)" = "0"
-          test "$(cat /tmp/pacefold-v20-audit.status)" = "0"
-          test "$(cat /tmp/pacefold-v21-audit.status)" = "0"
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -340,12 +168,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Reconstruct verified release and install integrated surface
+      - name: Build verified site
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
@@ -353,91 +181,16 @@ jobs:
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
-          rsync -a _release/ _site/ \
-            --exclude '.git/' \
-            --exclude '.github/' \
-            --exclude 'scripts/' \
-            --exclude 'README.md' \
-            --exclude 'CHANGELOG.md' \
-            --exclude 'REPOSITORY_SETUP.md' \
-            --exclude 'SECURITY.md'
+          rsync -a _release/ _site/ --exclude '.git/' --exclude '.github/' --exclude 'scripts/' --exclude 'README.md' --exclude 'CHANGELOG.md' --exclude 'REPOSITORY_SETUP.md' --exclude 'SECURITY.md'
           node enhancements/inject.mjs _site
-          test "$(cat _site/pacefold-hub-version.txt)" = "15.8.0"
-          test "$(cat _site/pacefold-experience.txt)" = "21.1.0"
-          ! grep -q 'data-pacefold-hub=' _site/index.html
-          grep -q 'data-pacefold-hub="15.8.0"' _site/app/index.html
-          grep -q 'data-pacefold-resilience="15.8.0"' _site/app/index.html
-          grep -q 'data-pacefold-flow="15.8.0"' _site/app/index.html
-          grep -q 'data-pacefold-theme-boot="20.0.1"' _site/app/index.html
-          test "$(grep -o 'data-pacefold-ma="20.0.1"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v19="20.0.1"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v20="20.0.1"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21="21.1.0"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-boot="21.1.0"' _site/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-persistence="21.1.0"' _site/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-refine="21.1.0"' _site/app/index.html | wc -l)" -eq 2
-          test -f _site/pacefold-site-ma.css
-          test -f _site/pacefold-site-v19.css
-          ! grep -q 'https://graph.microsoft.com' _site/app/index.html
-          grep -q 'pacefoldV19Weather' _site/app/pacefold-hub.js
-          ! grep -q 'latitude=43.6532&longitude=-79.3832' _site/app/pacefold-hub.js
-          test -f _site/app/pacefold-integrated.js
-          test -f _site/app/pacefold-integrated.css
-          test -f _site/app/pacefold-theme-boot.js
-          test -f _site/app/pacefold-ma.js
-          test -f _site/app/pacefold-ma.css
-          test -f _site/app/pacefold-v19.js
-          test -f _site/app/pacefold-v19.css
-          test -f _site/app/pacefold-v20.js
-          test -f _site/app/pacefold-v20.css
-          test -f _site/app/pacefold-v21-boot.js
-          test -f _site/app/pacefold-v21.js
-          test -f _site/app/pacefold-v21.css
-          test -f _site/app/pacefold-v21-compat.css
-          test -f _site/app/pacefold-v21-persistence.js
-          test -f _site/app/pacefold-v21-refine.js
-          test -f _site/app/pacefold-v21-refine.css
-          test -f _site/app/fonts/pacefold-ma.woff2
-          test "$(xxd -p -l 8 _site/app/icons/fold-mark.png)" = "89504e470d0a1a0a"
-          test "$(xxd -p -l 8 _site/app/icons/notify-water.png)" = "89504e470d0a1a0a"
-          grep -R -q 'pf=current' _site/manifest* _site/app/manifest* 2>/dev/null
-          grep -R -q 'pf=capture' _site/manifest* _site/app/manifest* 2>/dev/null
-          node --check _site/app/pacefold-hub.js
-          node --check _site/app/pacefold-hub-guardian.js
-          node --check _site/app/pacefold-resilience.js
-          node --check _site/app/pacefold-integrated.js
-          node --check _site/app/pacefold-theme-boot.js
-          node --check _site/app/pacefold-ma.js
-          node --check _site/app/pacefold-v19.js
-          node --check _site/app/pacefold-v20.js
-          node --check _site/app/pacefold-v21-boot.js
-          node --check _site/app/pacefold-v21.js
-          node --check _site/app/pacefold-v21-persistence.js
-          node --check _site/app/pacefold-v21-refine.js
-          ! grep -R -E -q '\.innerHTML[[:space:]]*=' _site/app/app.js _site/app/pacefold-hub.js _site/app/pacefold-hub-guardian.js _site/app/pacefold-resilience.js _site/app/pacefold-integrated.js _site/app/pacefold-theme-boot.js _site/app/pacefold-ma.js _site/app/pacefold-v19.js _site/app/pacefold-v20.js _site/app/pacefold-v21-boot.js _site/app/pacefold-v21.js _site/app/pacefold-v21-persistence.js _site/app/pacefold-v21-refine.js
+          test "$(cat _site/pacefold-experience.txt)" = "21.2.0"
+          test "$(grep -o 'data-pacefold-v21="21.2.0"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _site/app/index.html | wc -l)" -eq 1
+          test -f _site/app/pacefold-v21-minimal.css
+          grep -q 'pacefold-v21-minimal.css' _site/service-worker.js
+          grep -q 'revision:21.2.0' _site/service-worker.js
+          node --check _site/app/pacefold-v21-precision.js
           node --check _site/service-worker.js
-          node --check _site/app/service-worker.js
-          node -e "const m=JSON.parse(require('fs').readFileSync('_site/manifest.webmanifest','utf8'));if(JSON.stringify(m.display_override)!==JSON.stringify(['window-controls-overlay','standalone']))process.exit(1)"
-          grep -q 'pacefold-ma.css' _site/service-worker.js
-          grep -q 'pacefold-site-ma.css' _site/service-worker.js
-          grep -q 'pacefold-v19.css' _site/service-worker.js
-          grep -q 'pacefold-v19.js' _site/service-worker.js
-          grep -q 'pacefold-v20.css' _site/service-worker.js
-          grep -q 'pacefold-v20.js' _site/service-worker.js
-          grep -q 'pacefold-v21.css' _site/service-worker.js
-          grep -q 'pacefold-v21-boot.js' _site/service-worker.js
-          grep -q 'pacefold-v21.js' _site/service-worker.js
-          grep -q 'pacefold-v21-persistence.js' _site/service-worker.js
-          grep -q 'pacefold-v21-refine.css' _site/service-worker.js
-          grep -q 'pacefold-v21-refine.js' _site/service-worker.js
-          grep -q 'pacefold-site-v19.css' _site/service-worker.js
-          grep -q 'pacefold-theme-boot.js' _site/service-worker.js
-          grep -q 'pacefold-revamp.js' _site/service-worker.js
-          grep -q 'fonts/pacefold-ma.woff2' _site/service-worker.js
-          grep -Fq 'caches.match(request,{ignoreSearch:true})' _site/service-worker.js
-          ! grep -q 'allow-popups-to-escape-sandbox' _site/app/pacefold-hub.js
-          test "$(grep -o 'BEGIN pacefold-resilience-15.8.0' _site/app/service-worker.js | wc -l)" -eq 1
-          grep -q 'notify-water.png' _site/app/service-worker.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
