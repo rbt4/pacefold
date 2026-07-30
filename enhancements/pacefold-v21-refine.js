@@ -27,7 +27,9 @@
 
   function patchPublicVersion(){
     document.documentElement.classList.add('pf-v21-1-active');
+    document.documentElement.dataset.pacefoldExperience=RELEASE;
     document.documentElement.dataset.pacefoldRefinement=RELEASE;
+    document.body.dataset.pacefoldExperience=RELEASE;
     document.body.dataset.pacefoldRefinement=RELEASE;
     const version=document.querySelector('.pf21-settings-version');
     if(version&&version.textContent!==`Pacefold ${RELEASE}`)version.textContent=`Pacefold ${RELEASE}`;
