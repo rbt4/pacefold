@@ -1,0 +1,18 @@
+/* Pacefold 22.0.1 — control ownership and sound overlay hardening. */
+.pf22-seconds[hidden]{display:none!important}
+.pf22-sound-overlay[hidden]{display:none!important}
+.pf22-sound-overlay{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:clamp(14px,4vw,44px);background:rgba(20,52,43,.24);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.pf22-sound-dialog{width:min(980px,94vw);height:min(720px,88vh);min-height:420px;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;border:1px solid var(--pf22-line-strong);border-radius:24px;background:var(--pf22-surface);box-shadow:0 34px 110px rgba(20,52,43,.22)}
+.pf22-sound-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:22px 26px 18px;border-bottom:1px solid var(--pf22-line)}
+.pf22-sound-dialog-head h2{margin:5px 0 0;color:var(--pf22-ink);font-size:20px;font-weight:560;letter-spacing:-.03em}
+.pf22-sound-close{min-height:34px;padding:0 14px;border:1px solid var(--pf22-line);border-radius:999px;background:rgba(255,255,255,.62);color:var(--pf22-soft);font:750 10px/1 inherit;cursor:pointer}
+.pf22-sound-close:hover{background:#fff;border-color:var(--pf22-line-strong)}
+.pf22-sound-mount{min-height:0;overflow:hidden;padding:0}
+.pf22-sound-mount>#pf-v19-workbench{display:grid!important;position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;transform:none!important;opacity:1!important;visibility:visible!important}
+.pf22-sound-mount>#pf-v19-workbench>.pf-v19-workbench-rail{display:none!important}
+.pf22-sound-mount>#pf-v19-workbench>.pf-v19-workbench-body{display:grid!important;min-height:0!important;height:100%!important;overflow:hidden!important}
+.pf22-sound-mount #pf-local-workspace{display:none!important}
+.pf22-sound-mount #pf-local-player{display:grid!important;position:relative!important;inset:auto!important;width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;opacity:1!important;visibility:visible!important;transform:none!important;pointer-events:auto!important}
+html.pf22-sound-open .pf22-spatial-root{overflow:hidden!important}
+@media(max-width:760px){.pf22-sound-overlay{padding:8px}.pf22-sound-dialog{width:100%;height:100%;min-height:0;border-radius:18px}.pf22-sound-dialog-head{padding:17px 18px 14px}}
+@media(prefers-reduced-motion:reduce){.pf22-sound-overlay{backdrop-filter:none;-webkit-backdrop-filter:none}}
