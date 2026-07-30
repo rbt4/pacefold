@@ -17,12 +17,23 @@ const explicit=process.argv[2]&&/\.cjs$/i.test(process.argv[2]);
 const v19=path.resolve(explicit?process.argv[2]:path.join(__dirname,'v19-audit.cjs'));
 const v20=path.resolve(explicit&&process.argv[3]?process.argv[3]:path.join(__dirname,'v20-audit.cjs'));
 
-const v19Changed=replaceOnce(
+const changes=[];
+changes.push(replaceOnce(
   v19,
   "    await page.waitForFunction(()=>Number(JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').noodleStart)>0);",
   "    await page.waitForFunction(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}');return Number(prefs.noodleStart)>0&&document.querySelector('.pf-ritual-slot[data-source=\"noodle\"]')?.dataset.active==='true';});",
   'V19 timer-render synchronization'
-);
+));
+
+const oldQuiet=`    await page.locator('#pf-quiet-toggle').click({timeout:3000});
+    await page.waitForFunction(()=>document.body.dataset.quiet==='true');
+    await page.locator('#pf-quiet-toggle').click({timeout:3000});
+    await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
+const stableQuiet=`    await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
+    await page.waitForFunction(()=>document.body.dataset.quiet==='true');
+    await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
+    await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
+changes.push(replaceOnce(v19,oldQuiet,stableQuiet,'V19 quiet-mode action synchronization'));
 
 const oldAttention=`    await page.evaluate(()=>{
       window.__PACEFOLD_BADGE_CALLS__.length=0;
@@ -61,5 +72,5 @@ const stableAttention=`    await page.evaluate(()=>{
       return alert?.dataset.active==='true'&&label&&label!=='All clear'&&document.documentElement.dataset.v20Attention==='true'&&favicon.startsWith('data:image/png')&&window.__PACEFOLD_BADGE_CALLS__.some(item=>item.kind==='set');
     });`;
 
-const v20Changed=replaceOnce(v20,oldAttention,stableAttention,'V20 stable attention fixture');
-console.log(v19Changed||v20Changed?'Patched historical V19/V20 browser audits with stable UI synchronization fixtures.':'Historical V19/V20 browser audit fixtures are already patched.');
+changes.push(replaceOnce(v20,oldAttention,stableAttention,'V20 stable attention fixture'));
+console.log(changes.some(Boolean)?'Patched historical V19/V20 browser audits with stable UI synchronization fixtures.':'Historical V19/V20 browser audit fixtures are already patched.');
