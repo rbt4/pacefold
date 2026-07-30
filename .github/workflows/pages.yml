@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 21.2.0
+name: Validate and deploy Pacefold 21.3.0
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -45,7 +45,7 @@ jobs:
           previous_surface=$(git show "${base_sha}:enhancements/VERSION" 2>/dev/null || true)
           test -n "$current_core"
           test -n "$previous_core"
-          test "$current_surface" = "21.2.0"
+          test "$current_surface" = "21.3.0"
           if [ "$current_core" = "$previous_core" ]; then
             test "$current_surface" != "$previous_surface"
             echo "Surface version advanced: ${previous_surface:-none} -> $current_surface; core remains $current_core"
@@ -78,17 +78,16 @@ jobs:
             enhancements/v19-audit.cjs \
             enhancements/v20-audit.cjs \
             enhancements/v21-audit.cjs \
+            enhancements/patch-regression-audits.cjs \
             enhancements/patch-core-audit.cjs; do node --check "$file"; done
-          test "$(cat enhancements/VERSION)" = "21.2.0"
+          test "$(cat enhancements/VERSION)" = "21.3.0"
           test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
-          grep -q 'pf-v21-minimal-active' enhancements/pacefold-v21-minimal.css
-          grep -q -- '--pf22-surface' enhancements/pacefold-v21-minimal.css
-          grep -q 'flex-wrap:wrap' enhancements/pacefold-v21-minimal-responsive.css
-          grep -q 'data-pf21-weather="false"' enhancements/pacefold-v21-minimal-responsive.css
-          grep -q "const EXPERIENCE='21.2.0'" enhancements/pacefold-v21-precision.js
-          grep -q "const RELEASE='21.2.0'" enhancements/pacefold-v21-refine.js
-          grep -q "const REVISION='minimal-r1'" enhancements/pacefold-v21-precision.js
-          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-minimal.css enhancements/pacefold-v21-minimal-responsive.css enhancements/pacefold-v21-precision.js
+          grep -q "const EXPERIENCE='21.3.0'" enhancements/pacefold-v21-precision.js
+          grep -q "const REVISION='dayflow-r1'" enhancements/pacefold-v21-precision.js
+          grep -q 'pacefold.dayflow.v1' enhancements/pacefold-v21-precision.js
+          grep -q 'pf21-dayflow' enhancements/pacefold-v21-dayflow.css
+          grep -q 'pf21-daybook' enhancements/pacefold-v21-dayflow.css
+          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-dayflow.css enhancements/pacefold-v21-precision.js
           ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v21-precision.js
 
       - name: Build verified core
@@ -107,25 +106,19 @@ jobs:
           node --check _release/scripts/browser-audit.cjs
           timeout 240s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
 
-      - name: Inject and audit Pacefold 21.2 surface
+      - name: Inject and audit Pacefold 21.3 surface
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
           test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
-          test "$(cat _release/pacefold-experience.txt)" = "21.2.0"
-          test "$(grep -o 'data-pacefold-v21="21.2.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-boot="21.2.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-persistence="21.2.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-refine="21.2.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-precision="21.2.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-minimal-responsive="21.2.0"' _release/app/index.html | wc -l)" -eq 1
-          test -f _release/app/pacefold-v21-minimal.css
-          test -f _release/app/pacefold-v21-minimal-responsive.css
-          grep -q 'pacefold-v21-minimal.css' _release/service-worker.js
-          grep -q 'pacefold-v21-minimal-responsive.css' _release/service-worker.js
-          grep -q 'pacefold-v21-minimal-responsive.css' _release/app/service-worker.js
-          grep -q 'revision:21.2.0' _release/service-worker.js
+          test "$(cat _release/pacefold-experience.txt)" = "21.3.0"
+          test "$(grep -o 'data-pacefold-v21=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 1
+          test -f _release/app/pacefold-v21-dayflow.css
+          grep -q 'pacefold-v21-dayflow.css' _release/service-worker.js
+          grep -q 'pacefold-v21-dayflow.css' _release/app/service-worker.js
+          grep -q 'revision:21.3.0' _release/service-worker.js
           ! grep -q 'https://graph.microsoft.com' _release/app/index.html
           ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
           grep -Fq 'caches.match(request,{ignoreSearch:true})' _release/service-worker.js
@@ -171,7 +164,7 @@ jobs:
           set -o pipefail
           timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20 2>&1 | tee /tmp/pacefold-audits/v20.log
 
-      - name: Pacefold 21.2 minimal browser audit
+      - name: Pacefold 21.3 Dayflow browser audit
         run: |
           mkdir -p /tmp/pacefold-audits/v21
           set -o pipefail
@@ -181,7 +174,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.2-audit-${{ github.run_id }}
+          name: pacefold-21.3-audit-${{ github.run_id }}
           path: /tmp/pacefold-audits/
           if-no-files-found: warn
           retention-days: 7
@@ -212,15 +205,12 @@ jobs:
           node _release/scripts/validate.mjs _release
           rsync -a _release/ _site/ --exclude '.git/' --exclude '.github/' --exclude 'scripts/' --exclude 'README.md' --exclude 'CHANGELOG.md' --exclude 'REPOSITORY_SETUP.md' --exclude 'SECURITY.md'
           node enhancements/inject.mjs _site
-          test "$(cat _site/pacefold-experience.txt)" = "21.2.0"
-          test "$(grep -o 'data-pacefold-v21="21.2.0"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _site/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v21-minimal-responsive="21.2.0"' _site/app/index.html | wc -l)" -eq 1
-          test -f _site/app/pacefold-v21-minimal.css
-          test -f _site/app/pacefold-v21-minimal-responsive.css
-          grep -q 'pacefold-v21-minimal-responsive.css' _site/service-worker.js
-          grep -q 'revision:21.2.0' _site/service-worker.js
-          node --check _site/app/pacefold-v21-refine.js
+          test "$(cat _site/pacefold-experience.txt)" = "21.3.0"
+          test "$(grep -o 'data-pacefold-v21=\"21.3.0\"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.0\"' _site/app/index.html | wc -l)" -eq 1
+          test -f _site/app/pacefold-v21-dayflow.css
+          grep -q 'pacefold-v21-dayflow.css' _site/service-worker.js
+          grep -q 'revision:21.3.0' _site/service-worker.js
           node --check _site/app/pacefold-v21-precision.js
           node --check _site/service-worker.js
 
