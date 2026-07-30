@@ -1,0 +1,101 @@
+/* Pacefold 21.2 responsive finish — compact weather-off state and collision-free notebook tools. */
+
+html[data-pf21-weather="false"].pf-v21-minimal-active .pf-v20-folio>.clock-shell{
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-areas:
+    "brand quiet"
+    "time time"
+    "date date"
+    "status status"!important;
+  min-height:252px!important;
+}
+
+html[data-pf21-weather="false"].pf-v21-minimal-active .time-row{
+  max-width:660px!important;
+}
+
+html[data-pf21-weather="false"].pf-v21-minimal-active .status-area{
+  margin-top:10px!important;
+}
+
+@media(min-width:721px) and (max-width:1020px){
+  html.pf-v21-minimal-active .pf-v20-folio>.clock-shell{
+    grid-template-columns:minmax(0,1fr) minmax(260px,300px)!important;
+    column-gap:28px!important;
+    min-height:316px!important;
+    padding:22px 24px 15px 30px!important;
+  }
+
+  html.pf-v21-minimal-active .time-main{
+    font-size:clamp(78px,10vw,108px)!important;
+  }
+
+  html.pf-v21-minimal-active .pf-v19-weather{
+    min-height:202px!important;
+    padding:15px!important;
+  }
+
+  html.pf-v21-minimal-active #workline{
+    gap:7px!important;
+  }
+
+  html.pf-v21-minimal-active .pf-ritual-slot[data-v19-ritual="true"]>button:not(.pf-ritual-options){
+    padding-inline:9px!important;
+  }
+
+  html.pf-v21-minimal-active .pf21-note-calendar{
+    grid-template-columns:minmax(190px,.62fr) minmax(340px,1.42fr)!important;
+    gap:24px!important;
+    padding-inline:28px!important;
+  }
+}
+
+@media(max-width:720px){
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-notebook-tools{
+    position:relative!important;
+    display:flex!important;
+    flex-wrap:wrap!important;
+    align-items:center!important;
+    gap:7px 9px!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:76px!important;
+    padding:8px 12px!important;
+    overflow:visible!important;
+  }
+
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-notebook-tools>*{
+    position:relative!important;
+    inset:auto!important;
+    min-width:0!important;
+    transform:none!important;
+  }
+
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-notebook-tools input{
+    flex:1 1 190px!important;
+    width:auto!important;
+    min-width:150px!important;
+    max-width:none!important;
+    margin:0!important;
+  }
+
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-notebook-tools button{
+    flex:0 0 auto!important;
+    margin:0!important;
+  }
+
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-note-composer{
+    clear:both!important;
+  }
+}
+
+@media(max-width:430px){
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-notebook-tools{
+    align-items:flex-start!important;
+    min-height:92px!important;
+  }
+
+  html.pf-v21-minimal-active #pf-v19-workbench .pf-notebook-tools input{
+    flex-basis:220px!important;
+  }
+}
