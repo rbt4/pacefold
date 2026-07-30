@@ -107,3 +107,12 @@ html.pf-v21-dayflow-active .pf21-daybook-nav,html.pf-v21-dayflow-active .pf21-da
   html.pf-v21-dayflow-active .pf21-daybook-tabs{grid-template-columns:repeat(4,minmax(74px,1fr));overflow-x:auto}
   html.pf-v21-dayflow-active .pf21-daybook-tab{padding-inline:7px}
 }
+
+
+/* Pacefold 21.3.1 mobile sheet correction */
+@media(max-width:760px){
+  html.pf-v21-dayflow-active #pf-quiet-toggle{position:fixed!important;top:18px!important;right:18px!important;bottom:auto!important;left:auto!important;z-index:10040!important}
+  html.pf-v21-dayflow-active .pf21-daybook{height:auto!important;min-height:0!important}
+  html.pf-v21-dayflow-active .pf21-daybook-body{height:auto!important;min-height:0!important}
+  html.pf-v21-dayflow-active .pf21-daybook-main{min-height:0!important}
+}
