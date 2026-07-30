@@ -1,6 +1,9 @@
 (()=>{
 'use strict';
-const EXPERIENCE='21.3.0',RELEASE='21.3.0',REVISION='dayflow-r1',CORE='15.2.2',PREFS='pacefoldPrefsV15',FLOW='pacefold.dayflow.v1',NOTES='pacefold.notebook.entries.v2',DAY=86400000;
+const EXPERIENCE='21.3.0';
+const RELEASE='21.3.0';
+const REVISION='dayflow-r1';
+const CORE='15.2.2',PREFS='pacefoldPrefsV15',FLOW='pacefold.dayflow.v1',NOTES='pacefold.notebook.entries.v2',DAY=86400000;
 let frame=0,observer,snapshot,date='',tab='day',search='',flowKey='',bookKey='';
 const $=s=>document.querySelector(s),id=s=>document.getElementById(s),txt=v=>String(v??'').replace(/\s+/g,' ').trim(),obj=v=>v&&typeof v==='object'&&!Array.isArray(v),json=(v,f)=>{try{return v?JSON.parse(v):f}catch{return f}},el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;if(x!=null)n.textContent=String(x);return n},btn=(c,a,x)=>{const n=el('button',c,x);n.type='button';if(a)n.setAttribute('aria-label',a);return n},local=(v=new Date())=>{const d=v instanceof Date?v:new Date(v);return Number.isNaN(d.getTime())?'':new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)},clock=v=>new Date(Number(v)||v).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}),label=k=>new Date(`${k}T12:00:00`).toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}),clamp=(v,a,b)=>Math.min(b,Math.max(a,Number(v)||0));
 const prefs=()=>window.__PACEFOLD_MA_CORE__?.getPrefs?.()||obj(json(localStorage.getItem(PREFS),{}))||{};
