@@ -16,6 +16,7 @@ function replaceOnce(file,from,to,label){
 const explicit=process.argv[2]&&/\.cjs$/i.test(process.argv[2]);
 const v19=path.resolve(explicit?process.argv[2]:path.join(__dirname,'v19-audit.cjs'));
 const v20=path.resolve(explicit&&process.argv[3]?process.argv[3]:path.join(__dirname,'v20-audit.cjs'));
+const ma=path.resolve(explicit&&process.argv[4]?process.argv[4]:path.join(__dirname,'ma-audit.cjs'));
 
 const changes=[];
 changes.push(replaceOnce(
@@ -34,6 +35,36 @@ const stableQuiet=`    await page.evaluate(()=>document.getElementById('pf-quiet
     await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
     await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
 changes.push(replaceOnce(v19,oldQuiet,stableQuiet,'V19 quiet-mode action synchronization'));
+
+const oldMaQuiet=`    await page.locator('#pf-quiet-toggle').click();
+    await page.waitForFunction(()=>document.body.dataset.quiet==='true');
+    await page.evaluate(()=>{const marker=document.createElement('span');marker.textContent='Research';document.getElementById('pf-local-workspace').append(marker);});
+    await page.waitForTimeout(80);
+    const quiet=await page.evaluate(()=>{
+      const text=document.body.textContent||'',labels=[...document.querySelectorAll('[aria-label],[title]')].flatMap(node=>[node.getAttribute('aria-label'),node.getAttribute('title')]).filter(Boolean).join(' ');
+      return{text,labels,title:document.title,event:document.getElementById('eventName')?.textContent,badge:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').taskbarBadgeMode};
+    });
+    const sensitive=/\\b(?:fajr|dhuhr|asr|maghrib|isha|prayer|water|sip|noodle|prep|lunch|meal|away|eye|movement|inbox|follow-ups?|incidents?|inspections?|jhsc|construction|notifications?|resources?)\\b/i;
+    assert(!sensitive.test(quiet.text)&&!/\\bResearch\\b/.test(quiet.text),\`Quiet left cue/category text in the DOM: \${quiet.text.match(sensitive)?.[0]||'Research'}\`);
+    assert(!sensitive.test(quiet.labels),\`Quiet left cue/category accessibility text in the DOM: \${quiet.labels.match(sensitive)?.[0]}\`);
+    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge==='off',\`Quiet did not apply its complete safe-surface contract: \${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,errors})}\`);
+    await page.locator('#pf-quiet-toggle').click();
+    await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
+const stableMaQuiet=`    await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
+    await page.waitForFunction(()=>document.body.dataset.quiet==='true');
+    await page.evaluate(()=>{const marker=document.createElement('span');marker.textContent='Research';document.getElementById('pf-local-workspace').append(marker);});
+    await page.waitForTimeout(80);
+    const quiet=await page.evaluate(()=>{
+      const text=document.body.textContent||'',labels=[...document.querySelectorAll('[aria-label],[title]')].flatMap(node=>[node.getAttribute('aria-label'),node.getAttribute('title')]).filter(Boolean).join(' ');
+      return{text,labels,title:document.title,event:document.getElementById('eventName')?.textContent,badge:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').taskbarBadgeMode};
+    });
+    const sensitive=/\\b(?:fajr|dhuhr|asr|maghrib|isha|prayer|water|sip|noodle|prep|lunch|meal|away|eye|movement|inbox|follow-ups?|incidents?|inspections?|jhsc|construction|notifications?|resources?)\\b/i;
+    assert(!sensitive.test(quiet.text)&&!/\\bResearch\\b/.test(quiet.text),\`Quiet left cue/category text in the DOM: \${quiet.text.match(sensitive)?.[0]||'Research'}\`);
+    assert(!sensitive.test(quiet.labels),\`Quiet left cue/category accessibility text in the DOM: \${quiet.labels.match(sensitive)?.[0]}\`);
+    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge==='off',\`Quiet did not apply its complete safe-surface contract: \${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,errors})}\`);
+    await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
+    await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
+changes.push(replaceOnce(ma,oldMaQuiet,stableMaQuiet,'Ma quiet-mode DOM action synchronization'));
 
 changes.push(replaceOnce(
   v19,
@@ -161,4 +192,4 @@ changes.push(replaceOnce(
   'V20 mobile Daybook hit testing'
 ));
 
-console.log(changes.some(Boolean)?'Patched historical V19/V20 browser audits for stable controls and Pacefold 21.3 Dayflow/Daybook compatibility.':'Historical V19/V20 browser audit fixtures are already patched.');
+console.log(changes.some(Boolean)?'Patched historical Ma/V19/V20 browser audits for stable controls and Pacefold 21.3 Dayflow/Daybook compatibility.':'Historical Ma/V19/V20 browser audit fixtures are already patched.');
