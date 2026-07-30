@@ -1,8 +1,8 @@
-name: Validate Pacefold 21.3 Dayflow experience
+name: Validate Pacefold 21.3.1 visual hotfix
 
 on:
   push:
-    branches: [main, agent/pacefold-21-3-dayflow]
+    branches: [main, agent/pacefold-21-3-1-visual-hotfix]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -35,7 +35,7 @@ jobs:
 
       - name: Syntax, privacy and version guard
         run: |
-          test "$(cat enhancements/VERSION)" = "21.3.0"
+          test "$(cat enhancements/VERSION)" = "21.3.1"
           for file in \
             enhancements/pacefold-v21-boot.js \
             enhancements/pacefold-v21.js \
@@ -48,28 +48,29 @@ jobs:
           cat enhancements/pacefold-v21-dayflow-runtime.part-*.js > /tmp/pacefold-dayflow.js
           cat enhancements/pacefold-v21-dayflow.part-*.css > /tmp/pacefold-dayflow.css
           node --check /tmp/pacefold-dayflow.js
-          grep -q "const EXPERIENCE='21.3.0'" /tmp/pacefold-dayflow.js
-          grep -q "const REVISION='dayflow-r1'" /tmp/pacefold-dayflow.js
+          grep -q "const EXPERIENCE='21.3.1'" /tmp/pacefold-dayflow.js
+          grep -q "const REVISION='dayflow-r2'" /tmp/pacefold-dayflow.js
           grep -q 'pacefold.dayflow.v1' /tmp/pacefold-dayflow.js
           grep -q '__PACEFOLD_DAYFLOW__' /tmp/pacefold-dayflow.js
           grep -q 'pf21-dayflow' /tmp/pacefold-dayflow.css
           grep -q 'pf21-daybook' /tmp/pacefold-dayflow.css
+          grep -q 'Pacefold 21.3.1 visual composition hotfix' /tmp/pacefold-dayflow.css
           grep -q 'Workday analytics' /tmp/pacefold-dayflow.js
           ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' /tmp/pacefold-dayflow.css /tmp/pacefold-dayflow.js
           ! grep -E -q '\.innerHTML[[:space:]]*=' /tmp/pacefold-dayflow.js
 
-      - name: Inject Pacefold 21.3 twice
+      - name: Inject Pacefold 21.3.1 twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-experience.txt)" = "21.3.0"
-          test "$(grep -o 'data-pacefold-v21=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 1
+          test "$(cat _release/pacefold-experience.txt)" = "21.3.1"
+          test "$(grep -o 'data-pacefold-v21=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 1
           test -f _release/app/pacefold-v21-dayflow.css
           grep -q 'pacefold-v21-dayflow.css' _release/service-worker.js
           grep -q 'pacefold-v21-dayflow.css' _release/app/service-worker.js
-          grep -q 'revision:21.3.0' _release/service-worker.js
+          grep -q 'revision:21.3.1' _release/service-worker.js
           node --check _release/app/pacefold-v21-boot.js
           node --check _release/app/pacefold-v21.js
           node --check _release/app/pacefold-v21-persistence.js
@@ -81,7 +82,7 @@ jobs:
           npm install --prefix /tmp/pacefold-v21-audit playwright@1.61.1
           /tmp/pacefold-v21-audit/node_modules/.bin/playwright install --with-deps chromium
 
-      - name: Run Pacefold 21.3 browser audit
+      - name: Run Pacefold 21.3.1 browser audit
         run: |
           mkdir -p /tmp/pacefold-v21-artifacts
           NODE_PATH=/tmp/pacefold-v21-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-v21-artifacts
@@ -90,7 +91,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.3-dayflow-audit-${{ github.run_id }}
+          name: pacefold-21.3.1-visual-audit-${{ github.run_id }}
           path: /tmp/pacefold-v21-artifacts/
           if-no-files-found: warn
           retention-days: 7
