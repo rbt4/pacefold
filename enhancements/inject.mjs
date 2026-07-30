@@ -3,8 +3,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const RELEASE='21.3.0';
-const REVISION='21.3.0';
+const RELEASE='21.3.1';
+const REVISION='21.3.1';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const targetApp=path.join(targetRoot,'app');

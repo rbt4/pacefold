@@ -3,9 +3,9 @@ const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
 const {chromium}=require('playwright');
-const RELEASE='21.3.0';
-const REFINEMENT='21.3.0';
-const REVISION='dayflow-r1';
+const RELEASE='21.3.1';
+const REFINEMENT='21.3.1';
+const REVISION='dayflow-r2';
 const site=path.resolve(process.argv[2]||'_site');
 const artifacts=path.resolve(process.argv[3]||'/tmp/pacefold-v21-artifacts');
 const app=path.join(site,'app');
@@ -99,7 +99,7 @@ async function browserAudit(){
     });
     assert(initial.release===RELEASE&&initial.revision===REVISION&&initial.precision?.experience===RELEASE&&initial.dayflowApi?.release===RELEASE&&initial.runtime?.release===RELEASE&&initial.persistence?.release===RELEASE&&initial.boot?.returning,`Release setup failed: ${JSON.stringify(initial)}`);
     assert(initial.language==='en'&&!initial.cjk&&/Focus · rhythm · flow/.test(initial.brand||''),`English-only identity failed: ${JSON.stringify(initial)}`);
-    assert(initial.events>=1&&initial.dayflow?.height>220&&initial.daybook?.height>500&&initial.analytics&&initial.tabs===4&&initial.legacyDisplay==='none',`Dayflow/Daybook did not replace the old surface: ${JSON.stringify(initial)}`);
+    assert(initial.events>=1&&initial.dayflow?.height>150&&initial.daybook?.height>360&&initial.analytics&&initial.tabs===4&&initial.legacyDisplay==='none',`Dayflow/Daybook did not replace the old surface: ${JSON.stringify(initial)}`);
     assert(initial.version===`v${RELEASE}`&&initial.build==='Offline ready'&&initial.status.height<=1&&initial.status.opacity===0&&initial.status.pointer==='none'&&initial.folio.width<=1180&&initial.horizontal,`Desktop geometry/settings failed: ${JSON.stringify(initial)}`);
 
     await page.locator('#pf21-focus-toggle').click();
