@@ -65,6 +65,7 @@ const refineScriptSource=path.join(sourceRoot,'pacefold-v21-refine.js');
 const precisionCssSource=path.join(sourceRoot,'pacefold-v21-precision.css');
 const precisionScriptSource=path.join(sourceRoot,'pacefold-v21-precision.js');
 const minimalCssSource=path.join(sourceRoot,'pacefold-v21-minimal.css');
+const responsiveCssSource=path.join(sourceRoot,'pacefold-v21-minimal-responsive.css');
 
 function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
@@ -144,7 +145,8 @@ async function installAssets(){
     fs.copyFile(refineScriptSource,path.join(targetApp,'pacefold-v21-refine.js')),
     fs.copyFile(precisionCssSource,path.join(targetApp,'pacefold-v21-precision.css')),
     fs.copyFile(precisionScriptSource,path.join(targetApp,'pacefold-v21-precision.js')),
-    fs.copyFile(minimalCssSource,path.join(targetApp,'pacefold-v21-minimal.css'))
+    fs.copyFile(minimalCssSource,path.join(targetApp,'pacefold-v21-minimal.css')),
+    fs.copyFile(responsiveCssSource,path.join(targetApp,'pacefold-v21-minimal-responsive.css'))
   ]);
 }
 
@@ -152,7 +154,7 @@ async function patchAppHtml(file){
   let html=await fs.readFile(file,'utf8');
   html=html
     .replace(/\s*<meta\s+name=["']pacefold-experience["'][^>]*>/gi,'')
-    .replace(/\s*<link[^>]+data-pacefold-v21(?:-compat|-refine|-precision|-minimal)?[^>]*>/gi,'')
+    .replace(/\s*<link[^>]+data-pacefold-v21(?:-compat|-refine|-precision|-minimal(?:-responsive)?)?[^>]*>/gi,'')
     .replace(/\s*<script[^>]+data-pacefold-v21(?:-boot|-persistence|-refine|-precision)?[^>]*><\/script>/gi,'');
 
   const meta=`<meta name="pacefold-experience" content="${RELEASE}">`;
@@ -161,12 +163,13 @@ async function patchAppHtml(file){
   const refineStyle=`<link rel="stylesheet" href="./pacefold-v21-refine.css?v=${REVISION}" data-pacefold-v21-refine="${RELEASE}">`;
   const precisionStyle=`<link rel="stylesheet" href="./pacefold-v21-precision.css?v=${REVISION}" data-pacefold-v21-precision="${RELEASE}">`;
   const minimalStyle=`<link rel="stylesheet" href="./pacefold-v21-minimal.css?v=${REVISION}" data-pacefold-v21-minimal="${RELEASE}">`;
+  const responsiveStyle=`<link rel="stylesheet" href="./pacefold-v21-minimal-responsive.css?v=${REVISION}" data-pacefold-v21-minimal-responsive="${RELEASE}">`;
   const boot=`<script src="./pacefold-v21-boot.js?v=${REVISION}" data-pacefold-v21-boot="${RELEASE}"></script>`;
   const script=`<script defer src="./pacefold-v21.js?v=${REVISION}" data-pacefold-v21="${RELEASE}"></script>`;
   const persistence=`<script defer src="./pacefold-v21-persistence.js?v=${REVISION}" data-pacefold-v21-persistence="${RELEASE}"></script>`;
   const refineScript=`<script defer src="./pacefold-v21-refine.js?v=${REVISION}" data-pacefold-v21-refine="${RELEASE}"></script>`;
   const precisionScript=`<script defer src="./pacefold-v21-precision.js?v=${REVISION}" data-pacefold-v21-precision="${RELEASE}"></script>`;
-  html=replaceExactlyOnce(html,'</head>',`${meta}\n${style}\n${compat}\n${refineStyle}\n${precisionStyle}\n${minimalStyle}\n</head>`,'app head');
+  html=replaceExactlyOnce(html,'</head>',`${meta}\n${style}\n${compat}\n${refineStyle}\n${precisionStyle}\n${minimalStyle}\n${responsiveStyle}\n</head>`,'app head');
   html=replaceExactlyOnce(html,'<script src="./app.js" defer></script>',`${boot}\n<script src="./app.js" defer></script>`,'boot order');
   html=replaceExactlyOnce(html,'</body>',`${script}\n${persistence}\n${refineScript}\n${precisionScript}\n</body>`,'runtime order');
   await fs.writeFile(file,html);
@@ -201,7 +204,8 @@ async function patchWorker(file,{root=false}={}){
     `'${prefix}pacefold-v21-refine.js'`,
     `'${prefix}pacefold-v21-precision.css'`,
     `'${prefix}pacefold-v21-precision.js'`,
-    `'${prefix}pacefold-v21-minimal.css'`
+    `'${prefix}pacefold-v21-minimal.css'`,
+    `'${prefix}pacefold-v21-minimal-responsive.css'`
   ];
   if(!worker.includes(additions[0])){
     if(worker.includes(anchor))worker=worker.replace(anchor,[anchor,...additions].join(','));
@@ -243,6 +247,7 @@ async function verify(){
   const precisionCss=await fs.readFile(path.join(targetApp,'pacefold-v21-precision.css'),'utf8');
   const precisionRuntime=await fs.readFile(path.join(targetApp,'pacefold-v21-precision.js'),'utf8');
   const minimalCss=await fs.readFile(path.join(targetApp,'pacefold-v21-minimal.css'),'utf8');
+  const responsiveCss=await fs.readFile(path.join(targetApp,'pacefold-v21-minimal-responsive.css'),'utf8');
   const escaped=RELEASE.replace(/\./g,'\\.');
   if((html.match(new RegExp(`data-pacefold-v21="${escaped}"`,'g'))||[]).length!==2)throw new Error('Pacefold 21 CSS and runtime were not injected exactly once');
   if((html.match(new RegExp(`data-pacefold-v21-compat="${escaped}"`,'g'))||[]).length!==1)throw new Error('Pacefold 21 compatibility CSS was not injected exactly once');
@@ -251,8 +256,9 @@ async function verify(){
   if((html.match(new RegExp(`data-pacefold-v21-refine="${escaped}"`,'g'))||[]).length!==2)throw new Error('Pacefold 21 refinement assets were not injected exactly once');
   if((html.match(new RegExp(`data-pacefold-v21-precision="${escaped}"`,'g'))||[]).length!==2)throw new Error('Pacefold 21 precision assets were not injected exactly once');
   if((html.match(new RegExp(`data-pacefold-v21-minimal="${escaped}"`,'g'))||[]).length!==1)throw new Error('Pacefold 21.2 minimal stylesheet was not injected exactly once');
+  if((html.match(new RegExp(`data-pacefold-v21-minimal-responsive="${escaped}"`,'g'))||[]).length!==1)throw new Error('Pacefold 21.2 responsive stylesheet was not injected exactly once');
   if(!html.includes(`name="pacefold-experience" content="${RELEASE}"`))throw new Error('Pacefold 21.2 app marker is missing');
-  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js','pacefold-v21-precision.css','pacefold-v21-precision.js','pacefold-v21-minimal.css'])if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
+  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js','pacefold-v21-precision.css','pacefold-v21-precision.js','pacefold-v21-minimal.css','pacefold-v21-minimal-responsive.css'])if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Pacefold minimal cache revision is missing');
   for(const source of [boot,runtime,persistence])if(!source.includes(`const RELEASE='${RELEASE}';`))throw new Error('Generated Pacefold 21 runtime release is stale');
   for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'",'firstRunSetupVisible','dataset.noteLevel'])if(!runtime.includes(token))throw new Error(`Pacefold 21 runtime token missing: ${token}`);
@@ -264,6 +270,7 @@ async function verify(){
   for(const token of ['pf-v21-precision-active','.pf21-dayline[data-empty="true"]','.pf-ritual-slot[data-v19-ritual="true"]'])if(!precisionCss.includes(token))throw new Error(`Pacefold precision CSS token missing: ${token}`);
   for(const token of ["const EXPERIENCE='21.2.0'","const RELEASE='21.2.0'","const REVISION='minimal-r1'",'pf-v21-minimal-active','decorateBrand','decorateCalendar'])if(!precisionRuntime.includes(token))throw new Error(`Pacefold 21.2 runtime token missing: ${token}`);
   for(const token of ['pf-v21-minimal-active','--pf22-surface','#workline','.pf21-note-calendar','.pf21-brand-subline'])if(!minimalCss.includes(token))throw new Error(`Pacefold 21.2 minimal CSS token missing: ${token}`);
+  for(const token of ['data-pf21-weather="false"','.pf-notebook-tools','flex-wrap:wrap'])if(!responsiveCss.includes(token))throw new Error(`Pacefold 21.2 responsive CSS token missing: ${token}`);
 }
 
 await Promise.all([syntaxCheck(bootSource),syntaxCheck(scriptSource),syntaxCheck(persistenceSource),syntaxCheck(refineScriptSource),syntaxCheck(precisionScriptSource)]);
