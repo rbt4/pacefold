@@ -127,9 +127,12 @@
       const number=compact(day.querySelector('.pf21-calendar-number')?.textContent);
       const countText=compact(day.querySelector('.pf21-calendar-count')?.textContent);
       const count=countText==='9+'?9:Number(countText)||0;
-      const existing=compact(day.getAttribute('aria-label'));
+      if(!day.dataset.precisionBaseLabel){
+        const initial=compact(day.getAttribute('aria-label'));
+        dataset(day,'precisionBaseLabel',initial||`Day ${number}`);
+      }
+      const label=compact(day.dataset.precisionBaseLabel)||`Day ${number}`;
       const noteLabel=count?`${countText||count} ${count===1?'note':'notes'}`:'No notes';
-      const label=existing||`Day ${number}`;
       attribute(day,'aria-label',`${label}. ${noteLabel}.`);
       attribute(day,'title',`${label} — ${noteLabel}`);
       dataset(day,'precisionActivity',count?'noted':'empty');
