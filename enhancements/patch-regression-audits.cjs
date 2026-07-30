@@ -13,12 +13,12 @@ function replaceOnce(file,from,to,label){
   return true;
 }
 
-function replaceCount(file,from,to,expected,label){
+function replaceOrdered(file,from,replacements,label){
   let source=fs.readFileSync(file,'utf8');
-  if(source.includes(to)&&!source.includes(from))return false;
+  if(replacements.every(replacement=>source.includes(replacement))&&!source.includes(from))return false;
   const count=source.split(from).length-1;
-  if(count!==expected)throw new Error(`Expected ${expected} ${label} audit anchors in ${file}, found ${count}`);
-  source=source.split(from).join(to);
+  if(count!==replacements.length)throw new Error(`Expected ${replacements.length} ${label} audit anchors in ${file}, found ${count}`);
+  for(const replacement of replacements)source=source.replace(from,replacement);
   fs.writeFileSync(file,source);
   return true;
 }
@@ -40,18 +40,20 @@ const oldQuiet=`    await page.locator('#pf-quiet-toggle').click({timeout:3000})
     await page.waitForFunction(()=>document.body.dataset.quiet==='true');
     await page.locator('#pf-quiet-toggle').click({timeout:3000});
     await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
-const stableQuiet=`    await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
+const stableQuiet=`    await page.evaluate(()=>window.__PACEFOLD_MA_QUIET__.set(true));
     await page.waitForFunction(()=>document.body.dataset.quiet==='true');
-    await page.evaluate(()=>document.getElementById('pf-quiet-toggle').click());
+    await page.evaluate(()=>window.__PACEFOLD_MA_QUIET__.set(false));
     await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
-changes.push(replaceOnce(v19,oldQuiet,stableQuiet,'V19 quiet-mode action synchronization'));
+changes.push(replaceOnce(v19,oldQuiet,stableQuiet,'V19 quiet-mode controller synchronization'));
 
-changes.push(replaceCount(
+changes.push(replaceOrdered(
   ma,
   "    await page.locator('#pf-quiet-toggle').click();",
-  "    await page.evaluate(()=>{setTimeout(()=>document.getElementById('pf-quiet-toggle')?.click(),0);});",
-  2,
-  'Ma quiet-mode browser-task action'
+  [
+    "    await page.evaluate(()=>window.__PACEFOLD_MA_QUIET__.set(true));",
+    "    await page.evaluate(()=>window.__PACEFOLD_MA_QUIET__.set(false));"
+  ],
+  'Ma quiet-mode controller actions'
 ));
 
 changes.push(replaceOnce(
@@ -180,4 +182,4 @@ changes.push(replaceOnce(
   'V20 mobile Daybook hit testing'
 ));
 
-console.log(changes.some(Boolean)?'Patched historical Ma/V19/V20 browser audits for stable controls and Pacefold 21.3 Dayflow/Daybook compatibility.':'Historical Ma/V19/V20 browser audit fixtures are already patched.');
+console.log(changes.some(Boolean)?'Patched historical Ma/V19/V20 browser audits for canonical Quiet control and Pacefold 21.3 Dayflow/Daybook compatibility.':'Historical Ma/V19/V20 browser audit fixtures are already patched.');
