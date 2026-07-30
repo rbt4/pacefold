@@ -2,7 +2,7 @@ name: Validate Pacefold 21 experience
 
 on:
   push:
-    branches: [pacefold-21-rebuild]
+    branches: [pacefold-21-rebuild, pacefold-21-1-refinement]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -35,25 +35,32 @@ jobs:
 
       - name: Syntax and version guard
         run: |
-          test "$(cat enhancements/VERSION)" = "21.0.0"
+          test "$(cat enhancements/VERSION)" = "21.1.0"
           node --check enhancements/pacefold-v21-boot.js
           node --check enhancements/pacefold-v21.js
+          node --check enhancements/pacefold-v21-refine.js
           node --check enhancements/v21-audit.cjs
           node --check enhancements/inject.mjs
           node --check enhancements/inject-v20.mjs
+          grep -q 'pf-v21-1-active' enhancements/pacefold-v21-refine.css
+          grep -q 'grid-template-columns:repeat(3' enhancements/pacefold-v21-refine.css
 
       - name: Inject Pacefold 21 twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-experience.txt)" = "21.0.0"
-          test "$(grep -o 'data-pacefold-v21="21.0.0"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-boot="21.0.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(cat _release/pacefold-experience.txt)" = "21.1.0"
+          test "$(grep -o 'data-pacefold-v21="21.1.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-boot="21.1.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v21-refine="21.1.0"' _release/app/index.html | wc -l)" -eq 2
           grep -q 'pacefold-v21.css' _release/service-worker.js
           grep -q 'pacefold-v21-boot.js' _release/service-worker.js
           grep -q 'pacefold-v21.js' _release/service-worker.js
+          grep -q 'pacefold-v21-refine.css' _release/service-worker.js
+          grep -q 'pacefold-v21-refine.js' _release/service-worker.js
           node --check _release/app/pacefold-v21-boot.js
           node --check _release/app/pacefold-v21.js
+          node --check _release/app/pacefold-v21-refine.js
 
       - name: Install browser audit runtime
         run: |
