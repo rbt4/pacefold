@@ -50,6 +50,7 @@ __PACEFOLD_SURFACE_RELEASE__
 */
 
 await import(`${pathToFileURL(legacyInjector).href}?v=${Date.now()}`);
+await patchMaQuietController(path.join(targetApp,'pacefold-ma.js'));
 if(process.env.GITHUB_ACTIONS==='true'){
   const auditPatcher=path.join(sourceRoot,'patch-regression-audits.cjs');
   await import(`${pathToFileURL(auditPatcher).href}?v=${Date.now()}`);
@@ -76,6 +77,24 @@ function replaceExactlyOnce(source,from,to,label){
   if(first<0)throw new Error(`Pacefold 21 ${label} anchor is missing`);
   if(source.indexOf(from,first+from.length)>=0)throw new Error(`Pacefold 21 ${label} anchor is ambiguous`);
   return source.slice(0,first)+to+source.slice(first+from.length);
+}
+
+async function patchMaQuietController(file){
+  let source=await fs.readFile(file,'utf8');
+  if(!source.includes('window.__PACEFOLD_MA_QUIET__=')){
+    source=replaceExactlyOnce(
+      source,
+      '  function installQuiet(){',
+      "  window.__PACEFOLD_MA_QUIET__={get:()=>Boolean(getPrefs().quietMode),set:on=>{setQuiet(Boolean(on));return Boolean(getPrefs().quietMode);},toggle:()=>{setQuiet(!getPrefs().quietMode);return Boolean(getPrefs().quietMode);},apply:applyQuietState};\n  function installQuiet(){",
+      'Ma Quiet public controller'
+    );
+  }
+  source=source.replace(
+    "button.addEventListener('click',event=>{event.stopPropagation();setQuiet(!getPrefs().quietMode);});",
+    "button.addEventListener('click',event=>{event.stopPropagation();window.__PACEFOLD_MA_QUIET__.toggle();});"
+  );
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
 }
 
 function stampRelease(source,label){
@@ -222,6 +241,7 @@ async function verify(){
   const html=await fs.readFile(path.join(targetApp,'index.html'),'utf8');
   const worker=await fs.readFile(path.join(targetRoot,'service-worker.js'),'utf8');
   const files={
+    ma:await fs.readFile(path.join(targetApp,'pacefold-ma.js'),'utf8'),
     css:await fs.readFile(path.join(targetApp,'pacefold-v21.css'),'utf8'),
     compat:await fs.readFile(path.join(targetApp,'pacefold-v21-compat.css'),'utf8'),
     boot:await fs.readFile(path.join(targetApp,'pacefold-v21-boot.js'),'utf8'),
@@ -244,6 +264,7 @@ async function verify(){
   const assets=['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js','pacefold-v21-precision.css','pacefold-v21-precision.js','pacefold-v21-minimal.css','pacefold-v21-minimal-responsive.css','pacefold-v21-dayflow.css'];
   for(const asset of assets)if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Pacefold Dayflow cache revision is missing');
+  if(!files.ma.includes('window.__PACEFOLD_MA_QUIET__='))throw new Error('Canonical Ma Quiet controller is missing');
   for(const source of [files.boot,files.runtime,files.persistence,files.refineRuntime,files.precisionRuntime])if(!source.includes(`const RELEASE='${RELEASE}';`))throw new Error('Generated Pacefold 21 runtime release is stale');
   for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'",'firstRunSetupVisible','dataset.noteLevel'])if(!files.runtime.includes(token))throw new Error(`Pacefold runtime token missing: ${token}`);
   if(!files.persistence.includes('pacefold.v21.settings.v1'))throw new Error('Extension settings persistence is missing');
