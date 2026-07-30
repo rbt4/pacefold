@@ -1,6 +1,7 @@
 (() => {
   'use strict';
 
+  const EXPERIENCE='21.1.0';
   const RELEASE='21.1.2';
   const REVISION='polish-r3';
   const CORE='15.2.2';
@@ -43,7 +44,12 @@
     if(!sheet)return false;
     const rules=[
       'html.pf-v21-precision-active .pf-v20-folio{width:min(1040px,calc(100vw - 24px))!important}',
-      'html.pf-v21-precision-active .pf-v20-folio>.clock-shell{column-gap:24px!important;padding:18px 24px 13px!important}',
+      'html.pf-v21-precision-active .pf-v20-folio>.clock-shell{column-gap:24px!important;row-gap:0!important;padding:18px 24px 13px!important}',
+      'html.pf-v21-precision-active .product-mark{margin-bottom:4px!important}',
+      'html.pf-v21-precision-active .date{margin-top:4px!important}',
+      'html[data-pf21-weather="false"].pf-v21-precision-active .pf-v20-folio>.clock-shell{padding-top:14px!important}',
+      'html[data-pf21-weather="false"].pf-v21-precision-active .time-main{font-size:clamp(64px,6.7vw,84px)!important}',
+      'html[data-pf21-weather="false"].pf-v21-precision-active .status-area{margin-top:5px!important}',
       'html.pf-v21-precision-active .status-area{gap:10px!important;margin-top:10px!important}',
       'html.pf-v21-precision-active .pf21-dayline{min-height:60px!important;padding:10px 12px!important;border-radius:15px!important}',
       'html.pf-v21-precision-active .pf21-dayline-copy{column-gap:12px!important;row-gap:2px!important}',
@@ -83,12 +89,14 @@
     installPolishStyles();
     document.documentElement.classList.add('pf-v21-precision-active');
     dataset(document.documentElement,'pacefoldPrecision',REVISION);
-    dataset(document.documentElement,'pacefoldExperience',RELEASE);
+    dataset(document.documentElement,'pacefoldExperience',EXPERIENCE);
+    dataset(document.documentElement,'pacefoldUpdate',RELEASE);
     dataset(document.body,'pacefoldPrecision',REVISION);
-    dataset(document.body,'pacefoldExperience',RELEASE);
-    window.__PACEFOLD_VERSION__={experience:RELEASE,revision:REVISION,offlineCore:CORE};
+    dataset(document.body,'pacefoldExperience',EXPERIENCE);
+    dataset(document.body,'pacefoldUpdate',RELEASE);
+    window.__PACEFOLD_VERSION__={experience:EXPERIENCE,update:RELEASE,revision:REVISION,offlineCore:CORE};
     const title=compact(document.title);
-    if(!title||/15\.2\.2|15\.8\.0|21\.0\.0|21\.1\.0|Pacefold/i.test(title))document.title=`Pacefold ${RELEASE}`;
+    if(!title||/15\.2\.2|15\.8\.0|21\.0\.0|21\.1\.0|Pacefold/i.test(title))document.title=`Pacefold ${EXPERIENCE} · update ${RELEASE}`;
   }
 
   function decorateDayline(){
@@ -190,10 +198,11 @@
     attribute(more,'title','Show or hide the complete settings views');
     const version=settings.querySelector('.pf21-settings-version');
     if(version){
-      if(compact(version.textContent)!==`Pacefold ${RELEASE}`)version.textContent=`Pacefold ${RELEASE}`;
-      attribute(version,'title',`Current experience ${RELEASE}. Verified offline engine ${CORE}.`);
-      attribute(version,'aria-label',`Pacefold ${RELEASE}. Verified offline engine ${CORE}.`);
-      dataset(version,'experience',RELEASE);
+      if(compact(version.textContent)!==`Pacefold ${EXPERIENCE}`)version.textContent=`Pacefold ${EXPERIENCE}`;
+      attribute(version,'title',`Experience ${EXPERIENCE}. Update ${RELEASE}. Verified offline engine ${CORE}.`);
+      attribute(version,'aria-label',`Pacefold experience ${EXPERIENCE}. Update ${RELEASE}. Verified offline engine ${CORE}.`);
+      dataset(version,'experience',EXPERIENCE);
+      dataset(version,'update',RELEASE);
       dataset(version,'offlineCore',CORE);
       let detail=settings.querySelector('.pf21-version-detail');
       if(!detail){
@@ -201,7 +210,7 @@
         detail.className='pf21-version-detail';
         version.insertAdjacentElement('afterend',detail);
       }
-      const copy=`Verified offline engine ${CORE}`;
+      const copy=`Update ${RELEASE} · verified offline engine ${CORE}`;
       if(compact(detail.textContent)!==copy)detail.textContent=copy;
     }
     return true;
@@ -237,7 +246,7 @@
     [40,180,520,1200,2600].forEach(delay=>setTimeout(queue,delay));
   }
 
-  window.__PACEFOLD_V21_PRECISION__={release:RELEASE,revision:REVISION,offlineCore:CORE,reconcile:queue};
+  window.__PACEFOLD_V21_PRECISION__={experience:EXPERIENCE,release:RELEASE,revision:REVISION,offlineCore:CORE,reconcile:queue};
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
   else initialize();
