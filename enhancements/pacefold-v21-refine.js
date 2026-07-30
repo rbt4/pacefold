@@ -115,18 +115,15 @@
 
   function initialize(){
     reconcile();
-    observer=new MutationObserver(mutations=>{
-      if(mutations.every(item=>item.target instanceof Element&&item.target.closest?.('.pf21-calendar-day,#pf21-settings')))return;
-      queue();
-    });
-    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-expanded','data-selected','data-has-notes']});
+    observer=new MutationObserver(()=>queue());
+    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','hidden','aria-expanded','data-selected','data-has-notes','data-pacefold-experience']});
     window.addEventListener('resize',guarded('resize',queue),{passive:true});
     window.addEventListener('pacefold:ma-prefs',guarded('prefs',queue));
     window.addEventListener('pacefold:storage-changed',guarded('storage-changed',queue));
     window.addEventListener('storage',guarded('storage',event=>{
       if([SNAPSHOT_KEY,SETTINGS_KEY,'pacefold.notebook.entries.v2'].includes(event.key))queue();
     }));
-    [40,160,500,1200,2600].forEach(delay=>setTimeout(queue,delay));
+    [40,160,500,1200,2600,4200].forEach(delay=>setTimeout(queue,delay));
   }
 
   window.__PACEFOLD_V21_REFINEMENT__={release:RELEASE,reconcile:queue};
