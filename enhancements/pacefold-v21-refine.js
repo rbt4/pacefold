@@ -10,6 +10,9 @@
   const compact=value=>String(value??'').replace(/\s+/g,' ').trim();
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
   const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:null;
+  const text=(node,value)=>{if(node&&node.textContent!==value)node.textContent=value;};
+  const attribute=(node,name,value)=>{if(node&&node.getAttribute(name)!==value)node.setAttribute(name,value);};
+  const dataset=(node,name,value)=>{if(node&&node.dataset[name]!==value)node.dataset[name]=value;};
 
   function report(scope,error){
     try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`v21.1-${scope}`,error);}catch{}
@@ -27,12 +30,11 @@
 
   function patchPublicVersion(){
     document.documentElement.classList.add('pf-v21-1-active');
-    document.documentElement.dataset.pacefoldExperience=RELEASE;
-    document.documentElement.dataset.pacefoldRefinement=RELEASE;
-    document.body.dataset.pacefoldExperience=RELEASE;
-    document.body.dataset.pacefoldRefinement=RELEASE;
-    const version=document.querySelector('.pf21-settings-version');
-    if(version&&version.textContent!==`Pacefold ${RELEASE}`)version.textContent=`Pacefold ${RELEASE}`;
+    dataset(document.documentElement,'pacefoldExperience',RELEASE);
+    dataset(document.documentElement,'pacefoldRefinement',RELEASE);
+    dataset(document.body,'pacefoldExperience',RELEASE);
+    dataset(document.body,'pacefoldRefinement',RELEASE);
+    text(document.querySelector('.pf21-settings-version'),`Pacefold ${RELEASE}`);
     for(const api of [window.__PACEFOLD_V21_BOOT__,window.__PACEFOLD_V21__,window.__PACEFOLD_V21_PERSISTENCE__]){
       if(api&&api.release!==RELEASE){try{api.release=RELEASE;}catch{}}
     }
@@ -50,48 +52,52 @@
     for(const cell of cells){
       const raw=compact(cell.querySelector('.pf21-calendar-count')?.textContent);
       const count=raw==='9+'?9:Number(raw)||0;
-      const level=count<=0?0:count===1?1:count<=3?2:count<=6?3:4;
-      cell.dataset.noteLevel=String(level);
-      if(count)cell.title=`${cell.getAttribute('aria-label')||''}`;
-      else cell.removeAttribute('title');
+      const level=String(count<=0?0:count===1?1:count<=3?2:count<=6?3:4);
+      dataset(cell,'noteLevel',level);
+      const title=cell.getAttribute('aria-label')||'';
+      if(count)attribute(cell,'title',title);
+      else if(cell.hasAttribute('title'))cell.removeAttribute('title');
     }
     return true;
+  }
+
+  function labelAdvanced(button){
+    if(!button)return;
+    text(button,button.getAttribute('aria-expanded')==='true'?'Essentials only':'All settings');
   }
 
   function refineSettings(){
     const root=document.getElementById('pf21-settings');
     if(!root)return false;
-    root.dataset.refined=RELEASE;
-    const saved=root.querySelector('.pf21-settings-saved');
-    if(saved)saved.textContent='Auto-saved';
+    dataset(root,'refined',RELEASE);
+    text(root.querySelector('.pf21-settings-saved'),'Auto-saved');
     for(const row of root.querySelectorAll('.pf21-setting-switch')){
       const title=compact(row.querySelector('strong')?.textContent);
       const description=compact(row.querySelector('small')?.textContent);
-      if(title)row.title=description?`${title} — ${description}`:title;
+      if(title)attribute(row,'title',description?`${title} — ${description}`:title);
     }
     const advanced=root.querySelector('.pf21-more-settings');
     if(advanced&&!advanced.dataset.pf211Labelled){
-      advanced.dataset.pf211Labelled='true';
-      advanced.addEventListener('click',guarded('advanced-label',()=>queueMicrotask(()=>{
-        advanced.textContent=advanced.getAttribute('aria-expanded')==='true'?'Essentials only':'All settings';
-      })));
+      dataset(advanced,'pf211Labelled','true');
+      advanced.addEventListener('click',guarded('advanced-label',()=>queueMicrotask(()=>labelAdvanced(advanced))));
     }
-    if(advanced)advanced.textContent=advanced.getAttribute('aria-expanded')==='true'?'Essentials only':'All settings';
+    labelAdvanced(advanced);
     return true;
   }
 
   function refineLiveSurfaces(){
     const dayline=document.getElementById('pf21-dayline');
-    if(dayline){dayline.setAttribute('aria-live','polite');dayline.setAttribute('aria-atomic','true');}
+    attribute(dayline,'aria-live','polite');
+    attribute(dayline,'aria-atomic','true');
     const alert=document.querySelector('.pf-v20-alert');
-    if(alert){alert.setAttribute('aria-live','polite');alert.setAttribute('aria-atomic','true');}
-    const workline=document.getElementById('workline');
-    if(workline)workline.setAttribute('aria-label','Workday rhythm controls');
+    attribute(alert,'aria-live','polite');
+    attribute(alert,'aria-atomic','true');
+    attribute(document.getElementById('workline'),'aria-label','Workday rhythm controls');
   }
 
   function updateDensity(){
     const width=window.innerWidth;
-    document.documentElement.dataset.pf21Density=width<=540?'compact':width<=900?'balanced':'wide';
+    dataset(document.documentElement,'pf21Density',width<=540?'compact':width<=900?'balanced':'wide');
   }
 
   function reconcile(){
