@@ -37,7 +37,7 @@
     return window.__PACEFOLD_MA_CORE__?.getPrefs?.()||object(parse(localStorage.getItem(PREFS_KEY),{}))||{};
   }
 
-  function installPolishRules(){
+  function installPolishStyles(){
     if(document.documentElement.dataset.pacefoldPolishRules===REVISION)return true;
     const sheet=[...document.styleSheets].find(item=>item.href?.includes('pacefold-v21-precision.css'));
     if(!sheet)return false;
@@ -80,7 +80,7 @@
   }
 
   function patchSurface(){
-    installPolishRules();
+    installPolishStyles();
     document.documentElement.classList.add('pf-v21-precision-active');
     dataset(document.documentElement,'pacefoldPrecision',REVISION);
     dataset(document.documentElement,'pacefoldExperience',RELEASE);
