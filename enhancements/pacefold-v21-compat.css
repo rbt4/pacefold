@@ -65,3 +65,17 @@ html[data-pf-quiet="true"].pf-v21-active #pf21-settings{
     max-width:calc(100vw - 32px)!important;
   }
 }
+
+/* Pacefold 22 spatial geometry contract.
+   Each face is exactly one viewport and never stretches back into Home. */
+html[data-pacefold-spatial="ready"] .pf22-face{
+  inset:auto!important;
+  top:0!important;
+  left:0!important;
+  width:100vw!important;
+  height:100vh!important;
+}
+html[data-pacefold-spatial="ready"] .pf22-face-notes{top:-100vh!important}
+html[data-pacefold-spatial="ready"] .pf22-face-worklog{left:-100vw!important}
+html[data-pacefold-spatial="ready"] .pf22-face-context{left:100vw!important}
+html[data-pacefold-spatial="ready"] .pf22-face-settings{top:100vh!important}
