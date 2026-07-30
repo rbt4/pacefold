@@ -260,7 +260,7 @@ async function verify(){
   if(!compat.includes('width:100%!important'))throw new Error('Pacefold 21 legacy geometry compatibility is missing');
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','data-pf21-advanced'])if(!css.includes(token))throw new Error(`Pacefold 21 CSS token missing: ${token}`);
   for(const token of ['pf-v21-1-active','grid-template-columns:repeat(3','data-note-level'])if(!refineCss.includes(token))throw new Error(`Pacefold 21.1 CSS token missing: ${token}`);
-  for(const token of ["const RELEASE='21.1.0'",'__PACEFOLD_V21_REFINEMENT__','patchStoredVersion','refineCalendar'])if(!refineRuntime.includes(token))throw new Error(`Pacefold 21.1 runtime token missing: ${token}`);
+  for(const token of ["const RELEASE='21.2.0'",'__PACEFOLD_V21_REFINEMENT__','patchStoredVersion','refineCalendar'])if(!refineRuntime.includes(token))throw new Error(`Pacefold 21.2 refinement runtime token missing: ${token}`);
   for(const token of ['pf-v21-precision-active','.pf21-dayline[data-empty="true"]','.pf-ritual-slot[data-v19-ritual="true"]'])if(!precisionCss.includes(token))throw new Error(`Pacefold precision CSS token missing: ${token}`);
   for(const token of ["const EXPERIENCE='21.2.0'","const RELEASE='21.2.0'","const REVISION='minimal-r1'",'pf-v21-minimal-active','decorateBrand','decorateCalendar'])if(!precisionRuntime.includes(token))throw new Error(`Pacefold 21.2 runtime token missing: ${token}`);
   for(const token of ['pf-v21-minimal-active','--pf22-surface','#workline','.pf21-note-calendar','.pf21-brand-subline'])if(!minimalCss.includes(token))throw new Error(`Pacefold 21.2 minimal CSS token missing: ${token}`);
