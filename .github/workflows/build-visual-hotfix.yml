@@ -3,6 +3,8 @@ name: Build Pacefold 21.3.1 visual hotfix
 on:
   push:
     branches: [agent/pacefold-21-3-1-visual-hotfix]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
@@ -21,7 +23,6 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('node:fs');
-          const path=require('node:path');
           const read=file=>fs.readFileSync(file,'utf8');
           const write=(file,content)=>fs.writeFileSync(file,content);
           const replace=(file,from,to,label)=>{
@@ -33,34 +34,10 @@ jobs:
           const replaceAll=(file,from,to)=>write(file,read(file).split(from).join(to));
 
           write('enhancements/VERSION','21.3.1\n');
-
-          replace(
-            'enhancements/inject.mjs',
-            "const RELEASE='21.3.0';\nconst REVISION='21.3.0';",
-            "const RELEASE='21.3.1';\nconst REVISION='21.3.1';",
-            'inject release revision'
-          );
-
-          replace(
-            'enhancements/pacefold-v21-dayflow-runtime.part-00.js',
-            "const EXPERIENCE='21.3.0';\nconst RELEASE='21.3.0';\nconst REVISION='dayflow-r1';",
-            "const EXPERIENCE='21.3.1';\nconst RELEASE='21.3.1';\nconst REVISION='dayflow-r2';",
-            'Dayflow runtime version'
-          );
-
-          replace(
-            'enhancements/pacefold-v21-dayflow-runtime.part-01.js',
-            "if(html.dataset.pacefoldDayflow!==REVISION)html.dataset.pacefoldDayflow=REVISION;if(body.dataset.pacefoldExperience!==EXPERIENCE)",
-            "if(html.dataset.pacefoldDayflow!==REVISION)html.dataset.pacefoldDayflow=REVISION;const weather=String(prefs().v21WeatherEnabled!==false);if(html.dataset.pf21Weather!==weather)html.dataset.pf21Weather=weather;if(body.dataset.pacefoldExperience!==EXPERIENCE)",
-            'weather layout state'
-          );
-
-          replace(
-            'enhancements/pacefold-v21-dayflow-runtime.part-03.js',
-            "function renderBook(){const root=book();if(!root)return;const k=",
-            "function renderBook(){const root=book();if(!root)return;root.dataset.tab=tab;const k=",
-            'Daybook selected tab state'
-          );
+          replace('enhancements/inject.mjs',"const RELEASE='21.3.0';\nconst REVISION='21.3.0';","const RELEASE='21.3.1';\nconst REVISION='21.3.1';",'inject release revision');
+          replace('enhancements/pacefold-v21-dayflow-runtime.part-00.js',"const EXPERIENCE='21.3.0';\nconst RELEASE='21.3.0';\nconst REVISION='dayflow-r1';","const EXPERIENCE='21.3.1';\nconst RELEASE='21.3.1';\nconst REVISION='dayflow-r2';",'Dayflow runtime version');
+          replace('enhancements/pacefold-v21-dayflow-runtime.part-01.js',"if(html.dataset.pacefoldDayflow!==REVISION)html.dataset.pacefoldDayflow=REVISION;if(body.dataset.pacefoldExperience!==EXPERIENCE)","if(html.dataset.pacefoldDayflow!==REVISION)html.dataset.pacefoldDayflow=REVISION;const weather=String(prefs().v21WeatherEnabled!==false);if(html.dataset.pf21Weather!==weather)html.dataset.pf21Weather=weather;if(body.dataset.pacefoldExperience!==EXPERIENCE)",'weather layout state');
+          replace('enhancements/pacefold-v21-dayflow-runtime.part-03.js',"function renderBook(){const root=book();if(!root)return;const k=","function renderBook(){const root=book();if(!root)return;root.dataset.tab=tab;const k=",'Daybook selected tab state');
 
           const cssFile='enhancements/pacefold-v21-dayflow.part-04.css';
           let css=read(cssFile);
@@ -73,7 +50,6 @@ jobs:
           replaceAll('enhancements/v21-audit.cjs','dayflow-r1','dayflow-r2');
           replaceAll('enhancements/v21-audit.cjs','initial.dayflow?.height>220','initial.dayflow?.height>150');
           replaceAll('enhancements/v21-audit.cjs','initial.daybook?.height>500','initial.daybook?.height>360');
-
           fs.rmSync('.github/workflows/build-visual-hotfix.yml');
           NODE
 
