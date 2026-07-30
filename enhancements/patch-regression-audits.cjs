@@ -13,8 +13,9 @@ function replaceOnce(file,from,to,label){
   return true;
 }
 
-const v19=path.resolve(process.argv[2]||'enhancements/v19-audit.cjs');
-const v20=path.resolve(process.argv[3]||'enhancements/v20-audit.cjs');
+const explicit=process.argv[2]&&/\.cjs$/i.test(process.argv[2]);
+const v19=path.resolve(explicit?process.argv[2]:path.join(__dirname,'v19-audit.cjs'));
+const v20=path.resolve(explicit&&process.argv[3]?process.argv[3]:path.join(__dirname,'v20-audit.cjs'));
 
 const v19Changed=replaceOnce(
   v19,
