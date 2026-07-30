@@ -37,7 +37,60 @@
     return window.__PACEFOLD_MA_CORE__?.getPrefs?.()||object(parse(localStorage.getItem(PREFS_KEY),{}))||{};
   }
 
+  function installPolishStyles(){
+    if(byId('pf21-polish-r3'))return;
+    const style=document.createElement('style');
+    style.id='pf21-polish-r3';
+    style.textContent=`
+      html.pf-v21-precision-active .pf-v20-folio{width:min(1040px,calc(100vw - 24px))!important}
+      html.pf-v21-precision-active .pf-v20-folio>.clock-shell{column-gap:24px!important;padding:18px 24px 13px!important}
+      html.pf-v21-precision-active .status-area{gap:10px!important;margin-top:10px!important}
+      html.pf-v21-precision-active .pf21-dayline{min-height:60px!important;padding:10px 12px!important;border-radius:15px!important}
+      html.pf-v21-precision-active .pf21-dayline-copy{column-gap:12px!important;row-gap:2px!important}
+      html.pf-v21-precision-active .pf21-dayline-kicker{padding:5px 8px!important;font-size:9px!important;line-height:1.1!important}
+      html.pf-v21-precision-active .pf21-dayline-title{font-size:13px!important;line-height:1.25!important}
+      html.pf-v21-precision-active .pf21-dayline-detail{font-size:10.5px!important;line-height:1.35!important;letter-spacing:0!important}
+      html.pf-v21-precision-active #sequence.pf-day-ribbon{height:31px!important;min-height:31px!important;margin:1px 6px 0!important}
+      html.pf-v21-precision-active .pf21-ribbon-meta{margin-top:-2px!important;padding-inline:7px!important;font-size:9px!important}
+      html.pf-v21-precision-active #workline{gap:8px!important;margin-top:10px!important}
+      html.pf-v21-precision-active .pf-ritual-slot[data-v19-ritual="true"]{min-height:70px!important;border-radius:14px!important}
+      html.pf-v21-precision-active .pf-ritual-slot[data-v19-ritual="true"]>button:not(.pf-ritual-options){min-height:51px!important;padding:8px 10px 9px!important}
+      html.pf-v21-precision-active .pf-v20-folio>.pf-v19-workbench{min-height:0!important}
+      html.pf-v21-precision-active .pf-v19-workbench-rail{padding:8px!important}
+      html.pf-v21-precision-active .pf-v19-workbench-tab{min-height:38px!important;border-radius:10px!important}
+      html.pf-v21-precision-active .pf21-note-calendar{margin:10px 0 12px!important;padding:12px!important;border-radius:15px!important}
+      html.pf-v21-precision-active .pf21-calendar-summary{gap:8px 12px!important;margin-bottom:10px!important}
+      html.pf-v21-precision-active .pf21-calendar-stats{font-size:10px!important;line-height:1.3!important}
+      html.pf-v21-precision-active .pf21-calendar-grid{gap:4px!important}
+      html.pf-v21-precision-active .pf21-calendar-day{min-height:32px!important;border-radius:8px!important}
+      html.pf-v21-precision-active #pf-v19-workbench .pf-note-composer textarea{min-height:126px!important;font-size:13px!important;line-height:26px!important}
+      html.pf-v21-precision-active #panel #pf21-settings{padding:14px!important;border-radius:16px!important}
+      html.pf-v21-precision-active .pf21-setting-switch{min-height:48px!important;padding:9px 11px!important;border-radius:12px!important}
+      html.pf-v21-precision-active .pf21-settings-footer{align-items:center!important;gap:8px 12px!important;flex-wrap:wrap!important}
+      html.pf-v21-precision-active .pf21-settings-version{font-weight:700!important;color:var(--pf212-green-deep)!important}
+      html.pf-v21-precision-active .pf21-version-detail{display:block!important;flex-basis:100%!important;margin-left:auto!important;color:var(--pf212-muted)!important;font-size:9px!important;line-height:1.3!important;text-align:right!important}
+      @media(max-width:720px){
+        html.pf-v21-precision-active .pf-v20-folio{width:calc(100vw - 12px)!important}
+        html.pf-v21-precision-active .pf-v20-folio>.clock-shell{padding:14px 13px 12px!important}
+        html.pf-v21-precision-active .pf21-dayline{min-height:58px!important;padding:9px!important}
+        html.pf-v21-precision-active .pf21-dayline-title{font-size:12px!important}
+        html.pf-v21-precision-active .pf21-dayline-detail{font-size:9.5px!important}
+        html.pf-v21-precision-active #workline{gap:6px!important}
+        html.pf-v21-precision-active .pf21-note-calendar{padding:10px!important}
+        html.pf-v21-precision-active .pf21-calendar-day{min-height:30px!important}
+      }
+      @media(max-width:420px){
+        html.pf-v21-precision-active .pf21-dayline-copy{column-gap:8px!important}
+        html.pf-v21-precision-active .pf21-dayline-kicker{font-size:8px!important}
+        html.pf-v21-precision-active .pf21-dayline-detail{font-size:9px!important}
+        html.pf-v21-precision-active .pf21-calendar-grid{gap:3px!important}
+      }
+    `;
+    document.head.append(style);
+  }
+
   function patchSurface(){
+    installPolishStyles();
     document.documentElement.classList.add('pf-v21-precision-active');
     dataset(document.documentElement,'pacefoldPrecision',REVISION);
     dataset(document.documentElement,'pacefoldExperience',RELEASE);
@@ -99,14 +152,7 @@
   }
 
   function decorateRhythm(){
-    const descriptions={
-      water:'Log a water sip',
-      noodle:'Start or manage the personal timer',
-      away:'Start or end an away break',
-      lunch:'Start or end a meal break',
-      eyes:'Start a short distance-vision reset',
-      body:'Start an ergonomic movement reset'
-    };
+    const descriptions={water:'Log a water sip',noodle:'Start or manage the personal timer',away:'Start or end an away break',lunch:'Start or end a meal break',eyes:'Start a short distance-vision reset',body:'Start an ergonomic movement reset'};
     let count=0;
     for(const slot of document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]')){
       count+=1;
@@ -193,13 +239,7 @@
   function initialize(){
     reconcile();
     observer=new MutationObserver(()=>queue());
-    observer.observe(document.documentElement,{
-      childList:true,
-      subtree:true,
-      characterData:true,
-      attributes:true,
-      attributeFilter:['class','hidden','aria-label','aria-selected','data-active','data-attention','data-empty','data-note-level','data-selected','data-state','data-signal','data-source']
-    });
+    observer.observe(document.documentElement,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','hidden','aria-label','aria-selected','data-active','data-attention','data-empty','data-note-level','data-selected','data-state','data-signal','data-source']});
     window.addEventListener('resize',guarded('resize',queue),{passive:true});
     window.addEventListener('pacefold:ma-prefs',guarded('prefs',queue));
     window.addEventListener('pacefold:storage-changed',guarded('storage',queue));
