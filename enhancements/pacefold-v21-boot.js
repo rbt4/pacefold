@@ -7,6 +7,24 @@
   const ONBOARDED_KEY='pacefoldOnboardedV15';
   const DISMISSED_KEY='pacefoldSetupDismissedV15';
 
+  const NativeMutationObserver=window.MutationObserver;
+  if(NativeMutationObserver&&!window.__PACEFOLD_SPATIAL_OBSERVER_GUARD__){
+    window.__PACEFOLD_SPATIAL_OBSERVER_GUARD__=true;
+    window.MutationObserver=class PacefoldSpatialMutationObserver extends NativeMutationObserver{
+      constructor(callback){
+        let instance=null;
+        super(records=>{
+          const filtered=records.filter(record=>{
+            const target=record.target instanceof Element?record.target:record.target?.parentElement;
+            return !target?.closest?.('#pf22-spatial-root');
+          });
+          if(filtered.length)callback(filtered,instance);
+        });
+        instance=this;
+      }
+    };
+  }
+
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
   const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:null;
   const meaningful=value=>{
