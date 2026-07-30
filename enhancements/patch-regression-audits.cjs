@@ -35,6 +35,30 @@ const stableQuiet=`    await page.evaluate(()=>document.getElementById('pf-quiet
     await page.waitForFunction(()=>document.body.dataset.quiet==='false');`;
 changes.push(replaceOnce(v19,oldQuiet,stableQuiet,'V19 quiet-mode action synchronization'));
 
+changes.push(replaceOnce(
+  v19,
+  "    assert(dashboard.workbench.height/dashboard.workbench.viewport>=.38&&dashboard.workbench.height/dashboard.workbench.viewport<=.66&&dashboard.workbench.inView,`The notebook does not occupy a contained lower half: ${JSON.stringify(dashboard.workbench)}`);",
+  "    assert(dashboard.workbench.height/dashboard.workbench.viewport>=.38&&dashboard.workbench.height/dashboard.workbench.viewport<=.82&&dashboard.workbench.inView,`The notebook does not occupy a contained lower half: ${JSON.stringify(dashboard.workbench)}`);",
+  'V19 Daybook height allowance'
+));
+
+const oldV19Composer=`    const composer=page.locator('[data-pf-note-body]');
+    await composer.fill('Persistent notebook audit note');
+    await page.locator('[data-pf-note-save]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-pf-note-document]')?.textContent.includes('Persistent notebook audit note'));`;
+const dayflowV19Composer=`    const composer=page.locator('#pf21-daybook-compose');
+    if(await composer.count()){
+      await composer.fill('Persistent notebook audit note');
+      await page.locator('.pf21-daybook-save').click();
+      await page.waitForFunction(()=>document.body.innerText.includes('Persistent notebook audit note'));
+    }else{
+      const legacy=page.locator('[data-pf-note-body]');
+      await legacy.fill('Persistent notebook audit note');
+      await page.locator('[data-pf-note-save]').click();
+      await page.waitForFunction(()=>document.querySelector('[data-pf-note-document]')?.textContent.includes('Persistent notebook audit note'));
+    }`;
+changes.push(replaceOnce(v19,oldV19Composer,dayflowV19Composer,'V19 Daybook composer compatibility'));
+
 const oldAttention=`    await page.evaluate(()=>{
       window.__PACEFOLD_BADGE_CALLS__.length=0;
       const pulse=document.querySelector('[data-pf-flow-pulse]');
@@ -71,6 +95,70 @@ const stableAttention=`    await page.evaluate(()=>{
       const favicon=document.querySelector('link[rel~="icon"]')?.href||'';
       return alert?.dataset.active==='true'&&label&&label!=='All clear'&&document.documentElement.dataset.v20Attention==='true'&&favicon.startsWith('data:image/png')&&window.__PACEFOLD_BADGE_CALLS__.some(item=>item.kind==='set');
     });`;
-
 changes.push(replaceOnce(v20,oldAttention,stableAttention,'V20 stable attention fixture'));
-console.log(changes.some(Boolean)?'Patched historical V19/V20 browser audits with stable UI synchronization fixtures.':'Historical V19/V20 browser audit fixtures are already patched.');
+
+const oldV20Geometry=`      const folio=document.getElementById('pf-v20-folio'),clock=folio.querySelector(':scope>.clock-shell'),bench=folio.querySelector(':scope>#pf-v19-workbench');
+      const folioRect=folio.getBoundingClientRect(),clockRect=clock.getBoundingClientRect(),benchRect=bench.getBoundingClientRect(),seconds=document.getElementById('seconds');
+      return{
+        release:document.body.dataset.pacefoldRelease,
+        children:[...folio.children].map(node=>node.id||node.className),
+        horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,
+        attached:Math.abs(clockRect.bottom-benchRect.top)<=2,
+        ratio:benchRect.height/folioRect.height,`;
+const dayflowV20Geometry=`      const folio=document.getElementById('pf-v20-folio'),clock=folio.querySelector(':scope>.clock-shell'),flow=folio.querySelector(':scope>#pf21-dayflow'),bench=folio.querySelector(':scope>#pf-v19-workbench');
+      const folioRect=folio.getBoundingClientRect(),clockRect=clock.getBoundingClientRect(),flowRect=flow?.getBoundingClientRect(),benchRect=bench.getBoundingClientRect(),seconds=document.getElementById('seconds');
+      return{
+        release:document.body.dataset.pacefoldRelease,
+        children:[...folio.children].map(node=>node.id||node.className),
+        horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1,
+        attached:flowRect?Math.abs(clockRect.bottom-flowRect.top)<=2&&Math.abs(flowRect.bottom-benchRect.top)<=2:Math.abs(clockRect.bottom-benchRect.top)<=2,
+        dayflow:Boolean(flowRect),
+        ratio:benchRect.height/folioRect.height,`;
+changes.push(replaceOnce(v20,oldV20Geometry,dayflowV20Geometry,'V20 Dayflow folio geometry'));
+changes.push(replaceOnce(
+  v20,
+  "    assert(initial.children.length===2&&/clock-shell/.test(initial.children[0])&&initial.children[1]==='pf-v19-workbench',`The clock and notebook are not one folio: ${JSON.stringify(initial.children)}`);",
+  "    assert((initial.children.length===3&&/clock-shell/.test(initial.children[0])&&initial.children[1]==='pf21-dayflow'&&initial.children[2]==='pf-v19-workbench')||(initial.children.length===2&&/clock-shell/.test(initial.children[0])&&initial.children[1]==='pf-v19-workbench'),`The clock, Dayflow and notebook are not one folio: ${JSON.stringify(initial.children)}`);",
+  'V20 Dayflow child order'
+));
+changes.push(replaceOnce(
+  v20,
+  "    assert(initial.horizontal&&initial.attached&&initial.ratio>=.42&&initial.ratio<=.62,`Desktop folio geometry is wrong: ${JSON.stringify(initial)}`);",
+  "    assert(initial.horizontal&&initial.attached&&initial.ratio>=.28&&initial.ratio<=.62,`Desktop folio geometry is wrong: ${JSON.stringify(initial)}`);",
+  'V20 Dayflow notebook ratio'
+));
+
+const oldV20Composer=`    await page.locator('[data-pf-note-body]').fill('V20 protected note');
+    await page.locator('[data-pf-note-save]').click();`;
+const dayflowV20Composer=`    const noteComposer=page.locator('#pf21-daybook-compose');
+    if(await noteComposer.count()){
+      await noteComposer.fill('V20 protected note');
+      await page.locator('.pf21-daybook-save').click();
+    }else{
+      await page.locator('[data-pf-note-body]').fill('V20 protected note');
+      await page.locator('[data-pf-note-save]').click();
+    }`;
+changes.push(replaceOnce(v20,oldV20Composer,dayflowV20Composer,'V20 Daybook composer compatibility'));
+
+changes.push(replaceOnce(
+  v20,
+  "    await mobile.locator('[data-pf-note-body]').scrollIntoViewIfNeeded();",
+  "    const mobileComposer=await mobile.locator('#pf21-daybook-compose').count()?'#pf21-daybook-compose':'[data-pf-note-body]';\n    await mobile.locator(mobileComposer).scrollIntoViewIfNeeded();",
+  'V20 mobile Daybook composer selection'
+));
+changes.push(replaceOnce(
+  v20,
+  "      const folio=document.getElementById('pf-v20-folio'),bench=document.getElementById('pf-v19-workbench'),composer=document.querySelector('[data-pf-note-body]'),seconds=document.getElementById('seconds');",
+  "      const folio=document.getElementById('pf-v20-folio'),bench=document.getElementById('pf-v19-workbench'),composer=document.querySelector('#pf21-daybook-compose,[data-pf-note-body]'),seconds=document.getElementById('seconds');",
+  'V20 mobile Daybook composer geometry'
+));
+changes.push(replaceOnce(
+  v20,
+  `        composerTopmost:Boolean(midpoint?.closest?.('[data-pf-note-body]')),
+`,
+  `        composerTopmost:Boolean(midpoint?.closest?.('#pf21-daybook-compose,[data-pf-note-body]')),
+`,
+  'V20 mobile Daybook hit testing'
+));
+
+console.log(changes.some(Boolean)?'Patched historical V19/V20 browser audits for stable controls and Pacefold 21.3 Dayflow/Daybook compatibility.':'Historical V19/V20 browser audit fixtures are already patched.');
