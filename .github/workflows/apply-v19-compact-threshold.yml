@@ -1,0 +1,25 @@
+name: Apply V19 compact Daybook threshold
+
+on:
+  push:
+    branches: [agent/pacefold-21-3-1-visual-hotfix]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-21-3-1-visual-hotfix
+          fetch-depth: 0
+      - run: node enhancements/apply-v19-compact-threshold.cjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Allow the intentional compact mobile Daybook height"
+          git push origin HEAD:agent/pacefold-21-3-1-visual-hotfix
