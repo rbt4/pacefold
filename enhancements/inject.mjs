@@ -65,6 +65,11 @@ function replaceExactlyOnce(source,from,to,label){
   return source.slice(0,first)+to+source.slice(first+from.length);
 }
 
+function stampRelease(source,label){
+  if(source.includes(`const RELEASE='${RELEASE}';`))return source;
+  return replaceExactlyOnce(source,"const RELEASE='21.0.0';",`const RELEASE='${RELEASE}';`,label);
+}
+
 async function syntaxCheck(file){
   const source=await fs.readFile(file,'utf8');
   new vm.Script(source,{filename:file});
@@ -73,6 +78,7 @@ async function syntaxCheck(file){
 }
 
 function prepareRuntime(source){
+  source=stampRelease(source,'runtime release');
   const quietGuard="    if(document.body?.dataset.quiet==='true'||readPrefs().quietMode)return true;\n";
   source=replaceExactlyOnce(
     source,
@@ -85,6 +91,12 @@ function prepareRuntime(source){
     '  function suppressDuplicateSetup(){\n    if(suppressingSetup||!meaningfulPrefs(readPrefs()))return false;',
     "  function suppressDuplicateSetup(){\n    if(suppressingSetup||!window.__PACEFOLD_V21_BOOT__?.returning||!meaningfulPrefs(readPrefs()))return false;",
     'first-run setup guard'
+  );
+  source=replaceExactlyOnce(
+    source,
+    '      cell.dataset.hasNotes=String(count>0);\n      cell.append(create(\'span\',\'pf21-calendar-number\',date.getDate()));',
+    '      cell.dataset.hasNotes=String(count>0);\n      cell.dataset.noteLevel=String(count<=0?0:count===1?1:count<=3?2:count<=6?3:4);\n      cell.append(create(\'span\',\'pf21-calendar-number\',date.getDate()));',
+    'calendar note intensity'
   );
   source=replaceExactlyOnce(
     source,
@@ -109,13 +121,17 @@ function prepareRuntime(source){
 
 async function installAssets(){
   const runtime=prepareRuntime(await fs.readFile(scriptSource,'utf8'));
+  const boot=stampRelease(await fs.readFile(bootSource,'utf8'),'boot release');
+  const persistence=stampRelease(await fs.readFile(persistenceSource,'utf8'),'persistence release');
   new vm.Script(runtime,{filename:'pacefold-v21.js'});
+  new vm.Script(boot,{filename:'pacefold-v21-boot.js'});
+  new vm.Script(persistence,{filename:'pacefold-v21-persistence.js'});
   await Promise.all([
-    fs.copyFile(bootSource,path.join(targetApp,'pacefold-v21-boot.js')),
+    fs.writeFile(path.join(targetApp,'pacefold-v21-boot.js'),boot),
     fs.copyFile(cssSource,path.join(targetApp,'pacefold-v21.css')),
     fs.copyFile(compatSource,path.join(targetApp,'pacefold-v21-compat.css')),
     fs.writeFile(path.join(targetApp,'pacefold-v21.js'),runtime),
-    fs.copyFile(persistenceSource,path.join(targetApp,'pacefold-v21-persistence.js')),
+    fs.writeFile(path.join(targetApp,'pacefold-v21-persistence.js'),persistence),
     fs.copyFile(refineCssSource,path.join(targetApp,'pacefold-v21-refine.css')),
     fs.copyFile(refineScriptSource,path.join(targetApp,'pacefold-v21-refine.js'))
   ]);
@@ -199,6 +215,7 @@ async function verify(){
   const worker=await fs.readFile(path.join(targetRoot,'service-worker.js'),'utf8');
   const css=await fs.readFile(path.join(targetApp,'pacefold-v21.css'),'utf8');
   const compat=await fs.readFile(path.join(targetApp,'pacefold-v21-compat.css'),'utf8');
+  const boot=await fs.readFile(path.join(targetApp,'pacefold-v21-boot.js'),'utf8');
   const runtime=await fs.readFile(path.join(targetApp,'pacefold-v21.js'),'utf8');
   const persistence=await fs.readFile(path.join(targetApp,'pacefold-v21-persistence.js'),'utf8');
   const refineCss=await fs.readFile(path.join(targetApp,'pacefold-v21-refine.css'),'utf8');
@@ -211,7 +228,8 @@ async function verify(){
   if((html.match(new RegExp(`data-pacefold-v21-refine="${escaped}"`,'g'))||[]).length!==2)throw new Error('Pacefold 21.1 refinement assets were not injected exactly once');
   if(!html.includes(`name="pacefold-experience" content="${RELEASE}"`))throw new Error('Pacefold 21.1 app marker is missing');
   for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js'])if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
-  for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'",'firstRunSetupVisible'])if(!runtime.includes(token))throw new Error(`Pacefold 21 runtime token missing: ${token}`);
+  for(const source of [boot,runtime,persistence])if(!source.includes(`const RELEASE='${RELEASE}';`))throw new Error('Generated Pacefold 21 runtime release is stale');
+  for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'",'firstRunSetupVisible','dataset.noteLevel'])if(!runtime.includes(token))throw new Error(`Pacefold 21 runtime token missing: ${token}`);
   if(!persistence.includes('pacefold.v21.settings.v1'))throw new Error('Pacefold 21 extension settings persistence is missing');
   if(!compat.includes('width:100%!important'))throw new Error('Pacefold 21 legacy geometry compatibility is missing');
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','data-pf21-advanced'])if(!css.includes(token))throw new Error(`Pacefold 21 CSS token missing: ${token}`);
