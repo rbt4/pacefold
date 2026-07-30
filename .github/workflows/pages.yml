@@ -83,9 +83,12 @@ jobs:
           test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
           grep -q 'pf-v21-minimal-active' enhancements/pacefold-v21-minimal.css
           grep -q -- '--pf22-surface' enhancements/pacefold-v21-minimal.css
+          grep -q 'flex-wrap:wrap' enhancements/pacefold-v21-minimal-responsive.css
+          grep -q 'data-pf21-weather="false"' enhancements/pacefold-v21-minimal-responsive.css
           grep -q "const EXPERIENCE='21.2.0'" enhancements/pacefold-v21-precision.js
+          grep -q "const RELEASE='21.2.0'" enhancements/pacefold-v21-refine.js
           grep -q "const REVISION='minimal-r1'" enhancements/pacefold-v21-precision.js
-          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-minimal.css enhancements/pacefold-v21-precision.js
+          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v21-minimal.css enhancements/pacefold-v21-minimal-responsive.css enhancements/pacefold-v21-precision.js
           ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v21-precision.js
 
       - name: Build verified core
@@ -102,7 +105,7 @@ jobs:
         run: |
           node enhancements/patch-core-audit.cjs _release/scripts/browser-audit.cjs
           node --check _release/scripts/browser-audit.cjs
-          NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
+          timeout 240s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
 
       - name: Inject and audit Pacefold 21.2 surface
         run: |
@@ -116,40 +119,63 @@ jobs:
           test "$(grep -o 'data-pacefold-v21-refine="21.2.0"' _release/app/index.html | wc -l)" -eq 2
           test "$(grep -o 'data-pacefold-v21-precision="21.2.0"' _release/app/index.html | wc -l)" -eq 2
           test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v21-minimal-responsive="21.2.0"' _release/app/index.html | wc -l)" -eq 1
           test -f _release/app/pacefold-v21-minimal.css
+          test -f _release/app/pacefold-v21-minimal-responsive.css
           grep -q 'pacefold-v21-minimal.css' _release/service-worker.js
-          grep -q 'pacefold-v21-minimal.css' _release/app/service-worker.js
+          grep -q 'pacefold-v21-minimal-responsive.css' _release/service-worker.js
+          grep -q 'pacefold-v21-minimal-responsive.css' _release/app/service-worker.js
           grep -q 'revision:21.2.0' _release/service-worker.js
           ! grep -q 'https://graph.microsoft.com' _release/app/index.html
           ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
           grep -Fq 'caches.match(request,{ignoreSearch:true})' _release/service-worker.js
           node --check _release/app/pacefold-v21.js
           node --check _release/app/pacefold-v21-persistence.js
+          node --check _release/app/pacefold-v21-refine.js
           node --check _release/app/pacefold-v21-precision.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
 
-      - name: Full Pacefold browser audit matrix
+      - name: Notebook and integration browser audit
         run: |
-          mkdir -p /tmp/pacefold-audits/{integrated,ma,v19,v20,v21}
-          set +e
-          failed=0
-          run_audit(){
-            name="$1"; shift
-            echo "--- $name ---"
-            NODE_PATH=/tmp/pacefold-browser-audit/node_modules "$@" 2>&1 | tee "/tmp/pacefold-audits/${name}.log"
-            status=${PIPESTATUS[0]}
-            echo "$status" > "/tmp/pacefold-audits/${name}.status"
-            if [ "$status" -ne 0 ]; then failed=1; fi
-          }
-          run_audit notebook node enhancements/run-hub-audit.cjs _release
-          run_audit resilience node enhancements/resilience-audit.cjs _release
-          run_audit integrated node enhancements/integrated-audit.cjs _release /tmp/pacefold-audits/integrated
-          run_audit ma node enhancements/ma-audit.cjs _release /tmp/pacefold-audits/ma
-          run_audit v19 node enhancements/v19-audit.cjs _release /tmp/pacefold-audits/v19
-          run_audit v20 node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20
-          run_audit v21 node enhancements/v21-audit.cjs _release /tmp/pacefold-audits/v21
-          exit "$failed"
+          mkdir -p /tmp/pacefold-audits
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs _release 2>&1 | tee /tmp/pacefold-audits/notebook.log
+
+      - name: Destructive resilience browser audit
+        run: |
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release 2>&1 | tee /tmp/pacefold-audits/resilience.log
+
+      - name: Integrated dock and taskbar browser audit
+        run: |
+          mkdir -p /tmp/pacefold-audits/integrated
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs _release /tmp/pacefold-audits/integrated 2>&1 | tee /tmp/pacefold-audits/integrated.log
+
+      - name: Ma release browser audit
+        run: |
+          mkdir -p /tmp/pacefold-audits/ma
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/ma-audit.cjs _release /tmp/pacefold-audits/ma 2>&1 | tee /tmp/pacefold-audits/ma.log
+
+      - name: V19 dashboard browser audit
+        run: |
+          mkdir -p /tmp/pacefold-audits/v19
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v19-audit.cjs _release /tmp/pacefold-audits/v19 2>&1 | tee /tmp/pacefold-audits/v19.log
+
+      - name: V20 visual, taskbar and backup browser audit
+        run: |
+          mkdir -p /tmp/pacefold-audits/v20
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20 2>&1 | tee /tmp/pacefold-audits/v20.log
+
+      - name: Pacefold 21.2 minimal browser audit
+        run: |
+          mkdir -p /tmp/pacefold-audits/v21
+          set -o pipefail
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-audits/v21 2>&1 | tee /tmp/pacefold-audits/v21.log
 
       - name: Upload browser diagnostics and visual captures
         if: always()
@@ -189,9 +215,12 @@ jobs:
           test "$(cat _site/pacefold-experience.txt)" = "21.2.0"
           test "$(grep -o 'data-pacefold-v21="21.2.0"' _site/app/index.html | wc -l)" -eq 2
           test "$(grep -o 'data-pacefold-v21-minimal="21.2.0"' _site/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v21-minimal-responsive="21.2.0"' _site/app/index.html | wc -l)" -eq 1
           test -f _site/app/pacefold-v21-minimal.css
-          grep -q 'pacefold-v21-minimal.css' _site/service-worker.js
+          test -f _site/app/pacefold-v21-minimal-responsive.css
+          grep -q 'pacefold-v21-minimal-responsive.css' _site/service-worker.js
           grep -q 'revision:21.2.0' _site/service-worker.js
+          node --check _site/app/pacefold-v21-refine.js
           node --check _site/app/pacefold-v21-precision.js
           node --check _site/service-worker.js
 
