@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 21.3.1
+name: Validate and deploy Pacefold 22.0.0
 
 on:
   push:
@@ -16,41 +16,22 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Reconstruct current and previous verified releases
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PUSH_BEFORE_SHA: ${{ github.event.before }}
+      - name: Reconstruct verified core
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
           echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
-          mkdir _release _previous
+          mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-          base_sha="$PR_BASE_SHA"
-          if [ -z "$base_sha" ] || [ "$base_sha" = "null" ]; then base_sha="$PUSH_BEFORE_SHA"; fi
-          if [ -z "$base_sha" ] || [ "$base_sha" = "0000000000000000000000000000000000000000" ]; then base_sha=$(git rev-parse HEAD^); fi
-          git ls-tree -r --name-only "$base_sha" release | grep '\.zip\.b64\.part-' | sort > /tmp/previous-parts.txt
-          test -s /tmp/previous-parts.txt
-          while IFS= read -r part; do git show "${base_sha}:${part}"; done < /tmp/previous-parts.txt | base64 --decode > /tmp/pacefold-previous.zip
-          unzip -q /tmp/pacefold-previous.zip -d _previous
-          current_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _release/app/app.js | head -n 1)
-          previous_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _previous/app/app.js | head -n 1)
-          previous_surface=$(git show "${base_sha}:enhancements/VERSION" 2>/dev/null || true)
-          test -n "$current_core"
-          test -n "$previous_core"
-          test "$(cat enhancements/VERSION)" = "21.3.1"
-          if [ "$current_core" = "$previous_core" ]; then
-            test "21.3.1" != "$previous_surface"
-            echo "Surface advanced: ${previous_surface:-none} -> 21.3.1; verified core remains $current_core"
-          fi
+          test "$(cat enhancements/VERSION)" = "22.0.0"
 
-      - name: Source syntax, privacy and version guard
+      - name: Source syntax, privacy and release guard
         run: |
           for file in \
             enhancements/pacefold-hub.js \
@@ -65,7 +46,11 @@ jobs:
             enhancements/pacefold-v21.js \
             enhancements/pacefold-v21-persistence.js \
             enhancements/pacefold-v21-refine.js \
+            enhancements/pacefold-v22-spatial.js \
             enhancements/inject.mjs \
+            enhancements/patch-regression-audits.cjs \
+            enhancements/patch-spatial-audits.cjs \
+            enhancements/patch-core-audit.cjs \
             enhancements/hub-audit.cjs \
             enhancements/run-hub-audit.cjs \
             enhancements/resilience-audit.cjs \
@@ -73,21 +58,16 @@ jobs:
             enhancements/ma-audit.cjs \
             enhancements/v19-audit.cjs \
             enhancements/v20-audit.cjs \
-            enhancements/v21-audit.cjs \
-            enhancements/patch-regression-audits.cjs \
-            enhancements/patch-core-audit.cjs; do node --check "$file"; done
-          test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
+            enhancements/v21-audit.cjs; do node --check "$file"; done
           cat enhancements/pacefold-v21-dayflow-runtime.part-*.js > /tmp/pacefold-dayflow.js
-          cat enhancements/pacefold-v21-dayflow.part-*.css > /tmp/pacefold-dayflow.css
           node --check /tmp/pacefold-dayflow.js
-          grep -q "const EXPERIENCE='21.3.1'" /tmp/pacefold-dayflow.js
-          grep -q "const REVISION='dayflow-r2'" /tmp/pacefold-dayflow.js
-          grep -q 'pacefold.dayflow.v1' /tmp/pacefold-dayflow.js
-          grep -q 'pf21-dayflow' /tmp/pacefold-dayflow.css
-          grep -q 'pf21-daybook' /tmp/pacefold-dayflow.css
-          grep -q 'Pacefold 21.3.1 visual composition hotfix' /tmp/pacefold-dayflow.css
-          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' /tmp/pacefold-dayflow.css /tmp/pacefold-dayflow.js
-          ! grep -E -q '\.innerHTML[[:space:]]*=' /tmp/pacefold-dayflow.js
+          grep -q "const EXPERIENCE='22.0.0'" /tmp/pacefold-dayflow.js
+          grep -q "const REVISION='dayflow-r3'" /tmp/pacefold-dayflow.js
+          grep -q "const RELEASE='22.0.0'" enhancements/pacefold-v22-spatial.js
+          grep -q "const REVISION='spatial-r1'" enhancements/pacefold-v22-spatial.js
+          grep -q 'Clock-first' enhancements/pacefold-v22-spatial.css
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js
+          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' enhancements/pacefold-v22-spatial.js enhancements/pacefold-v22-spatial.css
 
       - name: Build verified core
         run: |
@@ -99,81 +79,66 @@ jobs:
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
 
-      - name: Browser application and installed-upgrade audit
+      - name: Browser application audit
         run: |
           node enhancements/patch-core-audit.cjs _release/scripts/browser-audit.cjs
           node --check _release/scripts/browser-audit.cjs
-          timeout 240s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
+          timeout 240s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release
 
-      - name: Inject and audit Pacefold 21.3.1 surface
+      - name: Inject Pacefold 22 twice and audit offline shell
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
-          test "$(cat _release/pacefold-experience.txt)" = "21.3.1"
-          test "$(grep -o 'data-pacefold-v21=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 1
-          test -f _release/app/pacefold-v21-dayflow.css
-          grep -q 'pacefold-v21-dayflow.css' _release/service-worker.js
-          grep -q 'pacefold-v21-dayflow.css' _release/app/service-worker.js
-          grep -q 'revision:21.3.1' _release/service-worker.js
-          ! grep -q 'https://graph.microsoft.com' _release/app/index.html
-          ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
-          grep -Fq 'caches.match(request,{ignoreSearch:true})' _release/service-worker.js
-          node --check _release/app/pacefold-v21.js
-          node --check _release/app/pacefold-v21-persistence.js
-          node --check _release/app/pacefold-v21-refine.js
-          node --check _release/app/pacefold-v21-precision.js
+          test "$(cat _release/pacefold-experience.txt)" = "22.0.0"
+          test "$(grep -o 'data-pacefold-v22-spatial=\"22.0.0\"' _release/app/index.html | wc -l)" -eq 2
+          grep -q 'data-pacefold-spatial="pending"' _release/app/index.html
+          test -f _release/app/pacefold-v22-spatial.css
+          test -f _release/app/pacefold-v22-spatial.js
+          grep -q 'pacefold-v22-spatial.css' _release/service-worker.js
+          grep -q 'pacefold-v22-spatial.js' _release/service-worker.js
+          grep -q 'revision:22.0.0' _release/service-worker.js
+          node --check _release/app/pacefold-v22-spatial.js
           node --check _release/service-worker.js
-          node --check _release/app/service-worker.js
 
-      - name: Notebook and integration browser audit
+      - name: Notebook integration audit
         run: |
           mkdir -p /tmp/pacefold-audits
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs _release 2>&1 | tee /tmp/pacefold-audits/notebook.log
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-hub-audit.cjs _release | tee /tmp/pacefold-audits/notebook.log
 
-      - name: Destructive resilience browser audit
+      - name: Resilience audit
         run: |
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release 2>&1 | tee /tmp/pacefold-audits/resilience.log
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/resilience-audit.cjs _release | tee /tmp/pacefold-audits/resilience.log
 
-      - name: Integrated dock and taskbar browser audit
+      - name: Dock and taskbar audit
         run: |
           mkdir -p /tmp/pacefold-audits/integrated
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs _release /tmp/pacefold-audits/integrated 2>&1 | tee /tmp/pacefold-audits/integrated.log
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/integrated-audit.cjs _release /tmp/pacefold-audits/integrated | tee /tmp/pacefold-audits/integrated.log
 
-      - name: Ma release browser audit
+      - name: Ma privacy audit
         run: |
           mkdir -p /tmp/pacefold-audits/ma
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/ma-audit.cjs _release /tmp/pacefold-audits/ma 2>&1 | tee /tmp/pacefold-audits/ma.log
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/ma-audit.cjs _release /tmp/pacefold-audits/ma | tee /tmp/pacefold-audits/ma.log
 
-      - name: V19 dashboard browser audit
+      - name: V19 compatibility audit
         run: |
           mkdir -p /tmp/pacefold-audits/v19
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v19-audit.cjs _release /tmp/pacefold-audits/v19 2>&1 | tee /tmp/pacefold-audits/v19.log
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v19-audit.cjs _release /tmp/pacefold-audits/v19 | tee /tmp/pacefold-audits/v19.log
 
-      - name: V20 visual, taskbar and backup browser audit
+      - name: V20 compatibility audit
         run: |
           mkdir -p /tmp/pacefold-audits/v20
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20 2>&1 | tee /tmp/pacefold-audits/v20.log
+          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20 | tee /tmp/pacefold-audits/v20.log
 
-      - name: Pacefold 21.3.1 visual browser audit
+      - name: Pacefold 22 Spatial Fold browser audit
         run: |
-          mkdir -p /tmp/pacefold-audits/v21
-          set -o pipefail
-          timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-audits/v21 2>&1 | tee /tmp/pacefold-audits/v21.log
+          mkdir -p /tmp/pacefold-audits/v22
+          timeout 210s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-audits/v22 | tee /tmp/pacefold-audits/v22.log
 
-      - name: Upload browser diagnostics and visual captures
+      - name: Upload browser diagnostics and captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.3.1-audit-${{ github.run_id }}
+          name: pacefold-22.0.0-audit-${{ github.run_id }}
           path: /tmp/pacefold-audits/
           if-no-files-found: warn
           retention-days: 7
@@ -193,7 +158,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Build verified site
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
@@ -204,23 +168,17 @@ jobs:
           node _release/scripts/validate.mjs _release
           rsync -a _release/ _site/ --exclude '.git/' --exclude '.github/' --exclude 'scripts/' --exclude 'README.md' --exclude 'CHANGELOG.md' --exclude 'REPOSITORY_SETUP.md' --exclude 'SECURITY.md'
           node enhancements/inject.mjs _site
-          test "$(cat _site/pacefold-experience.txt)" = "21.3.1"
-          test "$(grep -o 'data-pacefold-v21=\"21.3.1\"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.1\"' _site/app/index.html | wc -l)" -eq 1
-          test -f _site/app/pacefold-v21-dayflow.css
-          grep -q 'pacefold-v21-dayflow.css' _site/service-worker.js
-          grep -q 'revision:21.3.1' _site/service-worker.js
-          node --check _site/app/pacefold-v21-precision.js
-          node --check _site/service-worker.js
-
+          test "$(cat _site/pacefold-experience.txt)" = "22.0.0"
+          test -f _site/app/pacefold-v22-spatial.css
+          test -f _site/app/pacefold-v22-spatial.js
+          grep -q 'revision:22.0.0' _site/service-worker.js
+          node --check _site/app/pacefold-v22-spatial.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
-
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

@@ -7,6 +7,98 @@
   const ONBOARDED_KEY='pacefoldOnboardedV15';
   const DISMISSED_KEY='pacefoldSetupDismissedV15';
 
+  if(!window.__PACEFOLD_TITLE_GUARD__){
+    const prototypes=[window.HTMLDocument?.prototype,window.Document?.prototype].filter(Boolean);
+    const descriptor=prototypes.map(prototype=>Object.getOwnPropertyDescriptor(prototype,'title')).find(value=>value?.get&&value?.set);
+    if(descriptor){
+      window.__PACEFOLD_TITLE_GUARD__=true;
+      Object.defineProperty(document,'title',{
+        configurable:true,
+        get:()=>descriptor.get.call(document),
+        set:value=>{
+          const next=String(value??'');
+          if(descriptor.get.call(document)!==next)descriptor.set.call(document,next);
+        }
+      });
+    }
+  }
+
+  const NativeMutationObserver=window.MutationObserver;
+  if(NativeMutationObserver&&!window.__PACEFOLD_SPATIAL_OBSERVER_GUARD__){
+    window.__PACEFOLD_SPATIAL_OBSERVER_GUARD__=true;
+    window.MutationObserver=class PacefoldSpatialMutationObserver extends NativeMutationObserver{
+      constructor(callback){
+        let instance=null;
+        super(records=>{
+          const filtered=records.filter(record=>{
+            const target=record.target instanceof Element?record.target:record.target?.parentElement;
+            return !target?.closest?.('#pf22-spatial-root');
+          });
+          if(filtered.length)callback(filtered,instance);
+        });
+        instance=this;
+      }
+    };
+  }
+
+  window.addEventListener('pacefold:spatial-ready',()=>{
+    const root=document.getElementById('pf22-spatial-root');
+    if(!root||!NativeMutationObserver)return;
+    const apply=()=>{
+      const active=root.dataset.mode||'home';
+      for(const face of root.querySelectorAll('.pf22-face')){
+        const enabled=face.dataset.face===active;
+        face.inert=!enabled;
+        face.setAttribute('aria-hidden',String(!enabled));
+      }
+    };
+    apply();
+    const modeObserver=new NativeMutationObserver(apply);
+    modeObserver.observe(root,{attributes:true,attributeFilter:['data-mode']});
+    root.__pacefoldSpatialModeObserver=modeObserver;
+
+    const read=id=>String(document.getElementById(id)?.textContent||'').replace(/\s+/g,' ').trim();
+    const formatStatus=value=>{
+      const parts=['statusWord','eventTime','relativeTime','eventName'].map(read).filter(Boolean);
+      if(parts.length>=2)return parts.join(' · ');
+      const raw=String(value??'').replace(/\s+/g,' ').trim();
+      if(raw.includes(' · '))return raw;
+      const match=raw.match(/^(Overdue|Next|Now|Soon|Snoozed)(\d{1,2}:\d{2}\s*(?:AM|PM)?)(.*?)(Fajr|Sunrise|Dhuhr|Asr|Maghrib|Isha)$/i);
+      return match?[match[1],match[2],match[3],match[4]].map(item=>item.trim()).filter(Boolean).join(' · '):raw||'Workday in progress';
+    };
+    const target=document.getElementById('pf22-status');
+    const textDescriptor=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
+    if(target&&textDescriptor?.get&&textDescriptor?.set&&!target.__pacefoldStatusGuard){
+      target.__pacefoldStatusGuard=true;
+      Object.defineProperty(target,'textContent',{
+        configurable:true,
+        get:()=>textDescriptor.get.call(target),
+        set:value=>{
+          const next=formatStatus(value);
+          if(textDescriptor.get.call(target)!==next)textDescriptor.set.call(target,next);
+        }
+      });
+    }
+
+    let statusFrame=0;
+    const syncStatus=()=>{
+      if(statusFrame)return;
+      statusFrame=requestAnimationFrame(()=>{
+        statusFrame=0;
+        if(!target)return;
+        target.textContent=formatStatus(target.textContent);
+      });
+    };
+    const source=document.getElementById('statusLine');
+    if(source){
+      const statusObserver=new NativeMutationObserver(syncStatus);
+      statusObserver.observe(source,{subtree:true,childList:true,characterData:true});
+      root.__pacefoldSpatialStatusObserver=statusObserver;
+    }
+    syncStatus();
+    root.__pacefoldSpatialStatusTimer=setInterval(syncStatus,1000);
+  },{once:true});
+
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
   const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:null;
   const meaningful=value=>{

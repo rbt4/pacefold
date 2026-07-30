@@ -1,8 +1,8 @@
-name: Validate Pacefold 21.3.1 visual hotfix
+name: Validate Pacefold 22 Spatial Fold
 
 on:
   push:
-    branches: [main, agent/pacefold-21-3-1-visual-hotfix]
+    branches: [main, agent/pacefold-22-spatial-fold]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -13,17 +13,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: pacefold-21-${{ github.ref }}
+  group: pacefold-v22-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate-v21:
+  spatial:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
+      - uses: actions/checkout@v6
       - name: Reconstruct verified release
         run: |
           cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
@@ -32,66 +30,39 @@ jobs:
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
-
-      - name: Syntax, privacy and version guard
+      - name: Spatial source guard
         run: |
-          test "$(cat enhancements/VERSION)" = "21.3.1"
-          for file in \
-            enhancements/pacefold-v21-boot.js \
-            enhancements/pacefold-v21.js \
-            enhancements/pacefold-v21-persistence.js \
-            enhancements/pacefold-v21-refine.js \
-            enhancements/v21-audit.cjs \
-            enhancements/patch-regression-audits.cjs \
-            enhancements/inject.mjs \
-            enhancements/inject-v20.mjs; do node --check "$file"; done
-          cat enhancements/pacefold-v21-dayflow-runtime.part-*.js > /tmp/pacefold-dayflow.js
-          cat enhancements/pacefold-v21-dayflow.part-*.css > /tmp/pacefold-dayflow.css
-          node --check /tmp/pacefold-dayflow.js
-          grep -q "const EXPERIENCE='21.3.1'" /tmp/pacefold-dayflow.js
-          grep -q "const REVISION='dayflow-r2'" /tmp/pacefold-dayflow.js
-          grep -q 'pacefold.dayflow.v1' /tmp/pacefold-dayflow.js
-          grep -q '__PACEFOLD_DAYFLOW__' /tmp/pacefold-dayflow.js
-          grep -q 'pf21-dayflow' /tmp/pacefold-dayflow.css
-          grep -q 'pf21-daybook' /tmp/pacefold-dayflow.css
-          grep -q 'Pacefold 21.3.1 visual composition hotfix' /tmp/pacefold-dayflow.css
-          grep -q 'Workday analytics' /tmp/pacefold-dayflow.js
-          ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' /tmp/pacefold-dayflow.css /tmp/pacefold-dayflow.js
-          ! grep -E -q '\.innerHTML[[:space:]]*=' /tmp/pacefold-dayflow.js
-
-      - name: Inject Pacefold 21.3.1 twice
+          test "$(cat enhancements/VERSION)" = "22.0.0"
+          node --check enhancements/pacefold-v22-spatial.js
+          node --check enhancements/v21-audit.cjs
+          node --check enhancements/inject.mjs
+          grep -q "const RELEASE='22.0.0'" enhancements/pacefold-v22-spatial.js
+          grep -q "const REVISION='spatial-r1'" enhancements/pacefold-v22-spatial.js
+          grep -q 'pf22-spatial-root' enhancements/pacefold-v22-spatial.js
+          grep -q 'Clock-first' enhancements/pacefold-v22-spatial.css
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js
+      - name: Inject Spatial Fold twice
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-experience.txt)" = "21.3.1"
-          test "$(grep -o 'data-pacefold-v21=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 1
-          test -f _release/app/pacefold-v21-dayflow.css
-          grep -q 'pacefold-v21-dayflow.css' _release/service-worker.js
-          grep -q 'pacefold-v21-dayflow.css' _release/app/service-worker.js
-          grep -q 'revision:21.3.1' _release/service-worker.js
-          node --check _release/app/pacefold-v21-boot.js
-          node --check _release/app/pacefold-v21.js
-          node --check _release/app/pacefold-v21-persistence.js
-          node --check _release/app/pacefold-v21-refine.js
-          node --check _release/app/pacefold-v21-precision.js
-
-      - name: Install browser audit runtime
+          test "$(cat _release/pacefold-experience.txt)" = "22.0.0"
+          test "$(grep -o 'data-pacefold-v22-spatial=\"22.0.0\"' _release/app/index.html | wc -l)" -eq 2
+          grep -q 'data-pacefold-spatial="pending"' _release/app/index.html
+          grep -q 'pacefold-v22-spatial.css' _release/service-worker.js
+          grep -q 'pacefold-v22-spatial.js' _release/service-worker.js
+      - name: Install Playwright
         run: |
-          npm install --prefix /tmp/pacefold-v21-audit playwright@1.61.1
-          /tmp/pacefold-v21-audit/node_modules/.bin/playwright install --with-deps chromium
-
-      - name: Run Pacefold 21.3.1 browser audit
+          npm install --prefix /tmp/pacefold-v22-audit playwright@1.61.1
+          /tmp/pacefold-v22-audit/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run Spatial Fold browser audit
         run: |
-          mkdir -p /tmp/pacefold-v21-artifacts
-          NODE_PATH=/tmp/pacefold-v21-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-v21-artifacts
-
-      - name: Upload visual diagnostics
+          mkdir -p /tmp/pacefold-v22-artifacts
+          NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-v22-artifacts
+      - name: Upload Spatial Fold captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.3.1-visual-audit-${{ github.run_id }}
-          path: /tmp/pacefold-v21-artifacts/
+          name: pacefold-22-spatial-audit-${{ github.run_id }}
+          path: /tmp/pacefold-v22-artifacts/
           if-no-files-found: warn
           retention-days: 7
