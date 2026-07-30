@@ -42,7 +42,10 @@ async function exercise(page){
 }
 async function browserAudit(){fs.mkdirSync(artifacts,{recursive:true});const server=await serve(),base=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch({headless:true}),errors=[];try{
   const context=await contextFor(browser,{width:1180,height:920}),page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&!/ERR_INTERNET_DISCONNECTED/.test(message.text()))errors.push(message.text())});
-  await page.goto(`${base}/app/`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD_SPATIAL__&&document.documentElement.dataset.pacefoldSpatial==='ready',null,{timeout:30000});
+  await page.goto(`${base}/app/`,{waitUntil:'networkidle'});await page.waitForTimeout(4500);
+  const startup=await page.evaluate(()=>({api:Boolean(window.__PACEFOLD_SPATIAL__),spatial:document.documentElement.dataset.pacefoldSpatial,root:Boolean(document.getElementById('pf22-spatial-root')),boot:window.__PACEFOLD_V21_BOOT__,dayflow:Boolean(window.__PACEFOLD_DAYFLOW__),ready:document.readyState,title:document.title,scripts:[...document.scripts].map(script=>script.src.split('/').pop()).filter(Boolean)}));
+  if(!startup.api||startup.spatial!=='ready')await page.screenshot({path:path.join(artifacts,'pacefold-v22-startup-failure.png'),fullPage:false});
+  assert(startup.api&&startup.spatial==='ready',`Spatial startup did not complete: ${JSON.stringify(startup)}; browser errors: ${errors.join(' | ')}`);
   const initial=await inspectPage(page);assert(initial.release===RELEASE&&initial.revision===REVISION&&initial.mode==='home'&&initial.title==='Pacefold — Quiet Workday Rhythm',`Spatial startup failed: ${JSON.stringify(initial)}`);assert(initial.legacy==='none'&&initial.scroll&&initial.faces===5&&initial.edges===4,`Spatial geometry failed: ${JSON.stringify(initial)}`);
   await page.waitForTimeout(2200);assert((await page.title())==='Pacefold — Quiet Workday Rhythm','Window title changed after clock tick');
   await exercise(page);await page.screenshot({path:path.join(artifacts,'pacefold-v22-clock.png'),fullPage:false});
