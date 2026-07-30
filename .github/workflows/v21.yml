@@ -2,7 +2,7 @@ name: Validate Pacefold 21 experience
 
 on:
   push:
-    branches: [pacefold-21-rebuild, pacefold-21-1-refinement]
+    branches: [pacefold-21-rebuild, pacefold-21-1-refinement, pacefold-21-1-precision-r2]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -35,15 +35,18 @@ jobs:
 
       - name: Syntax and version guard
         run: |
-          test "$(cat enhancements/VERSION)" = "21.1.0"
+          test "$(cat enhancements/VERSION)" = "21.1.1"
           node --check enhancements/pacefold-v21-boot.js
           node --check enhancements/pacefold-v21.js
           node --check enhancements/pacefold-v21-refine.js
+          node --check enhancements/pacefold-v21-precision.js
           node --check enhancements/v21-audit.cjs
           node --check enhancements/inject.mjs
           node --check enhancements/inject-v20.mjs
           grep -q 'pf-v21-1-active' enhancements/pacefold-v21-refine.css
           grep -q 'grid-template-columns:repeat(3' enhancements/pacefold-v21-refine.css
+          grep -q 'pf-v21-precision-active' enhancements/pacefold-v21-precision.css
+          grep -q 'pf21-dayline\[data-empty="true"\]' enhancements/pacefold-v21-precision.css
 
       - name: Inject Pacefold 21 twice
         run: |
@@ -53,14 +56,19 @@ jobs:
           test "$(grep -o 'data-pacefold-v21="21.1.0"' _release/app/index.html | wc -l)" -eq 2
           test "$(grep -o 'data-pacefold-v21-boot="21.1.0"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-v21-refine="21.1.0"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-precision="21.1.0"' _release/app/index.html | wc -l)" -eq 2
           grep -q 'pacefold-v21.css' _release/service-worker.js
           grep -q 'pacefold-v21-boot.js' _release/service-worker.js
           grep -q 'pacefold-v21.js' _release/service-worker.js
           grep -q 'pacefold-v21-refine.css' _release/service-worker.js
           grep -q 'pacefold-v21-refine.js' _release/service-worker.js
+          grep -q 'pacefold-v21-precision.css' _release/service-worker.js
+          grep -q 'pacefold-v21-precision.js' _release/service-worker.js
+          grep -q 'revision:21.1.1' _release/service-worker.js
           node --check _release/app/pacefold-v21-boot.js
           node --check _release/app/pacefold-v21.js
           node --check _release/app/pacefold-v21-refine.js
+          node --check _release/app/pacefold-v21-precision.js
 
       - name: Install browser audit runtime
         run: |
