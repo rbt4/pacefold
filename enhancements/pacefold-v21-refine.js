@@ -34,7 +34,7 @@
     dataset(document.documentElement,'pacefoldRefinement',RELEASE);
     dataset(document.body,'pacefoldExperience',RELEASE);
     dataset(document.body,'pacefoldRefinement',RELEASE);
-    text(document.querySelector('.pf21-settings-version'),`Pacefold ${RELEASE}`);
+    text(document.querySelector('.pf21-settings-version'),`v${RELEASE}`);
     for(const api of [window.__PACEFOLD_V21_BOOT__,window.__PACEFOLD_V21__,window.__PACEFOLD_V21_PERSISTENCE__]){
       if(api&&api.release!==RELEASE){try{api.release=RELEASE;}catch{}}
     }
