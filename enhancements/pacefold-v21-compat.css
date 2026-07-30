@@ -79,3 +79,24 @@ html[data-pacefold-spatial="ready"] .pf22-face-notes{top:-100vh!important}
 html[data-pacefold-spatial="ready"] .pf22-face-worklog{left:-100vw!important}
 html[data-pacefold-spatial="ready"] .pf22-face-context{left:100vw!important}
 html[data-pacefold-spatial="ready"] .pf22-face-settings{top:100vh!important}
+
+html[data-pacefold-spatial="ready"] .pf22-brand{grid-column:1}
+html[data-pacefold-spatial="ready"] .pf22-current-mode{grid-column:2}
+html[data-pacefold-spatial="ready"] .pf22-quiet{grid-column:3}
+
+@media (max-width:760px){
+  html[data-pacefold-spatial="ready"] .pf22-worklog-layout{
+    grid-template-rows:auto minmax(0,1fr)!important;
+    align-content:stretch!important;
+    overflow:hidden!important;
+  }
+  html[data-pacefold-spatial="ready"] .pf22-log-summary{
+    order:-1;
+    align-self:start!important;
+  }
+  html[data-pacefold-spatial="ready"] .pf22-log-stream{
+    min-height:0!important;
+    overflow:auto!important;
+    padding-bottom:24px!important;
+  }
+}
