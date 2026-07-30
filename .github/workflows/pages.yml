@@ -1,4 +1,4 @@
-name: Validate and deploy Pacefold 21.3.0
+name: Validate and deploy Pacefold 21.3.1
 
 on:
   push:
@@ -41,19 +41,16 @@ jobs:
           unzip -q /tmp/pacefold-previous.zip -d _previous
           current_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _release/app/app.js | head -n 1)
           previous_core=$(sed -n "s/.*const APP_VERSION='\([^']*\)'.*/\1/p" _previous/app/app.js | head -n 1)
-          current_surface=$(cat enhancements/VERSION)
           previous_surface=$(git show "${base_sha}:enhancements/VERSION" 2>/dev/null || true)
           test -n "$current_core"
           test -n "$previous_core"
-          test "$current_surface" = "21.3.0"
+          test "$(cat enhancements/VERSION)" = "21.3.1"
           if [ "$current_core" = "$previous_core" ]; then
-            test "$current_surface" != "$previous_surface"
-            echo "Surface version advanced: ${previous_surface:-none} -> $current_surface; core remains $current_core"
-          else
-            echo "Core version advanced: $previous_core -> $current_core; surface $current_surface"
+            test "21.3.1" != "$previous_surface"
+            echo "Surface advanced: ${previous_surface:-none} -> 21.3.1; verified core remains $current_core"
           fi
 
-      - name: Source syntax and security guard
+      - name: Source syntax, privacy and version guard
         run: |
           for file in \
             enhancements/pacefold-hub.js \
@@ -79,16 +76,16 @@ jobs:
             enhancements/v21-audit.cjs \
             enhancements/patch-regression-audits.cjs \
             enhancements/patch-core-audit.cjs; do node --check "$file"; done
-          test "$(cat enhancements/VERSION)" = "21.3.0"
           test "$(stat -c %s enhancements/fonts/pacefold-ma.woff2)" -le 15000
           cat enhancements/pacefold-v21-dayflow-runtime.part-*.js > /tmp/pacefold-dayflow.js
           cat enhancements/pacefold-v21-dayflow.part-*.css > /tmp/pacefold-dayflow.css
           node --check /tmp/pacefold-dayflow.js
-          grep -q "const EXPERIENCE='21.3.0'" /tmp/pacefold-dayflow.js
-          grep -q "const REVISION='dayflow-r1'" /tmp/pacefold-dayflow.js
+          grep -q "const EXPERIENCE='21.3.1'" /tmp/pacefold-dayflow.js
+          grep -q "const REVISION='dayflow-r2'" /tmp/pacefold-dayflow.js
           grep -q 'pacefold.dayflow.v1' /tmp/pacefold-dayflow.js
           grep -q 'pf21-dayflow' /tmp/pacefold-dayflow.css
           grep -q 'pf21-daybook' /tmp/pacefold-dayflow.css
+          grep -q 'Pacefold 21.3.1 visual composition hotfix' /tmp/pacefold-dayflow.css
           ! grep -P '[\x{3040}-\x{30ff}\x{3400}-\x{9fff}]' /tmp/pacefold-dayflow.css /tmp/pacefold-dayflow.js
           ! grep -E -q '\.innerHTML[[:space:]]*=' /tmp/pacefold-dayflow.js
 
@@ -108,19 +105,19 @@ jobs:
           node --check _release/scripts/browser-audit.cjs
           timeout 240s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node _release/scripts/browser-audit.cjs _release _previous
 
-      - name: Inject and audit Pacefold 21.3 surface
+      - name: Inject and audit Pacefold 21.3.1 surface
         run: |
           node enhancements/inject.mjs _release
           node enhancements/inject.mjs _release
           test "$(cat _release/pacefold-hub-version.txt)" = "15.8.0"
-          test "$(cat _release/pacefold-experience.txt)" = "21.3.0"
-          test "$(grep -o 'data-pacefold-v21=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.0\"' _release/app/index.html | wc -l)" -eq 1
+          test "$(cat _release/pacefold-experience.txt)" = "21.3.1"
+          test "$(grep -o 'data-pacefold-v21=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-precision=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.1\"' _release/app/index.html | wc -l)" -eq 1
           test -f _release/app/pacefold-v21-dayflow.css
           grep -q 'pacefold-v21-dayflow.css' _release/service-worker.js
           grep -q 'pacefold-v21-dayflow.css' _release/app/service-worker.js
-          grep -q 'revision:21.3.0' _release/service-worker.js
+          grep -q 'revision:21.3.1' _release/service-worker.js
           ! grep -q 'https://graph.microsoft.com' _release/app/index.html
           ! grep -q 'allow-popups-to-escape-sandbox' _release/app/pacefold-hub.js
           grep -Fq 'caches.match(request,{ignoreSearch:true})' _release/service-worker.js
@@ -166,7 +163,7 @@ jobs:
           set -o pipefail
           timeout 180s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v20-audit.cjs _release /tmp/pacefold-audits/v20 2>&1 | tee /tmp/pacefold-audits/v20.log
 
-      - name: Pacefold 21.3 Dayflow browser audit
+      - name: Pacefold 21.3.1 visual browser audit
         run: |
           mkdir -p /tmp/pacefold-audits/v21
           set -o pipefail
@@ -176,7 +173,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-21.3-audit-${{ github.run_id }}
+          name: pacefold-21.3.1-audit-${{ github.run_id }}
           path: /tmp/pacefold-audits/
           if-no-files-found: warn
           retention-days: 7
@@ -207,12 +204,12 @@ jobs:
           node _release/scripts/validate.mjs _release
           rsync -a _release/ _site/ --exclude '.git/' --exclude '.github/' --exclude 'scripts/' --exclude 'README.md' --exclude 'CHANGELOG.md' --exclude 'REPOSITORY_SETUP.md' --exclude 'SECURITY.md'
           node enhancements/inject.mjs _site
-          test "$(cat _site/pacefold-experience.txt)" = "21.3.0"
-          test "$(grep -o 'data-pacefold-v21=\"21.3.0\"' _site/app/index.html | wc -l)" -eq 2
-          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.0\"' _site/app/index.html | wc -l)" -eq 1
+          test "$(cat _site/pacefold-experience.txt)" = "21.3.1"
+          test "$(grep -o 'data-pacefold-v21=\"21.3.1\"' _site/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v21-dayflow=\"21.3.1\"' _site/app/index.html | wc -l)" -eq 1
           test -f _site/app/pacefold-v21-dayflow.css
           grep -q 'pacefold-v21-dayflow.css' _site/service-worker.js
-          grep -q 'revision:21.3.0' _site/service-worker.js
+          grep -q 'revision:21.3.1' _site/service-worker.js
           node --check _site/app/pacefold-v21-precision.js
           node --check _site/service-worker.js
 

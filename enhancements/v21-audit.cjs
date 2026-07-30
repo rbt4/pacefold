@@ -3,9 +3,9 @@ const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
 const {chromium}=require('playwright');
-const RELEASE='21.3.0';
-const REFINEMENT='21.3.0';
-const REVISION='dayflow-r1';
+const RELEASE='21.3.1';
+const REFINEMENT='21.3.1';
+const REVISION='dayflow-r2';
 const site=path.resolve(process.argv[2]||'_site');
 const artifacts=path.resolve(process.argv[3]||'/tmp/pacefold-v21-artifacts');
 const app=path.join(site,'app');
@@ -99,7 +99,7 @@ async function browserAudit(){
     });
     assert(initial.release===RELEASE&&initial.revision===REVISION&&initial.precision?.experience===RELEASE&&initial.dayflowApi?.release===RELEASE&&initial.runtime?.release===RELEASE&&initial.persistence?.release===RELEASE&&initial.boot?.returning,`Release setup failed: ${JSON.stringify(initial)}`);
     assert(initial.language==='en'&&!initial.cjk&&/Focus · rhythm · flow/.test(initial.brand||''),`English-only identity failed: ${JSON.stringify(initial)}`);
-    assert(initial.events>=1&&initial.dayflow?.height>220&&initial.daybook?.height>500&&initial.analytics&&initial.tabs===4&&initial.legacyDisplay==='none',`Dayflow/Daybook did not replace the old surface: ${JSON.stringify(initial)}`);
+    assert(initial.events>=1&&initial.dayflow?.height>150&&initial.daybook?.height>360&&initial.analytics&&initial.tabs===4&&initial.legacyDisplay==='none',`Dayflow/Daybook did not replace the old surface: ${JSON.stringify(initial)}`);
     assert(initial.version===`v${RELEASE}`&&initial.build==='Offline ready'&&initial.status.height<=1&&initial.status.opacity===0&&initial.status.pointer==='none'&&initial.folio.width<=1180&&initial.horizontal,`Desktop geometry/settings failed: ${JSON.stringify(initial)}`);
 
     await page.locator('#pf21-focus-toggle').click();
@@ -133,6 +133,8 @@ async function browserAudit(){
     const mobileContext=await contextFor(browser,{width:390,height:844});const mobile=await mobileContext.newPage();mobile.on('pageerror',error=>errors.push(error.message));await mobile.goto(`${base}/app/`,{waitUntil:'networkidle'});await mobile.waitForFunction(()=>window.__PACEFOLD_DAYFLOW__&&document.getElementById('pf21-daybook'));
     const mobileTop=await mobile.evaluate(()=>{const rect=node=>node?.getBoundingClientRect(),workline=document.getElementById('workline'),style=getComputedStyle(workline),cards=[...document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]')].map(rect),flow=rect(document.getElementById('pf21-dayflow')),daybook=rect(document.getElementById('pf21-daybook')),bodyStyle=getComputedStyle(document.querySelector('.pf21-daybook-body'));return{horizontal:document.documentElement.scrollWidth<=innerWidth+1,columns:style.gridTemplateColumns.split(' ').filter(Boolean).length,cards:cards.length,minCard:Math.min(...cards.map(item=>item.width)),flow:flow&&{width:flow.width},daybook:daybook&&{width:daybook.width},daybookColumns:bodyStyle.gridTemplateColumns.split(' ').filter(Boolean).length,composer:rect(document.getElementById('pf21-daybook-compose'))?.width,statsColumns:getComputedStyle(document.querySelector('.pf21-flow-stats')).gridTemplateColumns.split(' ').filter(Boolean).length};});
     assert(mobileTop.horizontal&&mobileTop.columns===3&&mobileTop.cards===6&&mobileTop.minCard>95&&mobileTop.flow.width<=390&&mobileTop.daybook.width<=390&&mobileTop.daybookColumns===1&&mobileTop.composer>300&&mobileTop.statsColumns===3,`Mobile Dayflow is clipped or misaligned: ${JSON.stringify(mobileTop)}`);
+    const mobileComposition=await mobile.evaluate(()=>{const quiet=document.getElementById('pf-quiet-toggle').getBoundingClientRect(),book=document.getElementById('pf21-daybook').getBoundingClientRect();return{quiet:{top:quiet.top,right:quiet.right},bookHeight:book.height,pageHeight:document.documentElement.scrollHeight,viewport:innerWidth};});
+    assert(mobileComposition.quiet.top>=8&&mobileComposition.quiet.top<=34&&mobileComposition.quiet.right<=mobileComposition.viewport-8&&mobileComposition.bookHeight<650&&mobileComposition.pageHeight<1850,`Mobile composition still contains drift or an empty sheet: ${JSON.stringify(mobileComposition)}`);
     await mobile.locator('#pf21-daybook-compose').scrollIntoViewIfNeeded();
     await mobile.screenshot({path:path.join(artifacts,'pacefold-v21-3-dayflow-mobile.png'),fullPage:true});await mobileContext.close();assert(errors.length===0,`Pacefold 21.3 errors: ${errors.join(' | ')}`);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}

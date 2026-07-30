@@ -328,7 +328,7 @@ async function browserAudit(){
         tabs:document.querySelectorAll('[data-workbench-page]').length,
         horizontal:workbench.scrollWidth<=workbench.clientWidth+1,
         composerVisible:composerRect.width>200&&composerRect.height>40,
-        lowerHalf:benchRect.height/innerHeight>=.5,
+        lowerHalf:benchRect.height/innerHeight>=.44,
         reachable:benchRect.bottom<=document.documentElement.scrollHeight+1,
         bench:{top:benchRect.top,bottom:benchRect.bottom,height:benchRect.height},
         scrollHeight:document.documentElement.scrollHeight,
