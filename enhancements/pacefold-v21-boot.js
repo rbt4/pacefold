@@ -56,6 +56,28 @@
     const modeObserver=new NativeMutationObserver(apply);
     modeObserver.observe(root,{attributes:true,attributeFilter:['data-mode']});
     root.__pacefoldSpatialModeObserver=modeObserver;
+
+    let statusFrame=0;
+    const syncStatus=()=>{
+      if(statusFrame)return;
+      statusFrame=requestAnimationFrame(()=>{
+        statusFrame=0;
+        const target=document.getElementById('pf22-status');
+        if(!target)return;
+        const read=id=>String(document.getElementById(id)?.textContent||'').replace(/\s+/g,' ').trim();
+        const parts=['statusWord','eventTime','relativeTime','eventName'].map(read).filter(Boolean);
+        const next=parts.join(' · ')||'Workday in progress';
+        if(target.textContent!==next)target.textContent=next;
+      });
+    };
+    const source=document.getElementById('statusLine');
+    if(source){
+      const statusObserver=new NativeMutationObserver(syncStatus);
+      statusObserver.observe(source,{subtree:true,childList:true,characterData:true});
+      root.__pacefoldSpatialStatusObserver=statusObserver;
+    }
+    syncStatus();
+    root.__pacefoldSpatialStatusTimer=setInterval(syncStatus,1000);
   },{once:true});
 
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
