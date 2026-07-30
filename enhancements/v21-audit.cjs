@@ -3,9 +3,9 @@ const fs=require('node:fs');
 const http=require('node:http');
 const path=require('node:path');
 const {chromium}=require('playwright');
-const RELEASE='21.2.0';
-const REFINEMENT='21.2.0';
-const REVISION='minimal-r1';
+const RELEASE='21.3.0';
+const REFINEMENT='21.3.0';
+const REVISION='dayflow-r1';
 const site=path.resolve(process.argv[2]||'_site');
 const artifacts=path.resolve(process.argv[3]||'/tmp/pacefold-v21-artifacts');
 const app=path.join(site,'app');
@@ -23,19 +23,15 @@ function staticAudit(){
   const refineRuntime=read(path.join(app,'pacefold-v21-refine.js'));
   const precisionRuntime=read(path.join(app,'pacefold-v21-precision.js'));
   const minimalCss=read(path.join(app,'pacefold-v21-minimal.css'));
+  const dayflowCss=read(path.join(app,'pacefold-v21-dayflow.css'));
   const html=read(path.join(app,'index.html'));
   const landing=read(path.join(site,'index.html'));
   const worker=read(path.join(site,'service-worker.js'));
   const escaped=RELEASE.replace(/\./g,'\\.');
-  assert(read(path.join(site,'pacefold-experience.txt')).trim()===RELEASE,'Pacefold 21.2 experience version is missing');
+  assert(read(path.join(site,'pacefold-experience.txt')).trim()===RELEASE,'Pacefold 21.3 experience version is missing');
   assert(!/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime+boot+persistence+refineRuntime+precisionRuntime),'Unsafe Pacefold DOM construction found');
-  assert((html.match(new RegExp(`data-pacefold-v21="${escaped}"`,'g'))||[]).length===2,'Pacefold CSS/runtime injection count is wrong');
-  assert((html.match(new RegExp(`data-pacefold-v21-compat="${escaped}"`,'g'))||[]).length===1,'Compatibility CSS injection count is wrong');
-  assert((html.match(new RegExp(`data-pacefold-v21-boot="${escaped}"`,'g'))||[]).length===1,'Boot injection count is wrong');
-  assert((html.match(new RegExp(`data-pacefold-v21-persistence="${escaped}"`,'g'))||[]).length===1,'Persistence injection count is wrong');
-  assert((html.match(new RegExp(`data-pacefold-v21-refine="${escaped}"`,'g'))||[]).length===2,'Refinement injection count is wrong');
-  assert((html.match(new RegExp(`data-pacefold-v21-precision="${escaped}"`,'g'))||[]).length===2,'Precision injection count is wrong');
-  assert((html.match(new RegExp(`data-pacefold-v21-minimal="${escaped}"`,'g'))||[]).length===1,'Minimal stylesheet injection count is wrong');
+  const counts={'data-pacefold-v21':2,'data-pacefold-v21-compat':1,'data-pacefold-v21-boot':1,'data-pacefold-v21-persistence':1,'data-pacefold-v21-refine':2,'data-pacefold-v21-precision':2,'data-pacefold-v21-minimal':1,'data-pacefold-v21-dayflow':1};
+  for(const [name,count] of Object.entries(counts))assert((html.match(new RegExp(`${name}="${escaped}"`,'g'))||[]).length===count,`${name} injection count is wrong`);
   assert(html.includes(`pacefold-experience" content="${RELEASE}`)&&landing.includes('Pacefold 21 · one protected workday folio'),'Pacefold public markers are stale');
   for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'"])assert(runtime.includes(token),`Missing runtime token ${token}`);
   assert(persistence.includes('pacefold.v21.settings.v1'),'Extension settings store is missing');
@@ -43,9 +39,10 @@ function staticAudit(){
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','.pf21-ribbon-key-now'])assert(css.includes(token),`Missing CSS token ${token}`);
   for(const token of ['pf-v21-1-active','grid-template-columns:repeat(3','data-note-level','.pf-v20-alert'])assert(refineCss.includes(token),`Missing refinement CSS token ${token}`);
   for(const token of [`const RELEASE='${REFINEMENT}'`,'__PACEFOLD_V21_REFINEMENT__','patchStoredVersion','refineCalendar'])assert(refineRuntime.includes(token),`Missing refinement runtime token ${token}`);
-  for(const token of [`const EXPERIENCE='${RELEASE}'`,`const RELEASE='${RELEASE}'`,`const REVISION='${REVISION}'`,'pf-v21-minimal-active','decorateBrand'])assert(precisionRuntime.includes(token),`Missing minimal runtime token ${token}`);
+  for(const token of [`const EXPERIENCE='${RELEASE}'`,`const RELEASE='${RELEASE}'`,`const REVISION='${REVISION}'`,'pacefold.dayflow.v1','__PACEFOLD_DAYFLOW__','pf21-daybook','toggleFocus'])assert(precisionRuntime.includes(token),`Missing Dayflow runtime token ${token}`);
   for(const token of ['--pf22-surface','pf-v21-minimal-active','.pf21-brand-subline','.pf21-note-calendar','#workline'])assert(minimalCss.includes(token),`Missing minimal CSS token ${token}`);
-  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js','pacefold-v21-precision.css','pacefold-v21-precision.js','pacefold-v21-minimal.css'])assert(worker.includes(asset),`Offline worker omits ${asset}`);
+  for(const token of ['pf21-dayflow','pf21-daybook','pf21-analytics-ring','pf21-build-status'])assert(dayflowCss.includes(token),`Missing Dayflow CSS token ${token}`);
+  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js','pacefold-v21-precision.css','pacefold-v21-precision.js','pacefold-v21-minimal.css','pacefold-v21-dayflow.css'])assert(worker.includes(asset),`Offline worker omits ${asset}`);
 }
 
 function serve(){
@@ -81,6 +78,7 @@ async function contextFor(browser,viewport){
     localStorage.removeItem('pacefoldOnboardedV15');
     localStorage.removeItem('pacefoldSetupDismissedV15');
     localStorage.removeItem('pacefold.v21.settings.v1');
+    localStorage.removeItem('pacefold.dayflow.v1');
     localStorage.setItem('pacefoldPrefsV15',JSON.stringify(settings));
     localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify(entries));
   },{settings:prefs(),entries:notes()});
@@ -94,40 +92,51 @@ async function browserAudit(){
     const context=await contextFor(browser,{width:1180,height:920});const page=await context.newPage();
     page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&!/ERR_INTERNET_DISCONNECTED/.test(message.text()))errors.push(message.text());});
     await page.goto(`${base}/app/`,{waitUntil:'networkidle'});
-    await page.waitForFunction(()=>document.querySelectorAll('.pf21-calendar-day').length===42&&document.getElementById('pf21-settings')&&window.__PACEFOLD_V21_PRECISION__,null,{timeout:30000});
+    await page.waitForFunction(()=>document.querySelectorAll('.pf21-calendar-day').length===42&&document.getElementById('pf21-settings')&&document.getElementById('pf21-dayflow')&&document.getElementById('pf21-daybook')&&window.__PACEFOLD_DAYFLOW__,null,{timeout:30000});
     const initial=await page.evaluate(()=>{
-      const rect=node=>node?.getBoundingClientRect();const now=rect(document.querySelector('#sequence .pf-ribbon-now'));const crease=rect(document.querySelector('#sequence .pf-ribbon-crease'));const counts=window.__PACEFOLD_V21__.noteCounts();const statusNode=document.getElementById('statusLine'),statusStyle=getComputedStyle(statusNode);const folio=rect(document.querySelector('.pf-v20-folio'));const brand=document.querySelector('.pf21-brand-subline');const weather=rect(document.getElementById('pf-v19-weather'));const clock=rect(document.querySelector('.time-main'));
-      return{release:document.documentElement.dataset.pacefoldExperience,minimal:document.documentElement.dataset.pacefoldMinimal,precision:window.__PACEFOLD_V21_PRECISION__,runtime:window.__PACEFOLD_V21__,persistence:window.__PACEFOLD_V21_PERSISTENCE__,boot:window.__PACEFOLD_V21_BOOT__,flags:[localStorage.getItem('pacefoldOnboardedV15'),localStorage.getItem('pacefoldSetupDismissedV15')],brand:brand?.textContent,language:document.documentElement.lang,cjk:/[\u3040-\u30ff\u3400-\u9fff]/.test(document.body.innerText),dayline:document.getElementById('pf21-dayline').textContent,days:document.querySelectorAll('.pf21-calendar-day').length,noted:document.querySelectorAll('.pf21-calendar-day[data-note-level]:not([data-note-level="0"])').length,stats:document.querySelector('.pf21-calendar-stats')?.textContent,counts,markers:{now:now&&{w:now.width,h:now.height},crease:crease&&{w:crease.width,h:crease.height}},switches:document.querySelectorAll('#pf21-settings [data-pf21-pref]').length,version:document.querySelector('.pf21-settings-version')?.textContent,advanced:document.getElementById('panel').dataset.pf21Advanced,status:{...rect(statusNode).toJSON(),opacity:Number(statusStyle.opacity),pointer:statusStyle.pointerEvents},folio:folio&&{width:folio.width,left:folio.left,right:folio.right},weather:weather&&{width:weather.width,height:weather.height},clock:clock&&{width:clock.width,height:clock.height},horizontal:document.documentElement.scrollWidth<=innerWidth+1};
+      const rect=node=>node?.getBoundingClientRect();const statusNode=document.getElementById('statusLine'),statusStyle=getComputedStyle(statusNode),folio=rect(document.querySelector('.pf-v20-folio')),dayflow=rect(document.getElementById('pf21-dayflow')),daybook=rect(document.getElementById('pf21-daybook')),legacy=document.querySelector('#pf-local-workspace>:not(#pf21-daybook)'),legacyStyle=legacy&&getComputedStyle(legacy),settings=document.getElementById('pf21-settings');
+      return{release:document.documentElement.dataset.pacefoldExperience,revision:document.documentElement.dataset.pacefoldDayflow,precision:window.__PACEFOLD_V21_PRECISION__,dayflowApi:window.__PACEFOLD_DAYFLOW__,runtime:window.__PACEFOLD_V21__,persistence:window.__PACEFOLD_V21_PERSISTENCE__,boot:window.__PACEFOLD_V21_BOOT__,events:window.__PACEFOLD_DAYFLOW__.events().length,brand:document.querySelector('.pf21-brand-subline')?.textContent,language:document.documentElement.lang,cjk:/[\u3040-\u30ff\u3400-\u9fff]/.test(document.body.innerText),version:settings.querySelector('.pf21-settings-version')?.textContent,build:settings.querySelector('.pf21-version-detail')?.textContent,dayflow:dayflow&&{width:dayflow.width,height:dayflow.height},daybook:daybook&&{width:daybook.width,height:daybook.height},legacyDisplay:legacyStyle?.display,analytics:Boolean(document.querySelector('.pf21-analytics-ring')),tabs:document.querySelectorAll('.pf21-daybook-tab').length,status:{...rect(statusNode).toJSON(),opacity:Number(statusStyle.opacity),pointer:statusStyle.pointerEvents},folio:folio&&{width:folio.width},horizontal:document.documentElement.scrollWidth<=innerWidth+1};
     });
-    assert(initial.release===RELEASE&&initial.minimal===REVISION&&initial.precision?.experience===RELEASE&&initial.precision?.revision===REVISION&&initial.runtime?.release===RELEASE&&initial.persistence?.release===RELEASE&&initial.boot?.returning&&initial.flags.every(value=>value==='1'),`Setup/version persistence failed: ${JSON.stringify(initial)}`);
-    assert(initial.language==='en'&&!initial.cjk&&/Focus · rhythm · flow/.test(initial.brand||''),`English-only minimal identity failed: ${JSON.stringify(initial)}`);
-    assert(!/scheduled moment/i.test(initial.dayline)&&initial.days===42&&initial.noted>=2&&/3 notes/.test(initial.stats),`Dayline/calendar refinement failed: ${JSON.stringify(initial)}`);
-    assert(initial.counts[dateKey()]===2&&initial.counts[dateKey(-1)]===1,`Note counts failed: ${JSON.stringify(initial.counts)}`);
-    assert(initial.markers.now?.h>=20&&(!initial.markers.crease||(initial.markers.now.h>initial.markers.crease.h&&initial.markers.now.w<initial.markers.crease.w)),`Timeline distinction failed: ${JSON.stringify(initial.markers)}`);
-    assert(initial.switches===6&&initial.version===`Pacefold ${RELEASE}`&&initial.advanced==='false'&&initial.status.width>500&&initial.status.height<=1&&initial.status.opacity===0&&initial.status.pointer==='none'&&initial.folio.width<=1180&&initial.weather?.height>=190&&initial.clock?.height>=70&&initial.horizontal,`Minimal desktop layout failed: ${JSON.stringify(initial)}`);
+    assert(initial.release===RELEASE&&initial.revision===REVISION&&initial.precision?.experience===RELEASE&&initial.dayflowApi?.release===RELEASE&&initial.runtime?.release===RELEASE&&initial.persistence?.release===RELEASE&&initial.boot?.returning,`Release setup failed: ${JSON.stringify(initial)}`);
+    assert(initial.language==='en'&&!initial.cjk&&/Focus · rhythm · flow/.test(initial.brand||''),`English-only identity failed: ${JSON.stringify(initial)}`);
+    assert(initial.events>=1&&initial.dayflow?.height>220&&initial.daybook?.height>500&&initial.analytics&&initial.tabs===4&&initial.legacyDisplay==='none',`Dayflow/Daybook did not replace the old surface: ${JSON.stringify(initial)}`);
+    assert(initial.version===`v${RELEASE}`&&initial.build==='Offline ready'&&initial.status.height<=1&&initial.status.opacity===0&&initial.status.pointer==='none'&&initial.folio.width<=1180&&initial.horizontal,`Desktop geometry/settings failed: ${JSON.stringify(initial)}`);
+
+    await page.locator('#pf21-focus-toggle').click();
+    await page.waitForFunction(()=>document.getElementById('pf21-focus-toggle')?.dataset.active==='true'&&window.__PACEFOLD_DAYFLOW__.events().some(item=>item.type==='focus'&&!item.end));
+    await page.locator('#pf21-focus-toggle').click();
+    await page.waitForFunction(()=>document.getElementById('pf21-focus-toggle')?.dataset.active==='false'&&window.__PACEFOLD_DAYFLOW__.events().some(item=>item.type==='focus'&&item.end));
+
+    await page.locator('#pf-day-type').click();
+    await page.waitForFunction(()=>document.body.dataset.dayType==='field'&&window.__PACEFOLD_DAYFLOW__.events().some(item=>item.type==='field'&&!item.end));
+    await page.locator('#pf-day-type').click();
+    await page.waitForFunction(()=>document.body.dataset.dayType!=='field'&&window.__PACEFOLD_DAYFLOW__.events().some(item=>item.type==='field'&&item.end)&&window.__PACEFOLD_DAYFLOW__.events().some(item=>item.type==='return'));
+
+    const beforeNotes=await page.evaluate(()=>JSON.parse(localStorage.getItem('pacefold.notebook.entries.v2')||'[]').length);
+    await page.locator('#pf21-daybook-compose').fill('Dayflow audit note');
+    await page.locator('.pf21-daybook-save').click();
+    await page.waitForFunction(before=>JSON.parse(localStorage.getItem('pacefold.notebook.entries.v2')||'[]').length===before+1&&window.__PACEFOLD_DAYFLOW__.events().some(item=>item.type==='note'&&/Dayflow audit note/.test(item.detail||'')),beforeNotes);
+    await page.locator('.pf21-daybook-tab[data-tab="notes"]').click();
+    await page.waitForFunction(()=>document.querySelector('.pf21-daybook-tab[data-tab="notes"]')?.dataset.active==='true'&&document.body.innerText.includes('Dayflow audit note'));
+    await page.locator('.pf21-daybook-tab[data-tab="insights"]').click();
+    assert(await page.locator('.pf21-week-bars').count()===1,'Seven-day insights are missing');
 
     await page.locator('#brandButton').click();await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));
-    const essentials=await page.evaluate(()=>{const settings=document.getElementById('pf21-settings').getBoundingClientRect();return{height:settings.height,rows:document.querySelectorAll('.pf21-setting-switch').length,advanced:document.getElementById('panel').dataset.pf21Advanced,label:document.querySelector('.pf21-more-settings')?.textContent};});
-    assert(essentials.height<540&&essentials.rows===6&&essentials.advanced==='false'&&/^(?:All|More) settings$/.test(essentials.label),`Essential settings are bulky or unclear: ${JSON.stringify(essentials)}`);
+    const essentials=await page.evaluate(()=>{const settings=document.getElementById('pf21-settings').getBoundingClientRect();return{height:settings.height,rows:document.querySelectorAll('.pf21-setting-switch').length,label:document.querySelector('.pf21-more-settings')?.textContent,build:Boolean(document.querySelector('.pf21-build-status'))};});
+    assert(essentials.height<560&&essentials.rows===6&&essentials.label==='Settings'&&essentials.build,`Settings footer is still unclear: ${JSON.stringify(essentials)}`);
     await page.locator('[data-pf21-pref="v21WeatherEnabled"]').uncheck();await page.waitForFunction(()=>getComputedStyle(document.getElementById('pf-v19-weather')).display==='none');
-    await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD_V21_PRECISION__&&document.getElementById('pf21-note-calendar'));
-    const persisted=await page.evaluate(()=>({weather:window.__PACEFOLD_V21_PERSISTENCE__.read().v21WeatherEnabled,display:getComputedStyle(document.getElementById('pf-v19-weather')).display,snapshot:JSON.parse(localStorage.getItem('pacefold.v21.preferences.v1')||'null'),extension:JSON.parse(localStorage.getItem('pacefold.v21.settings.v1')||'null')}));
-    assert(persisted.weather===false&&persisted.display==='none'&&persisted.snapshot?.version===RELEASE&&persisted.extension?.version===RELEASE,`Preference reload failed: ${JSON.stringify(persisted)}`);
+    await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD_DAYFLOW__&&document.getElementById('pf21-daybook'));
+    const persisted=await page.evaluate(()=>({weather:window.__PACEFOLD_V21_PERSISTENCE__.read().v21WeatherEnabled,display:getComputedStyle(document.getElementById('pf-v19-weather')).display,events:window.__PACEFOLD_DAYFLOW__.events().length,snapshot:JSON.parse(localStorage.getItem('pacefold.v21.preferences.v1')||'null'),extension:JSON.parse(localStorage.getItem('pacefold.v21.settings.v1')||'null')}));
+    assert(persisted.weather===false&&persisted.display==='none'&&persisted.events>=5&&persisted.snapshot?.version===RELEASE&&persisted.extension?.version===RELEASE,`Persistence failed: ${JSON.stringify(persisted)}`);
+    await page.screenshot({path:path.join(artifacts,'pacefold-v21-3-dayflow-desktop.png'),fullPage:true});assert(errors.length===0,`Desktop errors: ${errors.join(' | ')}`);await context.close();
 
-    await page.locator('[data-pf-note-body]').fill('Pacefold 21.2 saved note');await page.locator('[data-pf-note-save]').click();await page.waitForFunction(()=>/4 notes/.test(document.querySelector('.pf21-calendar-stats')?.textContent||''));
-    await page.locator('#brandButton').click();await page.waitForFunction(()=>document.getElementById('panel').classList.contains('on'));await page.locator('.pf21-more-settings').click();
-    assert(await page.locator('#panel [data-settings-view]:visible').count()>0,'Advanced settings are unreachable');
-    await page.locator('.pf21-more-settings').click();
-    await page.screenshot({path:path.join(artifacts,'pacefold-v21-2-desktop.png'),fullPage:true});assert(errors.length===0,`Desktop errors: ${errors.join(' | ')}`);await context.close();
-
-    const mobileContext=await contextFor(browser,{width:390,height:844});const mobile=await mobileContext.newPage();mobile.on('pageerror',error=>errors.push(error.message));await mobile.goto(`${base}/app/`,{waitUntil:'networkidle'});await mobile.waitForFunction(()=>window.__PACEFOLD_V21_PRECISION__&&document.getElementById('pf21-note-calendar'));
-    const mobileTop=await mobile.evaluate(()=>{const rect=node=>node?.getBoundingClientRect();const workline=document.getElementById('workline'),style=getComputedStyle(workline),alert=rect(document.querySelector('.pf-v20-alert')),quiet=rect(document.getElementById('pf-quiet-toggle')),cards=[...document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]')].map(rect);const overlap=(a,b)=>a&&b&&a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;return{horizontal:document.documentElement.scrollWidth<=innerWidth+1,columns:style.gridTemplateColumns.split(' ').filter(Boolean).length,cards:cards.length,minCard:Math.min(...cards.map(item=>item.width)),alert,quiet,overlap:overlap(alert,quiet),minimal:document.documentElement.dataset.pacefoldMinimal};});
-    assert(mobileTop.horizontal&&mobileTop.columns===3&&mobileTop.cards===6&&mobileTop.minCard>95&&!mobileTop.overlap&&mobileTop.alert.right<=390&&mobileTop.quiet.right<=390&&mobileTop.minimal===REVISION,`Mobile top surface is not compact or aligned: ${JSON.stringify(mobileTop)}`);
-    await mobile.locator('[data-pf-note-body]').scrollIntoViewIfNeeded();
-    const mobileState=await mobile.evaluate(()=>{const calendar=document.getElementById('pf21-note-calendar').getBoundingClientRect(),composer=document.querySelector('[data-pf-note-body]').getBoundingClientRect(),tabs=document.querySelector('.pf-notebook-tabs');return{horizontal:document.documentElement.scrollWidth<=innerWidth+1,calendar:calendar.width,calendarHeight:calendar.height,composer:composer.width,inView:composer.top>=0&&composer.bottom<=innerHeight,scroll:document.documentElement.scrollHeight>innerHeight,tabsScrollable:tabs.scrollWidth>=tabs.clientWidth};});
-    assert(mobileState.horizontal&&mobileState.calendar<=390&&mobileState.calendarHeight<380&&mobileState.composer>250&&mobileState.inView&&mobileState.scroll&&mobileState.tabsScrollable,`Mobile notebook refinement failed: ${JSON.stringify(mobileState)}`);await mobile.screenshot({path:path.join(artifacts,'pacefold-v21-2-mobile.png'),fullPage:true});await mobileContext.close();assert(errors.length===0,`Pacefold 21.2 errors: ${errors.join(' | ')}`);
+    const mobileContext=await contextFor(browser,{width:390,height:844});const mobile=await mobileContext.newPage();mobile.on('pageerror',error=>errors.push(error.message));await mobile.goto(`${base}/app/`,{waitUntil:'networkidle'});await mobile.waitForFunction(()=>window.__PACEFOLD_DAYFLOW__&&document.getElementById('pf21-daybook'));
+    const mobileTop=await mobile.evaluate(()=>{const rect=node=>node?.getBoundingClientRect(),workline=document.getElementById('workline'),style=getComputedStyle(workline),cards=[...document.querySelectorAll('#workline .pf-ritual-slot[data-v19-ritual="true"]')].map(rect),flow=rect(document.getElementById('pf21-dayflow')),daybook=rect(document.getElementById('pf21-daybook')),bodyStyle=getComputedStyle(document.querySelector('.pf21-daybook-body'));return{horizontal:document.documentElement.scrollWidth<=innerWidth+1,columns:style.gridTemplateColumns.split(' ').filter(Boolean).length,cards:cards.length,minCard:Math.min(...cards.map(item=>item.width)),flow:flow&&{width:flow.width},daybook:daybook&&{width:daybook.width},daybookColumns:bodyStyle.gridTemplateColumns.split(' ').filter(Boolean).length,composer:rect(document.getElementById('pf21-daybook-compose'))?.width,statsColumns:getComputedStyle(document.querySelector('.pf21-flow-stats')).gridTemplateColumns.split(' ').filter(Boolean).length};});
+    assert(mobileTop.horizontal&&mobileTop.columns===3&&mobileTop.cards===6&&mobileTop.minCard>95&&mobileTop.flow.width<=390&&mobileTop.daybook.width<=390&&mobileTop.daybookColumns===1&&mobileTop.composer>300&&mobileTop.statsColumns===3,`Mobile Dayflow is clipped or misaligned: ${JSON.stringify(mobileTop)}`);
+    await mobile.locator('#pf21-daybook-compose').scrollIntoViewIfNeeded();
+    await mobile.screenshot({path:path.join(artifacts,'pacefold-v21-3-dayflow-mobile.png'),fullPage:true});await mobileContext.close();assert(errors.length===0,`Pacefold 21.3 errors: ${errors.join(' | ')}`);
   }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 }
 
-async function main(){staticAudit();if(process.env.PACEFOLD_STATIC_ONLY==='1')return console.log('Pacefold 21.2 static audit passed.');await browserAudit();console.log('Pacefold 21.2 browser audit passed.');}
+async function main(){staticAudit();if(process.env.PACEFOLD_STATIC_ONLY==='1')return console.log('Pacefold 21.3 static audit passed.');await browserAudit();console.log('Pacefold 21.3 Dayflow browser audit passed.');}
 main().catch(error=>{console.error(error?.stack||error);process.exit(1);});
