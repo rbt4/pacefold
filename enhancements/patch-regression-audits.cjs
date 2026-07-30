@@ -5,16 +5,18 @@ const path=require('node:path');
 
 function replaceOnce(file,from,to,label){
   let source=fs.readFileSync(file,'utf8');
+  if(source.includes(to))return false;
   const count=source.split(from).length-1;
   if(count!==1)throw new Error(`Expected one ${label} audit anchor in ${file}, found ${count}`);
   source=source.replace(from,to);
   fs.writeFileSync(file,source);
+  return true;
 }
 
 const v19=path.resolve(process.argv[2]||'enhancements/v19-audit.cjs');
 const v20=path.resolve(process.argv[3]||'enhancements/v20-audit.cjs');
 
-replaceOnce(
+const v19Changed=replaceOnce(
   v19,
   "    await page.waitForFunction(()=>Number(JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').noodleStart)>0);",
   "    await page.waitForFunction(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}');return Number(prefs.noodleStart)>0&&document.querySelector('.pf-ritual-slot[data-source=\"noodle\"]')?.dataset.active==='true';});",
@@ -58,5 +60,5 @@ const stableAttention=`    await page.evaluate(()=>{
       return alert?.dataset.active==='true'&&label&&label!=='All clear'&&document.documentElement.dataset.v20Attention==='true'&&favicon.startsWith('data:image/png')&&window.__PACEFOLD_BADGE_CALLS__.some(item=>item.kind==='set');
     });`;
 
-replaceOnce(v20,oldAttention,stableAttention,'V20 stable attention fixture');
-console.log('Patched historical V19/V20 browser audits with stable UI synchronization fixtures.');
+const v20Changed=replaceOnce(v20,oldAttention,stableAttention,'V20 stable attention fixture');
+console.log(v19Changed||v20Changed?'Patched historical V19/V20 browser audits with stable UI synchronization fixtures.':'Historical V19/V20 browser audit fixtures are already patched.');
