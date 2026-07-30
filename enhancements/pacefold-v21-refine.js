@@ -61,11 +61,6 @@
     return true;
   }
 
-  function labelAdvanced(button){
-    if(!button)return;
-    text(button,button.getAttribute('aria-expanded')==='true'?'Essentials only':'All settings');
-  }
-
   function refineSettings(){
     const root=document.getElementById('pf21-settings');
     if(!root)return false;
@@ -76,12 +71,7 @@
       const description=compact(row.querySelector('small')?.textContent);
       if(title)attribute(row,'title',description?`${title} — ${description}`:title);
     }
-    const advanced=root.querySelector('.pf21-more-settings');
-    if(advanced&&!advanced.dataset.pf211Labelled){
-      dataset(advanced,'pf211Labelled','true');
-      advanced.addEventListener('click',guarded('advanced-label',()=>queueMicrotask(()=>labelAdvanced(advanced))));
-    }
-    labelAdvanced(advanced);
+    attribute(root.querySelector('.pf21-more-settings'),'title','Open or hide the complete settings views');
     return true;
   }
 
