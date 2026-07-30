@@ -7,6 +7,22 @@
   const ONBOARDED_KEY='pacefoldOnboardedV15';
   const DISMISSED_KEY='pacefoldSetupDismissedV15';
 
+  if(!window.__PACEFOLD_TITLE_GUARD__){
+    const prototypes=[window.HTMLDocument?.prototype,window.Document?.prototype].filter(Boolean);
+    const descriptor=prototypes.map(prototype=>Object.getOwnPropertyDescriptor(prototype,'title')).find(value=>value?.get&&value?.set);
+    if(descriptor){
+      window.__PACEFOLD_TITLE_GUARD__=true;
+      Object.defineProperty(document,'title',{
+        configurable:true,
+        get:()=>descriptor.get.call(document),
+        set:value=>{
+          const next=String(value??'');
+          if(descriptor.get.call(document)!==next)descriptor.set.call(document,next);
+        }
+      });
+    }
+  }
+
   const NativeMutationObserver=window.MutationObserver;
   if(NativeMutationObserver&&!window.__PACEFOLD_SPATIAL_OBSERVER_GUARD__){
     window.__PACEFOLD_SPATIAL_OBSERVER_GUARD__=true;
