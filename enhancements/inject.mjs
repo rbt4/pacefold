@@ -65,9 +65,10 @@ const sources={
   refineRuntime:path.join(sourceRoot,'pacefold-v21-refine.js'),
   precisionCss:path.join(sourceRoot,'pacefold-v21-precision.css'),
   precisionRuntime:path.join(sourceRoot,'pacefold-v21-precision.js'),
+  dayflowParts:[0,1,2,3].map(index=>path.join(sourceRoot,`pacefold-v21-dayflow-runtime.part-${String(index).padStart(2,'0')}.js`)),
   minimalCss:path.join(sourceRoot,'pacefold-v21-minimal.css'),
   responsiveCss:path.join(sourceRoot,'pacefold-v21-minimal-responsive.css'),
-  dayflowCss:path.join(sourceRoot,'pacefold-v21-dayflow.css')
+  dayflowCssParts:[0,1,2,3,4].map(index=>path.join(sourceRoot,`pacefold-v21-dayflow.part-${String(index).padStart(2,'0')}.css`))
 };
 
 function replaceExactlyOnce(source,from,to,label){
@@ -119,12 +120,14 @@ function prepareRuntime(source){
 }
 
 async function installAssets(){
+  const dayflowRuntime=(await Promise.all(sources.dayflowParts.map(file=>fs.readFile(file,'utf8')))).join('');
+  const dayflowCss=(await Promise.all(sources.dayflowCssParts.map(file=>fs.readFile(file,'utf8')))).join('');
   const generated={
     runtime:prepareRuntime(await fs.readFile(sources.runtime,'utf8')),
     boot:stampRelease(await fs.readFile(sources.boot,'utf8'),'boot release'),
     persistence:stampRelease(await fs.readFile(sources.persistence,'utf8'),'persistence release'),
     refineRuntime:stampRelease(await fs.readFile(sources.refineRuntime,'utf8'),'refinement release'),
-    precisionRuntime:stampRelease(await fs.readFile(sources.precisionRuntime,'utf8'),'dayflow release')
+    precisionRuntime:stampRelease(dayflowRuntime,'dayflow release')
   };
   for(const [name,source] of Object.entries(generated))new vm.Script(source,{filename:`pacefold-${name}.js`});
   await Promise.all([
@@ -139,7 +142,7 @@ async function installAssets(){
     fs.writeFile(path.join(targetApp,'pacefold-v21-precision.js'),generated.precisionRuntime),
     fs.copyFile(sources.minimalCss,path.join(targetApp,'pacefold-v21-minimal.css')),
     fs.copyFile(sources.responsiveCss,path.join(targetApp,'pacefold-v21-minimal-responsive.css')),
-    fs.copyFile(sources.dayflowCss,path.join(targetApp,'pacefold-v21-dayflow.css'))
+    fs.writeFile(path.join(targetApp,'pacefold-v21-dayflow.css'),dayflowCss)
   ]);
 }
 
