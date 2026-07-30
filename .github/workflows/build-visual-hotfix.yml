@@ -1,8 +1,8 @@
 name: Build Pacefold 21.3.1 visual hotfix
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [agent/pacefold-21-3-1-visual-hotfix]
 
 permissions:
   contents: write
