@@ -3,7 +3,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const RELEASE='21.0.0';
+const RELEASE='21.1.0';
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const targetApp=path.join(targetRoot,'app');
@@ -55,6 +55,8 @@ const cssSource=path.join(sourceRoot,'pacefold-v21.css');
 const compatSource=path.join(sourceRoot,'pacefold-v21-compat.css');
 const scriptSource=path.join(sourceRoot,'pacefold-v21.js');
 const persistenceSource=path.join(sourceRoot,'pacefold-v21-persistence.js');
+const refineCssSource=path.join(sourceRoot,'pacefold-v21-refine.css');
+const refineScriptSource=path.join(sourceRoot,'pacefold-v21-refine.js');
 
 function replaceExactlyOnce(source,from,to,label){
   const first=source.indexOf(from);
@@ -113,7 +115,9 @@ async function installAssets(){
     fs.copyFile(cssSource,path.join(targetApp,'pacefold-v21.css')),
     fs.copyFile(compatSource,path.join(targetApp,'pacefold-v21-compat.css')),
     fs.writeFile(path.join(targetApp,'pacefold-v21.js'),runtime),
-    fs.copyFile(persistenceSource,path.join(targetApp,'pacefold-v21-persistence.js'))
+    fs.copyFile(persistenceSource,path.join(targetApp,'pacefold-v21-persistence.js')),
+    fs.copyFile(refineCssSource,path.join(targetApp,'pacefold-v21-refine.css')),
+    fs.copyFile(refineScriptSource,path.join(targetApp,'pacefold-v21-refine.js'))
   ]);
 }
 
@@ -121,23 +125,26 @@ async function patchAppHtml(file){
   let html=await fs.readFile(file,'utf8');
   html=html
     .replace(/\s*<meta\s+name=["']pacefold-experience["'][^>]*>/gi,'')
-    .replace(/\s*<link[^>]+data-pacefold-v21[^>]*>/gi,'')
-    .replace(/\s*<script[^>]+data-pacefold-v21(?:-boot|-persistence)?[^>]*><\/script>/gi,'');
+    .replace(/\s*<link[^>]+data-pacefold-v21(?:-compat|-refine)?[^>]*>/gi,'')
+    .replace(/\s*<script[^>]+data-pacefold-v21(?:-boot|-persistence|-refine)?[^>]*><\/script>/gi,'');
 
   const meta=`<meta name="pacefold-experience" content="${RELEASE}">`;
   const style=`<link rel="stylesheet" href="./pacefold-v21.css?v=${RELEASE}" data-pacefold-v21="${RELEASE}">`;
   const compat=`<link rel="stylesheet" href="./pacefold-v21-compat.css?v=${RELEASE}" data-pacefold-v21-compat="${RELEASE}">`;
+  const refineStyle=`<link rel="stylesheet" href="./pacefold-v21-refine.css?v=${RELEASE}" data-pacefold-v21-refine="${RELEASE}">`;
   const boot=`<script src="./pacefold-v21-boot.js?v=${RELEASE}" data-pacefold-v21-boot="${RELEASE}"></script>`;
   const script=`<script defer src="./pacefold-v21.js?v=${RELEASE}" data-pacefold-v21="${RELEASE}"></script>`;
   const persistence=`<script defer src="./pacefold-v21-persistence.js?v=${RELEASE}" data-pacefold-v21-persistence="${RELEASE}"></script>`;
-  html=replaceExactlyOnce(html,'</head>',`${meta}\n${style}\n${compat}\n</head>`,'app head');
+  const refineScript=`<script defer src="./pacefold-v21-refine.js?v=${RELEASE}" data-pacefold-v21-refine="${RELEASE}"></script>`;
+  html=replaceExactlyOnce(html,'</head>',`${meta}\n${style}\n${compat}\n${refineStyle}\n</head>`,'app head');
   html=replaceExactlyOnce(html,'<script src="./app.js" defer></script>',`${boot}\n<script src="./app.js" defer></script>`,'boot order');
-  html=replaceExactlyOnce(html,'</body>',`${script}\n${persistence}\n</body>`,'runtime order');
+  html=replaceExactlyOnce(html,'</body>',`${script}\n${persistence}\n${refineScript}\n</body>`,'runtime order');
   await fs.writeFile(file,html);
 }
 
 function nextCacheName(name){
   if(name.includes(RELEASE))return name;
+  if(/-21\.0\.0$/.test(name))return name.replace(/-21\.0\.0$/,`-${RELEASE}`);
   if(/-20\.0\.1$/.test(name))return name.replace(/-20\.0\.1$/,`-${RELEASE}`);
   return `${name}-${RELEASE}`;
 }
@@ -156,7 +163,9 @@ async function patchWorker(file,{root=false}={}){
     `'${prefix}pacefold-v21-compat.css'`,
     `'${prefix}pacefold-v21-boot.js'`,
     `'${prefix}pacefold-v21.js'`,
-    `'${prefix}pacefold-v21-persistence.js'`
+    `'${prefix}pacefold-v21-persistence.js'`,
+    `'${prefix}pacefold-v21-refine.css'`,
+    `'${prefix}pacefold-v21-refine.js'`
   ];
   if(!worker.includes(additions[0])){
     if(worker.includes(anchor))worker=worker.replace(anchor,[anchor,...additions].join(','));
@@ -192,19 +201,25 @@ async function verify(){
   const compat=await fs.readFile(path.join(targetApp,'pacefold-v21-compat.css'),'utf8');
   const runtime=await fs.readFile(path.join(targetApp,'pacefold-v21.js'),'utf8');
   const persistence=await fs.readFile(path.join(targetApp,'pacefold-v21-persistence.js'),'utf8');
-  if((html.match(/data-pacefold-v21="21\.0\.0"/g)||[]).length!==2)throw new Error('Pacefold 21 CSS and runtime were not injected exactly once');
-  if((html.match(/data-pacefold-v21-compat="21\.0\.0"/g)||[]).length!==1)throw new Error('Pacefold 21 compatibility CSS was not injected exactly once');
-  if((html.match(/data-pacefold-v21-boot="21\.0\.0"/g)||[]).length!==1)throw new Error('Pacefold 21 boot was not injected exactly once');
-  if((html.match(/data-pacefold-v21-persistence="21\.0\.0"/g)||[]).length!==1)throw new Error('Pacefold 21 persistence runtime was not injected exactly once');
-  if(!html.includes('name="pacefold-experience" content="21.0.0"'))throw new Error('Pacefold 21 app marker is missing');
-  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js'])if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
+  const refineCss=await fs.readFile(path.join(targetApp,'pacefold-v21-refine.css'),'utf8');
+  const refineRuntime=await fs.readFile(path.join(targetApp,'pacefold-v21-refine.js'),'utf8');
+  const escaped=RELEASE.replace(/\./g,'\\.');
+  if((html.match(new RegExp(`data-pacefold-v21="${escaped}"`,'g'))||[]).length!==2)throw new Error('Pacefold 21 CSS and runtime were not injected exactly once');
+  if((html.match(new RegExp(`data-pacefold-v21-compat="${escaped}"`,'g'))||[]).length!==1)throw new Error('Pacefold 21 compatibility CSS was not injected exactly once');
+  if((html.match(new RegExp(`data-pacefold-v21-boot="${escaped}"`,'g'))||[]).length!==1)throw new Error('Pacefold 21 boot was not injected exactly once');
+  if((html.match(new RegExp(`data-pacefold-v21-persistence="${escaped}"`,'g'))||[]).length!==1)throw new Error('Pacefold 21 persistence runtime was not injected exactly once');
+  if((html.match(new RegExp(`data-pacefold-v21-refine="${escaped}"`,'g'))||[]).length!==2)throw new Error('Pacefold 21.1 refinement assets were not injected exactly once');
+  if(!html.includes(`name="pacefold-experience" content="${RELEASE}"`))throw new Error('Pacefold 21.1 app marker is missing');
+  for(const asset of ['pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-boot.js','pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.css','pacefold-v21-refine.js'])if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   for(const token of ['pf21-dayline','pf21-note-calendar','pf21-settings','pacefold.v21.preferences.v1',"document.body?.dataset.quiet==='true'",'firstRunSetupVisible'])if(!runtime.includes(token))throw new Error(`Pacefold 21 runtime token missing: ${token}`);
   if(!persistence.includes('pacefold.v21.settings.v1'))throw new Error('Pacefold 21 extension settings persistence is missing');
   if(!compat.includes('width:100%!important'))throw new Error('Pacefold 21 legacy geometry compatibility is missing');
   for(const token of ['.pf21-dayline','.pf21-note-calendar','#panel #pf21-settings','data-pf21-advanced'])if(!css.includes(token))throw new Error(`Pacefold 21 CSS token missing: ${token}`);
+  for(const token of ['pf-v21-1-active','grid-template-columns:repeat(3','data-note-level'])if(!refineCss.includes(token))throw new Error(`Pacefold 21.1 CSS token missing: ${token}`);
+  for(const token of ["const RELEASE='21.1.0'",'__PACEFOLD_V21_REFINEMENT__','patchStoredVersion','refineCalendar'])if(!refineRuntime.includes(token))throw new Error(`Pacefold 21.1 runtime token missing: ${token}`);
 }
 
-await Promise.all([syntaxCheck(bootSource),syntaxCheck(scriptSource),syntaxCheck(persistenceSource)]);
+await Promise.all([syntaxCheck(bootSource),syntaxCheck(scriptSource),syntaxCheck(persistenceSource),syntaxCheck(refineScriptSource)]);
 await installAssets();
 await patchAppHtml(path.join(targetApp,'index.html'));
 await patchLanding(path.join(targetRoot,'index.html'));
@@ -213,4 +228,4 @@ await patchWorker(path.join(targetApp,'service-worker.js'),{root:false});
 await fs.writeFile(path.join(targetRoot,'pacefold-experience.txt'),`${RELEASE}\n`);
 await fs.writeFile(path.join(targetApp,'pacefold-experience.txt'),`${RELEASE}\n`);
 await verify();
-console.log(`Installed Pacefold ${RELEASE}: focused dayline, note activity calendar, simple persistent settings and lossless setup migration.`);
+console.log(`Installed Pacefold ${RELEASE}: denser rhythm, calmer mobile geometry, refined notebook heatmap and compact essential settings.`);
