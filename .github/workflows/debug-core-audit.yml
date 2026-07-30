@@ -1,0 +1,23 @@
+name: Inspect core browser audit
+
+on:
+  push:
+    branches: [pacefold-21-1-refinement]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Reconstruct audit source
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir _release
+          unzip -q /tmp/pacefold-v15.zip -d _release
+          nl -ba _release/scripts/browser-audit.cjs | sed -n '1,80p'
