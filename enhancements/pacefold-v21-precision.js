@@ -1,8 +1,9 @@
 (() => {
   'use strict';
 
-  const RELEASE='21.1.0';
-  const REVISION='precision-r2';
+  const RELEASE='21.1.2';
+  const REVISION='polish-r3';
+  const CORE='15.2.2';
   const PREFS_KEY='pacefoldPrefsV15';
   let frame=0;
   let observer=null;
@@ -39,7 +40,12 @@
   function patchSurface(){
     document.documentElement.classList.add('pf-v21-precision-active');
     dataset(document.documentElement,'pacefoldPrecision',REVISION);
+    dataset(document.documentElement,'pacefoldExperience',RELEASE);
     dataset(document.body,'pacefoldPrecision',REVISION);
+    dataset(document.body,'pacefoldExperience',RELEASE);
+    window.__PACEFOLD_VERSION__={experience:RELEASE,revision:REVISION,offlineCore:CORE};
+    const title=compact(document.title);
+    if(!title||/15\.2\.2|15\.8\.0|21\.0\.0|21\.1\.0|Pacefold/i.test(title))document.title=`Pacefold ${RELEASE}`;
   }
 
   function decorateDayline(){
@@ -147,7 +153,21 @@
     const more=settings.querySelector('.pf21-more-settings');
     attribute(more,'title','Show or hide the complete settings views');
     const version=settings.querySelector('.pf21-settings-version');
-    attribute(version,'title',`Pacefold ${RELEASE}, precision refinement ${REVISION}`);
+    if(version){
+      if(compact(version.textContent)!==`Pacefold ${RELEASE}`)version.textContent=`Pacefold ${RELEASE}`;
+      attribute(version,'title',`Current experience ${RELEASE}. Verified offline engine ${CORE}.`);
+      attribute(version,'aria-label',`Pacefold ${RELEASE}. Verified offline engine ${CORE}.`);
+      dataset(version,'experience',RELEASE);
+      dataset(version,'offlineCore',CORE);
+      let detail=settings.querySelector('.pf21-version-detail');
+      if(!detail){
+        detail=document.createElement('small');
+        detail.className='pf21-version-detail';
+        version.insertAdjacentElement('afterend',detail);
+      }
+      const copy=`Verified offline engine ${CORE}`;
+      if(compact(detail.textContent)!==copy)detail.textContent=copy;
+    }
     return true;
   }
 
@@ -187,7 +207,7 @@
     [40,180,520,1200,2600].forEach(delay=>setTimeout(queue,delay));
   }
 
-  window.__PACEFOLD_V21_PRECISION__={release:RELEASE,revision:REVISION,reconcile:queue};
+  window.__PACEFOLD_V21_PRECISION__={release:RELEASE,revision:REVISION,offlineCore:CORE,reconcile:queue};
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});
   else initialize();
