@@ -66,7 +66,12 @@
         if(!target)return;
         const read=id=>String(document.getElementById(id)?.textContent||'').replace(/\s+/g,' ').trim();
         const parts=['statusWord','eventTime','relativeTime','eventName'].map(read).filter(Boolean);
-        const next=parts.join(' · ')||'Workday in progress';
+        const raw=String(target.textContent||'').replace(/\s+/g,' ').trim();
+        let next=parts.length>=2?parts.join(' · '):raw||'Workday in progress';
+        if(parts.length<2&&!raw.includes(' · ')){
+          const match=raw.match(/^(Overdue|Next|Now|Soon|Snoozed)(\d{1,2}:\d{2}\s*(?:AM|PM)?)(.*?)(Fajr|Sunrise|Dhuhr|Asr|Maghrib|Isha)$/i);
+          if(match)next=[match[1],match[2],match[3],match[4]].map(value=>value.trim()).filter(Boolean).join(' · ');
+        }
         if(target.textContent!==next)target.textContent=next;
       });
     };
@@ -75,6 +80,12 @@
       const statusObserver=new NativeMutationObserver(syncStatus);
       statusObserver.observe(source,{subtree:true,childList:true,characterData:true});
       root.__pacefoldSpatialStatusObserver=statusObserver;
+    }
+    const target=document.getElementById('pf22-status');
+    if(target){
+      const targetObserver=new NativeMutationObserver(syncStatus);
+      targetObserver.observe(target,{subtree:true,childList:true,characterData:true});
+      root.__pacefoldSpatialTargetStatusObserver=targetObserver;
     }
     syncStatus();
     root.__pacefoldSpatialStatusTimer=setInterval(syncStatus,1000);
