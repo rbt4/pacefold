@@ -41,6 +41,23 @@
     };
   }
 
+  window.addEventListener('pacefold:spatial-ready',()=>{
+    const root=document.getElementById('pf22-spatial-root');
+    if(!root||!NativeMutationObserver)return;
+    const apply=()=>{
+      const active=root.dataset.mode||'home';
+      for(const face of root.querySelectorAll('.pf22-face')){
+        const enabled=face.dataset.face===active;
+        face.inert=!enabled;
+        face.setAttribute('aria-hidden',String(!enabled));
+      }
+    };
+    apply();
+    const modeObserver=new NativeMutationObserver(apply);
+    modeObserver.observe(root,{attributes:true,attributeFilter:['data-mode']});
+    root.__pacefoldSpatialModeObserver=modeObserver;
+  },{once:true});
+
   const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback;}catch{return fallback;}};
   const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:null;
   const meaningful=value=>{
