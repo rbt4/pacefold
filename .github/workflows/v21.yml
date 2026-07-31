@@ -1,8 +1,8 @@
-name: Validate Pacefold 22.0.1 Spatial Fold
+name: Validate Pacefold 22.0.2 Day Unfold
 
 on:
   push:
-    branches: [main, agent/pacefold-22-0-1-hardening]
+    branches: [main, agent/pacefold-22-0-2-day-unfold]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   spatial:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - name: Reconstruct verified release
@@ -30,45 +30,61 @@ jobs:
           unzip -q /tmp/pacefold-v15.zip -d _release
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
-      - name: Spatial source guard
+      - name: Day Unfold source guard
         run: |
-          test "$(cat enhancements/VERSION)" = "22.0.1"
-          node --check enhancements/pacefold-v22-spatial.js
-          node --check enhancements/pacefold-v22-hardening.js
-          node --check enhancements/v21-audit.cjs
-          node --check enhancements/inject.mjs
-          node --check enhancements/inject-v22-hardening.mjs
-          grep -q "const RELEASE='22.0.0'" enhancements/pacefold-v22-spatial.js
-          grep -q "const RELEASE='22.0.1'" enhancements/pacefold-v22-hardening.js
-          grep -q 'setNotifications' enhancements/pacefold-v22-hardening.js
-          grep -q 'openSound' enhancements/pacefold-v22-hardening.js
-          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js enhancements/pacefold-v22-hardening.js
-      - name: Inject Spatial Fold and hardening twice
+          test "$(cat enhancements/VERSION)" = "22.0.2"
+          for file in \
+            enhancements/pacefold-v22-spatial.js \
+            enhancements/pacefold-v22-hardening.js \
+            enhancements/pacefold-v22-daylight.js \
+            enhancements/v21-audit.cjs \
+            enhancements/run-v22-base-audit.cjs \
+            enhancements/v22-daylight-audit.cjs \
+            enhancements/inject.mjs \
+            enhancements/inject-v22-hardening.mjs \
+            enhancements/inject-v22-daylight.mjs; do node --check "$file"; done
+          grep -q "const RELEASE='22.0.2'" enhancements/pacefold-v22-daylight.js
+          grep -q 'buildDayUnfold' enhancements/pacefold-v22-daylight.js
+          grep -q 'renderFavicon' enhancements/pacefold-v22-daylight.js
+          grep -q 'patchMaQuietBadgePolicy' enhancements/inject-v22-daylight.mjs
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js enhancements/pacefold-v22-hardening.js enhancements/pacefold-v22-daylight.js
+      - name: Inject Spatial Fold, recovery and Day Unfold twice
         run: |
-          node enhancements/inject.mjs _release
-          node enhancements/inject-v22-hardening.mjs _release
-          node enhancements/inject.mjs _release
-          node enhancements/inject-v22-hardening.mjs _release
-          test "$(cat _release/pacefold-experience.txt)" = "22.0.1"
+          for pass in 1 2; do
+            node enhancements/inject.mjs _release
+            node enhancements/inject-v22-hardening.mjs _release
+            node enhancements/inject-v22-daylight.mjs _release
+          done
+          test "$(cat _release/pacefold-experience.txt)" = "22.0.2"
+          test "$(cat _release/pacefold-daylight.txt)" = "22.0.2 22.0.2"
           test "$(grep -o 'data-pacefold-v22-spatial=\"22.0.0\"' _release/app/index.html | wc -l)" -eq 2
           test "$(grep -o 'data-pacefold-v22-hardening=\"22.0.1\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v22-daylight=\"22.0.2\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v22-boot=\"22.0.2\"' _release/app/index.html | wc -l)" -eq 1
           grep -q 'data-pacefold-spatial="pending"' _release/app/index.html
-          grep -q 'pacefold-v22-hardening.css' _release/service-worker.js
-          grep -q 'pacefold-v22-hardening.js' _release/service-worker.js
-          grep -q 'revision:22.0.1' _release/service-worker.js
+          for asset in pacefold-v22-boot.css pacefold-v22-daylight.css pacefold-v22-daylight-settings.css pacefold-v22-daylight.js; do
+            test -f "_release/app/$asset"
+            grep -q "$asset" _release/service-worker.js
+          done
+          grep -q 'revision:22.0.2' _release/service-worker.js
+          grep -q "const RELEASE='22.0.2'" _release/app/pacefold-v22-hardening.js
+          ! grep -q "prefs.quietMode||prefs.taskbarBadge===false" _release/app/pacefold-ma.js
       - name: Install Playwright
         run: |
           npm install --prefix /tmp/pacefold-v22-audit playwright@1.61.1
           /tmp/pacefold-v22-audit/node_modules/.bin/playwright install --with-deps chromium
-      - name: Run Spatial Fold browser audit
+      - name: Run complete Spatial recovery audit
         run: |
           mkdir -p /tmp/pacefold-v22-artifacts
-          NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/v21-audit.cjs _release /tmp/pacefold-v22-artifacts
-      - name: Upload Spatial Fold captures
+          NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/run-v22-base-audit.cjs _release /tmp/pacefold-v22-artifacts
+      - name: Run Day Unfold and quiet cue audit
+        run: |
+          NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/v22-daylight-audit.cjs _release /tmp/pacefold-v22-artifacts
+      - name: Upload Pacefold 22.0.2 captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-22.0.1-spatial-audit-${{ github.run_id }}
+          name: pacefold-22.0.2-day-unfold-${{ github.run_id }}
           path: /tmp/pacefold-v22-artifacts/
           if-no-files-found: warn
           retention-days: 7
