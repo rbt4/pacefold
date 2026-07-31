@@ -103,6 +103,17 @@ async function patchMaQuietBadgePolicy(file){
   new vm.Script(source,{filename:file});
   await fs.writeFile(file,source);
 }
+async function patchMaAuditContract(file){
+  let source=await fs.readFile(file,'utf8');
+  source=replaceIfPresent(
+    source,
+    "    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge==='off',`Quiet did not apply its complete safe-surface contract: ${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,errors})}`);",
+    "    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge===quietBefore.taskbarBadgeMode,`Quiet did not preserve its private cue surface: ${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,before:quietBefore.taskbarBadgeMode,errors})}`);",
+    'Ma Quiet privacy regression contract'
+  );
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
+}
 async function patchAppHtml(file){
   let html=await fs.readFile(file,'utf8');
   html=html
@@ -142,6 +153,7 @@ async function verify(){
   const v21=await fs.readFile(path.join(targetApp,'pacefold-v21.js'),'utf8');
   const dayflow=await fs.readFile(path.join(targetApp,'pacefold-v21-precision.js'),'utf8');
   const ma=await fs.readFile(path.join(targetApp,'pacefold-ma.js'),'utf8');
+  const maAudit=await fs.readFile(path.join(sourceRoot,'ma-audit.cjs'),'utf8');
   const cues=await fs.readFile(path.join(targetApp,assets.cues),'utf8');
   const daylight=await fs.readFile(path.join(targetApp,assets.runtime),'utf8');
   if(!html.includes(`<head>\n<link rel="stylesheet" href="./${assets.boot}?v=${REVISION}"`))throw new Error('No-flash boot stylesheet is not first in the head');
@@ -155,6 +167,7 @@ async function verify(){
   if(!dayflow.includes(`const EXPERIENCE='${RELEASE}'`)||!dayflow.includes(`const RELEASE='${RELEASE}'`))throw new Error('Dayflow can still downgrade the active experience');
   if(ma.includes("prefs.quietMode||prefs.taskbarBadge===false")||ma.includes("quietMode:true,quietRestore:restore,privacy:true,clarity:'discreet',notificationDetail:'generic',taskbarBadge:false"))throw new Error('Quiet still disables the taskbar attention surface');
   if(!ma.includes('window.__PACEFOLD_CUES__?.count?.()'))throw new Error('The legacy badge loop can still overwrite cue counts');
+  if(!maAudit.includes('quiet.badge===quietBefore.taskbarBadgeMode'))throw new Error('The Ma privacy audit still requires Quiet to disable taskbar cues');
   for(const token of [`const RELEASE='${RELEASE}'`,'pacefold.daylight.cues.v1','wrapDelivery','window.__PACEFOLD_CUES__'])if(!cues.includes(token))throw new Error(`Cue queue token missing: ${token}`);
   for(const token of [`const RELEASE='${RELEASE}'`,'buildDayUnfold','renderFavicon','Taskbar cue dots','window.__PACEFOLD_CUES__?.sources?.()'])if(!daylight.includes(token))throw new Error(`Daylight runtime token missing: ${token}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Daylight cache revision is stale');
@@ -171,6 +184,7 @@ await patchV21Ownership(path.join(targetApp,'pacefold-v21.js'));
 await patchDayflowOwnership(path.join(targetApp,'pacefold-v21-precision.js'));
 await patchDaylightCueBridge(path.join(targetApp,assets.runtime));
 await patchMaQuietBadgePolicy(path.join(targetApp,'pacefold-ma.js'));
+await patchMaAuditContract(path.join(sourceRoot,'ma-audit.cjs'));
 await patchAppHtml(path.join(targetApp,'index.html'));
 await patchLanding(path.join(targetRoot,'index.html'));
 await patchWorker(path.join(targetRoot,'service-worker.js'),{root:true});
