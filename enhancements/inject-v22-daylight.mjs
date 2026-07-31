@@ -38,6 +38,12 @@ async function patchHardeningRelease(file){
   new vm.Script(source,{filename:file});
   await fs.writeFile(file,source);
 }
+async function patchV21Ownership(file){
+  let source=await fs.readFile(file,'utf8');
+  source=replaceIfPresent(source,"const RELEASE='22.0.0';",`const RELEASE='${RELEASE}';`,'V21 continuous experience ownership');
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
+}
 async function patchDayflowOwnership(file){
   let source=await fs.readFile(file,'utf8');
   source=replaceIfPresent(source,"const EXPERIENCE='22.0.0';",`const EXPERIENCE='${RELEASE}';`,'Dayflow experience ownership');
@@ -133,6 +139,7 @@ async function verify(){
   const html=await fs.readFile(path.join(targetApp,'index.html'),'utf8');
   const worker=await fs.readFile(path.join(targetRoot,'service-worker.js'),'utf8');
   const hardening=await fs.readFile(path.join(targetApp,'pacefold-v22-hardening.js'),'utf8');
+  const v21=await fs.readFile(path.join(targetApp,'pacefold-v21.js'),'utf8');
   const dayflow=await fs.readFile(path.join(targetApp,'pacefold-v21-precision.js'),'utf8');
   const ma=await fs.readFile(path.join(targetApp,'pacefold-ma.js'),'utf8');
   const cues=await fs.readFile(path.join(targetApp,assets.cues),'utf8');
@@ -144,6 +151,7 @@ async function verify(){
     if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   }
   if(!hardening.includes(`const RELEASE='${RELEASE}'`))throw new Error('Built hardening runtime was not advanced');
+  if(!v21.includes(`const RELEASE='${RELEASE}'`))throw new Error('V21 can still downgrade the active experience');
   if(!dayflow.includes(`const EXPERIENCE='${RELEASE}'`)||!dayflow.includes(`const RELEASE='${RELEASE}'`))throw new Error('Dayflow can still downgrade the active experience');
   if(ma.includes("prefs.quietMode||prefs.taskbarBadge===false")||ma.includes("quietMode:true,quietRestore:restore,privacy:true,clarity:'discreet',notificationDetail:'generic',taskbarBadge:false"))throw new Error('Quiet still disables the taskbar attention surface');
   if(!ma.includes('window.__PACEFOLD_CUES__?.count?.()'))throw new Error('The legacy badge loop can still overwrite cue counts');
@@ -159,6 +167,7 @@ for(const asset of [assets.cues,assets.runtime]){
 }
 await Promise.all(Object.values(assets).map(asset=>fs.copyFile(path.join(sourceRoot,asset),path.join(targetApp,asset))));
 await patchHardeningRelease(path.join(targetApp,'pacefold-v22-hardening.js'));
+await patchV21Ownership(path.join(targetApp,'pacefold-v21.js'));
 await patchDayflowOwnership(path.join(targetApp,'pacefold-v21-precision.js'));
 await patchDaylightCueBridge(path.join(targetApp,assets.runtime));
 await patchMaQuietBadgePolicy(path.join(targetApp,'pacefold-ma.js'));
