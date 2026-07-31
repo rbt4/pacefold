@@ -4,7 +4,7 @@ const RELEASE='22.0.1';
 const PREFS_KEY='pacefoldPrefsV15';
 const NOTES_KEY='pacefold.notebook.entries.v2';
 const BACKUP_KEY='pacefold.spatial.notifications.v1';
-let originalParent=null,originalNext=null,workbench=null,syncTimer=0,bridgeInstalled=false,soundObserver=null;
+let originalParent=null,originalNext=null,soundNode=null,syncTimer=0,bridgeInstalled=false,soundObserver=null;
 const $=selector=>document.querySelector(selector);
 const id=value=>document.getElementById(value);
 const create=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=String(text);return node};
@@ -107,8 +107,7 @@ function buildNoteInsights(){
   for(const note of values){const day=noteDate(note);if(day?.startsWith(prefix))counts.set(day,(counts.get(day)||0)+1)}
   const total=[...counts.values()].reduce((sum,value)=>sum+value,0),active=counts.size;
   root.replaceChildren();
-  const head=create('header','pf22-note-insights-head');
-  const copy=create('div','');copy.append(create('span','pf22-eyebrow','Notebook activity'),create('strong','',now.toLocaleDateString([],{month:'long',year:'numeric'})));
+  const head=create('header','pf22-note-insights-head'),copy=create('div','');copy.append(create('span','pf22-eyebrow','Notebook activity'),create('strong','',now.toLocaleDateString([],{month:'long',year:'numeric'})));
   const stats=create('span','pf22-note-stats',total?`${total} note${total===1?'':'s'} · ${active} day${active===1?'':'s'}`:'No notes this month');head.append(copy,stats);
   const weekdays=create('div','pf22-note-weekdays');for(const label of ['S','M','T','W','T','F','S'])weekdays.append(create('span','',label));
   const grid=create('div','pf22-note-calendar'),first=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate(),today=localDay(now);
@@ -143,24 +142,31 @@ function overlay(){
   const dialog=create('div','pf22-sound-dialog'),head=create('header','pf22-sound-dialog-head'),copy=create('div','');copy.append(create('span','pf22-eyebrow','Sound'),create('h2','','Local sound controls'),create('p','','Your library stays inside Pacefold and on this device.'));
   const close=button('pf22-sound-close','Close sound controls','Close'),mount=create('div','pf22-sound-mount');mount.id='pf22-sound-mount';close.addEventListener('click',closeSound);head.append(copy,close);dialog.append(head,mount);root.append(dialog);root.addEventListener('click',event=>{if(event.target===root)closeSound()});id('pf22-spatial-root')?.append(root);return root;
 }
-function findWorkbench(){return id('pf-v19-workbench')||$('.pf-v19-workbench')}
+function findSoundNode(){return id('pf-local-player')}
 function claimSoundOwnership(){
   const panel=id('pf22-sound-overlay'),mount=id('pf22-sound-mount');if(!panel||panel.hidden||!mount)return false;
-  workbench=findWorkbench()||workbench;if(!workbench)return false;
-  if(!originalParent){originalParent=workbench.parentNode;originalNext=workbench.nextSibling}
-  if(workbench.parentNode!==mount)mount.append(workbench);
-  workbench.hidden=false;workbench.inert=false;workbench.removeAttribute('aria-hidden');
-  const player=id('pf-local-player');if(player){player.hidden=false;player.inert=false;player.removeAttribute('aria-hidden')}
-  return workbench.parentNode===mount;
+  soundNode=findSoundNode()||soundNode;if(!soundNode)return false;
+  if(!originalParent){originalParent=soundNode.parentNode;originalNext=soundNode.nextSibling}
+  if(soundNode.parentNode!==mount)mount.append(soundNode);
+  soundNode.hidden=false;soundNode.inert=false;soundNode.removeAttribute('aria-hidden');soundNode.classList.add('is-open');
+  const drawer=soundNode.querySelector('[data-pf-player-drawer],.pf-player-drawer');if(drawer){drawer.hidden=false;drawer.inert=false;drawer.removeAttribute('aria-hidden')}
+  const menu=soundNode.querySelector('[data-pf-player-menu]');if(menu){menu.setAttribute('aria-expanded','true');menu.setAttribute('aria-label','Close sound library')}
+  return soundNode.parentNode===mount;
 }
 function observeSoundOwnership(){soundObserver?.disconnect();soundObserver=new MutationObserver(()=>queueMicrotask(claimSoundOwnership));soundObserver.observe(document.body,{subtree:true,childList:true})}
 function openSound(){
-  const panel=overlay();workbench=findWorkbench();if(!workbench){window.__PACEFOLD_V19__?.reconcile?.();setTimeout(()=>{if(!openSound())showStatus('Sound controls are still loading',true)},100);return false}
-  if(!originalParent){originalParent=workbench.parentNode;originalNext=workbench.nextSibling}
-  panel.hidden=false;panel.dataset.open='true';document.documentElement.classList.add('pf22-sound-open');window.__PACEFOLD_V19__?.showSound?.();claimSoundOwnership();observeSoundOwnership();requestAnimationFrame(()=>{claimSoundOwnership();panel.querySelector('.pf22-sound-close')?.focus({preventScroll:true})});setTimeout(claimSoundOwnership,80);setTimeout(claimSoundOwnership,220);return true;
+  const panel=overlay();soundNode=findSoundNode();if(!soundNode){window.__PACEFOLD_V19__?.reconcile?.();setTimeout(()=>{if(!openSound())showStatus('Sound controls are still loading',true)},100);return false}
+  if(!originalParent){originalParent=soundNode.parentNode;originalNext=soundNode.nextSibling}
+  panel.hidden=false;panel.dataset.open='true';document.documentElement.classList.add('pf22-sound-open');
+  window.__PACEFOLD_V19__?.showSound?.();window.__PACEFOLD_REVAMP__?.player?.open?.();
+  claimSoundOwnership();observeSoundOwnership();requestAnimationFrame(()=>{claimSoundOwnership();panel.querySelector('.pf22-sound-close')?.focus({preventScroll:true})});setTimeout(claimSoundOwnership,80);setTimeout(claimSoundOwnership,220);return true;
 }
-function restoreWorkbench(){soundObserver?.disconnect();soundObserver=null;if(!workbench||!originalParent)return;if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(workbench,originalNext);else originalParent.append(workbench);window.__PACEFOLD_V19__?.showNotes?.();originalParent=null;originalNext=null;workbench=null}
-function closeSound(){const panel=id('pf22-sound-overlay');if(panel){panel.hidden=true;delete panel.dataset.open}document.documentElement.classList.remove('pf22-sound-open');restoreWorkbench();$('.pf22-settings-action[data-action="sound"]')?.focus?.({preventScroll:true})}
+function restoreSoundNode(){
+  soundObserver?.disconnect();soundObserver=null;if(!soundNode||!originalParent)return;
+  if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(soundNode,originalNext);else originalParent.append(soundNode);
+  window.__PACEFOLD_REVAMP__?.player?.close?.();window.__PACEFOLD_V19__?.showNotes?.();originalParent=null;originalNext=null;soundNode=null;
+}
+function closeSound(){const panel=id('pf22-sound-overlay');if(panel){panel.hidden=true;delete panel.dataset.open}document.documentElement.classList.remove('pf22-sound-open');restoreSoundNode();$('.pf22-settings-action[data-action="sound"]')?.focus?.({preventScroll:true})}
 
 function sync(){
   installPreferenceBridge();buildSettings();buildNoteInsights();
@@ -171,7 +177,7 @@ function sync(){
   for(const control of document.querySelectorAll('.pf22-control-toggle')){const key=control.dataset.setting,on=Boolean(values[key]);control.dataset.active=String(on);control.textContent=key==='timeFormat'?(on?'24h':'12h'):(on?'On':'Off');control.setAttribute('aria-pressed',String(on))}
   const version=$('.pf22-version');if(version)version.textContent=`Pacefold ${RELEASE} · verified offline core 15.2.2`;
   if(window.__PACEFOLD_SPATIAL__)window.__PACEFOLD_SPATIAL__.release=RELEASE;
-  if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:RELEASE,update:RELEASE,hardening:'recovery-r3'};
+  if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:RELEASE,update:RELEASE,hardening:'recovery-r4'};
   if(values.quiet)closeSound();else claimSoundOwnership();
 }
 function capture(event){
