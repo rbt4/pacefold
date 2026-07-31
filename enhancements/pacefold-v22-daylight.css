@@ -67,6 +67,7 @@ html[data-pacefold-spatial="ready"] .pf22-spatial-root{
   position:relative;
   transform:translateY(-.5vh)!important;
 }
+.pf22-clock-hero:has(#pf22-day-unfold) .pf22-progress{display:none!important}
 .pf22-day-unfold{
   position:relative;
   width:min(700px,72vw);
