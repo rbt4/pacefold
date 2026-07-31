@@ -11,7 +11,9 @@
 
 /* The existing player becomes a real contained Sound workspace in the overlay. */
 .pf22-sound-dialog{grid-template-rows:110px minmax(0,1fr)!important}
-.pf22-sound-dialog-head{position:relative!important;z-index:3!important;box-sizing:border-box!important;height:110px!important;min-height:110px!important;overflow:hidden!important}
+.pf22-sound-dialog-head{position:relative!important;z-index:3!important;box-sizing:border-box!important;height:110px!important;min-height:110px!important;overflow:hidden!important;align-items:flex-start!important;padding-top:24px!important}
+.pf22-sound-dialog-head h2,.pf22-sound-dialog-head p{display:none!important}
+.pf22-sound-dialog-head .pf22-eyebrow{display:block!important;color:var(--pf22-ink)!important;font-size:18px!important;font-weight:720!important;letter-spacing:.14em!important;line-height:1!important}
 .pf22-sound-close{position:relative!important;z-index:4!important;pointer-events:auto!important}
 .pf22-sound-mount{position:relative!important;z-index:1!important;min-height:0!important;overflow:hidden!important;background:#0b100d!important}
 .pf22-sound-mount>#pf-v19-workbench{grid-template-rows:minmax(0,1fr)!important;background:#0b100d!important;color:#f2f6f3!important}
