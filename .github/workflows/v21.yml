@@ -1,8 +1,8 @@
-name: Validate Pacefold 22 Spatial Fold
+name: Validate Pacefold 22.0.1 Spatial Fold
 
 on:
   push:
-    branches: [main, agent/pacefold-22-spatial-fold]
+    branches: [main, agent/pacefold-22-0-1-hardening]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -32,24 +32,30 @@ jobs:
           node _release/scripts/validate.mjs _release
       - name: Spatial source guard
         run: |
-          test "$(cat enhancements/VERSION)" = "22.0.0"
+          test "$(cat enhancements/VERSION)" = "22.0.1"
           node --check enhancements/pacefold-v22-spatial.js
+          node --check enhancements/pacefold-v22-hardening.js
           node --check enhancements/v21-audit.cjs
           node --check enhancements/inject.mjs
+          node --check enhancements/inject-v22-hardening.mjs
           grep -q "const RELEASE='22.0.0'" enhancements/pacefold-v22-spatial.js
-          grep -q "const REVISION='spatial-r1'" enhancements/pacefold-v22-spatial.js
-          grep -q 'pf22-spatial-root' enhancements/pacefold-v22-spatial.js
-          grep -q 'Clock-first' enhancements/pacefold-v22-spatial.css
-          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js
-      - name: Inject Spatial Fold twice
+          grep -q "const RELEASE='22.0.1'" enhancements/pacefold-v22-hardening.js
+          grep -q 'setNotifications' enhancements/pacefold-v22-hardening.js
+          grep -q 'openSound' enhancements/pacefold-v22-hardening.js
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js enhancements/pacefold-v22-hardening.js
+      - name: Inject Spatial Fold and hardening twice
         run: |
           node enhancements/inject.mjs _release
+          node enhancements/inject-v22-hardening.mjs _release
           node enhancements/inject.mjs _release
-          test "$(cat _release/pacefold-experience.txt)" = "22.0.0"
+          node enhancements/inject-v22-hardening.mjs _release
+          test "$(cat _release/pacefold-experience.txt)" = "22.0.1"
           test "$(grep -o 'data-pacefold-v22-spatial=\"22.0.0\"' _release/app/index.html | wc -l)" -eq 2
+          test "$(grep -o 'data-pacefold-v22-hardening=\"22.0.1\"' _release/app/index.html | wc -l)" -eq 2
           grep -q 'data-pacefold-spatial="pending"' _release/app/index.html
-          grep -q 'pacefold-v22-spatial.css' _release/service-worker.js
-          grep -q 'pacefold-v22-spatial.js' _release/service-worker.js
+          grep -q 'pacefold-v22-hardening.css' _release/service-worker.js
+          grep -q 'pacefold-v22-hardening.js' _release/service-worker.js
+          grep -q 'revision:22.0.1' _release/service-worker.js
       - name: Install Playwright
         run: |
           npm install --prefix /tmp/pacefold-v22-audit playwright@1.61.1
@@ -62,7 +68,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-22-spatial-audit-${{ github.run_id }}
+          name: pacefold-22.0.1-spatial-audit-${{ github.run_id }}
           path: /tmp/pacefold-v22-artifacts/
           if-no-files-found: warn
           retention-days: 7

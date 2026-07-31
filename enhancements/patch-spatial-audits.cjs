@@ -6,8 +6,9 @@ let changed=0;
 for(const name of targets){
   const file=path.join(__dirname,name);if(!fs.existsSync(file))continue;
   const source=fs.readFileSync(file,'utf8');
-  if(source.includes('legacyAudit=1'))continue;
-  const next=source.replace(/\$\{base\}\/app\/(?!\?legacyAudit=1)/g,'${base}/app/?legacyAudit=1');
+  const next=source
+    .replace(/\$\{base\}\/app\/(?!\?legacyAudit=1)/g,'${base}/app/?legacyAudit=1')
+    .replace(/http:\/\/127\.0\.0\.1:\$\{port\}\/app\/(?!\?legacyAudit=1)/g,'http://127.0.0.1:${port}/app/?legacyAudit=1');
   if(next!==source){fs.writeFileSync(file,next);changed++;}
 }
 console.log(changed?`Prepared ${changed} historical audits for the legacy surface beneath Pacefold Spatial Fold.`:'Historical audits already use the legacy surface.');
