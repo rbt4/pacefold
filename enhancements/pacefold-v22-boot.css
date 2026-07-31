@@ -1,0 +1,52 @@
+/* Pacefold 22.0.2 — first-paint guard. This stylesheet is injected before every legacy stylesheet. */
+html[data-pacefold-spatial="pending"]{
+  background:#edf1ed!important;
+}
+html[data-pacefold-spatial="pending"] body{
+  min-width:0!important;
+  background:#edf1ed!important;
+  overflow:hidden!important;
+}
+html[data-pacefold-spatial="pending"] body>*{
+  visibility:hidden!important;
+}
+html[data-pacefold-spatial="pending"] body::before{
+  content:"PACEFOLD";
+  position:fixed;
+  z-index:2147483647;
+  inset:0;
+  display:grid;
+  place-items:center;
+  visibility:visible!important;
+  color:#315b50;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(255,255,255,.88),transparent 34%),
+    #edf1ed;
+  font:750 11px/1 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  letter-spacing:.34em;
+  text-indent:.34em;
+}
+html[data-pacefold-spatial="pending"] body::after{
+  content:"";
+  position:fixed;
+  z-index:2147483647;
+  left:calc(50% - 40px);
+  top:calc(50% + 24px);
+  width:80px;
+  height:1px;
+  visibility:visible!important;
+  background:linear-gradient(90deg,transparent,#315b50,transparent);
+  transform-origin:center;
+  animation:pf22-boot-breathe 1.25s ease-in-out infinite;
+}
+html[data-pacefold-spatial="ready"] body>*,
+html[data-pacefold-spatial="legacy"] body>*{
+  visibility:visible;
+}
+@keyframes pf22-boot-breathe{
+  0%,100%{opacity:.18;transform:scaleX(.42)}
+  50%{opacity:.72;transform:scaleX(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-pacefold-spatial="pending"] body::after{animation:none;opacity:.48}
+}

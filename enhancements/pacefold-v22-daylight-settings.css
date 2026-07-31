@@ -1,0 +1,33 @@
+/* Pacefold 22.0.2 — compact source-cue setting and colour key. */
+.pf22-daylight-row{margin-top:-1px}
+.pf22-daylight-toggle{
+  min-width:52px;
+  height:28px;
+  padding:0 10px;
+  border:1px solid var(--pf22-line);
+  border-radius:999px;
+  color:var(--pf22-muted);
+  background:rgba(255,255,255,.56);
+  font:750 9px/1 inherit;
+  cursor:pointer;
+}
+.pf22-daylight-toggle[data-active="true"]{
+  color:#fff;
+  border-color:var(--pf22-green);
+  background:var(--pf22-green);
+}
+.pf22-daylight-toggle:focus-visible{outline:2px solid var(--pf22-green);outline-offset:2px}
+.pf22-cue-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 12px;
+  margin:-4px 0 13px;
+  padding:9px 11px;
+  border:1px solid rgba(20,52,43,.07);
+  border-radius:12px;
+  background:rgba(255,255,255,.34);
+}
+.pf22-cue-legend>span{display:inline-flex;align-items:center;gap:5px;color:var(--pf22-muted)}
+.pf22-cue-legend .pf22-cue-dot{width:6px;height:6px;flex-basis:6px;border-width:1px;box-shadow:none}
+.pf22-cue-legend small{font-size:8px;font-weight:700;letter-spacing:.04em}
+@media(max-width:760px){.pf22-cue-legend{gap:6px 9px}.pf22-cue-legend small{font-size:7.5px}}
