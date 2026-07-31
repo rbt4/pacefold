@@ -76,7 +76,7 @@ async function state(page){
     sound:{overlayHidden:document.getElementById('pf22-sound-overlay')?.hidden,playerParent:document.getElementById('pf-local-player')?.parentElement?.id,drawerHidden:document.querySelector('#pf-local-player .pf-player-drawer')?.hidden}
   }));
 }
-async function wait(page,label,predicate,timeout=12000){try{await page.waitForFunction(predicate,null,{timeout})}catch{throw new Error(`${label} did not settle: ${JSON.stringify(await state(page))}`)}}
+async function wait(page,label,predicate,arg=null,timeout=12000){try{await page.waitForFunction(predicate,arg,{timeout})}catch{throw new Error(`${label} did not settle: ${JSON.stringify(await state(page))}`)}}
 
 async function exerciseDesktop(page){
   await page.keyboard.press('ArrowUp');await wait(page,'Notes face',()=>document.getElementById('pf22-spatial-root')?.dataset.mode==='notes');
