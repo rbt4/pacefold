@@ -3,7 +3,7 @@
 const RELEASE='22.0.1';
 const PREFS_KEY='pacefoldPrefsV15';
 const BACKUP_KEY='pacefold.spatial.notifications.v1';
-let originalParent=null,originalNext=null,workbench=null,syncTimer=0,bridgeInstalled=false;
+let originalParent=null,originalNext=null,workbench=null,syncTimer=0,bridgeInstalled=false,soundObserver=null;
 const $=selector=>document.querySelector(selector);
 const id=value=>document.getElementById(value);
 const create=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=String(text);return node};
@@ -192,18 +192,35 @@ function overlay(){
   id('pf22-spatial-root')?.append(root);return root;
 }
 function findWorkbench(){return id('pf-v19-workbench')||$('.pf-v19-workbench')}
+function claimSoundOwnership(){
+  const panel=id('pf22-sound-overlay'),mount=id('pf22-sound-mount');
+  if(!panel||panel.hidden||!mount)return false;
+  workbench=findWorkbench()||workbench;
+  if(!workbench)return false;
+  if(!originalParent){originalParent=workbench.parentNode;originalNext=workbench.nextSibling}
+  if(workbench.parentNode!==mount)mount.append(workbench);
+  workbench.hidden=false;workbench.inert=false;workbench.removeAttribute('aria-hidden');
+  const player=id('pf-local-player');if(player){player.hidden=false;player.inert=false;player.removeAttribute('aria-hidden')}
+  return workbench.parentNode===mount;
+}
+function observeSoundOwnership(){
+  soundObserver?.disconnect();
+  soundObserver=new MutationObserver(()=>queueMicrotask(claimSoundOwnership));
+  soundObserver.observe(document.body,{subtree:true,childList:true});
+}
 function openSound(){
   const panel=overlay();workbench=findWorkbench();
   if(!workbench){window.__PACEFOLD_V19__?.reconcile?.();setTimeout(()=>{if(!openSound())showStatus('Sound controls are still loading',true)},100);return false}
   if(!originalParent){originalParent=workbench.parentNode;originalNext=workbench.nextSibling}
-  id('pf22-sound-mount')?.append(workbench);
-  workbench.hidden=false;workbench.inert=false;workbench.removeAttribute('aria-hidden');
-  window.__PACEFOLD_V19__?.showSound?.();
   panel.hidden=false;panel.dataset.open='true';document.documentElement.classList.add('pf22-sound-open');
-  requestAnimationFrame(()=>panel.querySelector('.pf22-sound-close')?.focus({preventScroll:true}));
+  window.__PACEFOLD_V19__?.showSound?.();
+  claimSoundOwnership();observeSoundOwnership();
+  requestAnimationFrame(()=>{claimSoundOwnership();panel.querySelector('.pf22-sound-close')?.focus({preventScroll:true})});
+  setTimeout(claimSoundOwnership,80);setTimeout(claimSoundOwnership,220);
   return true;
 }
 function restoreWorkbench(){
+  soundObserver?.disconnect();soundObserver=null;
   if(!workbench||!originalParent)return;
   if(originalNext&&originalNext.parentNode===originalParent)originalParent.insertBefore(workbench,originalNext);else originalParent.append(workbench);
   window.__PACEFOLD_V19__?.showNotes?.();
@@ -240,7 +257,7 @@ function sync(){
   const version=$('.pf22-version');if(version)version.textContent=`Pacefold ${RELEASE} · verified offline core 15.2.2`;
   if(window.__PACEFOLD_SPATIAL__)window.__PACEFOLD_SPATIAL__.release=RELEASE;
   if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:RELEASE,update:RELEASE,hardening:'recovery-r2'};
-  if(values.quiet)closeSound();
+  if(values.quiet)closeSound();else claimSoundOwnership();
 }
 
 function capture(event){
@@ -262,7 +279,7 @@ function initialize(){
   for(const name of ['pacefold:ma-prefs','pacefold:spatial-ready','pacefold:storage-changed','pacefold:spatial-hardening','pacefold:quiet'])window.addEventListener(name,sync);
   window.addEventListener('storage',sync);
   sync();syncTimer=setInterval(sync,750);
-  window.__PACEFOLD_HARDENING__={release:RELEASE,sync,setNotifications,toggleNotifications,notificationEnabled,openSound,closeSound,writePrefs,buildSettings};
+  window.__PACEFOLD_HARDENING__={release:RELEASE,sync,setNotifications,toggleNotifications,notificationEnabled,openSound,closeSound,writePrefs,buildSettings,claimSoundOwnership};
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',initialize,{once:true}):initialize();
 })();
