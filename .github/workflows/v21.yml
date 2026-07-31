@@ -40,6 +40,7 @@ jobs:
             enhancements/v21-audit.cjs \
             enhancements/run-v22-base-audit.cjs \
             enhancements/v22-daylight-audit.cjs \
+            enhancements/run-v22-daylight-audit.cjs \
             enhancements/inject.mjs \
             enhancements/inject-v22-hardening.mjs \
             enhancements/inject-v22-daylight.mjs; do node --check "$file"; done
@@ -79,7 +80,7 @@ jobs:
           NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/run-v22-base-audit.cjs _release /tmp/pacefold-v22-artifacts
       - name: Run Day Unfold and quiet cue audit
         run: |
-          NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/v22-daylight-audit.cjs _release /tmp/pacefold-v22-artifacts
+          NODE_PATH=/tmp/pacefold-v22-audit/node_modules node enhancements/run-v22-daylight-audit.cjs _release /tmp/pacefold-v22-artifacts
       - name: Upload Pacefold 22.0.2 captures
         if: always()
         uses: actions/upload-artifact@v4
