@@ -64,7 +64,8 @@ jobs:
             enhancements/v20-audit.cjs \
             enhancements/v21-audit.cjs \
             enhancements/run-v22-base-audit.cjs \
-            enhancements/v22-daylight-audit.cjs; do node --check "$file"; done
+            enhancements/v22-daylight-audit.cjs \
+            enhancements/run-v22-daylight-audit.cjs; do node --check "$file"; done
           cat enhancements/pacefold-v21-dayflow-runtime.part-*.js > /tmp/pacefold-dayflow.js
           node --check /tmp/pacefold-dayflow.js
           grep -q "const EXPERIENCE='22.0.0'" /tmp/pacefold-dayflow.js
@@ -166,7 +167,7 @@ jobs:
       - name: Pacefold 22.0.2 Day Unfold and quiet cue audit
         run: |
           set -o pipefail
-          timeout 210s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v22-daylight-audit.cjs _release /tmp/pacefold-audits/v22 | tee /tmp/pacefold-audits/daylight.log
+          timeout 210s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/run-v22-daylight-audit.cjs _release /tmp/pacefold-audits/v22 | tee /tmp/pacefold-audits/daylight.log
 
       - name: Upload browser diagnostics and captures
         if: always()
