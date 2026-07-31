@@ -13,6 +13,7 @@ const assets={
   boot:'pacefold-v22-boot.css',
   daylight:'pacefold-v22-daylight.css',
   settings:'pacefold-v22-daylight-settings.css',
+  cues:'pacefold-v22-cues.js',
   runtime:'pacefold-v22-daylight.js'
 };
 
@@ -44,6 +45,23 @@ async function patchDayflowOwnership(file){
   new vm.Script(source,{filename:file});
   await fs.writeFile(file,source);
 }
+async function patchDaylightCueBridge(file){
+  let source=await fs.readFile(file,'utf8');
+  source=replaceIfPresent(
+    source,
+    'const found=new Set(),now=Date.now();',
+    'const found=new Set(window.__PACEFOLD_CUES__?.sources?.()||[]),now=Date.now();',
+    'Daylight cue queue source bridge'
+  );
+  source=replaceIfPresent(
+    source,
+    "for(const event of ['pacefold:ma-prefs','pacefold:storage-changed','pacefold:quiet','pacefold:spatial-hardening','pacefold:v20-attention'])window.addEventListener(event,()=>refresh(true));",
+    "for(const event of ['pacefold:ma-prefs','pacefold:storage-changed','pacefold:quiet','pacefold:spatial-hardening','pacefold:v20-attention','pacefold:cue-queue'])window.addEventListener(event,()=>refresh(true));",
+    'Daylight cue queue refresh event'
+  );
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
+}
 async function patchMaQuietBadgePolicy(file){
   let source=await fs.readFile(file,'utf8');
   source=replaceIfPresent(
@@ -70,6 +88,12 @@ async function patchMaQuietBadgePolicy(file){
     "patchPrefs({quietMode:false,quietRestore:null,privacy:restore.privacy??prefs.privacy,clarity:['clear','discreet','wafer'].includes(restore.clarity)?restore.clarity:'discreet',notificationDetail:restore.notificationDetail||'generic',notificationMode:restore.notificationMode||'quiet'});",
     'Quiet disable taskbar preservation'
   );
+  source=replaceIfPresent(
+    source,
+    "const prefs=getPrefs(),mode=prefs.taskbarBadgeMode||'due';\n      if(mode==='off'||prefs.taskbarBadge===false){if(badgeKey!=='clear'){badgeKey='clear';void clearSurface();}return true;}",
+    "const prefs=getPrefs(),mode=prefs.taskbarBadgeMode||'due';\n      const cueCount=Number(window.__PACEFOLD_CUES__?.count?.())||0;\n      if(cueCount){const cueKey=`cues:${cueCount}`;if(cueKey!==badgeKey){badgeKey=cueKey;void setManualBadge(cueCount>1?cueCount:null);}return true;}\n      if(mode==='off'||prefs.taskbarBadge===false){if(badgeKey!=='clear'){badgeKey='clear';void clearSurface();}return true;}",
+    'multi-cue badge ownership'
+  );
   new vm.Script(source,{filename:file});
   await fs.writeFile(file,source);
 }
@@ -78,11 +102,11 @@ async function patchAppHtml(file){
   html=html
     .replace(/\s*<link[^>]+data-pacefold-v22-boot[^>]*>/gi,'')
     .replace(/\s*<link[^>]+data-pacefold-v22-daylight(?:-settings)?[^>]*>/gi,'')
-    .replace(/\s*<script[^>]+data-pacefold-v22-daylight[^>]*><\/script>/gi,'');
+    .replace(/\s*<script[^>]+data-pacefold-v22-(?:cues|daylight)[^>]*><\/script>/gi,'');
   html=updateExperienceMeta(html);
   html=replaceExactlyOnce(html,'<head>',`<head>\n<link rel="stylesheet" href="./${assets.boot}?v=${REVISION}" data-pacefold-v22-boot="${RELEASE}">`,'first-paint stylesheet');
   html=replaceExactlyOnce(html,'</head>',`<link rel="stylesheet" href="./${assets.daylight}?v=${REVISION}" data-pacefold-v22-daylight="${RELEASE}">\n<link rel="stylesheet" href="./${assets.settings}?v=${REVISION}" data-pacefold-v22-daylight-settings="${RELEASE}">\n</head>`,'daylight stylesheets');
-  html=replaceExactlyOnce(html,'</body>',`<script defer src="./${assets.runtime}?v=${REVISION}" data-pacefold-v22-daylight="${RELEASE}"></script>\n</body>`,'daylight runtime');
+  html=replaceExactlyOnce(html,'</body>',`<script defer src="./${assets.cues}?v=${REVISION}" data-pacefold-v22-cues="${RELEASE}"></script>\n<script defer src="./${assets.runtime}?v=${REVISION}" data-pacefold-v22-daylight="${RELEASE}"></script>\n</body>`,'daylight runtimes');
   await fs.writeFile(file,html);
 }
 async function patchLanding(file){
@@ -111,6 +135,7 @@ async function verify(){
   const hardening=await fs.readFile(path.join(targetApp,'pacefold-v22-hardening.js'),'utf8');
   const dayflow=await fs.readFile(path.join(targetApp,'pacefold-v21-precision.js'),'utf8');
   const ma=await fs.readFile(path.join(targetApp,'pacefold-ma.js'),'utf8');
+  const cues=await fs.readFile(path.join(targetApp,assets.cues),'utf8');
   const daylight=await fs.readFile(path.join(targetApp,assets.runtime),'utf8');
   if(!html.includes(`<head>\n<link rel="stylesheet" href="./${assets.boot}?v=${REVISION}"`))throw new Error('No-flash boot stylesheet is not first in the head');
   if(!html.includes(`<meta name="pacefold-experience" content="${RELEASE}">`))throw new Error('Daylight experience meta is stale');
@@ -121,16 +146,21 @@ async function verify(){
   if(!hardening.includes(`const RELEASE='${RELEASE}'`))throw new Error('Built hardening runtime was not advanced');
   if(!dayflow.includes(`const EXPERIENCE='${RELEASE}'`)||!dayflow.includes(`const RELEASE='${RELEASE}'`))throw new Error('Dayflow can still downgrade the active experience');
   if(ma.includes("prefs.quietMode||prefs.taskbarBadge===false")||ma.includes("quietMode:true,quietRestore:restore,privacy:true,clarity:'discreet',notificationDetail:'generic',taskbarBadge:false"))throw new Error('Quiet still disables the taskbar attention surface');
-  for(const token of [`const RELEASE='${RELEASE}'`,'buildDayUnfold','renderFavicon','Taskbar cue dots'])if(!daylight.includes(token))throw new Error(`Daylight runtime token missing: ${token}`);
+  if(!ma.includes('window.__PACEFOLD_CUES__?.count?.()'))throw new Error('The legacy badge loop can still overwrite cue counts');
+  for(const token of [`const RELEASE='${RELEASE}'`,'pacefold.daylight.cues.v1','wrapDelivery','window.__PACEFOLD_CUES__'])if(!cues.includes(token))throw new Error(`Cue queue token missing: ${token}`);
+  for(const token of [`const RELEASE='${RELEASE}'`,'buildDayUnfold','renderFavicon','Taskbar cue dots','window.__PACEFOLD_CUES__?.sources?.()'])if(!daylight.includes(token))throw new Error(`Daylight runtime token missing: ${token}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Daylight cache revision is stale');
 }
 
-const runtime=await fs.readFile(path.join(sourceRoot,assets.runtime),'utf8');
-new vm.Script(runtime,{filename:assets.runtime});
-if(/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime))throw new Error('Daylight runtime contains unsafe DOM construction');
+for(const asset of [assets.cues,assets.runtime]){
+  const runtime=await fs.readFile(path.join(sourceRoot,asset),'utf8');
+  new vm.Script(runtime,{filename:asset});
+  if(/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime))throw new Error(`${asset} contains unsafe DOM construction`);
+}
 await Promise.all(Object.values(assets).map(asset=>fs.copyFile(path.join(sourceRoot,asset),path.join(targetApp,asset))));
 await patchHardeningRelease(path.join(targetApp,'pacefold-v22-hardening.js'));
 await patchDayflowOwnership(path.join(targetApp,'pacefold-v21-precision.js'));
+await patchDaylightCueBridge(path.join(targetApp,assets.runtime));
 await patchMaQuietBadgePolicy(path.join(targetApp,'pacefold-ma.js'));
 await patchAppHtml(path.join(targetApp,'index.html'));
 await patchLanding(path.join(targetRoot,'index.html'));
@@ -141,4 +171,4 @@ await fs.writeFile(path.join(targetApp,'pacefold-experience.txt'),`${RELEASE}\n`
 await fs.writeFile(path.join(targetRoot,'pacefold-daylight.txt'),`${RELEASE} ${REVISION}\n`);
 await fs.writeFile(path.join(targetApp,'pacefold-daylight.txt'),`${RELEASE} ${REVISION}\n`);
 await verify();
-console.log(`Installed Pacefold ${RELEASE}: Day Unfold, no-flash boot and Quiet taskbar cues.`);
+console.log(`Installed Pacefold ${RELEASE}: Day Unfold, durable cue queue, no-flash boot and Quiet taskbar cues.`);
