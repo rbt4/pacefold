@@ -37,6 +37,13 @@ async function patchHardeningRelease(file){
   new vm.Script(source,{filename:file});
   await fs.writeFile(file,source);
 }
+async function patchDayflowOwnership(file){
+  let source=await fs.readFile(file,'utf8');
+  source=replaceIfPresent(source,"const EXPERIENCE='22.0.0';",`const EXPERIENCE='${RELEASE}';`,'Dayflow experience ownership');
+  source=replaceIfPresent(source,"const RELEASE='22.0.0';",`const RELEASE='${RELEASE}';`,'Dayflow active release');
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
+}
 async function patchMaQuietBadgePolicy(file){
   let source=await fs.readFile(file,'utf8');
   source=replaceIfPresent(
@@ -102,6 +109,7 @@ async function verify(){
   const html=await fs.readFile(path.join(targetApp,'index.html'),'utf8');
   const worker=await fs.readFile(path.join(targetRoot,'service-worker.js'),'utf8');
   const hardening=await fs.readFile(path.join(targetApp,'pacefold-v22-hardening.js'),'utf8');
+  const dayflow=await fs.readFile(path.join(targetApp,'pacefold-v21-precision.js'),'utf8');
   const ma=await fs.readFile(path.join(targetApp,'pacefold-ma.js'),'utf8');
   const daylight=await fs.readFile(path.join(targetApp,assets.runtime),'utf8');
   if(!html.includes(`<head>\n<link rel="stylesheet" href="./${assets.boot}?v=${REVISION}"`))throw new Error('No-flash boot stylesheet is not first in the head');
@@ -111,6 +119,7 @@ async function verify(){
     if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   }
   if(!hardening.includes(`const RELEASE='${RELEASE}'`))throw new Error('Built hardening runtime was not advanced');
+  if(!dayflow.includes(`const EXPERIENCE='${RELEASE}'`)||!dayflow.includes(`const RELEASE='${RELEASE}'`))throw new Error('Dayflow can still downgrade the active experience');
   if(ma.includes("prefs.quietMode||prefs.taskbarBadge===false")||ma.includes("quietMode:true,quietRestore:restore,privacy:true,clarity:'discreet',notificationDetail:'generic',taskbarBadge:false"))throw new Error('Quiet still disables the taskbar attention surface');
   for(const token of [`const RELEASE='${RELEASE}'`,'buildDayUnfold','renderFavicon','Taskbar cue dots'])if(!daylight.includes(token))throw new Error(`Daylight runtime token missing: ${token}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Daylight cache revision is stale');
@@ -121,6 +130,7 @@ new vm.Script(runtime,{filename:assets.runtime});
 if(/\.innerHTML\s*=|style\s*=\s*["']/.test(runtime))throw new Error('Daylight runtime contains unsafe DOM construction');
 await Promise.all(Object.values(assets).map(asset=>fs.copyFile(path.join(sourceRoot,asset),path.join(targetApp,asset))));
 await patchHardeningRelease(path.join(targetApp,'pacefold-v22-hardening.js'));
+await patchDayflowOwnership(path.join(targetApp,'pacefold-v21-precision.js'));
 await patchMaQuietBadgePolicy(path.join(targetApp,'pacefold-ma.js'));
 await patchAppHtml(path.join(targetApp,'index.html'));
 await patchLanding(path.join(targetRoot,'index.html'));
