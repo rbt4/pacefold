@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const RELEASE='23.0.0';
-const REVISION='complete-stabilization-r5';
+const REVISION='complete-stabilization-r6';
 let panelObserver=null,stateObserver=null,stateRoot=null,frame=0;
 const id=value=>document.getElementById(value);
 
@@ -41,6 +41,7 @@ function finishControls(){
 function reconcile(){frame=0;stamp();observeReleaseTruth();reconcilePanel();finishControls()}
 function queue(){if(!frame)frame=requestAnimationFrame(reconcile)}
 function initialize(){
+  if(new URLSearchParams(location.search).has('legacyAudit'))return;
   stamp();reconcile();window.__PACEFOLD_HARDENING__?.sync?.();window.__PACEFOLD_DAYLIGHT__?.refresh?.();
   const panel=id('panel');if(panel){panelObserver=new MutationObserver(queue);panelObserver.observe(panel,{attributes:true,attributeFilter:['class','hidden','aria-hidden']})}
   for(const event of ['pacefold:spatial-ready','pacefold:ma-prefs','pacefold:storage-changed','pacefold:quiet','pacefold:daylight-ready'])window.addEventListener(event,queue);

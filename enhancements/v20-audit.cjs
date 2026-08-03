@@ -24,7 +24,7 @@ function staticAudit(){
   assert(!/style\s*=\s*["']/.test(runtime),'V20 runtime contains an inline style string');
   assert((html.match(/data-pacefold-v20=/g)||[]).length===2,'V20 CSS and runtime were not injected exactly once');
   assert(html.includes('pacefold-v20.css?v=20.0.1')&&html.includes('pacefold-v20.js?v=20.0.1'),'V20 app assets are not cache-busted');
-  assert((landing.match(/name="pacefold-landing" content="20\.0\.1"/g)||[]).length===1,'V20.0.1 landing marker was not injected exactly once');
+  assert((landing.match(/name="pacefold-landing" content="23\.0\.0"/g)||[]).length===1,'Current V23 landing marker was not injected exactly once');
   for(const asset of ['pacefold-v20.css','pacefold-v20.js'])assert(worker.includes(asset),`Offline shell omits ${asset}`);
   assert(integrated.includes('navigator.setAppBadge?.()')&&!integrated.includes('navigator.setAppBadge?.(1)'),'The integrated notification path still requests a numeric badge');
   assert(ma.includes("flowWaiting=Boolean(document.querySelector('[data-pf-flow-pulse][data-state=\"new\"]'))"),'The badge owner does not preserve integrated waiting state');
@@ -44,7 +44,7 @@ function staticAudit(){
     'forced-colors:active',':focus-visible'
   ])assert(css.includes(token),`V20 CSS token missing: ${token}`);
 
-  assert(landing.includes('one protected workday folio')&&landing.includes('automatic JSON backup')&&landing.includes('Automatic recovery'),'The public page does not explain V20');
+  assert(landing.includes('Pacefold 23 · one quiet spatial workday')&&landing.includes('Four directions. One quiet center.')&&landing.includes('Pacefold 23.0.0 · one quiet spatial workday'),'The public page does not explain the current V23 spatial workday');
 }
 
 function serve(){
