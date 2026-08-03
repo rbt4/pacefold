@@ -297,7 +297,7 @@ async function browserAudit(){
       text:document.body.textContent||'',
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1
     }));
-    assert(landingState.marker==='20.0.1'&&landingState.horizontal&&landingState.text.includes('one protected workday folio')&&landingState.text.includes('automatic JSON backup')&&!retired.test(landingState.text),`V20 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
+    assert(landingState.marker==='23.0.0'&&landingState.horizontal&&landingState.text.includes('Four directions. One quiet center.')&&landingState.text.includes('Pacefold 23.0.0 · one quiet spatial workday')&&!retired.test(landingState.text),`V23 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
     await landingPage.screenshot({path:path.join(artifacts,'pacefold-v19-landing.png'),fullPage:true});
     await landingPage.close();
     await context.close();
