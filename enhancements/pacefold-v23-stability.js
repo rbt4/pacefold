@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const RELEASE='23.0.0';
-const REVISION='complete-stabilization-r3';
+const REVISION='complete-stabilization-r4';
 let panelObserver=null,stateObserver=null,stateRoot=null,frame=0;
 const id=value=>document.getElementById(value);
 

@@ -53,19 +53,20 @@ function mount(){
     document.documentElement.dataset.pacefoldSpatial='legacy';
     return;
   }
+  const release=window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE;
   document.title=TITLE;
   document.documentElement.dataset.pacefoldSpatial='ready';
-  document.documentElement.dataset.pacefoldExperience=RELEASE;
-  document.body.dataset.pacefoldExperience=RELEASE;
-  const root=create('div','pf22-spatial-root');root.id='pf22-spatial-root';root.dataset.mode='home';
+  document.documentElement.dataset.pacefoldExperience=release;
+  document.body.dataset.pacefoldExperience=release;
+  const root=create('div','pf22-spatial-root');root.id='pf22-spatial-root';root.dataset.mode='home';root.dataset.release=release;
   const stage=create('div','pf22-stage');stage.id='pf22-stage';
   stage.append(buildHome(),buildNotes(),buildWorklog(),buildContext(),buildSettings());
   root.append(buildTopbar(),stage,buildEdges(),buildModeDots());
   document.body.append(root);
   installNavigation(root);
   refresh(true);
-  window.__PACEFOLD_SPATIAL__={release:RELEASE,revision:REVISION,go,home:()=>go('home'),refresh:()=>refresh(true),setNoteDate,noteDate:()=>selectedNoteDate};
-  window.dispatchEvent(new CustomEvent('pacefold:spatial-ready',{detail:{release:RELEASE}}));
+  window.__PACEFOLD_SPATIAL__={release,revision:REVISION,go,home:()=>go('home'),refresh:()=>refresh(true),setNoteDate,noteDate:()=>selectedNoteDate};
+  window.dispatchEvent(new CustomEvent('pacefold:spatial-ready',{detail:{release}}));
 }
 
 function buildTopbar(){

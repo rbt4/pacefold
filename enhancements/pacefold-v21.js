@@ -565,9 +565,10 @@
 
   function reconcile(){
     suppressDuplicateSetup();
+    const release=window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE;
     document.documentElement.classList.add('pf-v21-active');
-    document.documentElement.dataset.pacefoldExperience=RELEASE;
-    document.body.dataset.pacefoldExperience=RELEASE;
+    document.documentElement.dataset.pacefoldExperience=release;
+    document.body.dataset.pacefoldExperience=release;
     dayline();
     ribbonMeta();
     calendar();

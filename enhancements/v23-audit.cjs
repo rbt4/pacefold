@@ -22,7 +22,7 @@ function staticAudit(){
   assert(!/<script[^>]+data-pacefold-v22-/i.test(html),'An individual V22 runtime is still active');
   assert(landing.includes('Pacefold 23 · one quiet spatial workday')&&landing.includes('Pacefold 23.0.0 · one quiet spatial workday'),'Landing release copy is stale');
   for(const token of ['@media(forced-colors:active)','@media(prefers-reduced-motion:reduce)','@media(max-width:420px) and (max-height:240px)','.pf23-seconds-dial','.pf22-settings-layout[data-hardened]','.pf22-note-calendar-controls'])assert(css.includes(token),`CSS contract missing: ${token}`);
-  for(const token of [`const RELEASE='${RELEASE}'`,'__PACEFOLD_ACTIVE_RELEASE__','setNoteDate','pacefold.spatial.note.draft.v1','complete-stabilization-r3','observeReleaseTruth'])assert(runtime.includes(token),`Runtime contract missing: ${token}`);
+  for(const token of [`const RELEASE='${RELEASE}'`,'__PACEFOLD_ACTIVE_RELEASE__','setNoteDate','pacefold.spatial.note.draft.v1','complete-stabilization-r4','observeReleaseTruth','window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE','window.__PACEFOLD_ACTIVE_RELEASE__||EXPERIENCE'])assert(runtime.includes(token),`Runtime contract missing: ${token}`);
   for(const asset of ['pacefold-v23-boot.css','pacefold-v23.css','pacefold-v23.js'])assert(worker.includes(asset),`Offline shell omits ${asset}`);
   assert(worker.includes(`revision:${RELEASE}`),'Worker cache revision is stale');
   assert(!/\.innerHTML\s*=|style\s*=\s*["']/.test(read(path.join(app,'pacefold-v23-stability.js'))),'Unsafe V23 DOM construction found');
