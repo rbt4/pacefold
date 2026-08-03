@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const RELEASE='23.0.0';
-const REVISION='complete-stabilization-r2';
+const REVISION='complete-stabilization-r3';
 let panelObserver=null,stateObserver=null,stateRoot=null,frame=0;
 const id=value=>document.getElementById(value);
 
@@ -14,11 +14,10 @@ function stamp(){
   if(window.__PACEFOLD_SPATIAL__?.release!==RELEASE)window.__PACEFOLD_SPATIAL__.release=RELEASE;
   if(window.__PACEFOLD_HARDENING__?.release!==RELEASE)window.__PACEFOLD_HARDENING__.release=RELEASE;
   window.__PACEFOLD_VERSION__={...(window.__PACEFOLD_VERSION__||{}),experience:RELEASE,update:RELEASE,stability:REVISION};
-  if(document.title!=='Clock')document.title='Clock';
 }
 function releaseDrifted(){
   const root=id('pf22-spatial-root');
-  return document.documentElement.dataset.pacefoldExperience!==RELEASE||document.body?.dataset.pacefoldExperience!==RELEASE||Boolean(root&&root.dataset.release!==RELEASE)||document.title!=='Clock';
+  return document.documentElement.dataset.pacefoldExperience!==RELEASE||document.body?.dataset.pacefoldExperience!==RELEASE||Boolean(root&&root.dataset.release!==RELEASE);
 }
 function observeReleaseTruth(){
   const root=id('pf22-spatial-root');if(stateObserver&&stateRoot===root)return;
@@ -26,7 +25,6 @@ function observeReleaseTruth(){
   stateObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-pacefold-experience']});
   if(document.body)stateObserver.observe(document.body,{attributes:true,attributeFilter:['data-pacefold-experience']});
   if(root)stateObserver.observe(root,{attributes:true,attributeFilter:['data-release']});
-  const title=document.querySelector('title');if(title)stateObserver.observe(title,{childList:true,subtree:true,characterData:true});
 }
 function reconcilePanel(){
   const panel=id('panel'),visible=Boolean(panel?.classList.contains('on'));

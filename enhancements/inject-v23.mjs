@@ -87,7 +87,7 @@ async function verify(){
   for(const asset of Object.values(assets))if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
   if(!worker.includes(`revision:${REVISION}`))throw new Error('Offline shell revision is stale');
   for(const token of ['@media(forced-colors:active)','@media(max-width:420px) and (max-height:240px)','.pf23-seconds-dial','.pf22-settings-layout[data-hardened]'])if(!css.includes(token))throw new Error(`Stability CSS token missing: ${token}`);
-  for(const token of [`const RELEASE='${RELEASE}'`,'complete-stabilization-r2','__PACEFOLD_ACTIVE_RELEASE__','observeReleaseTruth'])if(!runtime.includes(token))throw new Error(`Stability runtime token missing: ${token}`);
+  for(const token of [`const RELEASE='${RELEASE}'`,'complete-stabilization-r3','__PACEFOLD_ACTIVE_RELEASE__','observeReleaseTruth'])if(!runtime.includes(token))throw new Error(`Stability runtime token missing: ${token}`);
 }
 
 const stabilityRuntime=await fs.readFile(path.join(sourceRoot,'pacefold-v23-stability.js'),'utf8');new vm.Script(stabilityRuntime,{filename:'pacefold-v23-stability.js'});
