@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 const RELEASE='23.0.0';
-const REVISION='complete-stabilization-r4';
+const REVISION='complete-stabilization-r5';
 let panelObserver=null,stateObserver=null,stateRoot=null,frame=0;
 const id=value=>document.getElementById(value);
 
@@ -11,8 +11,8 @@ function stamp(){
   if(document.body?.dataset.pacefoldExperience!==RELEASE)document.body.dataset.pacefoldExperience=RELEASE;
   const root=id('pf22-spatial-root');if(root){if(root.dataset.release!==RELEASE)root.dataset.release=RELEASE;if(root.dataset.stability!==REVISION)root.dataset.stability=REVISION}
   const version=document.querySelector('.pf22-version'),versionCopy=`Pacefold ${RELEASE} · verified offline core 15.2.2`;if(version&&version.textContent!==versionCopy)version.textContent=versionCopy;
-  if(window.__PACEFOLD_SPATIAL__?.release!==RELEASE)window.__PACEFOLD_SPATIAL__.release=RELEASE;
-  if(window.__PACEFOLD_HARDENING__?.release!==RELEASE)window.__PACEFOLD_HARDENING__.release=RELEASE;
+  if(window.__PACEFOLD_SPATIAL__&&window.__PACEFOLD_SPATIAL__.release!==RELEASE)window.__PACEFOLD_SPATIAL__.release=RELEASE;
+  if(window.__PACEFOLD_HARDENING__&&window.__PACEFOLD_HARDENING__.release!==RELEASE)window.__PACEFOLD_HARDENING__.release=RELEASE;
   window.__PACEFOLD_VERSION__={...(window.__PACEFOLD_VERSION__||{}),experience:RELEASE,update:RELEASE,stability:REVISION};
 }
 function releaseDrifted(){
