@@ -2,28 +2,30 @@
 
 **One workday, quietly contained.**
 
-Pacefold is a local-first, installable workday folio. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 20 keeps the important functions visible and makes local notes recoverable:
+Pacefold is a local-first, installable workday folio. Its checksum-verified core owns schedules, cue completion, preferences and offline behaviour. Pacefold 23 keeps one calm clock at the centre of a spatial workday:
 
-- **Now** — a stable clock with visible seconds, date, next cue, Day Ribbon and saved-location weather share the top of the folio;
-- **Rhythm** — Water, Timer, Away, Meal, Eyes and Move are equally visible, tactile controls with their full options intact;
-- **Notebook** — the lower half stays available for notes and local sound, with an automatic backup file you choose;
-- **Growth** — a small module contract lets later tools join the utility area without replacing the clock or creating another layout owner.
+- **Clock** — the home face holds the time, analog seconds dial, next useful status, Day Unfold, weather glimpse and six original rhythm controls;
+- **Notes (Up)** — a durable draft, recent notes and a navigable activity calendar share one compact face; saving returns to the Clock;
+- **Worklog (Left)** — completed and active desk, field, focus, away and meal moments remain readable without crowding the home face;
+- **Now (Right)** — saved-location weather and current workday context live together;
+- **Settings & Sound (Down)** — everyday controls stay visible, advanced profile/schedule/backup routes remain reachable, and local Sound opens in the same warm-paper visual system.
 
 OneNote delivery is retired. Quick notes, the full local notebook, Copy day and `pacefold.backup.v1` remain. The Microsoft Graph endpoint is not permitted by the current app shell.
 
-## Pacefold 20 — protected workday folio
+## Pacefold 23 — complete stabilization
 
-V20 removes the remaining visual seam and gives taskbar attention and notebook recovery one clear owner.
+V23 is a corrective release over the retained V21/V22 spatial layers. It does not modify the checksum-verified core or sealed enhancement parts.
 
-- The dashboard and notebook sit inside one continuous light folio with one border, one shadow and one material system.
-- Two-digit seconds are visible beside the main clock whenever **Seconds** is enabled.
-- Due cues request an empty App Badging flag so installed Edge can render a dot. Pacefold mirrors the same state in the brand, a visible dashboard marker and the browser favicon.
-- The six rhythm controls keep their existing actions and options, with stable source colours and a clear due marker instead of continuous animation.
-- **Choose backup file** opens Edge's file picker. After a file is selected, Pacefold writes a current `pacefold.backup.v1` after notebook and preference changes.
-- The working notebook still lives in this Edge profile's Pacefold site storage; the protected copy lives at the exact folder and filename selected in the file picker.
-- If notebook storage is later missing or corrupt, Pacefold reads that file automatically when permission is still granted.
-- Edge may return file permission to `prompt` after a browser restart. Pacefold then shows **Reconnect backup**; one user click is required because a background permission prompt is prohibited.
-- The JSON file contains safe preferences, notes, categories, playlist definitions, streaming links and rhythm history. Local audio blobs remain excluded.
+- Fresh profiles now keep the guided setup visible; default preferences written by the core no longer masquerade as completed onboarding.
+- Returning profiles open directly to a screenshare-safe **Clock** title and the clock-first spatial surface.
+- Water, Noodles/Timer, Away, Meal, Eyes and Move are restored as six equal home controls. Desk/day type and Focus remain on Worklog.
+- Missed schedule copy no longer dominates the Clock indefinitely; history routes to Worklog while the home status points forward.
+- Note drafts survive reloads, the calendar can move between months and filter a selected day, and a successful save closes back to Clock.
+- Settings uses release-independent layout hooks, three complete cards and four honest advanced routes: Profile & routines, Schedule & day types, Backup notes and Sound library.
+- Sound is a contained, accessible paper workspace instead of a detached black slab.
+- The active V21/V22 presentation is bundled into one stylesheet and one runtime, reducing page requests while preserving legacy V19/V20 APIs and compatibility gates.
+- High-frequency observers and render loops were narrowed or slowed; the durable cue queue is the sole native badge owner.
+- The release floor explicitly covers 390 px mobile, 340 × 150 Wafer, reduced motion, forced colours, offline caching and first-run/returning-user lifecycle.
 
 ## Pacefold 19.1 — persistent workday folio
 
@@ -150,7 +152,7 @@ The integrated document supports:
 
 ## Local music
 
-Sound uses a page inside the persistent lower notebook. It does not open a modal, reserve a black footer lane or cover the clock.
+Sound opens from Settings as one contained workspace and returns to Settings when closed. Its colours follow Pacefold's current paper or dark theme; it does not reserve a footer lane or leave an unrelated black surface behind.
 
 The primary workflow is local audio:
 
@@ -215,7 +217,7 @@ The release audit checks exclusive surface state, restored accessibility state, 
 1. Open the Pacefold GitHub Pages app in Microsoft Edge.
 2. Complete setup before installing the PWA.
 3. Install through **… → Apps → Install Pacefold** and pin it when desired.
-4. After 20.0.1 deploys, fully close every Pacefold and Edge PWA window once.
+4. After 23.0.0 deploys, fully close every Pacefold and Edge PWA window once.
 5. Reopen Pacefold so the cache-busted dashboard replaces the older surface.
 
 ## Honest platform boundaries
@@ -226,6 +228,6 @@ Browser timers also cannot guarantee exact delivery while the app is closed, hea
 
 ## Version
 
-Pacefold 20.0.1 protected-folio enhancement layer over the preserved Pacefold 19.1 folio, Pacefold 18 cue and data systems, Pacefold 15.8 integrated runtime and verified 15.2.2 core archive.
+Pacefold 23.0.0 complete-stabilization enhancement layer over the preserved spatial, folio, cue and data systems and verified 15.2.2 core archive.
 
 Core archive SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`.

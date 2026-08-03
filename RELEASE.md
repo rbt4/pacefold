@@ -1,38 +1,54 @@
-# Pacefold 20.0.1 — protected workday folio
+# Pacefold 23.0.0 — complete stabilization
 
-- Surface version: `20.0.1`
-- Preserved rhythm systems: `18.0.2`
+- Surface version: `23.0.0`
+- Preserved Day Unfold and cue queue: `22.0.2`
+- Preserved spatial base: `22.0.0`
 - Integrated runtime: `15.8.0`
 - Verified core version: `15.2.2`
-- Enhancement entry point: `enhancements/inject.mjs`
+- Enhancement entry points: `enhancements/inject.mjs`, `enhancements/inject-v22-hardening.mjs`, `enhancements/inject-v22-daylight.mjs`, `enhancements/inject-v23.mjs`
 
 ## Release completion policy
 
-An approved Pacefold implementation ships end to end by default. Work is not complete at a local worktree, commit, pushed branch, pull request, merge, or green validation run.
+An approved Pacefold implementation ships end to end by default. Work is complete only after the tested scope is committed, pushed, merged into `main`, deployed through the production workflow, and verified on the cache-busted live page and app. The public page, app version, cache token, service worker and release notes must agree. The only exceptions are an explicit instruction to keep work local, stop before release or prepare review-only changes.
 
-Completion requires the tested scope to be committed, pushed, merged into `main`, deployed through the production workflow, and verified on the cache-busted live page and app. The public page, app version, cache token, service worker, and release notes must agree, and the rendered live desktop and narrow/mobile surfaces must be inspected. The only exceptions are an explicit instruction to keep the work local, stop before release, or prepare review-only changes.
+## What 23.0.0 fixes
 
-V20 is entirely additive in `enhancements/`. The checksum-verified archive is unchanged. The `pacefold-v20.css` and `pacefold-v20.js` layer loads after the retained V19.1 folio, scheduler, ribbon, preference, Quiet, Wafer, review, backup and storage systems. Injection remains idempotent.
+The checksum-verified archive and sealed enhancement parts remain unchanged. V23 is a final additive stabilization layer that corrects lifecycle, layout, ownership, performance and release-truth faults found in the deployed 22.0.2 surface.
 
-The home surface is one continuous light folio. A clock with visible seconds, next cue, saved-location weather and the six Water, Timer, Away, Meal, Eyes and Move controls occupy the upper instrument. A permanent, roughly half-height notebook occupies the lower workspace. Notes are immediately writable; Sound replaces the notebook page in place. Neither uses a modal, blur scrim, flying sheet or ordinary close control.
+- Fresh setup is no longer hidden by the core's initial default-preference write. Only an onboarding marker or a meaningful prior snapshot identifies a returning user.
+- The resting surface is again one calm clock. Up opens Notes, Left Worklog, Right Now, and Down Settings & Sound.
+- The six original home actions are Water, Noodles/Timer, Away, Meal, Eyes and Move. Day type and Focus remain available on Worklog.
+- A small analog seconds dial joins the numeric seconds and obeys the existing Seconds setting.
+- Stale missed-moment copy routes into Worklog instead of remaining the main Clock message indefinitely.
+- Notes keep unsaved drafts across reloads, offer previous/current/next month navigation and date filtering, and return to Clock after a successful save.
+- Settings uses a release-independent hardening selector, preventing the version-stamp mismatch that clipped its third card in 22.0.2. Four advanced routes expose profile/routines, schedule/day types, protected backup and local Sound.
+- Sound is visually contained in the current Pacefold paper or dark theme instead of switching to a detached black application.
+- The durable source-aware cue queue is the only native badge writer. Quiet preserves the user's private taskbar cue preference while hiding sensitive in-window detail.
+- Broad document mutation observation and sub-second rebuild loops were replaced with targeted observation, active-face rendering and slower reconciliation intervals.
+- Active V21/V22 presentation assets are composed into `pacefold-v23.css` and `pacefold-v23.js`. The retained legacy assets and APIs remain available for compatibility, while the live page makes nine fewer stylesheet/script requests than 22.0.2.
+- The public landing page, visible version, experience markers, worker revision and release documentation now agree on 23.0.0.
 
-The taskbar path now has one semantic state. Pending attention requests `setAppBadge()` without a number, allowing an installed Edge PWA on Windows to display its platform flag/dot. The same state is mirrored in the Pacefold brand, a visible dashboard marker and the favicon. Badging remains best effort and can be disabled by browser or workplace policy.
+## Validation floor
 
-The notebook rail exposes a selectable automatic backup file. The working notebook remains in the current Edge profile's Pacefold site storage, while the protected JSON copy lives at the folder and filename the user selects. V20 stores the permitted file handle in browser-local IndexedDB, writes the versioned JSON after notebook and preference changes, refuses to overwrite it when local notebook storage is invalid, and recovers from it when storage is missing or corrupt. If Edge returns the file permission to `prompt`, the user must click **Reconnect backup** before recovery or writes can continue.
+The repository verifier once again runs in GitHub Actions. It reconstructs and validates the sealed core, checks immutable hub-part Git hashes, injects every retained layer twice where supported, injects V23 twice, verifies a single active bundle, validates offline cache membership and checks landing/release truth.
 
-The active product contains no Japanese feature names or theme labels. Its visual language is Pacefold’s own: quiet neutral surfaces, clear information hierarchy, restrained colour by function and short material transitions.
+The browser gate covers:
 
-OneNote delivery is retired. V19 removes its visible routes, makes queued delivery a no-op and removes Microsoft Graph from the app CSP. Existing preference fields remain readable for migration safety. Local capture, the full notebook, Copy day and `pacefold.backup.v1` remain.
+- untouched first-run onboarding and returning-user startup;
+- clock title, one visible face and six rhythm controls;
+- Day Unfold and distinct source-coloured cue dots;
+- note draft recovery, save-and-close, calendar navigation and date selection;
+- complete Settings geometry and all four advanced routes;
+- Seconds setting ownership and light-paper Sound containment;
+- desktop, 390 px mobile and 340 × 150 Wafer containment;
+- reduced motion, forced colours and console/page errors;
+- retained notebook, resilience, dock/taskbar, privacy, V19 and V20 compatibility suites.
 
-The release gate runs construction, notebook, resilience, integrated, preserved-core, retained V19 and V20 browser suites. V20 covers the joined visual folio, visible seconds, empty-flag badging, synchronized fallback markers, selectable automatic backup, simulated local-storage recovery, desktop/mobile/Wafer containment, reduced motion, offline assets and single-copy injection.
+## Honest platform boundaries
 
-## Notification ceiling
+Pacefold remains local-first and offline-ready. Browser notifications, App Badging, PWA installation, persistent file permission and background execution are best effort and may be blocked by Edge or workplace policy. Pacefold does not bypass those controls. Exact cue delivery is not possible while the browser is closed, suspended, heavily throttled or the laptop is asleep; Pacefold reconciles elapsed wall time on return.
 
-Notifications remain non-sticky, keep one retained toast, replace rather than stack, and stay inside configured work hours. Waiting state expires after `dueWindow`.
-
-Pacefold does not implement Periodic Background Sync or Notification Triggers. Edge support is inconsistent and managed-device policy may block both. When the browser is closed, suspended, throttled or the laptop is asleep, exact notification delivery is not possible. On return, Pacefold reconciles elapsed wall time, drops stale low-priority backlog, resolves expired timers from stored timestamps and writes one consolidated status line.
-
-Permission requests for notifications, persistent storage and app badging are best effort and degrade silently.
+Notes stay in this browser profile. A user-selected `pacefold.backup.v1` JSON file can protect safe preferences, notes, categories, playlist definitions, streaming links and rhythm history. Local audio blobs are excluded. File permission may require a new user gesture after an Edge restart.
 
 ## Verified core archive
 
@@ -41,6 +57,4 @@ Permission requests for notifications, persistent storage and app badging are be
 - SHA-256: `2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b`
 - Release parts: `release/pacefold-v15.zip.b64.part-00` through `part-08`
 
-GitHub Actions concatenates and decodes the archive, verifies SHA-256, confirms that the version advanced from the previous deployed archive, and runs the build, static, browser-upgrade, notification-action, offline and responsive audits contained inside the release.
-
-The archive contains the full static source tree, PWA manifest and shortcuts, service workers, action and notification icons, local pinned MSAL runtime and license, documentation, and the test/build scripts used for release validation.
+GitHub Actions concatenates and decodes the archive, verifies the SHA-256 and runs the archive's build, validation and preserved-core browser audits before applying the enhancement layers.

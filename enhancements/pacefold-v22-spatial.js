@@ -2,11 +2,14 @@
 'use strict';
 const RELEASE='22.0.0';
 const REVISION='spatial-r1';
-const TITLE='Pacefold — Quiet Workday Rhythm';
+const TITLE='Clock';
 const PREFS='pacefoldPrefsV15';
 const NOTES='pacefold.notebook.entries.v2';
+const DRAFT='pacefold.spatial.note.draft.v1';
+const ONBOARDED='pacefoldOnboardedV15';
+const DISMISSED='pacefoldSetupDismissedV15';
 const MODES={home:[0,0],notes:[0,-1],worklog:[-1,0],context:[1,0],settings:[0,1]};
-let mode='home',edgeTimer=0,tickTimer=0,observer=null,lastMinute=-1;
+let mode='home',edgeTimer=0,tickTimer=0,observer=null,setupObserver=null,refreshFrame=0,lastMinute=-1,selectedNoteDate='';
 const $=selector=>document.querySelector(selector);
 const id=value=>document.getElementById(value);
 const text=value=>String(value??'').replace(/\s+/g,' ').trim();
@@ -23,7 +26,8 @@ const visibleNotes=()=>notes().slice().sort((a,b)=>new Date(b.updatedAt||b.creat
 
 function returningUser(){
   if(new URLSearchParams(location.search).has('legacyAudit')||sessionStorage.getItem('pacefold.spatial.disabled')==='1')return false;
-  return Boolean(localStorage.getItem(PREFS)||localStorage.getItem('pacefoldOnboardedV15')||window.__PACEFOLD_V21_BOOT__?.returning);
+  if(new URLSearchParams(location.search).has('setup'))return false;
+  return Boolean(window.__PACEFOLD_V21_BOOT__?.returning||localStorage.getItem(ONBOARDED)==='1'||localStorage.getItem(DISMISSED)==='1');
 }
 
 function nodeText(selector,fallback=''){
@@ -49,19 +53,20 @@ function mount(){
     document.documentElement.dataset.pacefoldSpatial='legacy';
     return;
   }
+  const release=window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE;
   document.title=TITLE;
   document.documentElement.dataset.pacefoldSpatial='ready';
-  document.documentElement.dataset.pacefoldExperience=RELEASE;
-  document.body.dataset.pacefoldExperience=RELEASE;
-  const root=create('div','pf22-spatial-root');root.id='pf22-spatial-root';root.dataset.mode='home';
+  document.documentElement.dataset.pacefoldExperience=release;
+  document.body.dataset.pacefoldExperience=release;
+  const root=create('div','pf22-spatial-root');root.id='pf22-spatial-root';root.dataset.mode='home';root.dataset.release=release;
   const stage=create('div','pf22-stage');stage.id='pf22-stage';
   stage.append(buildHome(),buildNotes(),buildWorklog(),buildContext(),buildSettings());
   root.append(buildTopbar(),stage,buildEdges(),buildModeDots());
   document.body.append(root);
   installNavigation(root);
   refresh(true);
-  window.__PACEFOLD_SPATIAL__={release:RELEASE,revision:REVISION,go,home:()=>go('home'),refresh:()=>refresh(true)};
-  window.dispatchEvent(new CustomEvent('pacefold:spatial-ready',{detail:{release:RELEASE}}));
+  window.__PACEFOLD_SPATIAL__={release,revision:REVISION,go,home:()=>go('home'),refresh:()=>refresh(true),setNoteDate,noteDate:()=>selectedNoteDate};
+  window.dispatchEvent(new CustomEvent('pacefold:spatial-ready',{detail:{release}}));
 }
 
 function buildTopbar(){
@@ -97,13 +102,21 @@ function buildHome(){
   const mark=create('div','pf22-home-mark');mark.append(create('span','','Pacefold'),create('small','','Focus · rhythm · flow'));
   const time=create('div','pf22-time');time.id='pf22-time';
   const main=create('span','pf22-time-main','--:--');main.id='pf22-time-main';
-  const side=create('span','pf22-time-side');side.append(create('b','pf22-seconds','--'),create('small','pf22-ampm','--'));time.append(main,side);
+  const side=create('span','pf22-time-side'),dial=create('span','pf23-seconds-dial');dial.setAttribute('aria-hidden','true');dial.append(create('i',''));
+  side.append(dial,create('b','pf22-seconds','--'),create('small','pf22-ampm','--'));time.append(main,side);
   const date=create('div','pf22-date');date.id='pf22-date';
-  const status=create('button','pf22-status');status.type='button';status.id='pf22-status';status.addEventListener('click',()=>proxyClick(['#statusLine','.pf21-dayline']));
+  const status=create('button','pf22-status');status.type='button';status.id='pf22-status';status.addEventListener('click',()=>status.dataset.actionable==='false'?go('worklog'):proxyClick(['#statusLine','.pf21-dayline']));
   const progress=create('div','pf22-progress');progress.append(create('i','pf22-progress-fill'));progress.id='pf22-progress';
   const rituals=create('div','pf22-rituals');
-  const items=[['water','Water',['#waterBtn','#waterPill']],['timer','Timer',['#noodleBtn','#lunchPill']],['field','Desk',['#pf-day-type']],['focus','Focus',[]]];
-  for(const [key,label,selectors] of items){const control=button('pf22-ritual',label,label);control.dataset.ritual=key;control.addEventListener('click',()=>key==='focus'?window.__PACEFOLD_DAYFLOW__?.toggleFocus?.():proxyClick(selectors));rituals.append(control)}
+  const items=[
+    ['water','Water',['#waterBtn','#waterPill']],
+    ['timer','Timer',['#noodleBtn','#noodlePill']],
+    ['away','Away',['#awayBtn','#awayPill']],
+    ['meal','Meal',['#lunchBtn','#lunchPill']],
+    ['eyes','Eyes',['#eyesBtn','#gazeBtn']],
+    ['move','Move',['#careBtn','#bodyBtn']]
+  ];
+  for(const [key,label,selectors] of items){const control=button('pf22-ritual',label,label);control.dataset.ritual=key;control.addEventListener('click',()=>proxyClick(selectors));rituals.append(control)}
   const glimpse=button('pf22-context-glimpse','Open weather and focus context','');glimpse.id='pf22-context-glimpse';glimpse.addEventListener('click',()=>go('context'));
   const navHint=create('div','pf22-nav-hint','Move to an edge or use the arrow keys');
   hero.append(mark,time,date,status,progress,rituals,glimpse,navHint);section.append(hero);return section;
@@ -115,6 +128,8 @@ function buildNotes(){
   const capture=create('section','pf22-capture');
   capture.append(create('label','pf22-field-label','Capture from this moment'));
   const textarea=create('textarea','pf22-note-input');textarea.id='pf22-note-input';textarea.placeholder='Decision, follow-up, field observation or idea…';
+  try{textarea.value=localStorage.getItem(DRAFT)||''}catch{}
+  textarea.addEventListener('input',()=>{try{if(textarea.value)localStorage.setItem(DRAFT,textarea.value);else localStorage.removeItem(DRAFT)}catch{}});
   const actions=create('div','pf22-capture-actions');
   const status=create('span','pf22-save-status','Local only');status.id='pf22-save-status';
   const save=button('pf22-primary','Save note','Save note');save.addEventListener('click',saveSpatialNote);
@@ -126,8 +141,13 @@ function buildNotes(){
 function saveSpatialNote(){
   const input=id('pf22-note-input'),body=text(input?.value);if(!body)return;
   const now=new Date(),all=notes();all.push({id:`spatial-${now.getTime().toString(36)}`,date:localKey(now),body,category:'Moment',createdAt:now.toISOString(),updatedAt:now.toISOString()});
-  try{localStorage.setItem(NOTES,JSON.stringify(all.slice(-1000)));window.__PACEFOLD_DAYFLOW__?.add?.('note','Note captured',body.slice(0,90),now.getTime(),'note-spatial');window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{key:NOTES,source:'spatial'}}));input.value='';id('pf22-save-status').textContent='Saved locally';setTimeout(()=>{const node=id('pf22-save-status');if(node)node.textContent='Local only'},1600);renderNotes()}
+  try{localStorage.setItem(NOTES,JSON.stringify(all.slice(-1000)));localStorage.removeItem(DRAFT);window.__PACEFOLD_DAYFLOW__?.add?.('note','Note captured',body.slice(0,90),now.getTime(),'note-spatial');window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{key:NOTES,source:'spatial'}}));input.value='';selectedNoteDate=localKey(now);id('pf22-save-status').textContent='Saved locally';renderNotes();setTimeout(()=>go('home'),720)}
   catch{const node=id('pf22-save-status');if(node)node.textContent='Could not save'}
+}
+
+function setNoteDate(value=''){
+  selectedNoteDate=/^20\d{2}-\d{2}-\d{2}$/.test(String(value))?String(value):'';
+  renderNotes();return selectedNoteDate;
 }
 
 function buildWorklog(){
@@ -210,7 +230,7 @@ function refresh(force=false){
   document.title=TITLE;
   const quiet=Boolean(window.__PACEFOLD_MA_QUIET__?.get?.()||prefs().quietMode||document.body.dataset.quiet==='true');
   const root=id('pf22-spatial-root');if(!root)return;root.dataset.quiet=String(quiet);id('pf22-quiet').dataset.active=String(quiet);
-  renderClock();renderNotes();renderWorklog();renderContext();renderSettings();
+  renderClock();if(force||mode==='notes')renderNotes();if(force||mode==='worklog')renderWorklog();if(force||mode==='context')renderContext();if(force||mode==='settings')renderSettings();
   if(quiet&&mode!=='home')go('home');
 }
 
@@ -218,20 +238,36 @@ function renderClock(){
   const now=new Date(),hours=now.getHours(),is24=prefs().timeFormat==='24',display=is24?String(hours).padStart(2,'0'):String(hours%12||12);
   id('pf22-time-main').textContent=`${display}:${String(now.getMinutes()).padStart(2,'0')}`;
   $('.pf22-seconds').textContent=String(now.getSeconds()).padStart(2,'0');
+  const dial=$('.pf23-seconds-dial');if(dial)dial.style.setProperty('--pf23-second-angle',`${now.getSeconds()*6}deg`);
   $('.pf22-ampm').textContent=is24?'':hours>=12?'PM':'AM';
   id('pf22-date').textContent=now.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
-  const status=nodeText('#statusLine',nodeText('.pf21-dayline','Workday in progress'));id('pf22-status').textContent=status;
+  const statusNode=id('pf22-status'),stale=/^overdue$/i.test(nodeText('#statusWord')),status=stale?nextWorkdayStatus(now):nodeText('#statusLine',nodeText('.pf21-dayline','Workday in progress'));
+  statusNode.textContent=status;statusNode.dataset.actionable=String(!stale);statusNode.title=stale?'Open Worklog to review the missed moment':'Use the current workday action';
   const original=$('#progressFill,.pf21-dayline-progress i,.pf-ribbon-spent'),width=original?parseFloat(getComputedStyle(original).width)||0:0,parent=original?.parentElement?parseFloat(getComputedStyle(original.parentElement).width)||1:1;
   $('.pf22-progress-fill').style.setProperty('--pf22-progress',`${Math.min(100,Math.max(0,width/parent*100))}%`);
   const weather=[nodeText('.pf-v19-weather-temp'),nodeText('.pf-v19-weather-copy>strong')].filter(Boolean).join(' · ')||'Weather';id('pf22-context-glimpse').textContent=weather;
-  const focus=window.__PACEFOLD_DAYFLOW__?.events?.().some(event=>event.type==='focus'&&!event.end);const focusButton=$('[data-ritual="focus"]');if(focusButton){focusButton.textContent=focus?'End focus':'Focus';focusButton.dataset.active=String(focus)}
-  const field=document.body.dataset.dayType==='field';const fieldButton=$('[data-ritual="field"]');if(fieldButton){fieldButton.textContent=field?'Field':'Desk';fieldButton.dataset.active=String(field)}
-  const water=$('[data-ritual="water"]');if(water)water.dataset.due=String($('#waterBtn.due,#waterPill.due')!=null);
-  const timer=$('[data-ritual="timer"]');if(timer)timer.dataset.due=String($('#noodleBtn.ready,#lunchPill.ready')!=null);
+  const p=prefs(),timerLabel=p.prepPreset==='noodles'?`Noodles ${Number(p.noodleMinutes)||30}m`:nodeText('#noodleText','Timer');
+  const states={
+    water:{label:'Water',due:'#waterBtn.due,#waterPill.due',active:'#waterBtn.active,#waterPill.active'},
+    timer:{label:timerLabel,due:'#noodleBtn.ready,#noodlePill.ready',active:'#noodleBtn.running,#noodlePill.running'},
+    away:{label:nodeText('#awayText','Away'),due:'#awayBtn.due,#awayPill.due',active:'#awayBtn.active,#awayPill.active'},
+    meal:{label:nodeText('#lunchText','Meal'),due:'#lunchBtn.ready,#lunchPill.ready',active:'#lunchBtn.running,#lunchPill.running'},
+    eyes:{label:'Eyes',due:'#eyesBtn.due,#gazeBtn.due',active:'#eyesBtn.active,#gazeBtn.active'},
+    move:{label:'Move',due:'#careBtn.due,#bodyBtn.due',active:'#careBtn.active,#bodyBtn.active'}
+  };
+  for(const [key,state] of Object.entries(states)){const control=$(`[data-ritual="${key}"]`);if(!control)continue;control.textContent=state.label;control.dataset.due=String(Boolean($(state.due)));control.dataset.active=String(Boolean($(state.active)))}
+}
+
+function nextWorkdayStatus(now=new Date()){
+  const sequence=id('sequence'),progress=parseFloat(sequence?.style.getPropertyValue('--pf-ribbon-progress')||'0'),creases=[...(sequence?.querySelectorAll('.pf-ribbon-crease')||[])].map(node=>({node,x:parseFloat(node.style.getPropertyValue('--pf-ribbon-x'))/100})).filter(item=>Number.isFinite(item.x)&&item.x>progress+.001).sort((a,b)=>a.x-b.x),next=creases[0];
+  if(!next)return'Workday in progress · missed moment moved to Worklog';
+  const value=prefs(),match=String(value.workHours||'08:30-16:30').match(/^(\d{2}):(\d{2})-(\d{2}):(\d{2})$/),start=match?Number(match[1])+Number(match[2])/60:8.5,end=match?Number(match[3])+Number(match[4])/60:16.5,hour=start+(end-start)*next.x,at=new Date(now);at.setHours(Math.floor(hour),Math.round((hour%1)*60),0,0);
+  const label=text(next.node.getAttribute('aria-label')||next.node.title)||'Scheduled moment',remaining=Math.max(0,at-now);
+  return`Next · ${at.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${formatDuration(remaining)} · ${label}`;
 }
 
 function renderNotes(){
-  const list=$('.pf22-note-list');if(!list)return;const values=visibleNotes().slice(0,8);list.replaceChildren();
+  const list=$('.pf22-note-list');if(!list)return;const values=visibleNotes().filter(note=>!selectedNoteDate||noteDate(note)===selectedNoteDate).slice(0,8),heading=$('.pf22-notes-recent>header');if(heading)heading.textContent=selectedNoteDate?`Notes · ${new Date(`${selectedNoteDate}T12:00:00`).toLocaleDateString([],{month:'short',day:'numeric'})}`:'Recent notes';list.replaceChildren();
   if(!values.length){list.append(create('div','pf22-empty','No notes yet. Capture only what is worth remembering.'));return}
   for(const note of values){const article=create('article','pf22-note-row'),meta=create('span','pf22-note-meta');meta.append(create('time','',formatTime(note.updatedAt||note.createdAt)),create('small','',note.category||'Note'));article.append(meta,create('p','',note.body));list.append(article)}
 }
@@ -262,13 +298,32 @@ function renderSettings(){
   const track=id('pf22-track');if(track)track.textContent=nodeText('.pf-v19-workbench-track','Nothing playing');
 }
 
-function initialize(){
-  mount();
-  if(!id('pf22-spatial-root'))return;
-  observer=new MutationObserver(()=>refresh());observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','data-state','data-day-type','data-quiet','data-active','aria-selected']});
+function queueRefresh(){if(refreshFrame)return;refreshFrame=requestAnimationFrame(()=>{refreshFrame=0;refresh()})}
+
+function awaitSetupCompletion(){
+  const onboarding=id('onboarding'),requested=new URLSearchParams(location.search).has('setup');if(!onboarding)return;
+  let seenVisible=!onboarding.hidden;
+  const attempt=()=>{
+    if(!onboarding.hidden){seenVisible=true;return}
+    const complete=localStorage.getItem(ONBOARDED)==='1'||localStorage.getItem(DISMISSED)==='1';if(!complete||requested&&!seenVisible)return;
+    if(requested){const url=new URL(location.href);url.searchParams.delete('setup');history.replaceState(null,'',`${url.pathname}${url.search}${url.hash}`)}
+    setupObserver?.disconnect();setupObserver=null;mount();activateRuntime();
+  };
+  setupObserver=new MutationObserver(attempt);setupObserver.observe(onboarding,{attributes:true,attributeFilter:['hidden','aria-hidden','class']});window.addEventListener('pacefold:ma-prefs',attempt);setTimeout(attempt,700);
+}
+
+function activateRuntime(){
+  const root=id('pf22-spatial-root');if(!root||root.dataset.runtimeActive==='true')return;root.dataset.runtimeActive='true';
+  observer=new MutationObserver(queueRefresh);for(const node of ['#statusLine','#progressFill','#waterBtn','#noodleBtn','#awayBtn','#lunchBtn','#eyesBtn','#careBtn','.pf-v19-weather'].map($).filter(Boolean))observer.observe(node,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','data-state','data-active','aria-selected','style']});
   for(const event of ['pacefold:dayflow','pacefold:storage-changed','pacefold:ma-prefs','pacefold:quiet'])window.addEventListener(event,()=>refresh(true));
   window.addEventListener('storage',()=>refresh(true));
   const tick=()=>{refresh();tickTimer=setTimeout(tick,Math.max(100,1010-Date.now()%1000))};tick();
+}
+
+function initialize(){
+  mount();
+  if(!id('pf22-spatial-root')){awaitSetupCompletion();return}
+  activateRuntime();
 }
 
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',initialize,{once:true}):initialize();

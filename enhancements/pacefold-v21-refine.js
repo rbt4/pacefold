@@ -29,14 +29,15 @@
   }
 
   function patchPublicVersion(){
+    const release=window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE;
     document.documentElement.classList.add('pf-v21-1-active');
-    dataset(document.documentElement,'pacefoldExperience',RELEASE);
+    dataset(document.documentElement,'pacefoldExperience',release);
     dataset(document.documentElement,'pacefoldRefinement',RELEASE);
-    dataset(document.body,'pacefoldExperience',RELEASE);
+    dataset(document.body,'pacefoldExperience',release);
     dataset(document.body,'pacefoldRefinement',RELEASE);
-    text(document.querySelector('.pf21-settings-version'),`v${RELEASE}`);
+    text(document.querySelector('.pf21-settings-version'),`v${release}`);
     for(const api of [window.__PACEFOLD_V21_BOOT__,window.__PACEFOLD_V21__,window.__PACEFOLD_V21_PERSISTENCE__]){
-      if(api&&api.release!==RELEASE){try{api.release=RELEASE;}catch{}}
+      if(api&&api.release!==release){try{api.release=release;}catch{}}
     }
   }
 

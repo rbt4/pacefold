@@ -4,7 +4,7 @@ const RELEASE='22.0.1';
 const PREFS_KEY='pacefoldPrefsV15';
 const NOTES_KEY='pacefold.notebook.entries.v2';
 const BACKUP_KEY='pacefold.spatial.notifications.v1';
-let originalParent=null,originalNext=null,soundNode=null,syncTimer=0,bridgeInstalled=false,soundObserver=null;
+let originalParent=null,originalNext=null,soundNode=null,syncTimer=0,bridgeInstalled=false,soundObserver=null,noteInsightKey='',calendarCursor=new Date(),calendarSelected='';
 const $=selector=>document.querySelector(selector);
 const id=value=>document.getElementById(value);
 const create=(tag,className,text)=>{const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=String(text);return node};
@@ -13,6 +13,7 @@ const parse=(value,fallback)=>{try{return value?JSON.parse(value):fallback}catch
 const rawPrefs=()=>{const value=parse(localStorage.getItem(PREFS_KEY),{});return value&&typeof value==='object'&&!Array.isArray(value)?value:{}};
 const core=()=>window.__PACEFOLD_MA_CORE__;
 const permission=()=>typeof Notification==='undefined'?'unsupported':Notification.permission;
+const activeRelease=()=>window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE;
 const report=(scope,error)=>{try{window.__PACEFOLD_RESILIENCE__?.recordError?.(`spatial-${scope}`,error)}catch{}};
 const localDay=value=>{const date=value instanceof Date?value:new Date(value);if(Number.isNaN(date.getTime()))return'';return new Date(date-date.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 
@@ -62,6 +63,7 @@ function setNotifications(enabled){
   if(!enabled){
     saveNotificationBackup(current);
     writePrefs({notifications:false,browserNotif:false,notificationMode:'off',taskbarBadge:false,taskbarBadgeMode:'off'},'notifications');
+    window.__PACEFOLD_CUES__?.clear?.();
     try{navigator.clearAppBadge?.()}catch{}
   }else{
     const backup=notificationBackup();
@@ -86,9 +88,9 @@ function buildSettings(){
   const tools=create('section','pf22-settings-panel pf22-settings-tools');
   tools.append(heading('Data, schedule & sound','Backup and deeper configuration stay reachable without crowding the Clock.'));
   const actions=create('div','pf22-settings-actions');
-  actions.append(actionButton('schedule','Schedule & day types','Weekday hours, Desk, Field, Half day and Off'),actionButton('backup','Backup notes','Choose or reconnect the protected local backup file'),actionButton('sound','Sound library','Local audio, playlists and the full player'));
+  actions.append(actionButton('profile','Profile & routines','Everyday, faith-aware or custom moments and preparation'),actionButton('schedule','Schedule & day types','Weekday hours, Desk, Field, Half day and Off'),actionButton('backup','Backup notes','Choose or reconnect the protected local backup file'),actionButton('sound','Sound library','Local audio, playlists and the full player'));
   const status=create('div','pf22-settings-status','Saved automatically on this device');status.id='pf22-settings-status';
-  tools.append(actions,status,create('small','pf22-version',`Pacefold ${RELEASE} · verified offline core 15.2.2`));
+  tools.append(actions,status,create('small','pf22-version',`Pacefold ${activeRelease()} · verified offline core 15.2.2`));
   layout.append(rhythm,display,tools);return true;
 }
 
@@ -100,20 +102,24 @@ function noteDate(note){
   }
   return'';
 }
-function buildNoteInsights(){
+function buildNoteInsights(force=false){
   const recent=$('.pf22-notes-recent');if(!recent)return false;
   let root=recent.querySelector('.pf22-note-insights');if(!root){root=create('section','pf22-note-insights');recent.append(root)}
-  const notes=parse(localStorage.getItem(NOTES_KEY),[]),values=Array.isArray(notes)?notes:[],now=new Date(),year=now.getFullYear(),month=now.getMonth(),prefix=`${year}-${String(month+1).padStart(2,'0')}-`,counts=new Map();
+  const raw=localStorage.getItem(NOTES_KEY)||'[]',notes=parse(raw,[]),values=Array.isArray(notes)?notes:[],now=new Date(),year=calendarCursor.getFullYear(),month=calendarCursor.getMonth(),prefix=`${year}-${String(month+1).padStart(2,'0')}-`,counts=new Map();
+  calendarSelected=window.__PACEFOLD_SPATIAL__?.noteDate?.()||calendarSelected;
+  const renderKey=`${year}-${month}:${calendarSelected}:${raw}`;if(!force&&renderKey===noteInsightKey)return true;noteInsightKey=renderKey;
   for(const note of values){const day=noteDate(note);if(day?.startsWith(prefix))counts.set(day,(counts.get(day)||0)+1)}
   const total=[...counts.values()].reduce((sum,value)=>sum+value,0),active=counts.size;
   root.replaceChildren();
-  const head=create('header','pf22-note-insights-head'),copy=create('div','');copy.append(create('span','pf22-eyebrow','Notebook activity'),create('strong','',now.toLocaleDateString([],{month:'long',year:'numeric'})));
-  const stats=create('span','pf22-note-stats',total?`${total} note${total===1?'':'s'} · ${active} day${active===1?'':'s'}`:'No notes this month');head.append(copy,stats);
+  const head=create('header','pf22-note-insights-head'),copy=create('div','');copy.append(create('span','pf22-eyebrow','Notebook activity'),create('strong','',calendarCursor.toLocaleDateString([],{month:'long',year:'numeric'})));
+  const controls=create('div','pf22-note-calendar-controls'),previous=button('','Previous month','‹'),todayButton=button('','Show current month','Today'),next=button('','Next month','›');
+  previous.addEventListener('click',()=>{calendarCursor=new Date(year,month-1,1);noteInsightKey='';buildNoteInsights()});todayButton.addEventListener('click',()=>{calendarCursor=new Date();calendarSelected='';window.__PACEFOLD_SPATIAL__?.setNoteDate?.('');noteInsightKey='';buildNoteInsights()});next.addEventListener('click',()=>{calendarCursor=new Date(year,month+1,1);noteInsightKey='';buildNoteInsights()});controls.append(previous,todayButton,next);
+  const stats=create('span','pf22-note-stats',total?`${total} note${total===1?'':'s'} · ${active} day${active===1?'':'s'}`:'No notes this month');head.append(copy,stats,controls);
   const weekdays=create('div','pf22-note-weekdays');for(const label of ['S','M','T','W','T','F','S'])weekdays.append(create('span','',label));
   const grid=create('div','pf22-note-calendar'),first=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate(),today=localDay(now);
   for(let index=0;index<first;index++)grid.append(create('span','pf22-note-day pf22-note-day-empty',''));
   for(let day=1;day<=days;day++){
-    const key=`${prefix}${String(day).padStart(2,'0')}`,count=counts.get(key)||0,item=create('span','pf22-note-day',String(day));item.dataset.count=String(count);item.dataset.today=String(key===today);
+    const key=`${prefix}${String(day).padStart(2,'0')}`,count=counts.get(key)||0,item=button('pf22-note-day',`Show notes for ${new Date(year,month,day).toLocaleDateString()}`,String(day));item.dataset.count=String(count);item.dataset.today=String(key===today);item.dataset.selected=String(key===calendarSelected);item.addEventListener('click',()=>{calendarSelected=calendarSelected===key?'':key;window.__PACEFOLD_SPATIAL__?.setNoteDate?.(calendarSelected);noteInsightKey='';buildNoteInsights()});
     if(count){item.append(create('b','',String(count)));item.title=`${count} note${count===1?'':'s'} on ${new Date(year,month,day).toLocaleDateString()}`}
     grid.append(item);
   }
@@ -133,7 +139,17 @@ function toggleControl(key){
   }catch(error){report(`toggle-${key}`,error);showStatus('That control could not be changed',true)}
 }
 function proxyClick(selectors){for(const selector of selectors){const node=$(selector);if(node){node.click();return true}}return false}
-function openSchedule(){const opened=proxyClick(['#brandButton','.corner']);if(opened)document.documentElement.classList.add('pf22-legacy-dialog-open');else showStatus('Full settings are unavailable in this window',true)}
+function openAdvancedSettings(section='rhythm',headingText=''){
+  const opened=proxyClick(['#brandButton','.corner']);if(!opened){showStatus('Full settings are unavailable in this window',true);return false}
+  document.documentElement.classList.add('pf22-legacy-dialog-open');
+  requestAnimationFrame(()=>{
+    const panel=id('panel'),tab=panel?.querySelector(`[data-settings-view="${section}"]`);tab?.click();
+    const target=[...(panel?.querySelectorAll('.section-title')||[])].find(node=>node.textContent.trim().toLowerCase().includes(headingText.toLowerCase()));target?.scrollIntoView?.({block:'start'});
+  });
+  return true;
+}
+function openProfile(){return openAdvancedSettings('rhythm','Rhythm profile')}
+function openSchedule(){return openAdvancedSettings('rhythm','Workday rhythm')}
 function openBackup(){if(!proxyClick(['.pf-v20-backup','[data-action="backup"]']))showStatus('Backup control is unavailable in this browser',true)}
 
 function overlay(){
@@ -171,24 +187,24 @@ function closeSound(){const panel=id('pf22-sound-overlay');if(panel){panel.hidde
 function sync(){
   installPreferenceBridge();buildSettings();buildNoteInsights();
   const root=id('pf22-spatial-root');if(!root)return;
-  document.documentElement.dataset.pacefoldExperience=RELEASE;document.body.dataset.pacefoldExperience=RELEASE;root.dataset.hardening=RELEASE;
+  const release=activeRelease();document.documentElement.dataset.pacefoldExperience=release;document.body.dataset.pacefoldExperience=release;root.dataset.hardening=release;
   const p=prefs(),weather=window.__PACEFOLD_V21_PERSISTENCE__?.read?.()||{},values={quiet:Boolean(window.__PACEFOLD_MA_QUIET__?.get?.()||p.quietMode),seconds:p.showSeconds!==false,notifications:notificationEnabled(p),timeFormat:p.timeFormat==='24',workReminders:p.workReminders!==false,gazeEnabled:p.gazeEnabled!==false,bodyEnabled:p.bodyEnabled!==false,weather:weather.v21WeatherEnabled!==false&&p.v21WeatherEnabled!==false};
-  const seconds=$('.pf22-seconds');if(seconds){seconds.hidden=!values.seconds;seconds.setAttribute('aria-hidden',String(!values.seconds))}
+  for(const seconds of document.querySelectorAll('.pf22-seconds,.pf23-seconds-dial')){seconds.hidden=!values.seconds;seconds.setAttribute('aria-hidden',String(!values.seconds))}
   for(const control of document.querySelectorAll('.pf22-control-toggle')){const key=control.dataset.setting,on=Boolean(values[key]);control.dataset.active=String(on);control.textContent=key==='timeFormat'?(on?'24h':'12h'):(on?'On':'Off');control.setAttribute('aria-pressed',String(on))}
-  const version=$('.pf22-version');if(version)version.textContent=`Pacefold ${RELEASE} · verified offline core 15.2.2`;
-  if(window.__PACEFOLD_SPATIAL__)window.__PACEFOLD_SPATIAL__.release=RELEASE;
-  if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:RELEASE,update:RELEASE,hardening:'recovery-r4'};
+  const version=$('.pf22-version');if(version)version.textContent=`Pacefold ${release} · verified offline core 15.2.2`;
+  if(window.__PACEFOLD_SPATIAL__)window.__PACEFOLD_SPATIAL__.release=release;
+  if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:release,update:release,hardening:'recovery-r5'};
   if(values.quiet)closeSound();else claimSoundOwnership();
 }
 function capture(event){
   const target=event.target instanceof Element?event.target:null;if(!target)return;
   const control=target.closest('.pf22-control-toggle,.pf22-switch');if(control){event.preventDefault();event.stopImmediatePropagation();toggleControl(control.dataset.setting);return}
-  const action=target.closest('.pf22-settings-action');if(action){event.preventDefault();event.stopImmediatePropagation();if(action.dataset.action==='schedule')openSchedule();if(action.dataset.action==='backup')openBackup();if(action.dataset.action==='sound')openSound()}
+  const action=target.closest('.pf22-settings-action');if(action){event.preventDefault();event.stopImmediatePropagation();if(action.dataset.action==='profile')openProfile();if(action.dataset.action==='schedule')openSchedule();if(action.dataset.action==='backup')openBackup();if(action.dataset.action==='sound')openSound()}
 }
 function initialize(){
   installPreferenceBridge();document.addEventListener('click',capture,true);document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!id('pf22-sound-overlay')?.hidden){event.preventDefault();event.stopImmediatePropagation();closeSound()}},true);
   for(const name of ['pacefold:ma-prefs','pacefold:spatial-ready','pacefold:storage-changed','pacefold:spatial-hardening','pacefold:quiet'])window.addEventListener(name,sync);
-  window.addEventListener('storage',sync);sync();syncTimer=setInterval(sync,750);window.__PACEFOLD_HARDENING__={release:RELEASE,sync,setNotifications,toggleNotifications,notificationEnabled,openSound,closeSound,writePrefs,buildSettings,buildNoteInsights,claimSoundOwnership};
+  window.addEventListener('storage',sync);sync();syncTimer=setInterval(sync,5000);window.__PACEFOLD_HARDENING__={release:activeRelease(),sync,setNotifications,toggleNotifications,notificationEnabled,openSound,closeSound,writePrefs,buildSettings,buildNoteInsights,claimSoundOwnership};
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',initialize,{once:true}):initialize();
 })();

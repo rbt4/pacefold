@@ -24,7 +24,7 @@ function staticAudit(){
   assert(!/\.innerHTML\s*=/.test(runtime),'V19 runtime contains a raw innerHTML assignment');
   assert(!/style\s*=\s*["']/.test(runtime),'V19 runtime contains an inline style string');
   assert((html.match(/data-pacefold-v19=/g)||[]).length===2,'V19 CSS and runtime were not injected exactly once');
-  assert((landing.match(/name="pacefold-landing" content="20\.0\.1"/g)||[]).length===1,'V20.0.1 landing marker was not injected exactly once');
+  assert((landing.match(/name="pacefold-landing" content="23\.0\.0"/g)||[]).length===1,'Current V23 landing marker was not injected exactly once');
   assert(html.includes('pacefold-v19.css?v=20.0.1')&&html.includes('pacefold-v19.js?v=20.0.1'),'Retained V19 app assets are not cache-busted for V20');
   assert(landing.includes('pacefold-site-v19.css?v=20.0.1'),'V20 landing stylesheet is not cache-busted');
   assert(!/\b(?:Kiroku|Andon|Hansei|Kaizen|Sumi|Sekkei|Washi|Oto|OneNote)\b|Ma ·/i.test(landing),'V19 landing retains a retired product term');
@@ -56,7 +56,7 @@ function staticAudit(){
 
   const staleLanguage=/Japanese restraint|Kiroku ·|Andon ·|Hansei ·|Kaizen ·|Sumi workspace|Ma · Day Ribbon/i;
   assert(!staleLanguage.test(landing),'The public page still markets the retired Japanese-language identity');
-  assert(landing.includes('one protected workday folio')&&landing.includes('Workday dashboard')&&landing.includes('automatic JSON backup'),'The public page does not describe the V20 folio');
+  assert(landing.includes('Pacefold 23 · one quiet spatial workday')&&landing.includes('Four directions. One quiet center.')&&landing.includes('Pacefold 23.0.0 · one quiet spatial workday'),'The public page does not describe the current V23 spatial workday');
   return{runtime,css,core};
 }
 
@@ -297,7 +297,7 @@ async function browserAudit(){
       text:document.body.textContent||'',
       horizontal:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1
     }));
-    assert(landingState.marker==='20.0.1'&&landingState.horizontal&&landingState.text.includes('one protected workday folio')&&landingState.text.includes('automatic JSON backup')&&!retired.test(landingState.text),`V20 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
+    assert(landingState.marker==='23.0.0'&&landingState.horizontal&&landingState.text.includes('Four directions. One quiet center.')&&landingState.text.includes('Pacefold 23.0.0 · one quiet spatial workday')&&!retired.test(landingState.text),`V23 public page is stale or overflows: ${JSON.stringify({marker:landingState.marker,horizontal:landingState.horizontal,retired:landingState.text.match(retired)?.[0]})}`);
     await landingPage.screenshot({path:path.join(artifacts,'pacefold-v19-landing.png'),fullPage:true});
     await landingPage.close();
     await context.close();
