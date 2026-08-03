@@ -128,7 +128,11 @@
     try{localStorage.setItem(PREFS_KEY,JSON.stringify(prefs));restored=true;}catch{}
   }
 
-  const returning=meaningful(prefs);
+  const completedSetup=localStorage.getItem(ONBOARDED_KEY)==='1'||
+    localStorage.getItem(DISMISSED_KEY)==='1'||
+    localStorage.getItem('pacefoldOnboardedV14')==='1'||
+    localStorage.getItem('pacefoldSetupDismissedV14')==='1';
+  const returning=meaningful(prefs)&&Boolean(completedSetup||meaningful(snapshot?.prefs));
   if(returning){
     try{
       localStorage.setItem(ONBOARDED_KEY,'1');

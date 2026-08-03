@@ -1,0 +1,42 @@
+(()=>{
+'use strict';
+const RELEASE='23.0.0';
+const REVISION='complete-stabilization-r1';
+let panelObserver=null,frame=0;
+const id=value=>document.getElementById(value);
+
+function stamp(){
+  window.__PACEFOLD_ACTIVE_RELEASE__=RELEASE;
+  document.documentElement.dataset.pacefoldExperience=RELEASE;
+  if(document.body)document.body.dataset.pacefoldExperience=RELEASE;
+  const root=id('pf22-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.stability=REVISION}
+  const version=document.querySelector('.pf22-version');if(version)version.textContent=`Pacefold ${RELEASE} · verified offline core 15.2.2`;
+  if(window.__PACEFOLD_SPATIAL__)window.__PACEFOLD_SPATIAL__.release=RELEASE;
+  if(window.__PACEFOLD_HARDENING__)window.__PACEFOLD_HARDENING__.release=RELEASE;
+  window.__PACEFOLD_VERSION__={...(window.__PACEFOLD_VERSION__||{}),experience:RELEASE,update:RELEASE,stability:REVISION};
+  document.title='Clock';
+}
+function reconcilePanel(){
+  const panel=id('panel'),visible=Boolean(panel?.classList.contains('on'));
+  document.documentElement.classList.toggle('pf22-legacy-dialog-open',visible);
+}
+function finishControls(){
+  for(const control of document.querySelectorAll('.pf22-ritual')){
+    const name=control.textContent.trim()||control.dataset.ritual||'rhythm';
+    control.setAttribute('aria-label',`${name} control`);
+    control.setAttribute('aria-pressed',String(control.dataset.active==='true'));
+  }
+  const dial=document.querySelector('.pf23-seconds-dial');if(dial)dial.title='Seconds';
+}
+function reconcile(){frame=0;stamp();reconcilePanel();finishControls()}
+function queue(){if(!frame)frame=requestAnimationFrame(reconcile)}
+function initialize(){
+  stamp();reconcile();window.__PACEFOLD_HARDENING__?.sync?.();window.__PACEFOLD_DAYLIGHT__?.refresh?.();
+  const panel=id('panel');if(panel){panelObserver=new MutationObserver(queue);panelObserver.observe(panel,{attributes:true,attributeFilter:['class','hidden','aria-hidden']})}
+  for(const event of ['pacefold:spatial-ready','pacefold:ma-prefs','pacefold:storage-changed','pacefold:quiet','pacefold:daylight-ready'])window.addEventListener(event,queue);
+  document.addEventListener('click',event=>{if(event.target instanceof Element&&event.target.closest('#panel [data-action="close"],#panel .close'))requestAnimationFrame(reconcilePanel)},true);
+  window.__PACEFOLD_V23__={release:RELEASE,revision:REVISION,reconcile};
+  window.dispatchEvent(new CustomEvent('pacefold:v23-ready',{detail:{release:RELEASE,revision:REVISION}}));
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',initialize,{once:true}):initialize();
+})();

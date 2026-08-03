@@ -130,7 +130,7 @@ function initialize(){
   document.addEventListener('click',onClick,true);
   window.addEventListener('storage',onStorage);
   window.addEventListener('pacefold:ma-prefs',()=>publish(false));
-  clearInterval(deliveryTimer);deliveryTimer=setInterval(wrapDelivery,250);wrapDelivery();
+  clearInterval(deliveryTimer);deliveryTimer=setInterval(wrapDelivery,2000);wrapDelivery();
   clearInterval(expiryTimer);expiryTimer=setInterval(()=>publish(false),15000);
   window.__PACEFOLD_CUES__={release:RELEASE,revision:REVISION,live,sources,count,add,acknowledge,clear,refresh:()=>publish(true)};
   window.dispatchEvent(new CustomEvent('pacefold:cues-ready',{detail:{release:RELEASE,revision:REVISION}}));

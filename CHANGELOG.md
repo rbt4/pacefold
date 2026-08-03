@@ -1,5 +1,27 @@
 # Changelog
 
+## 23.0.0 — Complete stabilization
+
+- Fixed first-run setup suppression by requiring an actual onboarding marker or meaningful prior snapshot before the spatial surface can treat a profile as returning.
+- Restored the clock-first home with Water, Noodles/Timer, Away, Meal, Eyes and Move as six equal rhythm controls.
+- Added an analog seconds dial tied to the existing Seconds preference and returned the document title to screenshare-safe `Clock`.
+- Routed stale missed-moment status into Worklog and kept the Clock pointed toward the next useful workday state.
+- Added durable spatial note drafts, calendar month navigation, selected-day filtering and automatic return to Clock after save.
+- Fixed the Settings version-selector mismatch that clipped the third card; added separate Profile/Routines and Schedule routes alongside Backup and Sound.
+- Rebuilt Sound as a contained paper/dark-theme workspace instead of a detached black surface.
+- Narrowed broad mutation observation, rendered only the active face on ordinary clock ticks and slowed hardening, daylight and cue reconciliation loops.
+- Made the durable cue queue the only native badge writer while retaining distinct prayer, water, timer, meal, away, eyes and movement cue colours.
+- Added explicit 390 px mobile, 340 × 150 Wafer, reduced-motion and forced-colour layouts.
+- Bundled the active V21/V22 presentation into one V23 stylesheet and runtime while retaining legacy V19/V20 assets and compatibility APIs.
+- Restored the repository verifier to GitHub Actions and added first-run, returning-user, notes, Settings, Sound, cue, desktop, mobile, Wafer and accessibility browser coverage.
+- Corrected the landing page, experience markers, worker revision, visible version and documentation to one 23.0.0 release truth.
+
+## 22.0.2 — Day Unfold and durable cues
+
+- Added the compact Day Unfold arc, workday phase light, scheduled source markers and recorded session bands to the spatial Clock.
+- Added a durable source-aware cue queue with distinct in-app/favion dots and installed-app badge ownership.
+- Preserved taskbar cue preferences when Quiet hides sensitive in-window detail.
+
 ## 20.0.1 — Protected workday folio
 
 - Rebuilt the upper dashboard and lower notebook as one continuous light folio instead of two visually disconnected surfaces.

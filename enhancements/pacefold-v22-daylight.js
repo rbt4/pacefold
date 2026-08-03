@@ -209,11 +209,9 @@ function renderFavicon(sources){
   }catch{}
 }
 function renderBadge(sources,value){
-  const scheduler=window.__PACEFOLD_MA_SCHEDULER__,setBadge=scheduler?._nativeSetBadge,clearBadge=scheduler?._nativeClearBadge,enabled=value.taskbarBadge!==false&&(value.taskbarBadgeMode||'due')!=='off'&&value.notifications!==false;
-  try{
-    if(!enabled||!sources.length){void clearBadge?.();return}
-    void setBadge?.(sources.length>1?sources.length:undefined);
-  }catch{}
+  // The durable cue queue owns the native badge. Daylight only paints the
+  // in-window dots and favicon, preventing two independent badge writers.
+  void sources;void value;
 }
 function renderCues(force=false){
   const cluster=buildCueCluster(),value=prefs();if(!cluster)return;
@@ -241,9 +239,9 @@ function renderDay(force=false){
   renderMarkers(force);renderSessions(force);
 }
 function stampExperience(){
-  document.documentElement.dataset.pacefoldExperience=RELEASE;if(document.body)document.body.dataset.pacefoldExperience=RELEASE;
-  const version=$('.pf22-version');if(version)version.textContent=`Pacefold ${RELEASE} · Day Unfold · verified offline core 15.2.2`;
-  if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:RELEASE,update:RELEASE,daylight:REVISION};
+  const release=window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE;document.documentElement.dataset.pacefoldExperience=release;if(document.body)document.body.dataset.pacefoldExperience=release;
+  const version=$('.pf22-version');if(version)version.textContent=`Pacefold ${release} · Day Unfold · verified offline core 15.2.2`;
+  if(window.__PACEFOLD_VERSION__)window.__PACEFOLD_VERSION__={...window.__PACEFOLD_VERSION__,experience:release,update:release,daylight:REVISION};
 }
 function refresh(force=false){
   if(document.documentElement.dataset.pacefoldSpatial!=='ready'||!id('pf22-spatial-root'))return false;
@@ -259,7 +257,7 @@ function initialize(){
   if(!observer){observer=new MutationObserver(()=>refresh(true));observer.observe(document.body,{attributes:true,attributeFilter:['data-source','data-signal','data-quiet','data-day-type']})}
   for(const event of ['pacefold:ma-prefs','pacefold:storage-changed','pacefold:quiet','pacefold:spatial-hardening','pacefold:v20-attention'])window.addEventListener(event,()=>refresh(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh(true)});
-  clearInterval(timer);timer=setInterval(()=>refresh(false),1000);
+  clearInterval(timer);timer=setInterval(()=>refresh(false),15000);
   window.__PACEFOLD_DAYLIGHT__={release:RELEASE,revision:REVISION,refresh:()=>refresh(true),sources:dueSources,resolvedDay};
   window.dispatchEvent(new CustomEvent('pacefold:daylight-ready',{detail:{release:RELEASE,revision:REVISION}}));
 }

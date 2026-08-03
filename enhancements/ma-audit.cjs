@@ -153,7 +153,7 @@ async function browserAudit(core){
     const sensitive=/\b(?:fajr|dhuhr|asr|maghrib|isha|prayer|water|sip|noodle|prep|lunch|meal|away|eye|movement|inbox|follow-ups?|incidents?|inspections?|jhsc|construction|notifications?|resources?)\b/i;
     assert(!sensitive.test(quiet.text)&&!/\bResearch\b/.test(quiet.text),`Quiet left cue/category text in the DOM: ${quiet.text.match(sensitive)?.[0]||'Research'}`);
     assert(!sensitive.test(quiet.labels),`Quiet left cue/category accessibility text in the DOM: ${quiet.labels.match(sensitive)?.[0]}`);
-    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge==='off',`Quiet did not apply its complete safe-surface contract: ${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,errors})}`);
+    assert(quiet.title==='Clock'&&quiet.event===''&&quiet.badge===quietBefore.taskbarBadgeMode,`Quiet did not preserve its private cue surface: ${JSON.stringify({title:quiet.title,event:quiet.event,badge:quiet.badge,before:quietBefore.taskbarBadgeMode,errors})}`);
     await page.locator('#pf-quiet-toggle').click();
     await page.waitForFunction(()=>document.body.dataset.quiet==='false');
     const quietAfter=await page.evaluate(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));return Object.fromEntries(['privacy','clarity','notificationDetail','taskbarBadge','taskbarBadgeMode','notificationMode'].map(key=>[key,prefs[key]]));});
