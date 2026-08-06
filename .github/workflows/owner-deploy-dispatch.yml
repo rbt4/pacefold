@@ -1,6 +1,7 @@
 name: Owner-only Pacefold deployment dispatch
 
 on:
+  # Temporary recovery schedule; remove after a successful Pages deployment.
   schedule:
     - cron: '*/5 * * * *'
   issues:
