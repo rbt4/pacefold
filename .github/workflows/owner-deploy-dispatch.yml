@@ -1,9 +1,6 @@
 name: Owner-only Pacefold deployment dispatch
 
 on:
-  # Temporary recovery schedule; remove after a successful Pages deployment.
-  schedule:
-    - cron: '*/5 * * * *'
   issues:
     types: [opened]
   workflow_dispatch:
@@ -16,7 +13,6 @@ permissions:
 jobs:
   dispatch:
     if: >-
-      github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       (github.event.issue.user.login == github.repository_owner &&
        github.event.issue.title == '[deploy] Pacefold 23.0.0')
