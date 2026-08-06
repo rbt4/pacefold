@@ -16,6 +16,7 @@ const SOURCE_META={
   eyes:{label:'Eyes',short:'Eyes'},
   body:{label:'Move',short:'Move'}
 };
+const DIRECT_ACTIONS=new Set(['noodle','away','lunch','eyes','body']);
 const ACTIONS={
   water:['#waterBtn','#waterPill','[data-action="water"]'],
   noodle:['#noodleBtn','#noodlePill','[data-action="noodle"]','[data-action="timer"]'],
@@ -130,7 +131,8 @@ function perform(source){
     try{window.__PACEFOLD_CUES__?.acknowledge?.('flow')}catch{}
     window.__PACEFOLD_SPATIAL__?.go?.('worklog');message='Opened Worklog';
   }else{
-    const clicked=proxyClick(source);message=clicked?`${SOURCE_META[source]?.label||'Action'} updated`:fallbackAction(source);
+    if(DIRECT_ACTIONS.has(source))message=fallbackAction(source);
+    else{const clicked=proxyClick(source);message=clicked?`${SOURCE_META[source]?.label||'Action'} updated`:fallbackAction(source)}
     try{window.__PACEFOLD_CUES__?.acknowledge?.(source)}catch{}
   }
   toast(message);
