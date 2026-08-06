@@ -1,0 +1,46 @@
+iet Workday Rhythm',short_name:'Pacefold',description:'A private, offline-ready day instrument for time, rhythm, notes, care and focus.',start_url:'./app/',scope:'./',display:'standalone',background_color:'#f2f3ed',theme_color:'#f2f3ed'});
+  manifest.shortcuts=[{name:'Clock',short_name:'Clock',url:'./app/'},{name:'Notes',short_name:'Notes',url:'./app/?mode=notes'},{name:'Worklog',short_name:'Day',url:'./app/?mode=worklog'},{name:'Now',short_name:'Now',url:'./app/?mode=context'}];
+  await fs.writeFile(file,`${JSON.stringify(manifest,null,2)}\n`)
+}
+function cleanAssetList(worker,token){
+  const escaped=token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return worker.replace(new RegExp(`(['"])${escaped}\\1\\s*,?`,'g'),'').replace(/,\s*,/g,',').replace(/\[\s*,/g,'[')
+}
+async function patchWorker(file,{root=false}={}){
+  let worker;try{worker=await fs.readFile(file,'utf8')}catch{return}
+  worker=worker.replace(/(const\s+CACHE_NAME\s*=\s*)([`'"])(pacefold-[^`'"]+)(\2)\s*;/,(_,prefix,quote)=>`${prefix}${quote}pacefold-${CACHE}${quote};`);
+  const prefix=root?'./app/':'./';
+  for(const stale of [`${prefix}pacefold-ma.css`,`${prefix}pacefold-ma.js`,`${prefix}fonts/pacefold-ma.woff2`])worker=cleanAssetList(worker,stale);
+  if(root)worker=cleanAssetList(worker,'./pacefold-site-ma.css');
+  const additions=root?[`./${publicAssets.css}`,`./${publicAssets.runtime}`,`./pacefold-experience.txt`,...Object.values(appAssets).map(asset=>`./app/${asset}`)]:[...Object.values(appAssets).map(asset=>`./${asset}`),'./pacefold-experience.txt'];
+  const anchor=root?"'./app/pacefold-v23.js'":"'./pacefold-v23.js'";
+  for(const asset of additions){const token=`'${asset}'`;if(worker.includes(token))continue;if(worker.includes(anchor))worker=worker.replace(anchor,`${anchor},${token}`);else worker+=`\n/* v24-asset ${token} */\n`}
+  worker=worker.replace(/\/\* pacefold-experience:[^*]+\*\//g,'').replace(/\s+$/,'');worker+=`\n/* pacefold-experience:${RELEASE};revision:${REVISION} */\n`;await fs.writeFile(file,worker)
+}
+async function verify(){
+  const app=await fs.readFile(path.join(targetApp,'index.html'),'utf8'),landing=await fs.readFile(path.join(targetRoot,'index.html'),'utf8'),manifest=JSON.parse(await fs.readFile(path.join(targetRoot,'manifest.webmanifest'),'utf8')),worker=await fs.readFile(path.join(targetRoot,'service-worker.js'),'utf8'),css=await fs.readFile(path.join(targetApp,appAssets.css),'utf8'),runtime=await fs.readFile(path.join(targetApp,appAssets.runtime),'utf8'),kernel=await fs.readFile(path.join(targetApp,appAssets.kernel),'utf8');
+  if(/data-pacefold-ma|pacefold-ma\.(?:css|js)/i.test(app))throw new Error('Former Ma product layer is still public');
+  for(const token of ['data-pacefold-v24-kernel','data-pacefold-v24-css','data-pacefold-v24-runtime'])if((app.match(new RegExp(`${token}="${RELEASE.replace(/\./g,'\\.')}`,'g'))||[]).length!==1)throw new Error(`${token} injection count is wrong`);
+  if(!app.includes(`<meta name="pacefold-experience" content="${RELEASE}">`))throw new Error('App version meta is stale');
+  if(!landing.includes(`Pacefold ${RELEASE}`)||/\bMa\b|OneNote|verified offline core 15\.2\.2/i.test(landing))throw new Error('Public website still exposes an obsolete product concept');
+  if(manifest.name!=='Pacefold — Quiet Workday Rhythm'||manifest.start_url!=='./app/')throw new Error('Manifest is stale');
+  for(const asset of [...Object.values(appAssets),...Object.values(publicAssets)])if(!worker.includes(asset))throw new Error(`Root worker omits ${asset}`);
+  for(const token of ['.pf24-instrument','.pf24-day-arc','.pf24-fold-tray','.pf24-settings-overview','@media(forced-colors:active)'])if(!css.includes(token))throw new Error(`V24 CSS token missing: ${token}`);
+  for(const token of [`const RELEASE='${RELEASE}'`,'window.__PACEFOLD_UNIFIED__','computePrayerHours','zoneOffsetHours','buildFoldTray'])if(!runtime.includes(token))throw new Error(`V24 runtime token missing: ${token}`);
+  for(const token of ['window.__PACEFOLD_RHYTHM__','__PACEFOLD_MA_SCHEDULER__','pacefold.backup.v2'])if(!kernel.includes(token))throw new Error(`V24 kernel token missing: ${token}`)
+}
+const unifiedRuntime=await readParts('pacefold-v24-unified.js.part-');
+const unifiedCss=await readParts('pacefold-v24-unified.css.part-');
+new vm.Script(await fs.readFile(path.join(sourceRoot,'pacefold-v24-kernel.js'),'utf8'),{filename:'pacefold-v24-kernel.js'});
+new vm.Script(unifiedRuntime,{filename:'pacefold-v24-unified.js'});
+new vm.Script(await fs.readFile(path.join(sourceRoot,'pacefold-public-v24.js'),'utf8'),{filename:'pacefold-public-v24.js'});
+await Promise.all([
+  fs.copyFile(path.join(sourceRoot,'pacefold-v24-kernel.js'),path.join(targetApp,appAssets.kernel)),
+  fs.writeFile(path.join(targetApp,appAssets.css),unifiedCss),
+  fs.writeFile(path.join(targetApp,appAssets.runtime),unifiedRuntime),
+  fs.copyFile(path.join(sourceRoot,'pacefold-public-v24.css'),path.join(targetRoot,publicAssets.css)),
+  fs.copyFile(path.join(sourceRoot,'pacefold-public-v24.js'),path.join(targetRoot,publicAssets.runtime))
+]);
+await patchAppHtml(path.join(targetApp,'index.html'));
+await fs.writeFile(path.join(targetRoot,'index.html'),landingHtml());
+await patchManifest(path

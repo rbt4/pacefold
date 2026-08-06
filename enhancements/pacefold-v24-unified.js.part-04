@@ -1,0 +1,6 @@
+RLSearchParams(location.search).get('mode');if(['notes','worklog','context','settings'].includes(requested))setTimeout(()=>openMode(requested),250);
+  window.__PACEFOLD_UNIFIED__={release:RELEASE,revision:REVISION,refresh:()=>refresh(true),schedule:(includeSunrise=true)=>scheduleState(new Date(),includeSunrise),go:openMode,zoneName};
+  window.dispatchEvent(new CustomEvent('pacefold:unified-ready',{detail:{release:RELEASE,revision:REVISION}}));
+}
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',install,{once:true}):install();
+})();

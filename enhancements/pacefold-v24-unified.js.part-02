@@ -1,0 +1,51 @@
+latest');summary.id='pf24-fold-summary';latest.id='pf24-fold-latest';body.append(summary,latest);tray.append(rail,body);return tray
+}
+function buildRhythmStrip(){
+  const strip=create('section','pf24-rhythm-strip');strip.id='pf24-rhythm-strip';strip.setAttribute('aria-label','Today rhythm');strip.append(create('header','pf24-rhythm-head'),create('div','pf24-rhythm-items'));return strip
+}
+function buildInstrument(hero){
+  if(id('pf24-instrument'))return;
+  const instrument=create('section','pf24-instrument');instrument.id='pf24-instrument';
+  const dial=buildDial(),copy=create('div','pf24-clock-copy');
+  for(const selector of ['.pf22-home-mark','#pf22-time','#pf22-date','#pf22-status','#pf22-progress']){const node=hero.querySelector(selector);if(node)copy.append(node)}
+  instrument.append(dial,copy);hero.prepend(instrument);
+  const arc=buildDayArc();instrument.after(arc);
+  const strip=buildRhythmStrip();arc.after(strip);
+  const dock=id('pf23-action-dock');if(dock)strip.after(dock);
+  const tray=buildFoldTray();(dock||strip).after(tray);
+  hero.querySelector('.pf22-context-glimpse')?.remove();hero.querySelector('.pf22-nav-hint')?.remove();
+}
+function buildSettingsOverview(){
+  const card=$('.pf22-settings-card');if(!card||id('pf24-settings-overview'))return;
+  const panel=create('section','pf24-settings-overview');panel.id='pf24-settings-overview';const head=create('header');head.append(create('span','','Essentials'),create('strong','','Set once. Pacefold remembers.'));panel.append(head);
+  const grid=create('div','pf24-settings-grid');
+  const items=[['quiet','Quiet','Generic wording and fewer interruptions'],['seconds','Seconds','Keep the second hand alive'],['notifications','Cues','System cues when allowed'],['weather','Weather','Local context in Now']];
+  for(const [key,label,detail] of items){const control=button('pf24-setting',`Toggle ${label}`);control.dataset.setting=key;control.append(create('span','',label),create('small','',detail),create('i',''));control.addEventListener('click',()=>toggleSetting(key));grid.append(control)}
+  panel.append(grid);card.prepend(panel)
+}
+function toggleSetting(key){
+  const value=prefs();
+  if(key==='quiet')window.__PACEFOLD_RHYTHM__?.quiet?.toggle?.();
+  if(key==='seconds')patchPrefs({showSeconds:value.showSeconds===false});
+  if(key==='notifications')patchPrefs({notifications:value.notifications===false});
+  if(key==='weather'){const current=window.__PACEFOLD_V21_PERSISTENCE__?.read?.()||{};window.__PACEFOLD_V21_PERSISTENCE__?.write?.({...current,v21WeatherEnabled:current.v21WeatherEnabled===false})}
+  renderSettings();window.__PACEFOLD_SPATIAL__?.refresh?.()
+}
+function renderSettings(){
+  const value=prefs(),weather=window.__PACEFOLD_V21_PERSISTENCE__?.read?.()||{},states={quiet:Boolean(value.quietMode),seconds:value.showSeconds!==false,notifications:value.notifications!==false,weather:weather.v21WeatherEnabled!==false&&value.v21WeatherEnabled!==false};
+  for(const node of document.querySelectorAll('.pf24-setting')){const active=Boolean(states[node.dataset.setting]);node.dataset.active=String(active);node.setAttribute('aria-pressed',String(active))}
+}
+function renderClock(now=new Date()){
+  const value=prefs(),part=zoneParts(now,zoneName(value)),seconds=part.second,minutes=part.minute+seconds/60,hours=(part.hour%12)+minutes/60,dial=id('pf24-dial');
+  if(dial){dial.style.setProperty('--pf24-hour',`${hours*30}deg`);dial.style.setProperty('--pf24-minute',`${minutes*6}deg`);dial.style.setProperty('--pf24-second',`${seconds*6}deg`);dial.dataset.seconds=String(value.showSeconds!==false)}
+  const date=id('pf22-date');if(date)date.textContent=formatDate(now,value)
+}
+function renderDay(now=new Date()){
+  const value=prefs(),part=zoneParts(now,zoneName(value)),hours=part.hour+part.minute/60+part.second/3600,range=workRange(value),progress=Math.max(0,Math.min(1,(hours-range.start)/(range.end-range.start))),arc=id('pf24-day-arc');if(!arc)return;
+  arc.style.setProperty('--pf24-progress',String(progress));id('pf24-day-percent').textContent=`${Math.round(progress*100)}%`;
+  arc.querySelector('.pf24-day-start').textContent=range.startText;arc.querySelector('.pf24-day-end').textContent=range.endText;arc.dataset.state=hours<range.start?'before':hours>range.end?'complete':'active';
+  const markers=id('pf24-day-markers'),state=scheduleState(now,false,value),key=`${localKey(now,state.timeZone)}|${range.start}|${range.end}|${state.today.map(item=>`${item.id}:${item.hours.toFixed(3)}`).join('|')}`;
+  if(markers.dataset.key!==key){markers.dataset.key=key;markers.replaceChildren();for(const item of state.today){if(item.hours<range.start||item.hours>range.end)continue;const marker=create('button','pf24-day-marker');marker.type='button';marker.setAttribute('aria-label',`${item.label} at ${formatTime(item.date,value)}`);marker.style.setProperty('--marker',String((item.hours-range.start)/(range.end-range.start)));marker.dataset.source=item.id;marker.addEventListener('click',()=>openMode('context'));markers.append(marker)}}
+}
+function renderRhythm(now=new Date(),force=false){
+  const strip=id('pf24-rhythm-strip');if(!strip)return;const state=scheduleState(now,false),key=`${localKey(now,s

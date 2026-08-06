@@ -1,0 +1,31 @@
+tate.timeZone)}|${Math.floor(now.getTime()/60000)}|${state.value.profile}|${state.value.lat}|${state.value.lng}|${state.value.method}|${state.value.asr}|${state.timeZone}|${JSON.stringify(state.value.offsets||{})}`;
+  if(!force&&key===lastScheduleKey)return;lastScheduleKey=key;
+  const head=strip.querySelector('.pf24-rhythm-head'),items=strip.querySelector('.pf24-rhythm-items');head.replaceChildren();
+  const copy=create('div');copy.append(create('span','',state.muslim?'Prayer rhythm':'Today’s rhythm'),create('strong','',state.next?`Next · ${state.next.label} ${formatTime(state.next.date,state.value)}`:'Today is complete'));
+  const meta=create('small','',`${text(state.value.locationLabel)||state.timeZone} · ${state.muslim?(state.value.method==='18'?'18°':'15°')+' · '+(state.value.asr==='hanafi'?'Hanafi Asr':'Standard Asr'):'Custom moments'}`);copy.append(meta);
+  const adjust=button('pf24-rhythm-adjust','Open schedule settings','Adjust');adjust.addEventListener('click',()=>openMode('settings'));head.append(copy,adjust);
+  items.replaceChildren();for(const item of state.today){const node=button('pf24-rhythm-item',`${item.label} at ${formatTime(item.date,state.value)}`);node.dataset.state=item.date<now?'past':state.next?.id===item.id&&localKey(state.next.date,state.timeZone)===localKey(now,state.timeZone)?'next':'upcoming';node.append(create('span','',item.label),create('strong','',formatTime(item.date,state.value)));node.addEventListener('click',()=>openMode('context'));items.append(node)}
+}
+function renderFold(){
+  const summary=id('pf24-fold-summary'),latest=id('pf24-fold-latest');if(!summary||!latest)return;const value=prefs(),allNotes=notes().slice().sort((a,b)=>new Date(b.updatedAt||b.createdAt||0)-new Date(a.updatedAt||a.createdAt||0)),today=localKey(),todayNotes=allNotes.filter(note=>String(note.date||'')===today),events=window.__PACEFOLD_DAYFLOW__?.events?.(today)||[],focus=(Number(window.__PACEFOLD_DAYFLOW__?.metrics?.(today)?.focus)||0)/60000;
+  summary.replaceChildren();const cards=[['Notes',String(todayNotes.length),todayNotes.length===1?'today':'today','notes'],['Moments',String(events.length),'logged today','worklog'],['Focus',`${Math.round(Number(focus)||0)}m`,'protected time','worklog'],['Water',`${Number(value.waterSips)||0}/${Number(value.waterTarget)||24}`,'today','worklog']];
+  for(const [label,count,detail,mode] of cards){const card=button('pf24-fold-card',`Open ${label}`);card.append(create('span','',label),create('strong','',count),create('small','',detail));card.addEventListener('click',()=>openMode(mode));summary.append(card)}
+  latest.replaceChildren();const head=create('header');head.append(create('span','','Latest notes'),button('pf24-fold-add','Open Notes','Add note'));head.querySelector('button').addEventListener('click',()=>openMode('notes'));latest.append(head);
+  const list=create('div','pf24-fold-note-list');for(const note of allNotes.slice(0,3)){const row=button('pf24-fold-note','Open this note in Notes');row.append(create('span','',new Date(note.updatedAt||note.createdAt||Date.now()).toLocaleDateString(undefined,{month:'short',day:'numeric'})),create('strong','',text(note.body||note.text||'Untitled note').slice(0,82)));row.addEventListener('click',()=>openMode('notes'));list.append(row)}if(!list.children.length)list.append(create('p','','Your first note will appear here.'));latest.append(list)
+}
+function renderVersion(){for(const node of document.querySelectorAll('.pf22-version'))node.textContent=`Pacefold ${RELEASE} · private local engine`}
+function compose(){
+  const root=id('pf22-spatial-root'),hero=$('.pf22-clock-hero');if(!root||!hero)return false;root.dataset.experience=REVISION;root.dataset.release=RELEASE;document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE;document.title='Pacefold — Quiet Workday Rhythm';
+  buildInstrument(hero);buildSettingsOverview();renderVersion();
+  const oldSchedule=id('pf23-schedule-strip');if(oldSchedule)oldSchedule.hidden=true;
+  const dock=id('pf23-action-dock'),strip=id('pf24-rhythm-strip'),tray=id('pf24-fold-tray');if(dock&&strip&&dock.previousElementSibling!==strip)strip.after(dock);if(tray&&dock&&tray.previousElementSibling!==dock)dock.after(tray);
+  return true
+}
+function refresh(force=false){if(!compose())return;const now=new Date();renderClock(now);renderDay(now);renderRhythm(now,force);renderFold();renderSettings()}
+function tick(){const now=new Date();renderClock(now);renderDay(now);if(now.getMinutes()!==lastMinute){lastMinute=now.getMinutes();renderRhythm(now);renderFold()}}
+function install(){
+  if(mounted)return;if(!compose()){window.addEventListener('pacefold:spatial-ready',install,{once:true});return}mounted=true;
+  refresh(true);clearInterval(tickTimer);tickTimer=setInterval(tick,1000);clearInterval(minuteTimer);minuteTimer=setInterval(()=>refresh(true),30000);
+  for(const event of ['pacefold:storage-changed','pacefold:rhythm-prefs','pacefold:dayflow','pacefold:cue-queue','pacefold:experience-ready'])window.addEventListener(event,()=>refresh(true));
+  new MutationObserver(()=>compose()).observe(document.body,{childList:true,subtree:true});
+  const requested=new U

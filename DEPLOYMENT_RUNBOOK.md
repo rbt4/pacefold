@@ -1,51 +1,50 @@
-# Pacefold deployment recovery runbook
+# Pacefold deployment runbook
 
-Pacefold deploys through `.github/workflows/pages.yml`. Releases are manual or push-driven; there is no scheduled deployment.
+Pacefold publishes through `.github/workflows/pages.yml`. There is no scheduled, issue-triggered or marker-only deployment path.
 
 ## Normal release
 
-1. Merge the approved pull request into `main`.
-2. In GitHub, open **Actions → Validate and deploy Pacefold 23.0.0 → Run workflow** and select `main` when a merge did not automatically create a run.
-3. Wait for `validate` to pass. The `deploy` job then publishes GitHub Pages.
-4. Verify `https://rbt4.github.io/pacefold/`, `pacefold-experience.txt`, and the service-worker revision before calling the release live.
+1. Build and review the release on a branch.
+2. Merge the approved pull request into `main`.
+3. Confirm **Build, verify and publish Pacefold 24** starts for the merge commit.
+4. If GitHub did not create a push run, open the workflow and choose **Run workflow → main**.
+5. Wait for `validate` and `deploy` to succeed.
+6. Verify the public website, `/app/`, `pacefold-experience.txt` and the service-worker release marker before calling it live.
 
 ## Diagnose before changing code
 
-### Runner was never acquired
+### Hosted runner was never acquired
 
-Symptoms:
+Symptoms include:
 
 - `The job was not acquired by Runner of type hosted`
 - `Internal server error`
-- the job is cancelled with no executable steps or logs
+- cancelled job with no executable steps
+- failure while resolving GitHub action downloads before checkout
 
-This is GitHub Actions infrastructure, not a Pacefold test failure. Retry the exact failed workflow/job. Do not change application code merely to create another run.
+This is GitHub infrastructure, not a Pacefold assertion. Retry the exact failed workflow or job. Do not create another product commit merely to make another run.
 
-Connector actions used:
+Useful connector actions:
 
-- `GitHub.fetch` — inspect recent workflow runs and the current `main` SHA
-- `GitHub.fetch_workflow_run_jobs` — determine whether a job reached any steps
-- `GitHub.fetch_workflow_job_logs` — read the first genuine failing assertion
-- `GitHub.rerun_failed_workflow_run_jobs` — retry an infrastructure-only failure
-- `GitHub.rerun_workflow_job` — retry one isolated failed/cancelled job when appropriate
+- `GitHub.fetch` — inspect workflow runs, deployments and the current `main` SHA
+- `GitHub.fetch_workflow_run_jobs` — determine whether a runner reached any steps
+- `GitHub.fetch_workflow_job_steps` — locate the first named failing stage
+- `GitHub.fetch_workflow_job_logs` — read the first genuine assertion
+- `GitHub.rerun_failed_workflow_run_jobs` — retry infrastructure-only failures
+- `GitHub.rerun_workflow_job` — retry one isolated job when appropriate
 
-### Validation reached a named test and failed
+### A named Pacefold stage failed
 
-This is actionable. Read the job log, identify the first failing assertion, and fix that exact contract on a branch. Do not bypass or weaken unrelated release gates.
+Read the first failure and repair that current contract on a branch. Do not bypass the release gate and do not revive a historical audit that no longer represents the public product.
 
-Known example: the historical Ma privacy audit timed out while waiting for a hidden legacy status element after Pacefold 23 correctly mounted the modern Clock. PR #52 preserved the entire historical audit and routed only its fixture through `?legacyAudit=1`.
+### Merge exists but no workflow appears
 
-### Merge exists but no workflow run appears
-
-Use the existing `workflow_dispatch` trigger on `pages.yml` directly. Do not create scheduled tasks, repeated deployment issues, or marker-only application changes.
+Use the existing `workflow_dispatch` trigger on `pages.yml` directly.
 
 ## Release principles
 
-- Keep application failures separate from GitHub infrastructure failures.
-- Retry infrastructure failures; repair genuine test failures.
-- Deploy the exact approved `main` commit.
-- Do not claim the site is live until the Pages deployment succeeds and the public build is verified.
-
-## Current recovery
-
-The Pacefold 23 release line includes PR #52's Ma legacy-audit routing fix. The issue-triggered deployment intermediary was removed because direct `pages.yml` dispatch is simpler and avoids consuming a second hosted runner.
+- One public product and one production workflow.
+- Preserve local user data across releases.
+- Keep infrastructure failures separate from product failures.
+- Retry infrastructure; repair genuine current-product assertions.
+- Do not call a release live until GitHub Pages succeeds and the public files are verified.

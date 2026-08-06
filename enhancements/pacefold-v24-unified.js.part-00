@@ -1,0 +1,56 @@
+(()=>{
+'use strict';
+const RELEASE='24.0.0';
+const REVISION='unified-r1';
+const PREFS_KEY='pacefoldPrefsV15';
+const NOTES_KEY='pacefold.notebook.entries.v2';
+const PRAYERS=[['fajr','Fajr'],['sunrise','Sunrise'],['dhuhr','Dhuhr'],['asr','Asr'],['maghrib','Maghrib'],['isha','Isha']];
+const ALERTS=new Set(['fajr','dhuhr','asr','maghrib','isha']);
+let mounted=false,tickTimer=0,minuteTimer=0,lastMinute=-1,lastScheduleKey='';
+const $=selector=>document.querySelector(selector);
+const id=value=>document.getElementById(value);
+const create=(tag,className,content)=>{const node=document.createElement(tag);if(className)node.className=className;if(content!=null)node.textContent=String(content);return node};
+const button=(className,label,content='')=>{const node=create('button',className,content);node.type='button';node.setAttribute('aria-label',label);return node};
+const parse=(raw,fallback)=>{try{return raw?JSON.parse(raw):fallback}catch{return fallback}};
+const prefs=()=>window.__PACEFOLD_RHYTHM__?.prefs?.()||window.__PACEFOLD_CORE__?.getPrefs?.()||window.__PACEFOLD_MA_CORE__?.getPrefs?.()||parse(localStorage.getItem(PREFS_KEY),{})||{};
+const patchPrefs=patch=>window.__PACEFOLD_RHYTHM__?.patchPrefs?.(patch)||window.__PACEFOLD_CORE__?.updatePrefs?.(patch)||window.__PACEFOLD_MA_CORE__?.updatePrefs?.(patch);
+const notes=()=>{const value=parse(localStorage.getItem(NOTES_KEY),[]);return Array.isArray(value)?value:[]};
+const text=value=>String(value??'').replace(/\s+/g,' ').trim();
+const clamp=(value,min,max,fallback)=>{value=Number(value);return Number.isFinite(value)?Math.min(max,Math.max(min,value)):fallback};
+const pad=value=>String(value).padStart(2,'0');
+const dtr=value=>value*Math.PI/180,rtd=value=>value*180/Math.PI;
+const dsin=value=>Math.sin(dtr(value)),dcos=value=>Math.cos(dtr(value)),dtan=value=>Math.tan(dtr(value));
+const dasin=value=>rtd(Math.asin(value)),dacos=value=>rtd(Math.acos(value)),datan2=(y,x)=>rtd(Math.atan2(y,x)),dacot=value=>rtd(Math.atan2(1,value));
+const fixA=value=>{value%=360;return value<0?value+360:value},fixH=value=>{value%=24;return value<0?value+24:value};
+function zoneName(value=prefs()){return text(value.timeZone)||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}
+function zoneParts(date=new Date(),timeZone=zoneName()){
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date),result={};
+  for(const part of parts)if(part.type!=='literal')result[part.type]=Number(part.value);
+  return result;
+}
+function zoneOffsetHours(date,timeZone=zoneName()){
+  const part=zoneParts(date,timeZone),asUTC=Date.UTC(part.year,part.month-1,part.day,part.hour,part.minute,part.second);return (asUTC-date.getTime())/3600000
+}
+function zonedDate(year,month,day,hours,timeZone=zoneName()){
+  const whole=Math.floor(hours),minute=Math.round((hours-whole)*60),normalizedHour=whole+Math.floor(minute/60),normalizedMinute=((minute%60)+60)%60;
+  let stamp=Date.UTC(year,month-1,day,normalizedHour,normalizedMinute,0);
+  for(let index=0;index<3;index+=1)stamp=Date.UTC(year,month-1,day,normalizedHour,normalizedMinute,0)-zoneOffsetHours(new Date(stamp),timeZone)*3600000;
+  return new Date(stamp)
+}
+function localKey(date=new Date(),timeZone=zoneName()){
+  const part=zoneParts(date,timeZone);return `${part.year}-${pad(part.month)}-${pad(part.day)}`
+}
+function formatTime(date,value=prefs()){
+  return new Intl.DateTimeFormat(undefined,{timeZone:zoneName(value),hour:'numeric',minute:'2-digit',hour12:value.timeFormat!=='24'}).format(date)
+}
+function formatDate(date,value=prefs()){
+  return new Intl.DateTimeFormat(undefined,{timeZone:zoneName(value),weekday:'long',month:'long',day:'numeric'}).format(date)
+}
+function julian(year,month,day){if(month<=2){year-=1;month+=12}const a=Math.floor(year/100),b=2-a+Math.floor(a/4);return Math.floor(365.25*(year+4716))+Math.floor(30.6001*(month+1))+day+b-1524.5}
+function sunPos(jd){const d=jd-2451545,g=fixA(357.529+.98560028*d),q=fixA(280.459+.98564736*d),l=fixA(q+1.915*dsin(g)+.020*dsin(2*g)),e=23.439-.00000036*d,ra=datan2(dcos(e)*dsin(l),dcos(l))/15,eqt=q/15-fixH(ra),decl=dasin(dsin(e)*dsin(l));return{decl,eqt}}
+function computePrayerHours(date=new Date(),value=prefs()){
+  const timeZone=zoneName(value),part=zoneParts(date,timeZone),lat=clamp(value.lat,-90,90,43.62),lng=clamp(value.lng,-180,180,-79.51),anchor=zonedDate(part.year,part.month,part.day,12,timeZone),tz=zoneOffsetHours(anchor,timeZone),jd=julian(part.year,part.month,part.day)-lng/(15*24),mid=time=>fixH(12-sunPos(jd+time).eqt);
+  const angleAt=(angle,time,direction)=>{const decl=sunPos(jd+time).decl,noon=mid(time),x=(-dsin(angle)-dsin(decl)*dsin(lat))/(dcos(decl)*dcos(lat)),span=(1/15)*dacos(Math.min(1,Math.max(-1,x)));return noon+(direction==='ccw'?-span:span)};
+  const asrAt=(factor,time)=>{const decl=sunPos(jd+time).decl,angle=-dacot(factor+dtan(Math.abs(lat-decl)));return angleAt(angle,time,'cw')};
+  const angle=value.method==='18'?18:15,asrFactor=value.asr==='hanafi'?2:1,times={fajr:5,sunrise:6,dhuhr:12,asr:13,sunset:18,maghrib:18,isha:19};
+  for(let index=0;index<4;index+=1){const partDay={};
