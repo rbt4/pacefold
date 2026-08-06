@@ -45,3 +45,7 @@ Use the existing `workflow_dispatch` trigger on `pages.yml` directly. Do not cre
 - Retry infrastructure failures; repair genuine test failures.
 - Deploy the exact approved `main` commit.
 - Do not claim the site is live until the Pages deployment succeeds and the public build is verified.
+
+## Current recovery
+
+The Pacefold 23 release line includes PR #52's Ma legacy-audit routing fix. The issue-triggered deployment intermediary was removed because direct `pages.yml` dispatch is simpler and avoids consuming a second hosted runner.
