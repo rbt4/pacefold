@@ -43,6 +43,21 @@ async function stored(page){return page.evaluate(()=>JSON.parse(localStorage.get
     assert(initial.details[0].includes('2/24 today'),`Water progress is missing: ${JSON.stringify(initial.details)}`);
     assert(initial.width<=initial.viewport,`Action dock overflows desktop: ${JSON.stringify(initial)}`);
 
+    await page.evaluate(()=>window.__PACEFOLD_MA_QUIET__.set(true));
+    await page.waitForTimeout(180);
+    const quietOn=await page.evaluate(()=>{
+      const stored=JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}'),core=window.__PACEFOLD_MA_CORE__?.getPrefs?.()||{};
+      return{body:document.body.dataset.quiet,root:document.getElementById('pf22-spatial-root')?.dataset.quiet,stored:stored.quietMode,core:core.quietMode,api:window.__PACEFOLD_MA_QUIET__?.get?.(),title:document.title};
+    });
+    assert(quietOn.body==='true'&&quietOn.stored===true&&quietOn.core===true&&quietOn.api===true,`Quiet enable state diverged: ${JSON.stringify(quietOn)}`);
+    await page.evaluate(()=>window.__PACEFOLD_MA_QUIET__.set(false));
+    await page.waitForTimeout(180);
+    const quietOff=await page.evaluate(()=>{
+      const stored=JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}'),core=window.__PACEFOLD_MA_CORE__?.getPrefs?.()||{};
+      return{body:document.body.dataset.quiet,root:document.getElementById('pf22-spatial-root')?.dataset.quiet,stored:stored.quietMode,core:core.quietMode,api:window.__PACEFOLD_MA_QUIET__?.get?.()};
+    });
+    assert(quietOff.body==='false'&&quietOff.stored===false&&quietOff.core===false&&quietOff.api===false,`Quiet disable state diverged: ${JSON.stringify(quietOff)}`);
+
     await page.locator('#pf23-action-water').click();
     await wait(page,'Sip logging',()=>{const value=JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}');return Number(value.waterSips)===3&&document.querySelector('#pf23-action-water small')?.textContent.includes('3/24 today')});
 
