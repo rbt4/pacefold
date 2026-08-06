@@ -1,0 +1,24 @@
+name: One-time Pacefold 24 release launch
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  actions: write
+  contents: read
+  issues: read
+
+jobs:
+  launch:
+    if: >-
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.issue.title == '[launch] Pacefold 24.0.0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Launch current production workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run pages.yml --repo "$GH_REPO" --ref main
