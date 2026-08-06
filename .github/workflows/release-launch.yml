@@ -2,7 +2,7 @@ name: One-time Pacefold 24 release launch
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited, reopened]
 
 permissions:
   actions: write
