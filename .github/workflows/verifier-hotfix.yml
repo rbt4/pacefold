@@ -1,0 +1,25 @@
+name: Validate verifier hotfix
+
+on:
+  push:
+    branches:
+      - agent/pacefold-experience-verifier-hotfix
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pacefold-verifier-hotfix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check verifier syntax
+        run: node --check scripts/verify.mjs
+      - name: Run repository verifier
+        run: node scripts/verify.mjs
