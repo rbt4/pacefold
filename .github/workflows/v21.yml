@@ -1,8 +1,8 @@
-name: Validate Pacefold 23.0.0 stabilization
+name: Validate Pacefold 23.0.0 interaction restoration
 
 on:
   push:
-    branches: [main, agent/pacefold-23-complete-stabilization]
+    branches: [main, agent/pacefold-action-dock-restoration]
   pull_request:
     paths:
       - 'enhancements/**'
@@ -20,7 +20,7 @@ concurrency:
 jobs:
   stabilization:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
       - name: Reconstruct verified release
@@ -41,16 +41,21 @@ jobs:
             enhancements/pacefold-v22-cues.js \
             enhancements/pacefold-v22-daylight.js \
             enhancements/pacefold-v23-stability.js \
+            enhancements/pacefold-v23-action-dock.js \
             enhancements/inject.mjs \
             enhancements/inject-v22-hardening.mjs \
             enhancements/inject-v22-daylight.mjs \
             enhancements/inject-v23.mjs \
             enhancements/v23-audit.cjs \
+            enhancements/action-dock-audit.cjs \
             scripts/verify.mjs; do node --check "$file"; done
           grep -q "const RELEASE='23.0.0'" enhancements/pacefold-v23-stability.js
+          grep -q "const REVISION='action-dock-r1'" enhancements/pacefold-v23-action-dock.js
+          grep -q 'window.__PACEFOLD_ACTION_DOCK__' enhancements/pacefold-v23-action-dock.js
+          grep -q '.pf23-action-dock' enhancements/pacefold-v23-action-dock.css
           grep -q '@media(forced-colors:active)' enhancements/pacefold-v23-stability.css
-          grep -q '@media(max-width:420px) and (max-height:240px)' enhancements/pacefold-v23-stability.css
-          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js enhancements/pacefold-v22-hardening.js enhancements/pacefold-v22-daylight.js enhancements/pacefold-v23-stability.js
+          grep -q '@media(max-width:420px) and (max-height:240px)' enhancements/pacefold-v23-action-dock.css
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v22-spatial.js enhancements/pacefold-v22-hardening.js enhancements/pacefold-v22-daylight.js enhancements/pacefold-v23-stability.js enhancements/pacefold-v23-action-dock.js
       - name: Repository verifier
         run: node scripts/verify.mjs
       - name: Inject complete surface
@@ -69,6 +74,8 @@ jobs:
           test "$(grep -o 'data-pacefold-v23-runtime=\"23.0.0\"' _release/app/index.html | wc -l)" -eq 1
           for asset in pacefold-v23-boot.css pacefold-v23.css pacefold-v23.js; do test -f "_release/app/$asset"; grep -q "$asset" _release/service-worker.js; done
           grep -q 'revision:23.0.0' _release/service-worker.js
+          grep -q 'build:action-dock-r1' _release/service-worker.js
+          grep -q 'window.__PACEFOLD_ACTION_DOCK__' _release/app/pacefold-v23.js
       - name: Install Playwright
         run: |
           npm install --prefix /tmp/pacefold-v23-audit playwright@1.61.1
@@ -77,11 +84,14 @@ jobs:
         run: |
           mkdir -p /tmp/pacefold-v23-artifacts
           NODE_PATH=/tmp/pacefold-v23-audit/node_modules node enhancements/v23-audit.cjs _release /tmp/pacefold-v23-artifacts
+      - name: Run quick logging and cue interaction audit
+        run: |
+          NODE_PATH=/tmp/pacefold-v23-audit/node_modules node enhancements/action-dock-audit.cjs _release /tmp/pacefold-v23-artifacts
       - name: Upload Pacefold 23 captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-23.0.0-stabilization-${{ github.run_id }}
+          name: pacefold-23-action-dock-${{ github.run_id }}
           path: /tmp/pacefold-v23-artifacts/
           if-no-files-found: warn
           retention-days: 7
