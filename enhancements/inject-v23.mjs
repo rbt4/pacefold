@@ -5,6 +5,8 @@ import {fileURLToPath} from 'node:url';
 
 const RELEASE='23.0.0';
 const REVISION='23.0.0';
+const BUILD='action-dock-r1';
+const CACHE_REVISION=`${REVISION}-${BUILD}`;
 const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
 const targetRoot=path.resolve(process.argv[2]||'_site');
 const targetApp=path.join(targetRoot,'app');
@@ -13,12 +15,13 @@ const cssOrder=[
   'pacefold-v21.css','pacefold-v21-compat.css','pacefold-v21-refine.css','pacefold-v21-precision.css',
   'pacefold-v21-minimal.css','pacefold-v21-minimal-responsive.css','pacefold-v21-dayflow.css',
   'pacefold-v22-spatial.css','pacefold-v22-hardening.css','pacefold-v22-recovery.css',
-  'pacefold-v22-daylight.css','pacefold-v22-daylight-settings.css','pacefold-v23-stability.css'
+  'pacefold-v22-daylight.css','pacefold-v22-daylight-settings.css','pacefold-v23-stability.css',
+  'pacefold-v23-action-dock.css'
 ];
 const runtimeOrder=[
   'pacefold-v21.js','pacefold-v21-persistence.js','pacefold-v21-refine.js','pacefold-v21-precision.js',
   'pacefold-v22-spatial.js','pacefold-v22-hardening.js','pacefold-v22-cues.js','pacefold-v22-daylight.js',
-  'pacefold-v23-stability.js'
+  'pacefold-v23-stability.js','pacefold-v23-action-dock.js'
 ];
 
 function replaceExactlyOnce(source,from,to,label){
@@ -44,9 +47,9 @@ async function patchAppHtml(file){
     .replace(/\s*<script[^>]+data-pacefold-v22-[^>]*><\/script>/gi,'')
     .replace(/\s*<script[^>]+data-pacefold-v23[^>]*><\/script>/gi,'');
   html=updateMeta(html,'pacefold-experience',RELEASE);
-  html=replaceExactlyOnce(html,'<head>',`<head>\n<link rel="stylesheet" href="./${assets.boot}?v=${REVISION}" data-pacefold-v23-boot="${RELEASE}">`,'first paint');
-  html=replaceExactlyOnce(html,'</head>',`<link rel="stylesheet" href="./${assets.css}?v=${REVISION}" data-pacefold-v23-css="${RELEASE}">\n</head>`,'active stylesheet');
-  html=replaceExactlyOnce(html,'</body>',`<script defer src="./${assets.runtime}?v=${REVISION}" data-pacefold-v23-runtime="${RELEASE}"></script>\n</body>`,'active runtime');
+  html=replaceExactlyOnce(html,'<head>',`<head>\n<link rel="stylesheet" href="./${assets.boot}?v=${CACHE_REVISION}" data-pacefold-v23-boot="${RELEASE}">`,'first paint');
+  html=replaceExactlyOnce(html,'</head>',`<link rel="stylesheet" href="./${assets.css}?v=${CACHE_REVISION}" data-pacefold-v23-css="${RELEASE}">\n</head>`,'active stylesheet');
+  html=replaceExactlyOnce(html,'</body>',`<script defer src="./${assets.runtime}?v=${CACHE_REVISION}" data-pacefold-v23-runtime="${RELEASE}"></script>\n</body>`,'active runtime');
   await fs.writeFile(file,html);
 }
 async function patchLanding(file){
@@ -65,7 +68,7 @@ async function patchLanding(file){
     .replace('Pacefold 20.0.1 · one protected workday folio','Pacefold 23.0.0 · one quiet spatial workday');
   await fs.writeFile(file,html);
 }
-function cacheName(name){return /-\d+\.\d+\.\d+$/.test(name)?name.replace(/-\d+\.\d+\.\d+$/,`-${REVISION}`):`${name}-${REVISION}`}
+function cacheName(name){return /-\d+\.\d+\.\d+(?:-[a-z0-9-]+)?$/i.test(name)?name.replace(/-\d+\.\d+\.\d+(?:-[a-z0-9-]+)?$/i,`-${CACHE_REVISION}`):`${name}-${CACHE_REVISION}`}
 async function patchWorker(file,{root=false}={}){
   let worker;try{worker=await fs.readFile(file,'utf8')}catch{return}
   worker=worker.replace(/(const\s+CACHE_NAME\s*=\s*)([`'"])(pacefold-[^`'"]+)(\2)\s*;/,(_,prefix,quote,name)=>`${prefix}${quote}${cacheName(name)}${quote};`);
@@ -74,7 +77,7 @@ async function patchWorker(file,{root=false}={}){
     const token=`'${prefix}${asset}'`;if(worker.includes(token))continue;
     if(worker.includes(anchor))worker=worker.replace(anchor,`${anchor},${token}`);else worker+=`\n/* pacefold-v23-asset ${token} */\n`;
   }
-  worker=worker.replace(/\/\* pacefold-experience:[^*]+\*\//g,'').replace(/\s+$/,'');worker+=`\n/* pacefold-experience:${RELEASE};revision:${REVISION} */\n`;
+  worker=worker.replace(/\/\* pacefold-experience:[^*]+\*\//g,'').replace(/\s+$/,'');worker+=`\n/* pacefold-experience:${RELEASE};revision:${REVISION};build:${BUILD} */\n`;
   await fs.writeFile(file,worker);
 }
 async function verify(){
@@ -83,23 +86,27 @@ async function verify(){
   const withoutBoot=html.replace(/<script[^>]+data-pacefold-v21-boot[^>]*><\/script>/i,'');
   if(/<link[^>]+data-pacefold-v2[12]-|<script[^>]+data-pacefold-v2[12]-/i.test(withoutBoot))throw new Error('An individual V21/V22 active asset is still loaded');
   if(!html.includes(`<meta name="pacefold-experience" content="${RELEASE}">`))throw new Error('App experience meta is stale');
+  if(!html.includes(`?v=${CACHE_REVISION}`))throw new Error('Action-dock cache revision is missing');
   if(!landing.includes(`<meta name="pacefold-landing" content="${RELEASE}">`)||!landing.includes('Pacefold 23.0.0 · one quiet spatial workday'))throw new Error('Landing page is stale');
   for(const asset of Object.values(assets))if(!worker.includes(asset))throw new Error(`Offline shell omits ${asset}`);
-  if(!worker.includes(`revision:${REVISION}`))throw new Error('Offline shell revision is stale');
-  for(const token of ['@media(forced-colors:active)','@media(max-width:420px) and (max-height:240px)','.pf23-seconds-dial','.pf22-settings-layout[data-hardened]'])if(!css.includes(token))throw new Error(`Stability CSS token missing: ${token}`);
-  for(const token of [`const RELEASE='${RELEASE}'`,'complete-stabilization-r6','__PACEFOLD_ACTIVE_RELEASE__','observeReleaseTruth','window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE','window.__PACEFOLD_ACTIVE_RELEASE__||EXPERIENCE','legacyAudit'])if(!runtime.includes(token))throw new Error(`Stability runtime token missing: ${token}`);
+  if(!worker.includes(`revision:${REVISION}`)||!worker.includes(`build:${BUILD}`))throw new Error('Offline shell revision is stale');
+  for(const token of ['@media(forced-colors:active)','@media(max-width:420px) and (max-height:240px)','.pf23-seconds-dial','.pf22-settings-layout[data-hardened]','.pf23-action-dock','--pf23-source-water'])if(!css.includes(token))throw new Error(`Stability CSS token missing: ${token}`);
+  for(const token of [`const RELEASE='${RELEASE}'`,'complete-stabilization-r6','__PACEFOLD_ACTIVE_RELEASE__','observeReleaseTruth','window.__PACEFOLD_ACTIVE_RELEASE__||RELEASE','window.__PACEFOLD_ACTIVE_RELEASE__||EXPERIENCE','legacyAudit','window.__PACEFOLD_ACTION_DOCK__','Log sip','Rest'])if(!runtime.includes(token))throw new Error(`Stability runtime token missing: ${token}`);
 }
 
 const stabilityRuntime=await fs.readFile(path.join(sourceRoot,'pacefold-v23-stability.js'),'utf8');new vm.Script(stabilityRuntime,{filename:'pacefold-v23-stability.js'});
-if(/\.innerHTML\s*=|style\s*=\s*["']/.test(stabilityRuntime))throw new Error('Pacefold 23 runtime contains unsafe DOM construction');
+const actionRuntime=await fs.readFile(path.join(sourceRoot,'pacefold-v23-action-dock.js'),'utf8');new vm.Script(actionRuntime,{filename:'pacefold-v23-action-dock.js'});
+if(/\.innerHTML\s*=|style\s*=\s*["']/.test(stabilityRuntime+actionRuntime))throw new Error('Pacefold 23 runtime contains unsafe DOM construction');
 await Promise.all([
   fs.copyFile(path.join(sourceRoot,'pacefold-v23-boot.css'),path.join(targetApp,assets.boot)),
   fs.copyFile(path.join(sourceRoot,'pacefold-v23-stability.css'),path.join(targetApp,'pacefold-v23-stability.css')),
-  fs.copyFile(path.join(sourceRoot,'pacefold-v23-stability.js'),path.join(targetApp,'pacefold-v23-stability.js'))
+  fs.copyFile(path.join(sourceRoot,'pacefold-v23-stability.js'),path.join(targetApp,'pacefold-v23-stability.js')),
+  fs.copyFile(path.join(sourceRoot,'pacefold-v23-action-dock.css'),path.join(targetApp,'pacefold-v23-action-dock.css')),
+  fs.copyFile(path.join(sourceRoot,'pacefold-v23-action-dock.js'),path.join(targetApp,'pacefold-v23-action-dock.js'))
 ]);
 await buildBundle(cssOrder,assets.css);await buildBundle(runtimeOrder,assets.runtime);
 await patchAppHtml(path.join(targetApp,'index.html'));await patchLanding(path.join(targetRoot,'index.html'));
 await patchWorker(path.join(targetRoot,'service-worker.js'),{root:true});await patchWorker(path.join(targetApp,'service-worker.js'));
 await fs.writeFile(path.join(targetRoot,'pacefold-experience.txt'),`${RELEASE}\n`);await fs.writeFile(path.join(targetApp,'pacefold-experience.txt'),`${RELEASE}\n`);
 await fs.writeFile(path.join(targetRoot,'pacefold-stability.txt'),`${RELEASE} ${REVISION}\n`);await fs.writeFile(path.join(targetApp,'pacefold-stability.txt'),`${RELEASE} ${REVISION}\n`);
-await verify();console.log(`Installed Pacefold ${RELEASE}: complete stabilization, bundled spatial surface and corrected release truth.`);
+await verify();console.log(`Installed Pacefold ${RELEASE}: ${BUILD}, quick logging, restored cue ownership and cache-safe deployment.`);
