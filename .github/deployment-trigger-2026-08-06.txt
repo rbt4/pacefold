@@ -1,0 +1,2 @@
+Pacefold 23.0.0 deployment retry for verifier-aligned tree fed68b0c47908ad20f4d16d50d5a045ddafb8863.
+Created after GitHub Actions and Pages service disruption on 2026-08-06.
