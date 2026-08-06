@@ -28,6 +28,8 @@ const ACTIONS={
 };
 
 let frame=0;
+let queuedForce=false;
+let initialized=false;
 let timer=0;
 let observer=null;
 let lastBadgeKey='';
@@ -178,7 +180,7 @@ function renderCues(sources){
   }
   cluster.setAttribute('aria-label',`Waiting: ${sources.map(source=>SOURCE_META[source]?.label||source).join(', ')}`);
 }
-function renderAction(source,value,sources){
+function renderAction(source,value,sources,quiet=false){
   const control=id(`pf23-action-${source}`);if(!control)return;
   const strong=control.querySelector('strong'),small=control.querySelector('small'),state=controlState(source),queued=sources.includes(source);
   let title=SOURCE_META[source]?.label||source,detail='Tap to log',active=state.active,due=state.due||queued,progress=0;
@@ -196,7 +198,7 @@ function renderAction(source,value,sources){
   }
   if(source==='eyes'){title='Eye reset';detail=due?'Due now · tap to log':'20 seconds away from screen'}
   if(source==='body'){title='Move';detail=due?'Due now · tap to log':'Stretch or movement break'}
-  if(strong)strong.textContent=title;if(small)small.textContent=detail;
+  if(!quiet){if(strong&&strong.textContent!==title)strong.textContent=title;if(small&&small.textContent!==detail)small.textContent=detail;}
   control.dataset.active=String(active);control.dataset.due=String(due);control.setAttribute('aria-pressed',String(active));control.style.setProperty('--pf23-action-progress',`${progress}%`);
 }
 function syncNativeBadge(sources){
@@ -210,17 +212,18 @@ function syncNativeBadge(sources){
 }
 function refresh(force=false){
   const dock=buildDock();if(!dock)return false;
-  const value=prefs(),sources=cueSources();renderCues(sources);
-  for(const source of ['water','noodle','away','lunch','eyes','body'])renderAction(source,value,sources);
+  const value=prefs(),sources=cueSources(),quiet=Boolean(value.quietMode);renderCues(sources);
+  for(const source of ['water','noodle','away','lunch','eyes','body'])renderAction(source,value,sources,quiet);
   const summary=id('pf23-action-summary'),water=Math.max(0,Number(value.waterSips)||0),target=Math.max(1,Number(value.waterTarget)||24);
-  if(summary)summary.textContent=sources.length?`${sources.length} waiting · water ${water}/${target}`:`Quick log · water ${water}/${target}`;
+  if(summary&&!quiet){const copy=sources.length?`${sources.length} waiting · water ${water}/${target}`:`Quick log · water ${water}/${target}`;if(summary.textContent!==copy)summary.textContent=copy;}
   syncNativeBadge(sources);
   if(force)window.__PACEFOLD_DAYLIGHT__?.refresh?.();
   return true;
 }
 function queue(force=false){
+  queuedForce=queuedForce||Boolean(force);
   if(frame)return;
-  frame=requestAnimationFrame(()=>{frame=0;refresh(force)});
+  frame=requestAnimationFrame(()=>{const applyForce=queuedForce;queuedForce=false;frame=0;refresh(applyForce)});
 }
 function observe(){
   if(observer)return;
@@ -231,7 +234,9 @@ function observe(){
   observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','data-state','data-source','data-signal','data-active','hidden']});
 }
 function initialize(){
+  if(initialized)return;
   if(!refresh(true))return;
+  initialized=true;
   observe();clearInterval(timer);timer=setInterval(()=>refresh(false),1000);
   for(const event of ['pacefold:cue-queue','pacefold:ma-prefs','pacefold:storage-changed','pacefold:dayflow','pacefold:quiet','pacefold:daylight-ready'])window.addEventListener(event,()=>queue(true));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)queue(true)});
