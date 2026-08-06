@@ -2,7 +2,7 @@ name: Owner-only Pacefold deployment dispatch
 
 on:
   issues:
-    types: [opened]
+    types: [opened, edited, reopened]
   workflow_dispatch:
 
 permissions:
