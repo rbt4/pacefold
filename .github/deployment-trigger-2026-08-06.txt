@@ -1,3 +1,3 @@
-Pacefold 23.0.0 deployment retry for verifier-aligned tree fed68b0c47908ad20f4d16d50d5a045ddafb8863.
-Created after GitHub Actions and Pages service disruption on 2026-08-06.
-Retry requested after the corrected repository verifier reached main.
+Pacefold 23.0.0 final production deployment trigger.
+Current main includes the unified experience, corrected release verifier, and modern action-dock audit through PR #50.
+Application runtime and deployed bundle are unchanged by this marker update.
