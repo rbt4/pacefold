@@ -44,8 +44,7 @@ jobs:
             enhancements/inject-v24.mjs \
             enhancements/v24-audit.cjs \
             scripts/verify.mjs; do node --check "$file"; done
-          cat enhancements/pacefold-v24-unified.js.part-* > /tmp/pacefold-v24-unified.js
-          cat enhancements/inject-v24-runtime.mjs.part-* > /tmp/inject-v24-runtime.mjs
+          node -e "const fs=require('fs'),p='enhancements/';const join=x=>fs.readdirSync(p).filter(n=>n.startsWith(x)).sort().map(n=>fs.readFileSync(p+n,'utf8').replace(/\n$/,'')).join('');fs.writeFileSync('/tmp/pacefold-v24-unified.js',join('pacefold-v24-unified.js.part-'));fs.writeFileSync('/tmp/inject-v24-runtime.mjs',join('inject-v24-runtime.mjs.part-'))"
           node --check /tmp/pacefold-v24-unified.js
           node --check /tmp/inject-v24-runtime.mjs
           grep -q "const RELEASE='24.0.0'" enhancements/pacefold-v24-kernel.js
