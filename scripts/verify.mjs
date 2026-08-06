@@ -10,7 +10,7 @@ const required=[
 for(const file of required)await fs.access(path.join(root,file));
 const version=(await fs.readFile(path.join(root,'enhancements/VERSION'),'utf8')).trim();
 if(version!=='24.0.0')throw new Error(`Expected Pacefold 24.0.0, found ${version}`);
-async function readParts(prefix){const dir=path.join(root,'enhancements'),names=(await fs.readdir(dir)).filter(name=>name.startsWith(prefix)).sort();if(!names.length)throw new Error(`Missing source parts: ${prefix}`);return (await Promise.all(names.map(name=>fs.readFile(path.join(dir,name),'utf8')))).join('')}
+async function readParts(prefix){const dir=path.join(root,'enhancements'),names=(await fs.readdir(dir)).filter(name=>name.startsWith(prefix)).sort();if(!names.length)throw new Error(`Missing source parts: ${prefix}`);return (await Promise.all(names.map(name=>fs.readFile(path.join(dir,name),'utf8')))).map(part=>part.replace(/\n$/,'')).join('')}
 const sources={
   'enhancements/pacefold-v24-kernel.js':await fs.readFile(path.join(root,'enhancements/pacefold-v24-kernel.js'),'utf8'),
   'enhancements/pacefold-v24-unified.js':await readParts('pacefold-v24-unified.js.part-'),
