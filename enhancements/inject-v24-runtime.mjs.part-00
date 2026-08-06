@@ -1,0 +1,63 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import vm from 'node:vm';
+import {fileURLToPath} from 'node:url';
+
+const RELEASE='24.0.0';
+const REVISION='unified-r1';
+const CACHE=`${RELEASE}-${REVISION}`;
+const sourceRoot=path.dirname(fileURLToPath(import.meta.url));
+const targetRoot=path.resolve(process.argv[2]||'_site');
+const targetApp=path.join(targetRoot,'app');
+const appAssets={kernel:'pacefold-v24-kernel.js',css:'pacefold-v24.css',runtime:'pacefold-v24.js'};
+const publicAssets={css:'pacefold-public-v24.css',runtime:'pacefold-public-v24.js'};
+
+async function readParts(prefix){
+  const names=(await fs.readdir(sourceRoot)).filter(name=>name.startsWith(prefix)).sort();
+  if(!names.length)throw new Error(`Pacefold 24 source parts missing: ${prefix}`);
+  return (await Promise.all(names.map(name=>fs.readFile(path.join(sourceRoot,name),'utf8')))).join('');
+}
+
+function replaceExactlyOnce(source,from,to,label){
+  const first=source.indexOf(from);if(first<0)throw new Error(`Pacefold 24 ${label} anchor is missing`);
+  if(source.indexOf(from,first+from.length)>=0)throw new Error(`Pacefold 24 ${label} anchor is ambiguous`);
+  return source.slice(0,first)+to+source.slice(first+from.length);
+}
+function updateMeta(html,name,value){html=html.replace(new RegExp(`\\s*<meta\\s+name=["']${name}["'][^>]*>`,'gi'),'');return replaceExactlyOnce(html,'</head>',`<meta name="${name}" content="${value}">\n</head>`,`${name} meta`)}
+function removeLegacyProductLayer(html){
+  return html
+    .replace(/\s*<link[^>]+data-pacefold-ma[^>]*>/gi,'')
+    .replace(/\s*<script[^>]+data-pacefold-ma[^>]*><\/script>/gi,'')
+    .replace(/\s*<link[^>]+data-pacefold-v24[^>]*>/gi,'')
+    .replace(/\s*<script[^>]+data-pacefold-v24[^>]*><\/script>/gi,'');
+}
+async function patchAppHtml(file){
+  let html=removeLegacyProductLayer(await fs.readFile(file,'utf8'));
+  html=updateMeta(html,'pacefold-experience',RELEASE);html=updateMeta(html,'pacefold-release',REVISION);
+  html=html.replace(/<title>[^<]*<\/title>/i,'<title>Pacefold — Quiet Workday Rhythm</title>').replace(/<meta name="description" content="[^"]*">/i,'<meta name="description" content="A private, offline-ready day instrument for time, rhythm, notes, care and focus.">');
+  html=replaceExactlyOnce(html,'</head>',`<link rel="stylesheet" href="./${appAssets.css}?v=${CACHE}" data-pacefold-v24-css="${RELEASE}">\n</head>`,'app stylesheet');
+  html=replaceExactlyOnce(html,'<script src="./app.js" defer></script>',`<script src="./${appAssets.kernel}?v=${CACHE}" data-pacefold-v24-kernel="${RELEASE}"></script>\n<script src="./app.js" defer></script>`,'kernel order');
+  html=replaceExactlyOnce(html,'</body>',`<script defer src="./${appAssets.runtime}?v=${CACHE}" data-pacefold-v24-runtime="${RELEASE}"></script>\n</body>`,'runtime order');
+  await fs.writeFile(file,html)
+}
+function landingHtml(){return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f6f1">
+<meta name="color-scheme" content="light">
+<title>Pacefold — The quiet workday instrument</title>
+<meta name="description" content="Pacefold is a private, offline-ready workday instrument that keeps time, rhythm, notes, care and focus in one calm place.">
+<meta name="pacefold-experience" content="${RELEASE}">
+<meta name="pacefold-landing" content="${REVISION}">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" href="./app/icons/icon-32.png">
+<link rel="apple-touch-icon" href="./app/icons/icon-192.png">
+<link rel="stylesheet" href="./${publicAssets.css}?v=${CACHE}">
+</head>
+<body>
+<header class="site-nav"><div class="wrap" style="display:flex;align-items:center;justify-content:space-between"><a class="brand" href="./"><img src="./app/icons/icon-32.png" alt=""><span>Pacefold</span></a><nav class="nav-actions" aria-label="Main navigation"><a class="button secondary" href="#inside">Inside Pacefold</a><a class="button" href="./app/">Open app</a><button class="button primary" type="button" data-install>Install</button></nav></div></header>
+<main>
+<section class="wrap hero"><div><div class="eyebrow">Pacefold ${RELEASE} · one current experience</div><h1>Your day,<br>held together.</h1><p class="hero-copy">A clock-first workday instrument that keeps the day visible without becoming another dashboard. Time, prayer or personal moments, notes, focus, hydration and care stay close—then quietly get out of the way.</p><div class="hero-actions"><a class="button primary" href="./app/">Launch Pacefold</a><a class="button" href="./app/?setup=1">Personalize first</a><button class="button" type="button" data-install>Install app</button></div><div class="trust-row"><span>Private and local</span><span>Offline-ready</span><span>No account</span><span>Automatic updates</span></div></div>
+<div class="instrument-preview" aria-label="Preview of the Pacefold day instrument"><div class="preview-top"><span>Pacefold</span><span>Clock · Notes · Day · Now</span></div><div class="preview-main"><div class="preview-dial"><i></i></div><div class="preview-clock"><small>Current moment</small><div class=
