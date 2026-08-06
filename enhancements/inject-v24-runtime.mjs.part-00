@@ -15,7 +15,7 @@ const publicAssets={css:'pacefold-public-v24.css',runtime:'pacefold-public-v24.j
 async function readParts(prefix){
   const names=(await fs.readdir(sourceRoot)).filter(name=>name.startsWith(prefix)).sort();
   if(!names.length)throw new Error(`Pacefold 24 source parts missing: ${prefix}`);
-  return (await Promise.all(names.map(name=>fs.readFile(path.join(sourceRoot,name),'utf8')))).join('');
+  return (await Promise.all(names.map(name=>fs.readFile(path.join(sourceRoot,name),'utf8')))).map(part=>part.replace(/\n$/,'')).join('');
 }
 
 function replaceExactlyOnce(source,from,to,label){
