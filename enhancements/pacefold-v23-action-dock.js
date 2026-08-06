@@ -31,6 +31,7 @@ let frame=0;
 let timer=0;
 let observer=null;
 let lastBadgeKey='';
+let lastCueKey='__unrendered__';
 let toastTimer=0;
 
 const $=selector=>document.querySelector(selector);
@@ -168,6 +169,7 @@ function buildDock(){
 }
 function renderCues(sources){
   const cluster=id('pf23-action-cues');if(!cluster)return;
+  const key=sources.join('|');if(key===lastCueKey)return;lastCueKey=key;
   cluster.replaceChildren();
   if(!sources.length){const clear=create('span','pf23-cue-clear');clear.append(create('i',''),create('small','','All clear'));cluster.append(clear);cluster.setAttribute('aria-label','No waiting cues');return}
   for(const source of sources){
