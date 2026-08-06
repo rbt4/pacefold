@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  issues:
+    types: [edited, reopened]
 
 permissions:
   contents: read
@@ -15,6 +17,10 @@ concurrency:
 
 jobs:
   validate:
+    if: >-
+      github.event_name != 'issues' ||
+      (github.event.issue.user.login == github.repository_owner &&
+       github.event.issue.title == '[launch] Pacefold 24.0.0')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
