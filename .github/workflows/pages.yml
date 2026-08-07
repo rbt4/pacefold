@@ -41,6 +41,7 @@ jobs:
             enhancements/pacefold-v24-kernel.js \
             enhancements/pacefold-public-v24.js \
             enhancements/inject-v23.mjs \
+            enhancements/inject-v24-compat-base.mjs \
             enhancements/inject-v24.mjs \
             enhancements/v24-audit.cjs \
             scripts/verify.mjs; do node --check "$file"; done
@@ -50,6 +51,7 @@ jobs:
           grep -q "const RELEASE='24.0.0'" enhancements/pacefold-v24-kernel.js
           grep -q "const RELEASE='24.0.0'" /tmp/pacefold-v24-unified.js
           grep -q "Former Ma product layer is still public" /tmp/inject-v24-runtime.mjs
+          grep -q "historical regression-audit mutation is intentionally disabled" enhancements/inject-v24-compat-base.mjs
           ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v24-kernel.js /tmp/pacefold-v24-unified.js enhancements/pacefold-public-v24.js
           node scripts/verify.mjs
 
@@ -60,9 +62,7 @@ jobs:
 
       - name: Compose Pacefold 24 public release
         run: |
-          node enhancements/inject.mjs _release
-          node enhancements/inject-v22-hardening.mjs _release
-          node enhancements/inject-v22-daylight.mjs _release
+          node enhancements/inject-v24-compat-base.mjs _release
           node enhancements/inject-v23.mjs _release
           node enhancements/inject-v24.mjs _release
           node enhancements/inject-v24.mjs _release
@@ -121,9 +121,7 @@ jobs:
           node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
           rsync -a _release/ _site/ --exclude '.git/' --exclude '.github/' --exclude 'scripts/' --exclude 'README.md' --exclude 'CHANGELOG.md' --exclude 'REPOSITORY_SETUP.md' --exclude 'SECURITY.md'
-          node enhancements/inject.mjs _site
-          node enhancements/inject-v22-hardening.mjs _site
-          node enhancements/inject-v22-daylight.mjs _site
+          node enhancements/inject-v24-compat-base.mjs _site
           node enhancements/inject-v23.mjs _site
           node enhancements/inject-v24.mjs _site
           test "$(cat _site/pacefold-experience.txt)" = "24.0.0 unified-r1"
