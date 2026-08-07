@@ -26,6 +26,14 @@ async function runGenerated(name,transform){
   }
 }
 
+async function modernizeHardeningCopy(){
+  const file=path.join(targetApp,'pacefold-v22-hardening.js');
+  let source=await fs.readFile(file,'utf8');
+  source=source.replaceAll('verified offline core 15.2.2','private local engine');
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
+}
+
 async function hardenSpatialRenderer(){
   const file=path.join(targetApp,'pacefold-v22-spatial.js');
   let source=await fs.readFile(file,'utf8');
@@ -81,5 +89,6 @@ await runGenerated('inject-v22-daylight.mjs',source=>{
   return source;
 });
 
+await modernizeHardeningCopy();
 await hardenSpatialRenderer();
 console.log('Prepared Pacefold 24 compatibility base without former Ma runtime or historical audit gates, with unified navigation-safe spatial rendering.');
