@@ -1,8 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import vm from 'node:vm';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
+const targetRoot=path.resolve(process.argv[2]||'_site');
+const targetApp=path.join(targetRoot,'app');
 
 function replaceOnce(source,pattern,replacement,label){
   const matches=source.match(pattern)||[];
@@ -21,6 +24,25 @@ async function runGenerated(name,transform){
   }finally{
     await fs.unlink(generated).catch(()=>{});
   }
+}
+
+async function hardenSpatialRenderer(){
+  const file=path.join(targetApp,'pacefold-v22-spatial.js');
+  let source=await fs.readFile(file,'utf8');
+  source=replaceOnce(
+    source,
+    /function renderClock\(\)\{\n/,
+    "function renderClock(){\n  if(!id('pf22-time-main')||!$('.pf22-seconds')||!$('.pf22-ampm')||!id('pf22-date')||!id('pf22-status')||!$('.pf22-progress-fill')||!id('pf22-context-glimpse'))return;\n",
+    'unified clock ownership guard'
+  );
+  source=replaceOnce(
+    source,
+    /root\.dataset\.quiet=String\(quiet\);id\('pf22-quiet'\)\.dataset\.active=String\(quiet\);/,
+    "root.dataset.quiet=String(quiet);const quietButton=id('pf22-quiet');if(quietButton)quietButton.dataset.active=String(quiet);",
+    'retired quiet control guard'
+  );
+  new vm.Script(source,{filename:file});
+  await fs.writeFile(file,source);
 }
 
 await runGenerated('inject.mjs',source=>{
@@ -59,4 +81,5 @@ await runGenerated('inject-v22-daylight.mjs',source=>{
   return source;
 });
 
-console.log('Prepared Pacefold 24 compatibility base without former Ma runtime or historical audit gates.');
+await hardenSpatialRenderer();
+console.log('Prepared Pacefold 24 compatibility base without former Ma runtime or historical audit gates, with unified navigation-safe spatial rendering.');
