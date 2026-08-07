@@ -16,7 +16,7 @@ function buildInstrument(hero){
   hero.querySelector('.pf22-context-glimpse')?.remove();hero.querySelector('.pf22-nav-hint')?.remove();
 }
 function buildSettingsOverview(){
-  const card=$('.pf22-settings-card');if(!card||id('pf24-settings-overview'))return;
+  const card=$('.pf22-settings-card')||$('.pf22-settings-display')||$('.pf22-settings-layout');if(!card||id('pf24-settings-overview'))return;
   const panel=create('section','pf24-settings-overview');panel.id='pf24-settings-overview';const head=create('header');head.append(create('span','','Essentials'),create('strong','','Set once. Pacefold remembers.'));panel.append(head);
   const grid=create('div','pf24-settings-grid');
   const items=[['quiet','Quiet','Generic wording and fewer interruptions'],['seconds','Seconds','Keep the second hand alive'],['notifications','Cues','System cues when allowed'],['weather','Weather','Local context in Now']];
