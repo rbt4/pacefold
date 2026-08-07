@@ -4,20 +4,22 @@ const RELEASE='23.0.0';
 const REVISION='complete-stabilization-r6';
 let panelObserver=null,stateObserver=null,stateRoot=null,frame=0;
 const id=value=>document.getElementById(value);
+const currentRelease=()=>window.__PACEFOLD_UNIFIED__?.release||window.__PACEFOLD_RHYTHM__?.release||RELEASE;
 
 function stamp(){
-  window.__PACEFOLD_ACTIVE_RELEASE__=RELEASE;
-  if(document.documentElement.dataset.pacefoldExperience!==RELEASE)document.documentElement.dataset.pacefoldExperience=RELEASE;
-  if(document.body?.dataset.pacefoldExperience!==RELEASE)document.body.dataset.pacefoldExperience=RELEASE;
-  const root=id('pf22-spatial-root');if(root){if(root.dataset.release!==RELEASE)root.dataset.release=RELEASE;if(root.dataset.stability!==REVISION)root.dataset.stability=REVISION}
-  const version=document.querySelector('.pf22-version'),versionCopy=`Pacefold ${RELEASE} · verified offline core 15.2.2`;if(version&&version.textContent!==versionCopy)version.textContent=versionCopy;
-  if(window.__PACEFOLD_SPATIAL__&&window.__PACEFOLD_SPATIAL__.release!==RELEASE)window.__PACEFOLD_SPATIAL__.release=RELEASE;
-  if(window.__PACEFOLD_HARDENING__&&window.__PACEFOLD_HARDENING__.release!==RELEASE)window.__PACEFOLD_HARDENING__.release=RELEASE;
-  window.__PACEFOLD_VERSION__={...(window.__PACEFOLD_VERSION__||{}),experience:RELEASE,update:RELEASE,stability:REVISION};
+  const release=currentRelease();
+  window.__PACEFOLD_ACTIVE_RELEASE__=release;
+  if(document.documentElement.dataset.pacefoldExperience!==release)document.documentElement.dataset.pacefoldExperience=release;
+  if(document.body?.dataset.pacefoldExperience!==release)document.body.dataset.pacefoldExperience=release;
+  const root=id('pf22-spatial-root');if(root){if(root.dataset.release!==release)root.dataset.release=release;if(root.dataset.stability!==REVISION)root.dataset.stability=REVISION}
+  const version=document.querySelector('.pf22-version'),versionCopy=`Pacefold ${release} · private local engine`;if(version&&version.textContent!==versionCopy)version.textContent=versionCopy;
+  if(window.__PACEFOLD_SPATIAL__&&window.__PACEFOLD_SPATIAL__.release!==release)window.__PACEFOLD_SPATIAL__.release=release;
+  if(window.__PACEFOLD_HARDENING__&&window.__PACEFOLD_HARDENING__.release!==release)window.__PACEFOLD_HARDENING__.release=release;
+  window.__PACEFOLD_VERSION__={...(window.__PACEFOLD_VERSION__||{}),experience:release,update:release,stability:REVISION};
 }
 function releaseDrifted(){
-  const root=id('pf22-spatial-root');
-  return document.documentElement.dataset.pacefoldExperience!==RELEASE||document.body?.dataset.pacefoldExperience!==RELEASE||Boolean(root&&root.dataset.release!==RELEASE);
+  const release=currentRelease(),root=id('pf22-spatial-root');
+  return document.documentElement.dataset.pacefoldExperience!==release||document.body?.dataset.pacefoldExperience!==release||Boolean(root&&root.dataset.release!==release);
 }
 function observeReleaseTruth(){
   const root=id('pf22-spatial-root');if(stateObserver&&stateRoot===root)return;
@@ -46,8 +48,8 @@ function initialize(){
   const panel=id('panel');if(panel){panelObserver=new MutationObserver(queue);panelObserver.observe(panel,{attributes:true,attributeFilter:['class','hidden','aria-hidden']})}
   for(const event of ['pacefold:spatial-ready','pacefold:ma-prefs','pacefold:storage-changed','pacefold:quiet','pacefold:daylight-ready'])window.addEventListener(event,queue);
   document.addEventListener('click',event=>{if(event.target instanceof Element&&event.target.closest('#panel [data-action="close"],#panel .close'))requestAnimationFrame(reconcilePanel)},true);
-  window.__PACEFOLD_V23__={release:RELEASE,revision:REVISION,reconcile};
-  window.dispatchEvent(new CustomEvent('pacefold:v23-ready',{detail:{release:RELEASE,revision:REVISION}}));
+  window.__PACEFOLD_V23__={release:currentRelease(),revision:REVISION,reconcile};
+  window.dispatchEvent(new CustomEvent('pacefold:v23-ready',{detail:{release:currentRelease(),revision:REVISION}}));
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',initialize,{once:true}):initialize();
 })();
