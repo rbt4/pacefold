@@ -92,7 +92,7 @@ function buildActivity(strip){
 }
 function daybookElements(){return{tray:id('pf25Surface-fold-tray'),toggle:id('pf25-daybook-toggle'),spine:id('pf25-private-daybook-spine'),sheet:id('pf25-private-daybook-sheet')}}
 function buildDaybook(){
-  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head'),body=tray?.querySelector('.pf25Surface-fold-body');if(!tray||!head||!body)return false;tray.classList.add('pf25-private-daybook');const legacyToggle=id('pf25-daybook-toggle');if(legacyToggle)genericLabel(legacyToggle,'Open fold');
+  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head'),body=tray?.querySelector('.pf25Surface-fold-body');if(!tray||!head||!body)return false;tray.classList.add('pf25-private-daybook');const r=root();if(r&&tray.parentElement!==r)r.append(tray);const legacyToggle=id('pf25-daybook-toggle');if(legacyToggle)genericLabel(legacyToggle,'Open fold');
   let spine=id('pf25-private-daybook-spine');if(!spine){spine=button('pf25-private-daybook-spine','Open fold','');spine.id='pf25-private-daybook-spine';spine.append(create('i','pf25-private-fold-mark'));spine.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();toggleDaybook()});head.prepend(spine)}
   let sheet=id('pf25-private-daybook-sheet');if(!sheet){
     sheet=create('section','pf25-private-daybook-sheet');sheet.id='pf25-private-daybook-sheet';sheet.setAttribute('aria-label','Private note sheet');
