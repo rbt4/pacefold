@@ -5434,7 +5434,7 @@ function buildDayUnfold(){
   sun.id='pf25Spatial-day-sun';events.id='pf25Spatial-day-events';sessions.id='pf25Spatial-day-sessions';
   const labels=create('div','pf25Spatial-day-labels'),start=create('span','pf25Spatial-day-start','--'),caption=create('span','pf25Spatial-day-caption','The day is opening'),end=create('span','pf25Spatial-day-end','--');
   labels.append(start,caption,end);region.append(sky,horizon,sessions,events,sun,labels);
-  const status=id('pf25Spatial-status');hero.insertBefore(region,status||$('.pf25Spatial-progress')||null);
+  const status=id('pf25Spatial-status'),progress=$('.pf25Spatial-progress');const anchor=status?.parentElement===hero?status:progress?.parentElement===hero?progress:null;if(anchor)hero.insertBefore(region,anchor);else hero.append(region);
   return region;
 }
 function buildCueCluster(){
