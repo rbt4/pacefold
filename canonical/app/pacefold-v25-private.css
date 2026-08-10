@@ -201,3 +201,8 @@
 
 /* Pacefold private fold stacking correction r1 — the tiny fold must sit above the spatial down-edge so it cannot steal Daybook clicks. */
 .pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Surface-fold-tray.pf25-private-daybook{z-index:80!important}
+
+
+/* Pacefold private fold corner placement r1 — tuck Daybook away from the spatial down-arrow and keep it discoverable only to its owner. */
+.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Surface-fold-tray.pf25-private-daybook{left:auto!important;right:34px!important;transform:none!important}
+@media(max-width:760px){.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Surface-fold-tray.pf25-private-daybook{right:22px!important}}
