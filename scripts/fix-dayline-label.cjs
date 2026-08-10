@@ -1,0 +1,13 @@
+'use strict';
+const fs=require('node:fs');
+const jsPath='canonical/app/pacefold-v25-recovery.js';
+let js=fs.readFileSync(jsPath,'utf8');
+const old="const nowLabel=section.querySelector('.pf25-day-now');if(nowLabel)nowLabel.textContent=section.dataset.state==='before'?'Starts':section.dataset.state==='complete'?'Done':'Now';meta.textContent=`${day.startText}–${day.endText} · ${Math.round(progress*100)}%`;";
+const next="const nowLabel=section.querySelector('.pf25-day-now');if(nowLabel)nowLabel.textContent=section.dataset.state==='active'?'Now':'';meta.textContent=`${day.startText}–${day.endText} · ${Math.round(progress*100)}%${section.dataset.state==='complete'?' · Done':''}`;";
+if(js.includes(old)){js=js.replace(old,next);fs.writeFileSync(jsPath,js)}else if(!js.includes("nowLabel.textContent=section.dataset.state==='active'?'Now':''"))throw new Error('Day Unfold current-label anchor missing');
+const auditPath='scripts/v25-coherence-audit.cjs';
+let audit=fs.readFileSync(auditPath,'utf8');
+audit=audit.replace("assert(state.dayNow&&state.daySun&&Math.abs((state.dayNow.left+state.dayNow.w/2)-(state.daySun.left+state.daySun.w/2))<18,'Day Unfold current label is detached from its marker');if(state.dayState==='complete')assert(state.dayNowText==='Done','Completed workday still labels the centre as NOW');","if(state.dayState==='active')assert(state.dayNow&&state.daySun&&Math.abs((state.dayNow.left+state.dayNow.w/2)-(state.daySun.left+state.daySun.w/2))<18,'Day Unfold current label is detached from its marker');if(state.dayState==='complete')assert(state.dayNowText==='', 'Completed workday still renders a duplicate current label');");
+audit=audit.replace("assert(ms.dayNow&&ms.daySun&&Math.abs((ms.dayNow.left+ms.dayNow.w/2)-(ms.daySun.left+ms.daySun.w/2))<18,'Mobile Day Unfold label is detached from its marker');if(ms.dayState==='complete')assert(ms.dayNowText==='Done','Mobile completed workday still labels the centre as NOW');","if(ms.dayState==='active')assert(ms.dayNow&&ms.daySun&&Math.abs((ms.dayNow.left+ms.dayNow.w/2)-(ms.daySun.left+ms.daySun.w/2))<18,'Mobile Day Unfold label is detached from its marker');if(ms.dayState==='complete')assert(ms.dayNowText==='', 'Mobile completed workday still renders a duplicate current label');");
+fs.writeFileSync(auditPath,audit);
+console.log('Fixed final Day Unfold label collision');
