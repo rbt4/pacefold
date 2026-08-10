@@ -4840,7 +4840,7 @@ function go(next){
   mode=next;const root=id('pf25Spatial-spatial-root');if(!root)return;
   root.dataset.mode=mode;id('pf25Spatial-current-mode').textContent={home:'Clock',notes:'Notes',worklog:'Worklog',context:'Now',settings:'Settings'}[mode];
   for(const dot of root.querySelectorAll('.pf25Spatial-mode-dot'))dot.dataset.active=String(dot.dataset.target===mode);
-  sessionStorage.setItem('pacefold.spatial.mode',mode);
+  sessionStorage.setItem('pacefold.spatial.mode',mode);window.dispatchEvent(new CustomEvent('pacefold:spatial-mode',{detail:{mode}}));
   refresh(true);
   requestAnimationFrame(()=>root.querySelector(`[data-face="${mode}"]`)?.focus?.({preventScroll:true}));
 }
