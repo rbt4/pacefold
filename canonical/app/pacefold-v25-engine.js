@@ -50,7 +50,7 @@
     awayStart:0,awaySessions:[],activityDate:'',history:{},dayCloseEnabled:true,kaizenEnabled:true,kaizenDismissed:'',
     captures:[],captureKind:'inbox',oneNoteSyncEnabled:true,oneNoteClientId:'',oneNoteTenant:'organizations',oneNoteNotebookId:'',oneNoteNotebookName:'',oneNoteSectionId:'',oneNoteSectionName:'',oneNotePages:{},oneNoteLastSync:0,oneNoteLastError:'',
     soundChoice:'brown',soundVolume:.24,soundUrl:'',soundLabel:'Custom audio',soundDuck:true,
-    schemaVersion:18,minCueGap:4,focusGraceMinutes:25,workWeek:null,todayOverride:null,quietMode:false,quietRestore:null,skipToday:{},waferLaunches:0,waferPromptDismissed:false,foldReviewDismissed:false,foldReviewLastDate:'',storagePersistAsked:false,maLastCueAt:0,waitingCue:null,awaySnoozedUntil:0,
+    schemaVersion:18,minCueGap:4,focusGraceMinutes:25,workWeek:null,todayOverride:null,quietMode:false,quietRestore:null,skipToday:{},waferLaunches:0,waferPromptDismissed:false,foldReviewDismissed:false,foldReviewLastDate:'',storagePersistAsked:false,waitingCue:null,awaySnoozedUntil:0,
     lat:43.62,lng:-79.51,locationLabel:'Toronto',lastSeenAt:0,
     offsets:{fajr:0,dhuhr:0,asr:0,maghrib:0,isha:0},acknowledged:{},snoozed:{}
   };
@@ -129,7 +129,7 @@
     p.oneNotePages=p.oneNotePages&&typeof p.oneNotePages==='object'&&!Array.isArray(p.oneNotePages)?Object.fromEntries(Object.entries(p.oneNotePages).filter(([k,v])=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&typeof v==='string').slice(-45)):{};p.oneNoteLastSync=clamp(p.oneNoteLastSync,0,Number.MAX_SAFE_INTEGER,0);
     p.soundChoice=['brown','rain','fan','custom'].includes(p.soundChoice)?p.soundChoice:'brown';p.soundVolume=clamp(p.soundVolume,0,1,.24);p.soundUrl=String(p.soundUrl||'').trim().slice(0,1000);p.soundLabel=String(p.soundLabel||'Custom audio').trim().slice(0,64)||'Custom audio';
     p.workHours=/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(String(p.workHours))?p.workHours:DEFAULTS.workHours;
-    p.schemaVersion=Math.max(18,clamp(p.schemaVersion,0,999,18));p.minCueGap=clamp(p.minCueGap,1,30,4);p.focusGraceMinutes=clamp(p.focusGraceMinutes,5,120,25);p.workWeek=p.workWeek&&typeof p.workWeek==='object'&&!Array.isArray(p.workWeek)?p.workWeek:null;p.todayOverride=p.todayOverride&&typeof p.todayOverride==='object'?p.todayOverride:null;p.quietMode=Boolean(p.quietMode);p.quietRestore=p.quietRestore&&typeof p.quietRestore==='object'?p.quietRestore:null;p.skipToday=p.skipToday&&typeof p.skipToday==='object'?p.skipToday:{};p.waferLaunches=clamp(p.waferLaunches,0,3,0);p.waferPromptDismissed=Boolean(p.waferPromptDismissed);p.foldReviewDismissed=Boolean(p.foldReviewDismissed);p.foldReviewLastDate=typeof p.foldReviewLastDate==='string'?p.foldReviewLastDate:'';p.storagePersistAsked=Boolean(p.storagePersistAsked);p.maLastCueAt=clamp(p.maLastCueAt,0,Number.MAX_SAFE_INTEGER,0);p.waitingCue=p.waitingCue&&typeof p.waitingCue==='object'?p.waitingCue:null;p.awaySnoozedUntil=clamp(p.awaySnoozedUntil,0,Number.MAX_SAFE_INTEGER,0);
+    p.schemaVersion=Math.max(18,clamp(p.schemaVersion,0,999,18));p.minCueGap=clamp(p.minCueGap,1,30,4);p.focusGraceMinutes=clamp(p.focusGraceMinutes,5,120,25);p.workWeek=p.workWeek&&typeof p.workWeek==='object'&&!Array.isArray(p.workWeek)?p.workWeek:null;p.todayOverride=p.todayOverride&&typeof p.todayOverride==='object'?p.todayOverride:null;p.quietMode=Boolean(p.quietMode);p.quietRestore=p.quietRestore&&typeof p.quietRestore==='object'?p.quietRestore:null;p.skipToday=p.skipToday&&typeof p.skipToday==='object'?p.skipToday:{};p.waferLaunches=clamp(p.waferLaunches,0,3,0);p.waferPromptDismissed=Boolean(p.waferPromptDismissed);p.foldReviewDismissed=Boolean(p.foldReviewDismissed);p.foldReviewLastDate=typeof p.foldReviewLastDate==='string'?p.foldReviewLastDate:'';p.storagePersistAsked=Boolean(p.storagePersistAsked);p.waitingCue=p.waitingCue&&typeof p.waitingCue==='object'?p.waitingCue:null;p.awaySnoozedUntil=clamp(p.awaySnoozedUntil,0,Number.MAX_SAFE_INTEGER,0);
     ['privacy','showSeconds','edgeCue','taskbarBadge','browserNotif','workReminders','showWorkline','workdaysOnly','lunchAutoStart','prayerBreakLogging','dayCloseEnabled','kaizenEnabled','gazeEnabled','bodyEnabled','oneNoteSyncEnabled','soundDuck'].forEach(k=>p[k]=Boolean(p[k]));
     p.offsets={...DEFAULTS.offsets,...(p.offsets||{})};Object.keys(p.offsets).forEach(k=>p.offsets[k]=clamp(p.offsets[k],-15,15,0));
     p.lat=clamp(p.lat,-90,90,DEFAULTS.lat);p.lng=clamp(p.lng,-180,180,DEFAULTS.lng);p.locationLabel=(typeof p.locationLabel==='string'&&p.locationLabel)?p.locationLabel.slice(0,24):DEFAULTS.locationLabel;p.lastSeenAt=clamp(p.lastSeenAt,0,Number.MAX_SAFE_INTEGER,0);
@@ -157,10 +157,10 @@
 
   const dayKey=localDayKey;
   const parseClock=s=>{const [h,m]=String(s).split(':').map(Number);return (h||0)+(m||0)/60;};
-  function maDayConfig(now=new Date()){const fallback=prefs.workHours.split('-'),row=prefs.workWeek?.[now.getDay()]||prefs.workWeek?.[String(now.getDay())]||{start:fallback[0],end:fallback[1],type:(!prefs.workdaysOnly||now.getDay()>=1&&now.getDay()<=5)?'desk':'off'},override=prefs.todayOverride&&prefs.todayOverride.date===dayKey(now)?prefs.todayOverride:null,type=['desk','field','half','off'].includes(override?.type)?override.type:['desk','field','half','off'].includes(row.type)?row.type:'desk';return{start:/^\d{2}:\d{2}$/.test(String(row.start))?row.start:fallback[0],end:/^\d{2}:\d{2}$/.test(String(row.end))?row.end:fallback[1],type};}
-  function currentDayType(now=new Date()){return maDayConfig(now).type;}
+  function resolveDayConfig(now=new Date()){const fallback=prefs.workHours.split('-'),row=prefs.workWeek?.[now.getDay()]||prefs.workWeek?.[String(now.getDay())]||{start:fallback[0],end:fallback[1],type:(!prefs.workdaysOnly||now.getDay()>=1&&now.getDay()<=5)?'desk':'off'},override=prefs.todayOverride&&prefs.todayOverride.date===dayKey(now)?prefs.todayOverride:null,type=['desk','field','half','off'].includes(override?.type)?override.type:['desk','field','half','off'].includes(row.type)?row.type:'desk';return{start:/^\d{2}:\d{2}$/.test(String(row.start))?row.start:fallback[0],end:/^\d{2}:\d{2}$/.test(String(row.end))?row.end:fallback[1],type};}
+  function currentDayType(now=new Date()){return resolveDayConfig(now).type;}
   function cueSkipped(source,now=new Date()){return prefs.skipToday?.[source]===dayKey(now);}
-  function workRange(now=new Date()){const day=maDayConfig(now),start=parseClock(day.start);let end=parseClock(day.end);if(day.type==='half'&&end>start+3)end=start+(end-start)/2;return{start,end};}
+  function workRange(now=new Date()){const day=resolveDayConfig(now),start=parseClock(day.start);let end=parseClock(day.end);if(day.type==='half'&&end>start+3)end=start+(end-start)/2;return{start,end};}
   function workdayStartAt(now=new Date()){const start=workRange().start,value=new Date(now);value.setHours(Math.floor(start),Math.round((start%1)*60),0,0);return value.getTime();}
   function displayClock(h){const H=Math.floor(h),m=Math.round((h-H)*60);return `${H%12||12}:${String(m).padStart(2,'0')} ${H>=12?'PM':'AM'}`;}
   function isConfiguredWorkday(now){return currentDayType(now)!=='off';}
@@ -842,7 +842,7 @@
 
   function renderSequence(h,state){
     const rows=scheduleForDate(new Date());
-    try{if(window.__PACEFOLD_VIEW__?.renderRibbon?.({h,state,rows,range:workRange(),dayType:currentDayType(new Date())}))return;}catch(error){reportError(error,'ma-ribbon');}
+    try{if(window.__PACEFOLD_VIEW__?.renderRibbon?.({h,state,rows,range:workRange(),dayType:currentDayType(new Date())}))return;}catch(error){reportError(error,'day-ribbon');}
     setHTML($('sequence'),rows.map(item=>{const k=item.id,classes=['sequence-mark'];if(item.time<h)classes.push('passed');if(state.event===k&&state.signal==='due')classes.push('due');else if(state.event===k&&state.signal==='active')classes.push('active');else if(state.event===k&&state.signal==='pending')classes.push('pending');else if(state.next&&state.next[0]===k)classes.push('next');return `<span class="${classes.join(' ')}" data-code="${item.code||''}" aria-label="${item.label}"></span>`;}).join(''));
   }
   function renderWorkline(now,h,water,noodle,away,lunch,gaze){

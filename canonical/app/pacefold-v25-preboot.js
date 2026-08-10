@@ -33,7 +33,7 @@
         super(records=>{
           const filtered=records.filter(record=>{
             const target=record.target instanceof Element?record.target:record.target?.parentElement;
-            return !target?.closest?.('#pf22-spatial-root');
+            return !target?.closest?.('#pf25Spatial-spatial-root');
           });
           if(filtered.length)callback(filtered,instance);
         });
@@ -43,11 +43,11 @@
   }
 
   window.addEventListener('pacefold:spatial-ready',()=>{
-    const root=document.getElementById('pf22-spatial-root');
+    const root=document.getElementById('pf25Spatial-spatial-root');
     if(!root||!NativeMutationObserver)return;
     const apply=()=>{
       const active=root.dataset.mode||'home';
-      for(const face of root.querySelectorAll('.pf22-face')){
+      for(const face of root.querySelectorAll('.pf25Spatial-face')){
         const enabled=face.dataset.face===active;
         face.inert=!enabled;
         face.setAttribute('aria-hidden',String(!enabled));
@@ -67,7 +67,7 @@
       const match=raw.match(/^(Overdue|Next|Now|Soon|Snoozed)(\d{1,2}:\d{2}\s*(?:AM|PM)?)(.*?)(Fajr|Sunrise|Dhuhr|Asr|Maghrib|Isha)$/i);
       return match?[match[1],match[2],match[3],match[4]].map(item=>item.trim()).filter(Boolean).join(' · '):raw||'Workday in progress';
     };
-    const target=document.getElementById('pf22-status');
+    const target=document.getElementById('pf25Spatial-status');
     const textDescriptor=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
     if(target&&textDescriptor?.get&&textDescriptor?.set&&!target.__pacefoldStatusGuard){
       target.__pacefoldStatusGuard=true;
@@ -140,7 +140,7 @@
       localStorage.setItem(DISMISSED_KEY,'1');
       localStorage.setItem(SNAPSHOT_KEY,JSON.stringify({version:RELEASE,savedAt:new Date().toISOString(),prefs:filtered(prefs)}));
     }catch{}
-    document.documentElement.classList.add('pf21-returning');
+    document.documentElement.classList.add('pf25Flow-returning');
   }
 
   document.documentElement.dataset.pacefoldExperience=RELEASE;
@@ -164,21 +164,21 @@ function publish(){
 }
 function hold(){
   if(!returning||released)return;
-  const root=document.getElementById('pf22-spatial-root');
+  const root=document.getElementById('pf25Spatial-spatial-root');
   if(root){
     released=true;
     HTML.dataset.pacefoldSpatial='ready';
-    HTML.classList.remove('pf23-boot-hold');
+    HTML.classList.remove('pf25Actions-boot-hold');
     observer?.disconnect();
     return;
   }
   if(HTML.dataset.pacefoldSpatial!=='pending')HTML.dataset.pacefoldSpatial='pending';
-  HTML.classList.add('pf23-returning','pf23-boot-hold');
+  HTML.classList.add('pf25Actions-returning','pf25Actions-boot-hold');
   publish();
 }
 publish();
 if(returning){
-  HTML.classList.add('pf23-returning','pf23-boot-hold');
+  HTML.classList.add('pf25Actions-returning','pf25Actions-boot-hold');
   HTML.dataset.pacefoldSpatial='pending';
   observer=new MutationObserver(hold);
   observer.observe(HTML,{attributes:true,attributeFilter:['data-pacefold-spatial'],childList:true,subtree:true});
@@ -226,8 +226,8 @@ function setQuiet(on){
 function applyQuiet(){
   const active=Boolean(prefs().quietMode);
   document.body.dataset.quiet=String(active);
-  const root=document.getElementById('pf22-spatial-root');if(root)root.dataset.quiet=String(active);
-  for(const node of document.querySelectorAll('#pf22-quiet,[data-setting="quiet"]')){node.dataset.active=String(active);node.setAttribute('aria-pressed',String(active))}
+  const root=document.getElementById('pf25Spatial-spatial-root');if(root)root.dataset.quiet=String(active);
+  for(const node of document.querySelectorAll('#pf25Spatial-quiet,[data-setting="quiet"]')){node.dataset.active=String(active);node.setAttribute('aria-pressed',String(active))}
   return active;
 }
 const quiet={get:()=>Boolean(prefs().quietMode),set:setQuiet,toggle:()=>setQuiet(!prefs().quietMode),apply:applyQuiet};

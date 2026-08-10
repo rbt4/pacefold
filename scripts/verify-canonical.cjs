@@ -19,6 +19,8 @@ for(const rel of files){
   scanned.push(rel);
   if(oldGlobal.test(source))fail(`Old runtime namespace in ${rel}`);
   if(oldVersion.test(source))fail(`Old product version in ${rel}`);
+  const oldRuntimeIdentity=/(?:pf(?:-v)?(?:19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(?:ma-|v(?:19|20|21|22|23|24))|\b(?:maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence|v19Dashboard|v19Ritual|v19Surface|v19WeatherDay|v19WorkbenchPage|v20Attention)\b)/;
+  if(oldRuntimeIdentity.test(source))fail(`Historical runtime identity in ${rel}`);
 }
 
 for(const rel of ['pacefold-build.txt','pacefold-experience.txt','pacefold-stability.txt','pacefold-canonical.txt','app/pacefold-build.txt','app/pacefold-experience.txt','app/pacefold-stability.txt'])if(fs.readFileSync(path.join(root,rel),'utf8').trim()!=='25.0.0 canonical-r1')fail(`${rel} is not canonical-r1`);
