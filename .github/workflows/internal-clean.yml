@@ -23,7 +23,7 @@ jobs:
           ref: agent/pacefold-25-internal-clean
           fetch-depth: 0
 
-      - name: Normalize historical runtime namespaces
+      - name: Normalize final historical runtime labels
         run: |
           cat > /tmp/clean-v25.cjs <<'EOF'
           'use strict';
@@ -74,7 +74,13 @@ jobs:
             ['`v21.2-${scope}`','`precision-${scope}`'],
             ["'v21-dayflow'","'dayflow'"],
             ['Pacefold integrated dock','Pacefold action dock'],
-            ['Setup resilience','Setup recovery']
+            ['Setup resilience','Setup recovery'],
+            ["source:'v24-kernel'","source:'runtime-kernel'"],
+            ["source:'v20-backup-recovery'","source:'backup-recovery'"],
+            ["'v20-marker'","'attention-marker'"],
+            ["source:'v21-settings'","source:'settings'"],
+            ['Keeps legacy measurement and accessibility contracts intact while V21 owns the visible UI.','Keeps measurement and accessibility contracts intact while Pacefold 25 owns the visible UI.'],
+            ['calm integrated notebook','calm notebook']
           ];
           for(const file of files){
             if(!textExt.has(path.extname(file).toLowerCase()))continue;
@@ -89,17 +95,18 @@ jobs:
           EOF
           node /tmp/clean-v25.cjs
 
-      - name: Strengthen canonical verifier
+      - name: Ensure strict canonical verifier
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p=Path('scripts/verify-canonical.cjs')
           s=p.read_text()
-          needle="if(oldVersion.test(source))fail(`Old product version in ${rel}`);"
-          insert="""if(oldVersion.test(source))fail(`Old product version in ${rel}`);\n  const oldRuntimeIdentity=/(?:pf(?:-v)?(?:19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(?:ma-|v(?:19|20|21|22|23|24))|\\b(?:maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence|v19Dashboard|v19Ritual|v19Surface|v19WeatherDay|v19WorkbenchPage|v20Attention)\\b)/;\n  if(oldRuntimeIdentity.test(source))fail(`Historical runtime identity in ${rel}`);"""
-          if needle not in s:
-              raise SystemExit('verifier anchor missing')
-          s=s.replace(needle,insert)
+          if 'const oldRuntimeIdentity=' not in s:
+              needle="if(oldVersion.test(source))fail(`Old product version in ${rel}`);"
+              insert="""if(oldVersion.test(source))fail(`Old product version in ${rel}`);\n  const oldRuntimeIdentity=/(?:pf(?:-v)?(?:19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(?:ma-|v(?:19|20|21|22|23|24))|\\b(?:maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence|v19Dashboard|v19Ritual|v19Surface|v19WeatherDay|v19WorkbenchPage|v20Attention)\\b)/;\n  if(oldRuntimeIdentity.test(source))fail(`Historical runtime identity in ${rel}`);"""
+              if needle not in s:
+                  raise SystemExit('verifier anchor missing')
+              s=s.replace(needle,insert)
           p.write_text(s)
           PY
 
@@ -112,12 +119,13 @@ jobs:
           node --check canonical/app/pacefold-v25-core.js
           node --check canonical/app/pacefold-v25-boot.js
           node --check canonical/app/pacefold-v25-recovery.js
-          grep -RInE --exclude='*.png' --exclude='*.woff2' '(pf-v(19|20|21|22|23|24)|pf(19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(ma-|v(19|20|21|22|23|24))|maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence)' canonical && exit 1 || true
+          ! grep -RInE --exclude='*.png' --exclude='*.woff2' '(pf-v(19|20|21|22|23|24)|pf(19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(ma-|v(19|20|21|22|23|24))|maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence|source:["'"']v(19|20|21|22|23|24)|v20-marker|V21 owns)' canonical
 
       - name: Commit internal cleanup
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add canonical scripts/verify-canonical.cjs scripts/v25-audit.cjs
-          git commit -m "Normalize Pacefold 25 internal runtime namespaces [internal-clean]"
+          git diff --cached --quiet && exit 0
+          git commit -m "Remove final Pacefold 25 historical runtime labels [internal-clean]"
           git push origin HEAD:agent/pacefold-25-internal-clean
