@@ -141,12 +141,12 @@ function reconcile(){
 function queue(){if(frame)return;frame=requestAnimationFrame(reconcile)}
 function bindSpatialNavigation(){const spatial=window.__PACEFOLD_SPATIAL__;if(!spatial||typeof spatial.go!=='function'||spatial.__privacyBound)return;const original=spatial.go.bind(spatial);spatial.go=(mode,...args)=>{const result=original(mode,...args);queue();requestAnimationFrame(queue);setTimeout(queue,380);return result};Object.defineProperty(spatial,'__privacyBound',{value:true,configurable:true})}
 function install(){
-  if(observer)return;bindSpatialNavigation();queue();
+  if(observer)return;bindSpatialNavigation();queue();for(const delay of [60,180,500,1200,2600,5000])setTimeout(()=>{bindSpatialNavigation();queue()},delay);
   observer=new MutationObserver(mutations=>{if(mutations.some(m=>m.target?.closest?.('#pf25-private-now,#pf25-private-daybook-sheet')))return;queue()});observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-mode','data-open','data-quiet','data-state','data-source','aria-label','title']});
   document.addEventListener('pointerdown',event=>{const tray=id('pf25Surface-fold-tray');if(tray?.dataset.open==='true'){if(tray.contains(event.target))resetDaybookTimer();else closeDaybook()}},true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&id('pf25Surface-fold-tray')?.dataset.open==='true'){event.preventDefault();event.stopImmediatePropagation();closeDaybook()}},true);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)closeDaybook();else queue()});window.addEventListener('blur',closeDaybook);
-  for(const event of ['pacefold:prefs','pacefold:quiet','pacefold:storage-changed','pacefold:spatial-ready','pacefold:experience-ready'])window.addEventListener(event,queue);
+  for(const event of ['pacefold:prefs','pacefold:quiet','pacefold:storage-changed','pacefold:experience-ready'])window.addEventListener(event,queue);window.addEventListener('pacefold:spatial-ready',()=>{bindSpatialNavigation();queue();requestAnimationFrame(queue)});
   setInterval(()=>{const minute=Math.floor(Date.now()/60000);if(minute!==lastPrivateMinute){lastPrivateMinute=minute;queue()}},1000);
   window.__PACEFOLD_PRIVACY__={release:RELEASE,revision:REVISION,reconcile:queue,closeDaybook};
 }
