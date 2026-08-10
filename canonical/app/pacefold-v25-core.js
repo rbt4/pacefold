@@ -2427,7 +2427,7 @@ window.addEventListener('pacefold:storage-changed',()=>{clearTimeout(migrateTime
 document.addEventListener('keydown',guarded('keyboard',event=>{if(event.ctrlKey&&event.shiftKey&&event.code==='KeyN'){event.preventDefault();setNotebookOpen(true,true);}}));
 [0,100,300,800,1800].forEach(delay=>setTimeout(queue,delay));
 workTimer=setInterval(guarded('work-hours',()=>{if(document.visibilityState==='visible'){workCache.at=0;queue();}}),5000);
-window.__PACEFOLD_WORKSPACE__={revision:REVISION,surfaceRelease:'25.0.0',reconcile:queue,readWorkWindow,openNotebook:()=>setNotebookOpen(true,false),closeNotebook:()=>setNotebookOpen(false,false,false),copyDay,player:{open:()=>setPlayerDrawer(true),close:()=>setPlayerDrawer(false),refresh:refreshTracks}};
+window.__PACEFOLD_WORKSPACE__={revision:REVISION,surfaceRelease:'25.0.0',reconcile:queue,readWorkWindow,addNote:(body,category='Daily')=>createEntry(body,category),openNotebook:()=>setNotebookOpen(true,false),closeNotebook:()=>setNotebookOpen(false,false,false),copyDay,player:{open:()=>setPlayerDrawer(true),close:()=>setPlayerDrawer(false),refresh:refreshTracks}};
 })();
 ;
 (() => {
