@@ -92,7 +92,7 @@ function buildActivity(strip){
 }
 function daybookElements(){return{tray:id('pf25Surface-fold-tray'),toggle:id('pf25-daybook-toggle'),spine:id('pf25-private-daybook-spine'),sheet:id('pf25-private-daybook-sheet')}}
 function buildDaybook(){
-  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head'),body=tray?.querySelector('.pf25Surface-fold-body');if(!tray||!head||!body)return false;tray.classList.add('pf25-private-daybook');
+  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head'),body=tray?.querySelector('.pf25Surface-fold-body');if(!tray||!head||!body)return false;tray.classList.add('pf25-private-daybook');const legacyToggle=id('pf25-daybook-toggle');if(legacyToggle)genericLabel(legacyToggle,'Open fold');
   let spine=id('pf25-private-daybook-spine');if(!spine){spine=button('pf25-private-daybook-spine','Open fold','');spine.id='pf25-private-daybook-spine';spine.append(create('i','pf25-private-fold-mark'));spine.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();toggleDaybook()});head.prepend(spine)}
   let sheet=id('pf25-private-daybook-sheet');if(!sheet){
     sheet=create('section','pf25-private-daybook-sheet');sheet.id='pf25-private-daybook-sheet';sheet.setAttribute('aria-label','Private note sheet');
@@ -119,8 +119,14 @@ function beginQuietScrub(){if(quietActive)return;quietActive=true;quietTitle=doc
 function remember(record){
   if(!record?.node)return;let seen=quietSeen.get(record.node);if(!seen){seen=new Set();quietSeen.set(record.node,seen)}const key=record.kind==='attr'?`attr:${record.attr}`:'text';if(seen.has(key))return;seen.add(key);quietRecords.push(record)
 }
+function blankQuietContainers(){
+  for(const selector of ['.pf25Spatial-face:not(.pf25Spatial-face-home)','#pf25Surface-fold-tray','#pf-local-workspace','#panel','#foldDrawer','body>main'])for(const container of document.querySelectorAll(selector)){
+    for(const node of container.querySelectorAll('[aria-label],[title]'))for(const attr of ['aria-label','title']){const value=node.getAttribute(attr);if(value){remember({kind:'attr',node,attr,value});node.setAttribute(attr,'Pacefold')}}
+    const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);let current;while((current=walker.nextNode())){const parent=current.parentElement;if(!parent||/^(?:SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName))continue;const value=current.nodeValue||'';if(!value.trim())continue;remember({kind:'text',node:current,value});current.nodeValue=''}
+  }
+}
 function scrubQuiet(){
-  if(!quietActive)return;document.title='Clock';
+  if(!quietActive)return;document.title='Clock';blankQuietContainers();
   for(const node of document.querySelectorAll('[aria-label],[title]'))for(const attr of ['aria-label','title']){const value=node.getAttribute(attr);if(value&&SENSITIVE.test(value)){SENSITIVE.lastIndex=0;remember({kind:'attr',node,attr,value});node.setAttribute(attr,'Pacefold')}else SENSITIVE.lastIndex=0}
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let current;while((current=walker.nextNode())){const parent=current.parentElement;if(!parent||/^(?:SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName))continue;const value=current.nodeValue||'';if(!value||!SENSITIVE.test(value)){SENSITIVE.lastIndex=0;continue}SENSITIVE.lastIndex=0;remember({kind:'text',node:current,value});current.nodeValue=value.replace(SENSITIVE,'').replace(/\s{2,}/g,' ').trim()}
 }

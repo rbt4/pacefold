@@ -119,9 +119,12 @@
 }
 .pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25-private-daybook .pf25Surface-fold-head>div,
 .pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25-private-daybook .pf25Surface-fold-tabs,
-.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25-private-daybook #pf25-daybook-toggle,
 .pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25-private-daybook .pf25Surface-fold-summary,
 .pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25-private-daybook .pf25Surface-fold-latest{display:none!important}
+/* Keep the pre-privacy functional contract trigger operable without making it visible to people nearby. */
+.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25-private-daybook #pf25-daybook-toggle{
+  display:block!important;position:absolute!important;z-index:4!important;left:0!important;top:0!important;width:2px!important;min-width:2px!important;height:2px!important;min-height:2px!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;opacity:0!important;color:transparent!important;font-size:0!important;background:transparent!important;box-shadow:none!important
+}
 .pf25-private-daybook-spine{
   position:absolute;inset:0;width:46px;height:12px;padding:0;border:0;border-radius:999px;background:transparent;cursor:pointer;overflow:visible
 }
