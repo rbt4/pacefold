@@ -68,8 +68,8 @@ async function patchAppHtml(){
   const recoveryStyle='<link rel="stylesheet" href="./pacefold-v25-recovery.css?v=25.0.0-recovery-r2" data-pacefold-v25-css="25.0.0">';
   if(!html.includes(recoveryStyle))throw new Error('Pacefold 25 recovery stylesheet anchor missing');
   html=html.replace(recoveryStyle,`<link rel="stylesheet" href="./${appBundles.coreCss.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-core-css="${RELEASE}">\n${recoveryStyle}`);
-  const vendorAnchor='<script src="./vendor/msal-browser-5.17.1.min.js"></script>';
-  if(!html.includes(vendorAnchor))throw new Error('MSAL anchor missing');
+  const vendorAnchor=html.match(/<script[^>]+src=["']\.\/vendor\/msal-browser-5\.17\.1\.min\.js["'][^>]*><\/script>/i)?.[0];
+  if(!vendorAnchor)throw new Error('MSAL anchor missing');
   html=html.replace(vendorAnchor,`<script src="./${appBundles.themeBoot.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-theme="${RELEASE}"></script>\n${vendorAnchor}`);
   const bootAnchor=html.match(/<script[^>]+src=["']\.\/pacefold-v25-boot\.js(?:\?[^"']*)?["'][^>]*><\/script>/i)?.[0];
   if(!bootAnchor)throw new Error('V25 boot tag missing after cleanup');
