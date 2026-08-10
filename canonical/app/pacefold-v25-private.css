@@ -197,3 +197,7 @@
   .pf25-private-daybook[data-private-open="true"],.pf25-private-refresh,.pf25-private-day-dot{border:1px solid CanvasText!important;background:Canvas!important;color:CanvasText!important}
   .pf25-private-fold-mark,.pf25-private-moment-dot,.pf25-private-day-fill,.pf25-private-day-sun,.pf25Actions-action-dot{background:Highlight!important}
 }
+
+
+/* Pacefold private fold stacking correction r1 — the tiny fold must sit above the spatial down-edge so it cannot steal Daybook clicks. */
+.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Surface-fold-tray.pf25-private-daybook{z-index:80!important}
