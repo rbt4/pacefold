@@ -1,3 +1,0 @@
-Pacefold 23.0.0 final production deployment trigger.
-Current main includes the unified experience, corrected release verifier, and modern action-dock audit through PR #50.
-Application runtime and deployed bundle are unchanged by this marker update.
