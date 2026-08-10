@@ -39,12 +39,12 @@ jobs:
           }
           for(const root of roots)walk(root);
           const replacements=[
-            ['pf-v19','pf-v25-activity'],['pf19','pf25-activity'],
-            ['pf-v20','pf-v25-folio'],['pf20','pf25-folio'],
-            ['pf-v21','pf-v25-flow'],['pf21','pf25-flow'],
-            ['pf-v22','pf-v25-spatial'],['pf22','pf25-spatial'],
-            ['pf-v23','pf-v25-actions'],['pf23','pf25-actions'],
-            ['pf-v24','pf-v25-surface'],['pf24','pf25-surface'],
+            ['pf-v19','pf-v25-activity'],['pf19','pf25Activity'],
+            ['pf-v20','pf-v25-folio'],['pf20','pf25Folio'],
+            ['pf-v21','pf-v25-flow'],['pf21','pf25Flow'],
+            ['pf-v22','pf-v25-spatial'],['pf22','pf25Spatial'],
+            ['pf-v23','pf-v25-actions'],['pf23','pf25Actions'],
+            ['pf-v24','pf-v25-surface'],['pf24','pf25Surface'],
             ['Pacefold Ma','Pacefold UI'],
             ['pf-hub-root','pf25-root'],['pf-hub-mounted','pf25-mounted'],
             ['pf-resilience-busy','pf25-busy'],['pf-hub','pf25-root'],['pf-resilience','pf25-diagnostics'],
