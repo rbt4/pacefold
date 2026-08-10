@@ -1,5 +1,5 @@
 const VERSION='25.0.0';
-const CACHE_PREFIX='pacefold-v';
+const CACHE_PREFIX='pacefold-25.';
 const CACHE_NAME='pacefold-25.0.0-privacy-return-r1';
 const ACTION_CACHE='pacefold-notification-actions-v1';
 const ROOT=new URL('./',self.location.href);
