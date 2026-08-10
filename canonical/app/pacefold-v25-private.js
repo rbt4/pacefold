@@ -106,8 +106,9 @@ function savePrivateNote(){
   const input=id('pf25-private-daybook-input'),body=text(input?.value);if(!body)return;const now=new Date(),key=localKey(now),all=readNotes();const note={id:`fold-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2,6)}`,date:key,body,category:'Daily',createdAt:now.toISOString(),updatedAt:now.toISOString()};
   try{all.push(note);writeNotes(all);window.__PACEFOLD_DAYFLOW__?.add?.('note','Note captured',body.slice(0,72),now.getTime(),'note-fold');window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{key:NOTES_KEY,source:'privacy-fold'}}));input.value='';setText(id('pf25-private-daybook-sheet')?.querySelector('.pf25-private-save-state'),'•');buildActivity(id('pf25-private-activity'));setTimeout(()=>{setText(id('pf25-private-daybook-sheet')?.querySelector('.pf25-private-save-state'),'');closeDaybook()},700)}catch{setText(id('pf25-private-daybook-sheet')?.querySelector('.pf25-private-save-state'),'×')}
 }
-function toggleDaybook(){const {tray,toggle}=daybookElements();if(!tray)return;if(toggle){toggle.click();setTimeout(syncDaybook,0);return}tray.dataset.open=tray.dataset.open==='true'?'false':'true';syncDaybook()}
-function closeDaybook(){const {tray,toggle}=daybookElements();if(!tray||tray.dataset.open!=='true')return;if(toggle)toggle.click();else tray.dataset.open='false';clearTimeout(daybookTimer);daybookTimer=0;setTimeout(syncDaybook,0)}
+function setPrivateDaybook(open){const {tray,toggle}=daybookElements();if(!tray)return;tray.dataset.open=String(Boolean(open));if(toggle){toggle.textContent=open?'Close':'Open';toggle.setAttribute('aria-expanded',String(Boolean(open)))}syncDaybook()}
+function toggleDaybook(){const {tray}=daybookElements();if(!tray)return;setPrivateDaybook(tray.dataset.open!=='true')}
+function closeDaybook(){const {tray}=daybookElements();if(!tray||tray.dataset.open!=='true')return;clearTimeout(daybookTimer);daybookTimer=0;setPrivateDaybook(false)}
 function resetDaybookTimer(){clearTimeout(daybookTimer);daybookTimer=0;const tray=id('pf25Surface-fold-tray');if(tray?.dataset.open==='true')daybookTimer=setTimeout(closeDaybook,45000)}
 function syncDaybook(){
   if(!buildDaybook())return;const {tray,sheet}=daybookElements(),open=tray?.dataset.open==='true';if(tray)tray.dataset.privateOpen=String(open);if(sheet)sheet.hidden=!open;
