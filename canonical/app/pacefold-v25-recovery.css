@@ -83,3 +83,13 @@ html[data-pacefold-v25="booting"] body>*{visibility:hidden!important}html[data-p
 @media(max-height:820px) and (min-width:761px){.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25Surface-dial{--pf25-dial-size:190px!important}}
 @media(max-width:760px){.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25Surface-dial{--pf25-dial-size:108px!important}}
 @media(max-width:420px) and (max-height:700px){.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25Surface-dial{--pf25-dial-size:100px!important}}
+
+
+/* Pacefold 25 final coherence r1 — crisp clock depth and a Day Unfold label that follows the actual current marker. */
+.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25Surface-dial{box-shadow:0 8px 24px rgba(26,59,49,.045),inset 0 0 0 8px rgba(255,255,255,.34),inset 0 0 0 9px rgba(35,76,63,.055)!important}
+.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-labels{position:relative!important;display:block!important;height:12px!important;margin-top:0!important}
+.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-start,.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-end,.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-now{position:absolute!important;top:0!important}
+.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-start{left:0!important}.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-end{right:0!important}
+.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-day-now{left:calc(var(--pf25-progress,0)*100%)!important;transform:translateX(-50%)!important;color:var(--pf25Surface-green)!important;font-weight:800!important}
+.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-dayline[data-state="before"] .pf25-day-now{left:0!important;transform:none!important}.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25-dayline[data-state="complete"] .pf25-day-now{left:auto!important;right:0!important;transform:none!important}
+@media(max-width:760px){.pf25Spatial-spatial-root[data-recovery="recovery-r2"] .pf25Surface-dial{box-shadow:0 5px 16px rgba(26,59,49,.035),inset 0 0 0 6px rgba(255,255,255,.32),inset 0 0 0 7px rgba(35,76,63,.055)!important}}
