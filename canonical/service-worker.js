@@ -1,13 +1,13 @@
 const VERSION='25.0.0';
 const CACHE_PREFIX='pacefold-v';
-const CACHE_NAME='pacefold-25.0.0-cleanroom-r1';
+const CACHE_NAME='pacefold-25.0.0-privacy-return-r1';
 const ACTION_CACHE='pacefold-notification-actions-v1';
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const CRITICAL=[
   './','./index.html','./site-style-01.css','./site-style-02.css','./pacefold-v25-public.css','./pacefold-v25-public.js','./manifest.webmanifest',
   './app/','./app/index.html','./app/app-style-01.css','./app/app-style-02.css','./app/app-style-03.css','./app/app-style-04.css','./app/app-style-05.css','./app/pacefold-v25-engine.js',
-  './app/pacefold-v25-shell-boot.css','./app/pacefold-v25-core.css','./app/pacefold-v25-theme-boot.js','./app/pacefold-v25-preboot.js','./app/pacefold-v25-boot.js','./app/pacefold-v25-core.js','./app/pacefold-v25-recovery.css','./app/pacefold-v25-recovery.js',
+  './app/pacefold-v25-shell-boot.css','./app/pacefold-v25-core.css','./app/pacefold-v25-theme-boot.js','./app/pacefold-v25-preboot.js','./app/pacefold-v25-boot.js','./app/pacefold-v25-core.js','./app/pacefold-v25-recovery.css','./app/pacefold-v25-recovery.js','./app/pacefold-v25-private.css','./app/pacefold-v25-private.js',
   './app/vendor/msal-browser-5.17.1.min.js','./app/vendor/msal-redirect-bridge-5.17.1.min.js',
   './app/icons/icon-32.png','./app/icons/icon-192.png','./app/icons/icon-512.png','./app/icons/fold-mark.png'
 ].map(path);
@@ -58,7 +58,7 @@ self.addEventListener('install',event=>{
     const results=await Promise.allSettled(OPTIONAL.map(url=>cache.add(url)));
     const missing=results.map((result,index)=>result.status==='rejected'?OPTIONAL[index]:'').filter(Boolean);
     await cache.put(SHELL_STATUS,new Response(JSON.stringify({version:VERSION,missing,count:missing.length,at:Date.now()}),{headers:{'content-type':'application/json'}}));
-    if(missing.length)console.warn('[Pacefold] optional shell assets missing:',missing.length,missing);
+    if(missing.length)console.warn('[Pacefold] optional shell assets missing:',missing.length);
     await self.skipWaiting();
   })());
 });
