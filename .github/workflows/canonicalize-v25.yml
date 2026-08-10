@@ -51,8 +51,13 @@ jobs:
           rm -f AUDIT_*.md
           mkdir -p canonical scripts
           cp -a _release/. canonical/
-          cp /tmp/v25-audit.cjs scripts/v25-audit.cjs
           rm -rf _release
+
+          # Production source must not contain repository/build machinery.
+          rm -rf canonical/.github canonical/scripts
+          rm -f canonical/README.md canonical/CHANGELOG.md canonical/REPOSITORY_SETUP.md canonical/SECURITY.md
+
+          cp /tmp/v25-audit.cjs scripts/v25-audit.cjs
           cat > scripts/verify-canonical.cjs <<'EOF'
           'use strict';
           const fs=require('node:fs');
@@ -73,35 +78,28 @@ jobs:
           if(!appHtml.includes('pacefold-v25-engine.js'))fail('Canonical engine is not active');
           if(worker.includes('./site.js')||worker.includes('./app/app.js'))fail('Canonical service worker caches old/dead runtime names');
           if(files.includes('site.js')||files.includes('app/app.js'))fail('Dead pre-canonical runtime file still exists');
+          if(files.some(file=>file.startsWith('.github/')||file.startsWith('scripts/')))fail('Build/repository machinery leaked into canonical product source');
           console.log(JSON.stringify({release:'25.0.0',revision:'canonical-r1',files:files.length,relicFiles:0,oldRuntimeNamespaces:0,oldProductVersions:0,source:'direct canonical runtime'},null,2));
           EOF
+
           cat > README.md <<'EOF'
           # Pacefold 25
 
           Pacefold is a quiet, clock-first workday rhythm app. `canonical/` is the complete production source for Pacefold 25.
 
-          ## Architecture
+          Pacefold 25 no longer rebuilds production by layering historical releases. Git history preserves V15–V24; the current branch deploys V25 directly. Stable browser-storage schema keys remain intentionally compatible so existing notes, preferences, backups, and activity history survive the cleanup.
 
-          Pacefold 25 no longer rebuilds production by layering historical releases. Git history preserves the old V15–V24 implementation. The current repository deploys the canonical V25 runtime directly.
-
-          Stable browser-storage schema keys from earlier releases remain intentionally compatible so existing notes, preferences, backups, and activity history survive the architecture cleanup.
-
-          ## Release
-
-          Current: **25.0.0 canonical-r1**.
-
-          Every pull request verifies the canonical file tree and runs the full browser recovery audit before Pages can deploy.
+          Current release: **25.0.0 canonical-r1**.
           EOF
           cat > CHANGELOG.md <<'EOF'
           # Changelog
 
           ## 25.0.0 canonical-r1
-
-          - Made the verified V25 cleanroom runtime the canonical production source.
+          - Made the verified V25 runtime the direct production source.
           - Removed the V15→V24 injector/build chain from the current branch.
-          - Removed historical product asset identities, dead public runtime, old global API names, and stale release constants from the active runtime.
+          - Removed historical product assets, old runtime API names, dead public runtime, stale release constants, and build machinery from the product source.
           - Preserved stable saved-data schema compatibility.
-          - Retained full browser release gates for clock, prayer rhythm, quiet cues, logging, notes, Daybook, navigation, Settings and responsive layout.
+          - Kept the full browser release gate for clock, prayer rhythm, quiet cues, logging, notes, Daybook, navigation, Settings and responsive layout.
           EOF
           cat > RELEASE.md <<'EOF'
           # Pacefold Release
@@ -110,93 +108,16 @@ jobs:
 
           Release: **25.0.0 canonical-r1**
 
-          The Pages workflow validates this exact directory and deploys it without historical injectors or runtime composition steps.
+          Pages validates and deploys this directory directly. No historical injector chain is part of production.
           EOF
           cat > DEPLOYMENT_RUNBOOK.md <<'EOF'
           # Deployment runbook
 
-          1. Change files only inside `canonical/` (plus tests/docs when needed).
+          1. Change `canonical/` (plus tests/docs when required).
           2. Open a pull request.
-          3. The Pages workflow runs the canonical relic guard and full browser audit.
-          4. Merge only when validation is green.
-          5. `main` deploys the exact validated `canonical/` directory to GitHub Pages.
-          EOF
-          cat > .github/workflows/pages.yml <<'EOF'
-          name: Verify and publish Pacefold 25
-
-          on:
-            push:
-              branches: [main]
-            pull_request:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          concurrency:
-            group: pacefold-pages-${{ github.ref }}
-            cancel-in-progress: true
-
-          jobs:
-            validate:
-              runs-on: ubuntu-latest
-              timeout-minutes: 30
-              steps:
-                - name: Checkout
-                  uses: actions/checkout@v6
-                - name: Canonical source guard
-                  run: |
-                    node scripts/verify-canonical.cjs canonical
-                    node --check canonical/service-worker.js
-                    node --check canonical/app/pacefold-v25-engine.js
-                    node --check canonical/app/pacefold-v25-theme-boot.js
-                    node --check canonical/app/pacefold-v25-preboot.js
-                    node --check canonical/app/pacefold-v25-core.js
-                    node --check canonical/app/pacefold-v25-boot.js
-                    node --check canonical/app/pacefold-v25-recovery.js
-                - name: Install browser audit runtime
-                  run: |
-                    npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
-                    /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
-                - name: Full Pacefold 25 browser audit
-                  run: |
-                    mkdir -p /tmp/pacefold-25-audit
-                    timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-audit.cjs canonical /tmp/pacefold-25-audit
-                - name: Upload release captures
-                  if: always()
-                  uses: actions/upload-artifact@v4
-                  with:
-                    name: pacefold-25-audit-${{ github.run_id }}
-                    path: /tmp/pacefold-25-audit/
-                    if-no-files-found: warn
-                    retention-days: 7
-
-            deploy:
-              if: github.event_name != 'pull_request'
-              needs: validate
-              runs-on: ubuntu-latest
-              timeout-minutes: 10
-              permissions:
-                contents: read
-                pages: write
-                id-token: write
-              environment:
-                name: github-pages
-                url: ${{ steps.deployment.outputs.page_url }}
-              steps:
-                - name: Checkout
-                  uses: actions/checkout@v6
-                - name: Verify exact canonical payload
-                  run: node scripts/verify-canonical.cjs canonical
-                - name: Configure Pages
-                  uses: actions/configure-pages@v5
-                - name: Upload Pages artifact
-                  uses: actions/upload-pages-artifact@v4
-                  with:
-                    path: canonical
-                - name: Deploy
-                  id: deployment
-                  uses: actions/deploy-pages@v4
+          3. Require the canonical relic guard and full browser audit to pass.
+          4. Merge only when green.
+          5. `main` deploys the exact validated `canonical/` directory.
           EOF
           printf '25.0.0 canonical-r1\n' > canonical/PACEFOLD_CANONICAL
 
