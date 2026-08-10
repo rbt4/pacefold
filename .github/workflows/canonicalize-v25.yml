@@ -1,0 +1,219 @@
+name: Canonicalize Pacefold 25 source
+
+on:
+  push:
+    branches: [agent/pacefold-25-canonical]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pacefold-v25-canonicalize
+  cancel-in-progress: true
+
+jobs:
+  canonicalize:
+    if: ${{ !contains(github.event.head_commit.message, '[canonical-source]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-25-canonical
+          fetch-depth: 0
+
+      - name: Build current verified cleanroom
+        run: |
+          cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
+          echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
+          mkdir _release
+          unzip -q /tmp/pacefold-v15.zip -d _release
+          node _release/scripts/build.mjs _release
+          node _release/scripts/validate.mjs _release
+          node enhancements/inject-v24-compat-base.mjs _release
+          node enhancements/inject-v23.mjs _release
+          node enhancements/inject-v24.mjs _release
+          node enhancements/inject-v25.mjs _release
+          node enhancements/finalize-v25-cleanroom.mjs _release
+          node scripts/canonicalize-v25.mjs _release
+          node enhancements/v25-cleanroom-audit.cjs _release
+          node --check _release/app/pacefold-v25-engine.js
+          node --check _release/app/pacefold-v25-core.js
+          node --check _release/app/pacefold-v25-preboot.js
+          node --check _release/app/pacefold-v25-recovery.js
+          node --check _release/service-worker.js
+
+      - name: Replace layered source with canonical runtime
+        run: |
+          cp enhancements/v25-audit.cjs /tmp/v25-audit.cjs
+          rm -rf canonical enhancements release scripts
+          rm -f AUDIT_*.md
+          mkdir -p canonical scripts
+          cp -a _release/. canonical/
+          cp /tmp/v25-audit.cjs scripts/v25-audit.cjs
+          rm -rf _release
+          cat > scripts/verify-canonical.cjs <<'EOF'
+          'use strict';
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const root=path.resolve(process.argv[2]||'canonical');
+          const fail=message=>{throw new Error(message)};
+          const walk=(dir,prefix='')=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{const rel=path.posix.join(prefix,entry.name),full=path.join(dir,entry.name);return entry.isDirectory()?walk(full,rel):[rel]}).sort();
+          const files=walk(root);
+          const obsoletePath=/(^|\/)(?:pacefold-(?:ma(?:\.|-)|hub(?:\.|-)|integrated(?:\.|-)|revamp(?:\.|-)|resilience(?:\.|-)|theme-boot(?:\.|-)|v(?:19|20|21|22|23|24)(?:\.|-)|public-v24(?:\.|-)|site-v19(?:\.|-)|daylight(?:\.|-)|hub-version(?:\.|-))|ONENOTE_SETUP\.md$)/i;
+          const relicFiles=files.filter(file=>obsoletePath.test(file));
+          if(relicFiles.length)fail(`Legacy files in canonical runtime: ${relicFiles.join(', ')}`);
+          const active=['index.html','service-worker.js','pacefold-v25-site.js','onenote-setup.html','app/index.html','app/service-worker.js','app/pacefold-v25-engine.js','app/pacefold-v25-preboot.js','app/pacefold-v25-core.js','app/pacefold-v25-recovery.js','app/pacefold-v25-core.css'];
+          const oldGlobal=/__PACEFOLD_(?:MA_|V19|V21|V23|156_)/;
+          const oldVersion=/(?:15\.2\.2|15\.8\.0|16\.0\.0|16\.0\.1|17\.1\.0|20\.0\.1|21\.3\.1|22\.0\.0|22\.0\.1|22\.0\.2|23\.0\.0|24\.0\.0)/;
+          for(const rel of active){const source=fs.readFileSync(path.join(root,rel),'utf8');if(oldGlobal.test(source))fail(`Old runtime namespace in ${rel}`);if(oldVersion.test(source))fail(`Old product version in ${rel}`);}
+          for(const rel of ['pacefold-build.txt','pacefold-experience.txt','pacefold-stability.txt','pacefold-canonical.txt','app/pacefold-build.txt','app/pacefold-experience.txt','app/pacefold-stability.txt'])if(fs.readFileSync(path.join(root,rel),'utf8').trim()!=='25.0.0 canonical-r1')fail(`${rel} is not canonical-r1`);
+          const appHtml=fs.readFileSync(path.join(root,'app/index.html'),'utf8'),publicHtml=fs.readFileSync(path.join(root,'index.html'),'utf8'),worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
+          if(!appHtml.includes('pacefold-v25-engine.js'))fail('Canonical engine is not active');
+          if(!publicHtml.includes('pacefold-v25-site.js'))fail('Canonical site runtime is not active');
+          if(!worker.includes('pacefold-v25-engine.js')||!worker.includes('pacefold-v25-site.js'))fail('Canonical service worker caches old runtime names');
+          console.log(JSON.stringify({release:'25.0.0',revision:'canonical-r1',files:files.length,relicFiles:0,oldRuntimeNamespaces:0,oldProductVersions:0,source:'direct canonical runtime'},null,2));
+          EOF
+          cat > README.md <<'EOF'
+          # Pacefold 25
+
+          Pacefold is a quiet, clock-first workday rhythm app. `canonical/` is the complete production source for Pacefold 25.
+
+          ## Architecture
+
+          Pacefold 25 no longer rebuilds production by layering historical releases. Git history preserves the old V15–V24 implementation. The current repository deploys the canonical V25 runtime directly.
+
+          Stable browser-storage schema keys from earlier releases remain intentionally compatible so existing notes, preferences, backups, and activity history survive the architecture cleanup.
+
+          ## Release
+
+          Current: **25.0.0 canonical-r1**.
+
+          Every pull request verifies the canonical file tree and runs the full browser recovery audit before Pages can deploy.
+          EOF
+          cat > CHANGELOG.md <<'EOF'
+          # Changelog
+
+          ## 25.0.0 canonical-r1
+
+          - Made the verified V25 cleanroom runtime the canonical production source.
+          - Removed the V15→V24 injector/build chain from the current branch.
+          - Removed historical product asset identities and stale release constants from the active runtime.
+          - Preserved stable saved-data schema compatibility.
+          - Retained full browser release gates for clock, prayer rhythm, quiet cues, logging, notes, Daybook, navigation, Settings and responsive layout.
+          EOF
+          cat > RELEASE.md <<'EOF'
+          # Pacefold Release
+
+          Production source: `canonical/`
+
+          Release: **25.0.0 canonical-r1**
+
+          The Pages workflow validates this exact directory and deploys it without historical injectors or runtime composition steps.
+          EOF
+          cat > DEPLOYMENT_RUNBOOK.md <<'EOF'
+          # Deployment runbook
+
+          1. Change files only inside `canonical/` (plus tests/docs when needed).
+          2. Open a pull request.
+          3. The Pages workflow runs the canonical relic guard and full browser audit.
+          4. Merge only when validation is green.
+          5. `main` deploys the exact validated `canonical/` directory to GitHub Pages.
+          EOF
+          cat > .github/workflows/pages.yml <<'EOF'
+          name: Verify and publish Pacefold 25
+
+          on:
+            push:
+              branches: [main]
+            pull_request:
+            workflow_dispatch:
+
+          permissions:
+            contents: read
+
+          concurrency:
+            group: pacefold-pages-${{ github.ref }}
+            cancel-in-progress: true
+
+          jobs:
+            validate:
+              runs-on: ubuntu-latest
+              timeout-minutes: 30
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v6
+                - name: Canonical source guard
+                  run: |
+                    node scripts/verify-canonical.cjs canonical
+                    node --check canonical/pacefold-v25-site.js
+                    node --check canonical/service-worker.js
+                    node --check canonical/app/pacefold-v25-engine.js
+                    node --check canonical/app/pacefold-v25-theme-boot.js
+                    node --check canonical/app/pacefold-v25-preboot.js
+                    node --check canonical/app/pacefold-v25-core.js
+                    node --check canonical/app/pacefold-v25-boot.js
+                    node --check canonical/app/pacefold-v25-recovery.js
+                - name: Install browser audit runtime
+                  run: |
+                    npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
+                    /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+                - name: Full Pacefold 25 browser audit
+                  run: |
+                    mkdir -p /tmp/pacefold-25-audit
+                    timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-audit.cjs canonical /tmp/pacefold-25-audit
+                - name: Upload release captures
+                  if: always()
+                  uses: actions/upload-artifact@v4
+                  with:
+                    name: pacefold-25-audit-${{ github.run_id }}
+                    path: /tmp/pacefold-25-audit/
+                    if-no-files-found: warn
+                    retention-days: 7
+
+            deploy:
+              if: github.event_name != 'pull_request'
+              needs: validate
+              runs-on: ubuntu-latest
+              timeout-minutes: 10
+              permissions:
+                contents: read
+                pages: write
+                id-token: write
+              environment:
+                name: github-pages
+                url: ${{ steps.deployment.outputs.page_url }}
+              steps:
+                - name: Checkout
+                  uses: actions/checkout@v6
+                - name: Verify exact canonical payload
+                  run: node scripts/verify-canonical.cjs canonical
+                - name: Configure Pages
+                  uses: actions/configure-pages@v5
+                - name: Upload Pages artifact
+                  uses: actions/upload-pages-artifact@v4
+                  with:
+                    path: canonical
+                - name: Deploy
+                  id: deployment
+                  uses: actions/deploy-pages@v4
+          EOF
+          touch canonical/PACEFOLD_CANONICAL
+          printf '25.0.0 canonical-r1\n' > canonical/PACEFOLD_CANONICAL
+
+      - name: Verify canonical repository before commit
+        run: |
+          node scripts/verify-canonical.cjs canonical
+          node --check canonical/app/pacefold-v25-engine.js
+          node --check canonical/app/pacefold-v25-core.js
+          node --check canonical/app/pacefold-v25-preboot.js
+          node --check canonical/app/pacefold-v25-recovery.js
+
+      - name: Commit canonical source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Pacefold 25 canonical source [canonical-source]"
+          git push origin HEAD:agent/pacefold-25-canonical
