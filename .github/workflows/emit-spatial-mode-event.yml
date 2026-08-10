@@ -1,0 +1,36 @@
+name: Emit Pacefold spatial mode event
+
+on:
+  push:
+    branches:
+      - agent/pacefold-25-privacy-return
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: "!contains(github.event.head_commit.message, '[spatial-mode-event]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-25-privacy-return
+          fetch-depth: 0
+      - name: Add spatial mode event
+        run: node scripts/emit-spatial-mode-event.cjs
+      - name: Verify
+        run: |
+          node scripts/verify-canonical.cjs canonical
+          node --check canonical/app/pacefold-v25-core.js
+          node --check canonical/app/pacefold-v25-private.js
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add canonical/app/pacefold-v25-core.js canonical/app/pacefold-v25-private.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Emit spatial mode changes for private surfaces [spatial-mode-event]"
+          git push origin HEAD:agent/pacefold-25-privacy-return
