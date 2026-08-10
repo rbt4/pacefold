@@ -61,10 +61,10 @@ function cueSources(){
 function performCue(source){
   if(source==='flow'){window.__PACEFOLD_SPATIAL__?.go?.('worklog');window.__PACEFOLD_CUES__?.acknowledge?.('flow');return}
   if(source==='prayer'){window.__PACEFOLD_SPATIAL__?.go?.('context');window.__PACEFOLD_CUES__?.acknowledge?.('prayer');return}
-  const alias={water:'water',noodle:'noodle',away:'away',lunch:'lunch',eyes:'eyes',body:'body'}[source],control=alias&&id(`pf23-action-${alias}`);if(control)control.click();else window.__PACEFOLD_CUES__?.acknowledge?.(source)
+  const alias={water:'water',noodle:'noodle',away:'away',lunch:'lunch',eyes:'eyes',body:'body'}[source],control=alias&&id(`pf25Actions-action-${alias}`);if(control)control.click();else window.__PACEFOLD_CUES__?.acknowledge?.(source)
 }
 function buildCueDots(){
-  const root=id('pf22-spatial-root');if(!root||id('pf25-cue-dots'))return;
+  const root=id('pf25Spatial-spatial-root');if(!root||id('pf25-cue-dots'))return;
   const wrap=create('div','pf25-cue-dots');wrap.id='pf25-cue-dots';wrap.setAttribute('aria-label','Waiting Pacefold cues');wrap.style.setProperty('position','absolute');wrap.style.setProperty('z-index','85');wrap.style.setProperty('top','40px');wrap.style.setProperty('right','clamp(108px,10vw,150px)');wrap.style.setProperty('pointer-events','auto');root.append(wrap)
 }
 function renderCues(){
@@ -75,7 +75,7 @@ function renderCues(){
   wrap.setAttribute('aria-label',`Waiting cues: ${sources.join(', ')}`)
 }
 function buildDayline(){
-  const instrument=id('pf24-instrument');if(!instrument||id('pf25-dayline'))return;
+  const instrument=id('pf25Surface-instrument');if(!instrument||id('pf25-dayline'))return;
   const section=create('section','pf25-dayline');section.id='pf25-dayline';section.setAttribute('aria-label','Workday unfold');
   const head=create('header','pf25-day-head'),copy=create('div');copy.append(create('span','pf25-kicker','Day unfold'),create('strong','pf25-day-title','Workday'));const meta=create('small','pf25-day-meta','');head.append(copy,meta);
   const rail=create('div','pf25-day-rail'),fill=create('i','pf25-day-fill'),sun=create('b','pf25-day-sun'),markers=create('div','pf25-day-markers');markers.id='pf25-day-markers';rail.append(fill,sun,markers);
@@ -102,17 +102,17 @@ function renderRhythm(now=new Date()){
   for(const item of all){const node=button('pf25-rhythm-item',`${item.label} at ${formatTime(item.date,value)}`);node.dataset.source=item.id;node.dataset.state=item.date<now?'past':nextPrayer?.id===item.id?'next':'upcoming';if(item.id==='sunrise')node.dataset.kind='sunrise';node.append(create('span','',item.label),create('strong','',formatTime(item.date,value)));node.addEventListener('click',()=>window.__PACEFOLD_SPATIAL__?.go?.('context'));items.append(node)}
 }
 function installDaybook(){
-  const tray=id('pf24-fold-tray'),head=tray?.querySelector('.pf24-fold-head');if(!tray||!head)return;tray.dataset.open=tray.dataset.open||'false';if(id('pf25-daybook-toggle'))return;
-  const toggle=button('pf25-daybook-toggle','Open Daybook','Open');toggle.id='pf25-daybook-toggle';toggle.addEventListener('click',()=>setDaybook(tray.dataset.open!=='true'));head.insertBefore(toggle,head.querySelector('.pf24-fold-tabs')||null);
+  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head');if(!tray||!head)return;tray.dataset.open=tray.dataset.open||'false';if(id('pf25-daybook-toggle'))return;
+  const toggle=button('pf25-daybook-toggle','Open Daybook','Open');toggle.id='pf25-daybook-toggle';toggle.addEventListener('click',()=>setDaybook(tray.dataset.open!=='true'));head.insertBefore(toggle,head.querySelector('.pf25Surface-fold-tabs')||null);
   tray.addEventListener('pointerdown',touch);tray.addEventListener('keydown',touch,true);tray.addEventListener('focusin',touch);setDaybook(false)
 }
 function setDaybook(open){
-  const tray=id('pf24-fold-tray'),toggle=id('pf25-daybook-toggle');if(!tray)return;tray.dataset.open=String(Boolean(open));if(toggle){toggle.textContent=open?'Close':'Open';toggle.setAttribute('aria-expanded',String(Boolean(open)))}clearTimeout(daybookTimer);if(open)daybookTimer=setTimeout(()=>setDaybook(false),22000)
+  const tray=id('pf25Surface-fold-tray'),toggle=id('pf25-daybook-toggle');if(!tray)return;tray.dataset.open=String(Boolean(open));if(toggle){toggle.textContent=open?'Close':'Open';toggle.setAttribute('aria-expanded',String(Boolean(open)))}clearTimeout(daybookTimer);if(open)daybookTimer=setTimeout(()=>setDaybook(false),22000)
 }
-function touch(){lastInteraction=Date.now();const tray=id('pf24-fold-tray');if(tray?.dataset.open==='true'){clearTimeout(daybookTimer);daybookTimer=setTimeout(()=>setDaybook(false),22000)}}
+function touch(){lastInteraction=Date.now();const tray=id('pf25Surface-fold-tray');if(tray?.dataset.open==='true'){clearTimeout(daybookTimer);daybookTimer=setTimeout(()=>setDaybook(false),22000)}}
 function findButton(pattern,exclude){return [...document.querySelectorAll('button')].find(node=>node!==exclude&&pattern.test(text(node.textContent)+' '+text(node.getAttribute('aria-label'))))}
 function buildRecoverySettings(){
-  const card=$('.pf22-settings-card')||$('.pf22-settings-display')||$('.pf22-settings-layout');if(!card||id('pf25-settings'))return;const panel=create('section','pf25-settings');panel.id='pf25-settings';const head=create('header');head.append(create('span','pf25-kicker','Recovery essentials'),create('strong','','The controls Pacefold should never lose'));panel.append(head);
+  const card=$('.pf25Spatial-settings-card')||$('.pf25Spatial-settings-display')||$('.pf25Spatial-settings-layout');if(!card||id('pf25-settings'))return;const panel=create('section','pf25-settings');panel.id='pf25-settings';const head=create('header');head.append(create('span','pf25-kicker','Recovery essentials'),create('strong','','The controls Pacefold should never lose'));panel.append(head);
   const grid=create('div','pf25-settings-grid'),today=create('div','pf25-setting-status');today.dataset.kind='today';grid.append(today);
   const cues=button('pf25-setting-button','Toggle quiet cue dots');cues.dataset.action='cues';cues.addEventListener('click',()=>setCueDotsEnabled(!cueDotsEnabled()));grid.append(cues);
   const backup=button('pf25-setting-button','Open note backup','Backup');backup.dataset.action='backup';backup.addEventListener('click',()=>findButton(/backup notes|choose.*backup|backup file/i,backup)?.click());grid.append(backup);
@@ -128,8 +128,8 @@ function repairActivitySchema(){
   if(value.waterDate&&String(value.waterDate)!==today&&Number(value.waterSips)>0){patch.waterSips=0;patch.waterDate=today}
   const key=JSON.stringify(patch);if(Object.keys(patch).length&&key!==lastRepair){lastRepair=key;patchPrefs(patch)}
 }
-function renderVersion(){for(const node of document.querySelectorAll('.pf22-version'))node.textContent=`Pacefold ${RELEASE} · private local recovery`;const root=id('pf22-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.recovery=REVISION}document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE}
-function currentMode(){return id('pf22-spatial-root')?.dataset.mode||'home'}
+function renderVersion(){for(const node of document.querySelectorAll('.pf25Spatial-version'))node.textContent=`Pacefold ${RELEASE} · private local recovery`;const root=id('pf25Spatial-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.recovery=REVISION}document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE}
+function currentMode(){return id('pf25Spatial-spatial-root')?.dataset.mode||'home'}
 function home(){window.__PACEFOLD_SPATIAL__?.go?.('home')}
 function navigationCapture(event){
   if(event.key==='Escape'||event.key==='Home'){event.preventDefault();event.stopImmediatePropagation();home();return}
@@ -146,7 +146,7 @@ function autoHome(){
   const mode=currentMode();if(mode==='home')return;const active=document.activeElement,editing=active&&/^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName);if(editing)return;const limit=mode==='notes'?90000:55000;if(Date.now()-lastInteraction>limit)home()
 }
 function compose(){
-  const root=id('pf22-spatial-root'),hero=$('.pf22-clock-hero');if(!root||!hero)return false;buildCueDots();buildDayline();buildRhythm();installDaybook();buildRecoverySettings();renderVersion();document.documentElement.dataset.pacefoldV25='ready';return true
+  const root=id('pf25Spatial-spatial-root'),hero=$('.pf25Spatial-clock-hero');if(!root||!hero)return false;buildCueDots();buildDayline();buildRhythm();installDaybook();buildRecoverySettings();renderVersion();document.documentElement.dataset.pacefoldV25='ready';return true
 }
 function refresh(force=false){
   if(!compose())return false;const now=new Date();repairActivitySchema();renderDayline(now);renderRhythm(now);renderCues();renderRecoverySettings();renderVersion();if(force)window.__PACEFOLD_CUES__?.refresh?.();return true
