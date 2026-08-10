@@ -64,15 +64,15 @@ jobs:
           const obsoletePath=/(^|\/)(?:pacefold-(?:ma(?:\.|-)|hub(?:\.|-)|integrated(?:\.|-)|revamp(?:\.|-)|resilience(?:\.|-)|theme-boot(?:\.|-)|v(?:19|20|21|22|23|24)(?:\.|-)|public-v24(?:\.|-)|site-v19(?:\.|-)|daylight(?:\.|-)|hub-version(?:\.|-))|ONENOTE_SETUP\.md$)/i;
           const relicFiles=files.filter(file=>obsoletePath.test(file));
           if(relicFiles.length)fail(`Legacy files in canonical runtime: ${relicFiles.join(', ')}`);
-          const active=['index.html','service-worker.js','pacefold-v25-site.js','onenote-setup.html','app/index.html','app/service-worker.js','app/pacefold-v25-engine.js','app/pacefold-v25-preboot.js','app/pacefold-v25-core.js','app/pacefold-v25-recovery.js','app/pacefold-v25-core.css'];
+          const active=['index.html','service-worker.js','onenote-setup.html','app/index.html','app/service-worker.js','app/pacefold-v25-engine.js','app/pacefold-v25-preboot.js','app/pacefold-v25-core.js','app/pacefold-v25-recovery.js','app/pacefold-v25-core.css'];
           const oldGlobal=/__PACEFOLD_(?:MA_|V19|V21|V23|156_)/;
           const oldVersion=/(?:15\.2\.2|15\.8\.0|16\.0\.0|16\.0\.1|17\.1\.0|20\.0\.1|21\.3\.1|22\.0\.0|22\.0\.1|22\.0\.2|23\.0\.0|24\.0\.0)/;
           for(const rel of active){const source=fs.readFileSync(path.join(root,rel),'utf8');if(oldGlobal.test(source))fail(`Old runtime namespace in ${rel}`);if(oldVersion.test(source))fail(`Old product version in ${rel}`);}
           for(const rel of ['pacefold-build.txt','pacefold-experience.txt','pacefold-stability.txt','pacefold-canonical.txt','app/pacefold-build.txt','app/pacefold-experience.txt','app/pacefold-stability.txt'])if(fs.readFileSync(path.join(root,rel),'utf8').trim()!=='25.0.0 canonical-r1')fail(`${rel} is not canonical-r1`);
-          const appHtml=fs.readFileSync(path.join(root,'app/index.html'),'utf8'),publicHtml=fs.readFileSync(path.join(root,'index.html'),'utf8'),worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
+          const appHtml=fs.readFileSync(path.join(root,'app/index.html'),'utf8'),worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
           if(!appHtml.includes('pacefold-v25-engine.js'))fail('Canonical engine is not active');
-          if(!publicHtml.includes('pacefold-v25-site.js'))fail('Canonical site runtime is not active');
-          if(!worker.includes('pacefold-v25-engine.js')||!worker.includes('pacefold-v25-site.js'))fail('Canonical service worker caches old runtime names');
+          if(worker.includes('./site.js')||worker.includes('./app/app.js'))fail('Canonical service worker caches old/dead runtime names');
+          if(files.includes('site.js')||files.includes('app/app.js'))fail('Dead pre-canonical runtime file still exists');
           console.log(JSON.stringify({release:'25.0.0',revision:'canonical-r1',files:files.length,relicFiles:0,oldRuntimeNamespaces:0,oldProductVersions:0,source:'direct canonical runtime'},null,2));
           EOF
           cat > README.md <<'EOF'
@@ -99,7 +99,7 @@ jobs:
 
           - Made the verified V25 cleanroom runtime the canonical production source.
           - Removed the V15→V24 injector/build chain from the current branch.
-          - Removed historical product asset identities and stale release constants from the active runtime.
+          - Removed historical product asset identities, dead public runtime, old global API names, and stale release constants from the active runtime.
           - Preserved stable saved-data schema compatibility.
           - Retained full browser release gates for clock, prayer rhythm, quiet cues, logging, notes, Daybook, navigation, Settings and responsive layout.
           EOF
@@ -147,7 +147,6 @@ jobs:
                 - name: Canonical source guard
                   run: |
                     node scripts/verify-canonical.cjs canonical
-                    node --check canonical/pacefold-v25-site.js
                     node --check canonical/service-worker.js
                     node --check canonical/app/pacefold-v25-engine.js
                     node --check canonical/app/pacefold-v25-theme-boot.js
@@ -199,7 +198,6 @@ jobs:
                   id: deployment
                   uses: actions/deploy-pages@v4
           EOF
-          touch canonical/PACEFOLD_CANONICAL
           printf '25.0.0 canonical-r1\n' > canonical/PACEFOLD_CANONICAL
 
       - name: Verify canonical repository before commit
