@@ -3303,7 +3303,7 @@ function applyBackup(data,{automatic=false}={}){
     savedAt:data.exportedAt||new Date().toISOString(),
     fileName:backupHandle?.name||backupMeta()?.fileName||'Pacefold backup.json'
   });
-  window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{source:'v20-backup-recovery',automatic}}));
+  window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{source:'backup-recovery',automatic}}));
   window.dispatchEvent(new CustomEvent('pacefold:prefs'));
   window.__PACEFOLD_WORKSPACE__?.reconcile?.();
   setBackupState('synced',automatic?'Notes recovered automatically':`${data.notes.length} notes recovered`);
@@ -3540,7 +3540,7 @@ function alertControl(){
   control.addEventListener('click',guarded('alert-click',async()=>{
     const state=attentionState();
     if(state.active){
-      if(document.querySelector('[data-pf-flow-pulse][data-state="new"]'))await window.__PACEFOLD_FLOW__?.acknowledge?.('v20-marker');
+      if(document.querySelector('[data-pf-flow-pulse][data-state="new"]'))await window.__PACEFOLD_FLOW__?.acknowledge?.('attention-marker');
       else await window.__PACEFOLD_SCHEDULER__?.clear?.();
     }
     syncAttention(true);
@@ -3773,7 +3773,7 @@ else initialize();
       localStorage.setItem(PREFS_KEY,JSON.stringify(next));
     }
     snapshotPrefs();
-    window.dispatchEvent(new CustomEvent('pacefold:prefs',{detail:{source:'v21-settings'}}));
+    window.dispatchEvent(new CustomEvent('pacefold:prefs',{detail:{source:'settings'}}));
     return next;
   }
 

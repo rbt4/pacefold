@@ -205,7 +205,7 @@ const core=()=>window.__PACEFOLD_RUNTIME_CORE__||null;
 function prefs(){return core()?.getPrefs?.()||parse(localStorage.getItem(PREFS_KEY),{})||{}}
 function emit(){
   window.dispatchEvent(new CustomEvent('pacefold:rhythm-prefs',{detail:{release:RELEASE,revision:REVISION}}));
-  window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{key:PREFS_KEY,source:'v24-kernel'}}));
+  window.dispatchEvent(new CustomEvent('pacefold:storage-changed',{detail:{key:PREFS_KEY,source:'runtime-kernel'}}));
 }
 function patchPrefs(patch){
   if(!patch||typeof patch!=='object')return prefs();

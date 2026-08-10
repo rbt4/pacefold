@@ -349,7 +349,7 @@ body.reveal .fold-crease::after{opacity:.78}
   #pf-flow-dock *,#pf-flow-dock *::before,#pf-flow-dock *::after,.fold-strip,.fold-crease,.fold-crease::before,.fold-crease::after{animation:none!important;transition:none!important}
 }
 ;
-/* Pacefold 25.0.0: calm integrated notebook with a separate local player. */
+/* Pacefold 25.0.0: calm notebook with a separate local player. */
 :root{
   --pf-player-height:48px;
   --pf-workspace-width:min(920px,calc(100vw - 32px));
@@ -5396,7 +5396,7 @@ html.pf-v25-flow-active :where(.pf25Flow-dayline,.pf25Flow-note-calendar,#pf25Fl
 }
 
 /* Pacefold 21 compatibility surface.
-   Keeps legacy measurement and accessibility contracts intact while V21 owns the visible UI. */
+   Keeps measurement and accessibility contracts intact while Pacefold 25 owns the visible UI. */
 
 html.pf-v25-flow-active #statusLine{
   position:relative!important;
