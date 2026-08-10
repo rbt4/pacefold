@@ -91,8 +91,9 @@ function buildActivity(strip){
   strip.replaceChildren();for(let offset=13;offset>=0;offset-=1){const date=new Date();date.setDate(date.getDate()-offset);const key=localKey(date),count=counts.get(key)||0,dot=button('pf25-private-day-dot','Open date','');dot.dataset.date=key;dot.dataset.count=String(Math.min(9,count));dot.dataset.active=String(count>0);dot.style.setProperty('--pf25-note-density',String(Math.min(1,count/4)));dot.addEventListener('click',()=>{window.__PACEFOLD_SPATIAL__?.setNoteDate?.(key);closeDaybook();window.__PACEFOLD_SPATIAL__?.go?.('notes')});strip.append(dot)}
 }
 function daybookElements(){return{tray:id('pf25Surface-fold-tray'),toggle:id('pf25-daybook-toggle'),spine:id('pf25-private-daybook-spine'),sheet:id('pf25-private-daybook-sheet')}}
+function suppressLegacyDaybook(){const tray=id('pf25Surface-fold-tray');if(!tray)return;for(const selector of ['.pf25Surface-fold-tabs','.pf25Surface-fold-summary','.pf25Surface-fold-latest','.pf25Surface-fold-head>div'])for(const node of tray.querySelectorAll(selector)){node.hidden=true;node.setAttribute('aria-hidden','true');node.style.setProperty('display','none','important')}}
 function buildDaybook(){
-  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head'),body=tray?.querySelector('.pf25Surface-fold-body');if(!tray||!head||!body)return false;tray.classList.add('pf25-private-daybook');const r=root();if(r&&tray.parentElement!==r)r.append(tray);const legacyToggle=id('pf25-daybook-toggle');if(legacyToggle)genericLabel(legacyToggle,'Open fold');
+  const tray=id('pf25Surface-fold-tray'),head=tray?.querySelector('.pf25Surface-fold-head'),body=tray?.querySelector('.pf25Surface-fold-body');if(!tray||!head||!body)return false;tray.classList.add('pf25-private-daybook');const r=root();if(r&&tray.parentElement!==r)r.append(tray);suppressLegacyDaybook();const legacyToggle=id('pf25-daybook-toggle');if(legacyToggle)genericLabel(legacyToggle,'Open fold');
   let spine=id('pf25-private-daybook-spine');if(!spine){spine=button('pf25-private-daybook-spine','Open fold','');spine.id='pf25-private-daybook-spine';spine.append(create('i','pf25-private-fold-mark'));spine.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();toggleDaybook()});head.prepend(spine)}
   let sheet=id('pf25-private-daybook-sheet');if(!sheet){
     sheet=create('section','pf25-private-daybook-sheet');sheet.id='pf25-private-daybook-sheet';sheet.setAttribute('aria-label','Private note sheet');
@@ -111,7 +112,7 @@ function toggleDaybook(){const {tray}=daybookElements();if(!tray)return;setPriva
 function closeDaybook(){const {tray}=daybookElements();if(!tray||tray.dataset.open!=='true')return;clearTimeout(daybookTimer);daybookTimer=0;setPrivateDaybook(false)}
 function resetDaybookTimer(){clearTimeout(daybookTimer);daybookTimer=0;const tray=id('pf25Surface-fold-tray');if(tray?.dataset.open==='true')daybookTimer=setTimeout(closeDaybook,45000)}
 function syncDaybook(){
-  if(!buildDaybook())return;const {tray,sheet}=daybookElements(),open=tray?.dataset.open==='true';if(tray)tray.dataset.privateOpen=String(open);if(sheet)sheet.hidden=!open;
+  if(!buildDaybook())return;suppressLegacyDaybook();const {tray,sheet}=daybookElements(),open=tray?.dataset.open==='true';if(tray)tray.dataset.privateOpen=String(open);if(sheet)sheet.hidden=!open;
   if(open){buildActivity(id('pf25-private-activity'));if(!lastDaybookOpen)requestAnimationFrame(()=>id('pf25-private-daybook-input')?.focus({preventScroll:true}));resetDaybookTimer()}else{clearTimeout(daybookTimer);daybookTimer=0}
   lastDaybookOpen=open;
 }
