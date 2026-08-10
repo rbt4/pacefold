@@ -112,7 +112,7 @@ function setDaybook(open){
 function touch(){lastInteraction=Date.now();const tray=id('pf24-fold-tray');if(tray?.dataset.open==='true'){clearTimeout(daybookTimer);daybookTimer=setTimeout(()=>setDaybook(false),22000)}}
 function findButton(pattern,exclude){return [...document.querySelectorAll('button')].find(node=>node!==exclude&&pattern.test(text(node.textContent)+' '+text(node.getAttribute('aria-label'))))}
 function buildRecoverySettings(){
-  const card=$('.pf22-settings-card');if(!card||id('pf25-settings'))return;const panel=create('section','pf25-settings');panel.id='pf25-settings';const head=create('header');head.append(create('span','pf25-kicker','Recovery essentials'),create('strong','','The controls Pacefold should never lose'));panel.append(head);
+  const card=$('.pf22-settings-card')||$('.pf22-settings-display')||$('.pf22-settings-layout');if(!card||id('pf25-settings'))return;const panel=create('section','pf25-settings');panel.id='pf25-settings';const head=create('header');head.append(create('span','pf25-kicker','Recovery essentials'),create('strong','','The controls Pacefold should never lose'));panel.append(head);
   const grid=create('div','pf25-settings-grid'),today=create('div','pf25-setting-status');today.dataset.kind='today';grid.append(today);
   const cues=button('pf25-setting-button','Toggle quiet cue dots');cues.dataset.action='cues';cues.addEventListener('click',()=>setCueDotsEnabled(!cueDotsEnabled()));grid.append(cues);
   const backup=button('pf25-setting-button','Open note backup','Backup');backup.dataset.action='backup';backup.addEventListener('click',()=>findButton(/backup notes|choose.*backup|backup file/i,backup)?.click());grid.append(backup);
