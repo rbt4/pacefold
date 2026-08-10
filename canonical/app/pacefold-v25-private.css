@@ -206,3 +206,9 @@
 /* Pacefold private fold corner placement r1 — tuck Daybook away from the spatial down-arrow and keep it discoverable only to its owner. */
 .pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Surface-fold-tray.pf25-private-daybook{left:auto!important;right:34px!important;transform:none!important}
 @media(max-width:760px){.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Surface-fold-tray.pf25-private-daybook{right:22px!important}}
+
+
+/* Pacefold private topbar hit-plane r1 — visible topbar controls must sit above the sliding face hit-plane. */
+.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Spatial-stage{z-index:1!important}
+.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Spatial-topbar{z-index:100!important;pointer-events:none!important}
+.pf25Spatial-spatial-root[data-privacy-revision="privacy-return-r1"] .pf25Spatial-topbar button{position:relative!important;z-index:1!important;pointer-events:auto!important}
