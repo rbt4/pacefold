@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,7 +32,9 @@ jobs:
           node --check canonical/app/pacefold-v25-core.js
           node --check canonical/app/pacefold-v25-boot.js
           node --check canonical/app/pacefold-v25-recovery.js
+          node --check canonical/app/pacefold-v25-private.js
           node --check scripts/v25-coherence-audit.cjs
+          node --check scripts/v25-privacy-audit.cjs
 
       - name: Install browser audit runtime
         run: |
@@ -47,6 +49,10 @@ jobs:
       - name: Pacefold 25 coherence audit
         run: |
           timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-coherence-audit.cjs canonical /tmp/pacefold-25-audit
+
+      - name: Pacefold 25 privacy and transient Daybook audit
+        run: |
+          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-privacy-audit.cjs canonical /tmp/pacefold-25-audit
 
       - name: Upload release captures
         if: always()
