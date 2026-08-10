@@ -84,8 +84,8 @@ function buildDayline(){
 function renderDayline(now=new Date()){
   buildDayline();const section=id('pf25-dayline');if(!section)return;const value=prefs(),day=resolvedDay(now,value),part=zoneParts(now,day.timeZone),hours=part.hour+part.minute/60+part.second/3600,title=section.querySelector('.pf25-day-title'),meta=section.querySelector('.pf25-day-meta');
   title.textContent=DAY_LABELS[day.type]||'Workday';section.querySelector('.pf25-day-start').textContent=day.type==='off'?'—':day.startText;section.querySelector('.pf25-day-end').textContent=day.type==='off'?'—':day.endText;
-  if(day.type==='off'){section.dataset.state='off';section.style.setProperty('--pf25-progress','0');meta.textContent='No workday clock today';id('pf25-day-markers')?.replaceChildren();return}
-  const progress=Math.max(0,Math.min(1,(hours-day.start)/Math.max(.01,day.end-day.start)));section.style.setProperty('--pf25-progress',String(progress));section.dataset.state=hours<day.start?'before':hours>day.end?'complete':'active';meta.textContent=`${day.startText}–${day.endText} · ${Math.round(progress*100)}%`;
+  if(day.type==='off'){section.dataset.state='off';section.style.setProperty('--pf25-progress','0');meta.textContent='No workday clock today';const nowLabel=section.querySelector('.pf25-day-now');if(nowLabel)nowLabel.textContent='';id('pf25-day-markers')?.replaceChildren();return}
+  const progress=Math.max(0,Math.min(1,(hours-day.start)/Math.max(.01,day.end-day.start)));section.style.setProperty('--pf25-progress',String(progress));section.dataset.state=hours<day.start?'before':hours>day.end?'complete':'active';const nowLabel=section.querySelector('.pf25-day-now');if(nowLabel)nowLabel.textContent=section.dataset.state==='active'?'Now':'';meta.textContent=`${day.startText}–${day.endText} · ${Math.round(progress*100)}%${section.dataset.state==='complete'?' · Done':''}`;
   const markers=id('pf25-day-markers'),state=schedule(true),items=state?.today||[],key=`${localKey(now,day.timeZone)}|${day.type}|${day.start}|${day.end}|${items.map(item=>`${item.id}:${Number(item.hours).toFixed(3)}`).join('|')}`;
   if(markers&&markers.dataset.key!==key){markers.dataset.key=key;markers.replaceChildren();for(const item of items){const h=Number(item.hours);if(!Number.isFinite(h)||h<day.start||h>day.end)continue;const marker=button('pf25-day-marker',`${item.label} at ${formatTime(item.date,value)}`);marker.dataset.source=item.id;marker.style.setProperty('--marker',String((h-day.start)/(day.end-day.start)));marker.addEventListener('click',()=>window.__PACEFOLD_SPATIAL__?.go?.('context'));markers.append(marker)}}
 }
@@ -128,7 +128,7 @@ function repairActivitySchema(){
   if(value.waterDate&&String(value.waterDate)!==today&&Number(value.waterSips)>0){patch.waterSips=0;patch.waterDate=today}
   const key=JSON.stringify(patch);if(Object.keys(patch).length&&key!==lastRepair){lastRepair=key;patchPrefs(patch)}
 }
-function renderVersion(){for(const node of document.querySelectorAll('.pf25Spatial-version'))node.textContent=`Pacefold ${RELEASE} · private local recovery`;const root=id('pf25Spatial-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.recovery=REVISION}document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE}
+function renderVersion(){for(const node of document.querySelectorAll('.pf25Spatial-version'))node.textContent=`Pacefold ${RELEASE} · private local recovery`;const root=id('pf25Spatial-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.recovery=REVISION;root.dataset.coherence='coherence-r1'}document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE}
 function currentMode(){return id('pf25Spatial-spatial-root')?.dataset.mode||'home'}
 function home(){window.__PACEFOLD_SPATIAL__?.go?.('home')}
 function navigationCapture(event){
