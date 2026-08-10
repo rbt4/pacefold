@@ -46,8 +46,12 @@ jobs:
             enhancements/v24-audit.cjs \
             enhancements/pacefold-v25-boot.js \
             enhancements/pacefold-v25-recovery.js \
+            enhancements/pacefold-v25-service-worker.js \
+            enhancements/pacefold-v25-app-migration-worker.js \
             enhancements/inject-v25.mjs \
+            enhancements/finalize-v25-cleanroom.mjs \
             enhancements/v25-audit.cjs \
+            enhancements/v25-cleanroom-audit.cjs \
             scripts/verify.mjs; do node --check "$file"; done
           node -e "const fs=require('fs'),p='enhancements/';const join=x=>fs.readdirSync(p).filter(n=>n.startsWith(x)).sort().map(n=>fs.readFileSync(p+n,'utf8').replace(/\n$/,'')).join('');fs.writeFileSync('/tmp/pacefold-v24-unified.js',join('pacefold-v24-unified.js.part-'));fs.writeFileSync('/tmp/inject-v24-runtime.mjs',join('inject-v24-runtime.mjs.part-'))"
           node --check /tmp/pacefold-v24-unified.js
@@ -56,7 +60,8 @@ jobs:
           grep -q "const RELEASE='24.0.0'" /tmp/pacefold-v24-unified.js
           grep -q "const RELEASE='25.0.0'" enhancements/pacefold-v25-recovery.js
           grep -q "const REVISION='recovery-r2'" enhancements/pacefold-v25-recovery.js
-          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v25-boot.js enhancements/pacefold-v25-recovery.js
+          grep -q "const REVISION='cleanroom-r1'" enhancements/finalize-v25-cleanroom.mjs
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v25-boot.js enhancements/pacefold-v25-recovery.js enhancements/pacefold-v25-service-worker.js
           node scripts/verify.mjs
 
       - name: Build and validate local engine
@@ -85,21 +90,26 @@ jobs:
           mkdir -p /tmp/pacefold-24-baseline
           timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v24-audit.cjs _release /tmp/pacefold-24-baseline
 
-      - name: Compose Pacefold 25 Recovery
+      - name: Compose and clean Pacefold 25
         run: |
           node enhancements/inject-v25.mjs _release
           node enhancements/inject-v25.mjs _release
           test "$(cat _release/pacefold-experience.txt)" = "25.0.0 recovery-r2"
+          node enhancements/finalize-v25-cleanroom.mjs _release
+          test "$(cat _release/pacefold-experience.txt)" = "25.0.0 cleanroom-r1"
+          test "$(cat _release/pacefold-build.txt)" = "25.0.0 cleanroom-r1"
           test "$(grep -o 'data-pacefold-v25-boot=\"25.0.0\"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v25-css=\"25.0.0\"' _release/app/index.html | wc -l)" -eq 1
           test "$(grep -o 'data-pacefold-v25-runtime=\"25.0.0\"' _release/app/index.html | wc -l)" -eq 1
-          ! grep -E -q 'data-pacefold-ma|pacefold-ma\.(css|js)' _release/app/index.html
           grep -q 'Pacefold 25.0.0' _release/index.html
           grep -q 'Recovered from the best of Pacefold' _release/index.html
+          node --check _release/app/pacefold-v25-theme-boot.js
+          node --check _release/app/pacefold-v25-preboot.js
+          node --check _release/app/pacefold-v25-core.js
           node --check _release/app/pacefold-v25-boot.js
           node --check _release/app/pacefold-v25-recovery.js
           node --check _release/service-worker.js
           node --check _release/app/service-worker.js
+          node enhancements/v25-cleanroom-audit.cjs _release
 
       - name: Pacefold 25 recovery audit
         run: |
@@ -145,13 +155,17 @@ jobs:
           node enhancements/inject-v23.mjs _site
           node enhancements/inject-v24.mjs _site
           node enhancements/inject-v25.mjs _site
-          test "$(cat _site/pacefold-experience.txt)" = "25.0.0 recovery-r2"
-          ! grep -E -q 'data-pacefold-ma|pacefold-ma\.(css|js)' _site/app/index.html
+          node enhancements/finalize-v25-cleanroom.mjs _site
+          test "$(cat _site/pacefold-experience.txt)" = "25.0.0 cleanroom-r1"
+          test "$(cat _site/pacefold-build.txt)" = "25.0.0 cleanroom-r1"
           grep -q 'Pacefold 25.0.0' _site/index.html
-          node --check _site/app/pacefold-v24-kernel.js
-          node --check _site/app/pacefold-v24.js
+          node --check _site/app/pacefold-v25-theme-boot.js
+          node --check _site/app/pacefold-v25-preboot.js
+          node --check _site/app/pacefold-v25-core.js
           node --check _site/app/pacefold-v25-boot.js
           node --check _site/app/pacefold-v25-recovery.js
+          node --check _site/service-worker.js
+          node enhancements/v25-cleanroom-audit.cjs _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
