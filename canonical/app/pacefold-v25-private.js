@@ -122,7 +122,7 @@ function remember(record){
   if(!record?.node)return;let seen=quietSeen.get(record.node);if(!seen){seen=new Set();quietSeen.set(record.node,seen)}const key=record.kind==='attr'?`attr:${record.attr}`:'text';if(seen.has(key))return;seen.add(key);quietRecords.push(record)
 }
 function blankQuietContainers(){
-  for(const selector of ['.pf25Spatial-face:not(.pf25Spatial-face-home)','#pf25Surface-fold-tray','#pf-local-workspace','#panel','#foldDrawer','body>main'])for(const container of document.querySelectorAll(selector)){
+  for(const selector of ['.pf25Spatial-face:not(.pf25Spatial-face-home)','#pf25Surface-fold-tray','#pf-local-workspace','#pf25-root','#panel','#foldDrawer','body>main'])for(const container of document.querySelectorAll(selector)){
     for(const node of container.querySelectorAll('[aria-label],[title]'))for(const attr of ['aria-label','title']){const value=node.getAttribute(attr);if(value){remember({kind:'attr',node,attr,value});node.setAttribute(attr,'Pacefold')}}
     const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);let current;while((current=walker.nextNode())){const parent=current.parentElement;if(!parent||/^(?:SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName))continue;const value=current.nodeValue||'';if(!value.trim())continue;remember({kind:'text',node:current,value});current.nodeValue=''}
   }
