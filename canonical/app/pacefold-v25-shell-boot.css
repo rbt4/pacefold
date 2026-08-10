@@ -1,0 +1,8 @@
+/* Pacefold 25.0.0 cleanroom-r1 compatibility consolidation. */
+/* Pacefold 23 — warm, clock-first first paint. */
+html[data-pacefold-spatial="pending"]{background:#f1eee7;color:#253743}
+html[data-pacefold-spatial="pending"] body>*{visibility:hidden!important}
+html[data-pacefold-spatial="pending"] body::after{content:"PACEFOLD\A Preparing your workday…";position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;visibility:visible;white-space:pre;text-align:center;color:#587894;background:radial-gradient(circle at 50% 35%,#fff 0,#f7f4ed 38%,#e9e6df 100%);font:700 11px/2.2 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase}
+html[data-pacefold-spatial="legacy"] body>*{visibility:visible!important}
+@media(prefers-reduced-motion:reduce){html[data-pacefold-spatial="pending"] body::after{scroll-behavior:auto}}
+@media(forced-colors:active){html[data-pacefold-spatial="pending"] body::after{color:CanvasText;background:Canvas}}

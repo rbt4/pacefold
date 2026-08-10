@@ -1,4 +1,0 @@
-.join(targetRoot,'manifest.webmanifest'));
-await patchWorker(path.join(targetRoot,'service-worker.js'),{root:true});await patchWorker(path.join(targetApp,'service-worker.js'));
-await fs.writeFile(path.join(targetRoot,'pacefold-experience.txt'),`${RELEASE} ${REVISION}\n`);await fs.writeFile(path.join(targetApp,'pacefold-experience.txt'),`${RELEASE} ${REVISION}\n`);
-await verify();console.log(`Installed Pacefold ${RELEASE}: ${REVISION}, one public surface, current rhythm kernel and consolidated day instrument.`);
