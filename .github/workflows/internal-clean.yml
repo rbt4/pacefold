@@ -1,0 +1,123 @@
+name: Clean Pacefold 25 internal namespaces
+
+on:
+  push:
+    branches: [agent/pacefold-25-internal-clean]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pacefold-v25-internal-clean
+  cancel-in-progress: true
+
+jobs:
+  clean:
+    if: ${{ !contains(github.event.head_commit.message, '[internal-clean]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-25-internal-clean
+          fetch-depth: 0
+
+      - name: Normalize historical runtime namespaces
+        run: |
+          cat > /tmp/clean-v25.cjs <<'EOF'
+          'use strict';
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const roots=['canonical','scripts/v25-audit.cjs'];
+          const textExt=new Set(['.js','.css','.html','.txt','.webmanifest','.svg','.xml','.md','.cjs']);
+          const files=[];
+          function walk(target){
+            const stat=fs.statSync(target);
+            if(stat.isFile()){files.push(target);return;}
+            for(const name of fs.readdirSync(target))walk(path.join(target,name));
+          }
+          for(const root of roots)walk(root);
+          const replacements=[
+            ['pf-v19','pf-v25-activity'],['pf19','pf25-activity'],
+            ['pf-v20','pf-v25-folio'],['pf20','pf25-folio'],
+            ['pf-v21','pf-v25-flow'],['pf21','pf25-flow'],
+            ['pf-v22','pf-v25-spatial'],['pf22','pf25-spatial'],
+            ['pf-v23','pf-v25-actions'],['pf23','pf25-actions'],
+            ['pf-v24','pf-v25-surface'],['pf24','pf25-surface'],
+            ['Pacefold Ma','Pacefold UI'],
+            ['pf-hub-root','pf25-root'],['pf-hub-mounted','pf25-mounted'],
+            ['pf-resilience-busy','pf25-busy'],
+            ['__PACEFOLD_RESILIENCE__','__PACEFOLD_DIAGNOSTICS__'],
+            ['pf-flow-integrated','pf25-workspace-active'],
+            ['pf-revamp-title','pf25-notebook-title'],['pf-revamp-offhours','pf25-offhours'],
+            ['data-pf-revamp-title','data-pf-notebook-title'],['data-pf-revamp-sync','data-pf-notebook-sync'],
+            ['pfRevampTitle','pfNotebookTitle'],
+            ['pacefold:v19-ready','pacefold:activity-ready'],
+            ['pacefold:v20-attention','pacefold:attention'],
+            ['pacefold:v20-backup','pacefold:backup'],
+            ['pacefold:v23-ready','pacefold:experience-ready'],
+            ['pacefold:ma-prefs','pacefold:prefs'],
+            ['pacefoldV19Weather','weatherPrefs'],
+            ['pacefoldV21Persistence','pacefoldPersistence'],
+            ['v19Dashboard','activityDashboard'],['data-v19-dashboard','data-activity-dashboard'],
+            ['v19Ritual','activityRitual'],['data-v19-ritual','data-activity-ritual'],
+            ['v19Surface','activitySurface'],['data-v19-surface','data-activity-surface'],
+            ['v19WeatherDay','activityWeatherDay'],['data-v19-weather-day','data-activity-weather-day'],
+            ['v19WorkbenchPage','activityWorkbenchPage'],['data-v19-workbench-page','data-activity-workbench-page'],
+            ['v20Attention','attentionActive'],['data-v20-attention','data-attention-active'],
+            ['maDayConfig','resolveDayConfig'],
+            ["'ma-ribbon'","'day-ribbon'"],
+            ['`v19-${scope}`','`activity-${scope}`'],
+            ['`v20-${scope}`','`surface-${scope}`'],
+            ['`v21-${scope}`','`preferences-${scope}`'],
+            ['`v21.2-${scope}`','`precision-${scope}`'],
+            ["'v21-dayflow'","'dayflow'"],
+            ['Pacefold integrated dock','Pacefold action dock'],
+            ['Setup resilience','Setup recovery']
+          ];
+          for(const file of files){
+            if(!textExt.has(path.extname(file).toLowerCase()))continue;
+            let text=fs.readFileSync(file,'utf8'),next=text;
+            for(const [from,to] of replacements)next=next.split(from).join(to);
+            if(file.endsWith('pacefold-v25-engine.js')){
+              next=next.replace('storagePersistAsked:false,maLastCueAt:0,waitingCue:null','storagePersistAsked:false,waitingCue:null');
+              next=next.replace('p.storagePersistAsked=Boolean(p.storagePersistAsked);p.maLastCueAt=clamp(p.maLastCueAt,0,Number.MAX_SAFE_INTEGER,0);p.waitingCue','p.storagePersistAsked=Boolean(p.storagePersistAsked);p.waitingCue');
+            }
+            if(next!==text)fs.writeFileSync(file,next);
+          }
+          EOF
+          node /tmp/clean-v25.cjs
+
+      - name: Strengthen canonical verifier
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/verify-canonical.cjs')
+          s=p.read_text()
+          needle="if(oldVersion.test(source))fail(`Old product version in ${rel}`);"
+          insert="""if(oldVersion.test(source))fail(`Old product version in ${rel}`);\n  const oldRuntimeIdentity=/(?:pf(?:-v)?(?:19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(?:ma-|v(?:19|20|21|22|23|24))|\\b(?:maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence|v19Dashboard|v19Ritual|v19Surface|v19WeatherDay|v19WorkbenchPage|v20Attention)\\b)/;\n  if(oldRuntimeIdentity.test(source))fail(`Historical runtime identity in ${rel}`);"""
+          if needle not in s:
+              raise SystemExit('verifier anchor missing')
+          s=s.replace(needle,insert)
+          p.write_text(s)
+          PY
+
+      - name: Verify transformed source
+        run: |
+          node scripts/verify-canonical.cjs canonical
+          node --check canonical/service-worker.js
+          node --check canonical/app/pacefold-v25-engine.js
+          node --check canonical/app/pacefold-v25-preboot.js
+          node --check canonical/app/pacefold-v25-core.js
+          node --check canonical/app/pacefold-v25-boot.js
+          node --check canonical/app/pacefold-v25-recovery.js
+          grep -RInE --exclude='*.png' --exclude='*.woff2' '(pf-v(19|20|21|22|23|24)|pf(19|20|21|22|23|24)|Pacefold Ma|pf-hub|pf-resilience|pf-revamp|__PACEFOLD_RESILIENCE__|pacefold:(ma-|v(19|20|21|22|23|24))|maDayConfig|maLastCueAt|pacefoldV19Weather|pacefoldV21Persistence)' canonical && exit 1 || true
+
+      - name: Commit internal cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add canonical scripts/verify-canonical.cjs scripts/v25-audit.cjs
+          git commit -m "Normalize Pacefold 25 internal runtime namespaces [internal-clean]"
+          git push origin HEAD:agent/pacefold-25-internal-clean
