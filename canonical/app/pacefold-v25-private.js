@@ -136,7 +136,7 @@ function endQuietScrub(){if(!quietActive)return;quietActive=false;for(const reco
 function quietPass(){if(quiet()){beginQuietScrub();scrubQuiet();closeDaybook()}else endQuietScrub()}
 
 function reconcile(){
-  frame=0;const r=root();if(!r)return;discreetHome();buildDaybook();syncDaybook();renderPrivateNow();quietPass();r.dataset.privacyRevision=REVISION;document.documentElement.dataset.pacefoldPrivacy=REVISION;
+  frame=0;bindSpatialNavigation();const r=root();if(!r)return;discreetHome();buildDaybook();syncDaybook();renderPrivateNow();quietPass();r.dataset.privacyRevision=REVISION;document.documentElement.dataset.pacefoldPrivacy=REVISION;
 }
 function queue(){if(frame)return;frame=requestAnimationFrame(reconcile)}
 function bindSpatialNavigation(){const spatial=window.__PACEFOLD_SPATIAL__;if(!spatial||typeof spatial.go!=='function'||spatial.__privacyBound)return;const original=spatial.go.bind(spatial);spatial.go=(mode,...args)=>{const result=original(mode,...args);queue();requestAnimationFrame(queue);setTimeout(queue,380);return result};Object.defineProperty(spatial,'__privacyBound',{value:true,configurable:true})}
