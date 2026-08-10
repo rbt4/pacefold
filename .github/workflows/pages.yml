@@ -1,4 +1,4 @@
-name: Build, verify and publish Pacefold 24
+name: Build, verify and publish Pacefold 25
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -29,7 +29,7 @@ jobs:
           echo "2fbb5c9b1df8369eddd4a7e1b791d60d6f58b1bf4d51665e288fb88ec9409d2b  /tmp/pacefold-v15.zip" | sha256sum -c -
           mkdir _release
           unzip -q /tmp/pacefold-v15.zip -d _release
-          test "$(cat enhancements/VERSION)" = "24.0.0"
+          test "$(cat enhancements/VERSION)" = "25.0.0"
 
       - name: Current release source guard
         run: |
@@ -44,15 +44,19 @@ jobs:
             enhancements/inject-v24-compat-base.mjs \
             enhancements/inject-v24.mjs \
             enhancements/v24-audit.cjs \
+            enhancements/pacefold-v25-boot.js \
+            enhancements/pacefold-v25-recovery.js \
+            enhancements/inject-v25.mjs \
+            enhancements/v25-audit.cjs \
             scripts/verify.mjs; do node --check "$file"; done
           node -e "const fs=require('fs'),p='enhancements/';const join=x=>fs.readdirSync(p).filter(n=>n.startsWith(x)).sort().map(n=>fs.readFileSync(p+n,'utf8').replace(/\n$/,'')).join('');fs.writeFileSync('/tmp/pacefold-v24-unified.js',join('pacefold-v24-unified.js.part-'));fs.writeFileSync('/tmp/inject-v24-runtime.mjs',join('inject-v24-runtime.mjs.part-'))"
           node --check /tmp/pacefold-v24-unified.js
           node --check /tmp/inject-v24-runtime.mjs
           grep -q "const RELEASE='24.0.0'" enhancements/pacefold-v24-kernel.js
           grep -q "const RELEASE='24.0.0'" /tmp/pacefold-v24-unified.js
-          grep -q "Former Ma product layer is still public" /tmp/inject-v24-runtime.mjs
-          grep -q "historical regression-audit mutation is intentionally disabled" enhancements/inject-v24-compat-base.mjs
-          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v24-kernel.js /tmp/pacefold-v24-unified.js enhancements/pacefold-public-v24.js
+          grep -q "const RELEASE='25.0.0'" enhancements/pacefold-v25-recovery.js
+          grep -q "const REVISION='recovery-r2'" enhancements/pacefold-v25-recovery.js
+          ! grep -E -q '\.innerHTML[[:space:]]*=' enhancements/pacefold-v25-boot.js enhancements/pacefold-v25-recovery.js
           node scripts/verify.mjs
 
       - name: Build and validate local engine
@@ -60,40 +64,56 @@ jobs:
           PACEFOLD_DEBUG=1 node _release/scripts/build.mjs _release
           node _release/scripts/validate.mjs _release
 
-      - name: Compose Pacefold 24 public release
+      - name: Compose verified Pacefold 24 baseline
         run: |
           node enhancements/inject-v24-compat-base.mjs _release
           node enhancements/inject-v23.mjs _release
           node enhancements/inject-v24.mjs _release
           node enhancements/inject-v24.mjs _release
           test "$(cat _release/pacefold-experience.txt)" = "24.0.0 unified-r1"
-          test "$(grep -o 'data-pacefold-v24-kernel=\"24.0.0\"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v24-css=\"24.0.0\"' _release/app/index.html | wc -l)" -eq 1
-          test "$(grep -o 'data-pacefold-v24-runtime=\"24.0.0\"' _release/app/index.html | wc -l)" -eq 1
           ! grep -E -q 'data-pacefold-ma|pacefold-ma\.(css|js)' _release/app/index.html
-          grep -q 'Pacefold 24.0.0' _release/index.html
-          grep -q 'One product—not a stack of old versions.' _release/index.html
           node --check _release/app/pacefold-v24-kernel.js
           node --check _release/app/pacefold-v24.js
-          node --check _release/service-worker.js
-          node --check _release/app/service-worker.js
 
       - name: Install browser audit runtime
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
 
-      - name: Pacefold 24 current-product audit
+      - name: Verify protected V24 baseline before recovery
         run: |
-          mkdir -p /tmp/pacefold-24-audit
-          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v24-audit.cjs _release /tmp/pacefold-24-audit
+          mkdir -p /tmp/pacefold-24-baseline
+          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v24-audit.cjs _release /tmp/pacefold-24-baseline
 
-      - name: Upload current release captures
+      - name: Compose Pacefold 25 Recovery
+        run: |
+          node enhancements/inject-v25.mjs _release
+          node enhancements/inject-v25.mjs _release
+          test "$(cat _release/pacefold-experience.txt)" = "25.0.0 recovery-r2"
+          test "$(grep -o 'data-pacefold-v25-boot=\"25.0.0\"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v25-css=\"25.0.0\"' _release/app/index.html | wc -l)" -eq 1
+          test "$(grep -o 'data-pacefold-v25-runtime=\"25.0.0\"' _release/app/index.html | wc -l)" -eq 1
+          ! grep -E -q 'data-pacefold-ma|pacefold-ma\.(css|js)' _release/app/index.html
+          grep -q 'Pacefold 25.0.0' _release/index.html
+          grep -q 'Recovered from the best of Pacefold' _release/index.html
+          node --check _release/app/pacefold-v25-boot.js
+          node --check _release/app/pacefold-v25-recovery.js
+          node --check _release/service-worker.js
+          node --check _release/app/service-worker.js
+
+      - name: Pacefold 25 recovery audit
+        run: |
+          mkdir -p /tmp/pacefold-25-audit
+          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node enhancements/v25-audit.cjs _release /tmp/pacefold-25-audit
+
+      - name: Upload release captures
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-24-audit-${{ github.run_id }}
-          path: /tmp/pacefold-24-audit/
+          name: pacefold-25-audit-${{ github.run_id }}
+          path: |
+            /tmp/pacefold-24-baseline/
+            /tmp/pacefold-25-audit/
           if-no-files-found: warn
           retention-days: 7
 
@@ -124,10 +144,14 @@ jobs:
           node enhancements/inject-v24-compat-base.mjs _site
           node enhancements/inject-v23.mjs _site
           node enhancements/inject-v24.mjs _site
-          test "$(cat _site/pacefold-experience.txt)" = "24.0.0 unified-r1"
+          node enhancements/inject-v25.mjs _site
+          test "$(cat _site/pacefold-experience.txt)" = "25.0.0 recovery-r2"
           ! grep -E -q 'data-pacefold-ma|pacefold-ma\.(css|js)' _site/app/index.html
+          grep -q 'Pacefold 25.0.0' _site/index.html
           node --check _site/app/pacefold-v24-kernel.js
           node --check _site/app/pacefold-v24.js
+          node --check _site/app/pacefold-v25-boot.js
+          node --check _site/app/pacefold-v25-recovery.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
