@@ -32,6 +32,7 @@ jobs:
           node --check canonical/app/pacefold-v25-core.js
           node --check canonical/app/pacefold-v25-boot.js
           node --check canonical/app/pacefold-v25-recovery.js
+          node --check scripts/v25-coherence-audit.cjs
 
       - name: Install browser audit runtime
         run: |
@@ -42,6 +43,10 @@ jobs:
         run: |
           mkdir -p /tmp/pacefold-25-audit
           timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-audit.cjs canonical /tmp/pacefold-25-audit
+
+      - name: Pacefold 25 coherence audit
+        run: |
+          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-coherence-audit.cjs canonical /tmp/pacefold-25-audit
 
       - name: Upload release captures
         if: always()
