@@ -4705,7 +4705,7 @@ function buildTopbar(){
   const bar=create('header','pf25Spatial-topbar');
   const brand=button('pf25Spatial-brand','Return to clock','Pacefold');brand.addEventListener('click',()=>go('home'));
   const current=create('span','pf25Spatial-current-mode','Clock');current.id='pf25Spatial-current-mode';
-  const quiet=button('pf25Spatial-quiet','Toggle Quiet mode','Quiet');quiet.id='pf25Spatial-quiet';quiet.addEventListener('click',()=>{window.__PACEFOLD_QUIET__?.toggle?.();refresh(true)});
+  const quiet=button('pf25Spatial-quiet','Toggle Quiet mode','Quiet');quiet.id='pf25Spatial-quiet';quiet.addEventListener('click',()=>{window.__PACEFOLD_QUIET__?.toggle?.();refresh(true);window.dispatchEvent(new CustomEvent('pacefold:quiet'))});
   bar.append(brand,current,quiet);return bar;
 }
 

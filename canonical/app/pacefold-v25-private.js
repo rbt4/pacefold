@@ -146,7 +146,7 @@ function install(){
   document.addEventListener('pointerdown',event=>{const tray=id('pf25Surface-fold-tray');if(tray?.dataset.open==='true'){if(tray.contains(event.target))resetDaybookTimer();else closeDaybook()}},true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&id('pf25Surface-fold-tray')?.dataset.open==='true'){event.preventDefault();event.stopImmediatePropagation();closeDaybook()}},true);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)closeDaybook();else queue()});window.addEventListener('blur',closeDaybook);
-  for(const event of ['pacefold:prefs','pacefold:quiet','pacefold:storage-changed','pacefold:experience-ready'])window.addEventListener(event,queue);window.addEventListener('pacefold:spatial-ready',()=>{bindSpatialNavigation();queue();requestAnimationFrame(queue)});
+  for(const event of ['pacefold:prefs','pacefold:storage-changed','pacefold:experience-ready'])window.addEventListener(event,queue);window.addEventListener('pacefold:quiet',()=>{quietPass();queue()});window.addEventListener('pacefold:spatial-ready',()=>{bindSpatialNavigation();queue();requestAnimationFrame(queue)});
   setInterval(()=>{const minute=Math.floor(Date.now()/60000);if(minute!==lastPrivateMinute){lastPrivateMinute=minute;queue()}},1000);
   window.__PACEFOLD_PRIVACY__={release:RELEASE,revision:REVISION,reconcile:queue,closeDaybook};
 }
