@@ -21,7 +21,7 @@ for(const [file,source] of Object.entries(sources)){
 }
 const runtime=sources['enhancements/pacefold-v25-recovery.js'],boot=sources['enhancements/pacefold-v25-boot.js'],injector=await fs.readFile(path.join(root,'enhancements/inject-v25.mjs'),'utf8'),workflow=await fs.readFile(path.join(root,'.github/workflows/pages.yml'),'utf8'),css=await fs.readFile(path.join(root,'enhancements/pacefold-v25-recovery.css'),'utf8');
 for(const token of ["const RELEASE='25.0.0'","const REVISION='recovery-r2'",'resolvedDay','workWeek','todayOverride','pf25-cue-dots','pf25-dayline','pf25-rhythm','pf25-daybook-toggle','waterLastAt','gazeLastAt','bodyLastAt','__PACEFOLD_RECOVERY__'])if(!runtime.includes(token))throw new Error(`V25 recovery contract missing: ${token}`);
-for(const token of ['data.pacefoldV25','8000','pacefoldPrefsV15'])if(!boot.includes(token))throw new Error(`V25 boot contract missing: ${token}`);
+for(const token of ['dataset.pacefoldV25','8000','pacefoldPrefsV15'])if(!boot.includes(token))throw new Error(`V25 boot contract missing: ${token}`);
 for(const token of ['data-recovery="recovery-r2"','pf25-cue-dot[data-source="water"]','pf25-cue-dot[data-source="prayer"]','repeat(6','max-height:46vh','prefers-reduced-motion','forced-colors'])if(!css.includes(token))throw new Error(`V25 CSS contract missing: ${token}`);
 for(const token of ['pacefold-v25-boot.js','pacefold-v25-recovery.css','pacefold-v25-recovery.js','pacefold-experience.txt','patchWorker'])if(!injector.includes(token))throw new Error(`V25 injector contract missing: ${token}`);
 for(const token of ['Build, verify and publish Pacefold 25','inject-v25.mjs','v25-audit.cjs','25.0.0 recovery-r2'])if(!workflow.includes(token))throw new Error(`V25 release workflow contract missing: ${token}`);
