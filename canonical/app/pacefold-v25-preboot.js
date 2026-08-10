@@ -17,7 +17,12 @@
         configurable:true,
         get:()=>descriptor.get.call(document),
         set:value=>{
-          const next=String(value??'');
+          let quiet=false;
+          try{
+            const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}')||{};
+            quiet=Boolean(prefs.quietMode)||document.body?.dataset.quiet==='true'||document.getElementById('pf25Spatial-spatial-root')?.dataset.quiet==='true';
+          }catch{}
+          const next=quiet?'Clock':String(value??'');
           if(descriptor.get.call(document)!==next)descriptor.set.call(document,next);
         }
       });

@@ -2427,7 +2427,7 @@ window.addEventListener('pacefold:storage-changed',()=>{clearTimeout(migrateTime
 document.addEventListener('keydown',guarded('keyboard',event=>{if(event.ctrlKey&&event.shiftKey&&event.code==='KeyN'){event.preventDefault();setNotebookOpen(true,true);}}));
 [0,100,300,800,1800].forEach(delay=>setTimeout(queue,delay));
 workTimer=setInterval(guarded('work-hours',()=>{if(document.visibilityState==='visible'){workCache.at=0;queue();}}),5000);
-window.__PACEFOLD_WORKSPACE__={revision:REVISION,surfaceRelease:'25.0.0',reconcile:queue,readWorkWindow,openNotebook:()=>setNotebookOpen(true,false),closeNotebook:()=>setNotebookOpen(false,false,false),copyDay,player:{open:()=>setPlayerDrawer(true),close:()=>setPlayerDrawer(false),refresh:refreshTracks}};
+window.__PACEFOLD_WORKSPACE__={revision:REVISION,surfaceRelease:'25.0.0',reconcile:queue,readWorkWindow,addNote:(body,category='Daily')=>createEntry(body,category),openNotebook:()=>setNotebookOpen(true,false),closeNotebook:()=>setNotebookOpen(false,false,false),copyDay,player:{open:()=>setPlayerDrawer(true),close:()=>setPlayerDrawer(false),refresh:refreshTracks}};
 })();
 ;
 (() => {
@@ -4705,7 +4705,7 @@ function buildTopbar(){
   const bar=create('header','pf25Spatial-topbar');
   const brand=button('pf25Spatial-brand','Return to clock','Pacefold');brand.addEventListener('click',()=>go('home'));
   const current=create('span','pf25Spatial-current-mode','Clock');current.id='pf25Spatial-current-mode';
-  const quiet=button('pf25Spatial-quiet','Toggle Quiet mode','Quiet');quiet.id='pf25Spatial-quiet';quiet.addEventListener('click',()=>{window.__PACEFOLD_QUIET__?.toggle?.();refresh(true)});
+  const quiet=button('pf25Spatial-quiet','Toggle Quiet mode','Quiet');quiet.id='pf25Spatial-quiet';quiet.addEventListener('click',()=>{window.__PACEFOLD_QUIET__?.toggle?.();refresh(true);window.dispatchEvent(new CustomEvent('pacefold:quiet'))});
   bar.append(brand,current,quiet);return bar;
 }
 
@@ -4840,7 +4840,7 @@ function go(next){
   mode=next;const root=id('pf25Spatial-spatial-root');if(!root)return;
   root.dataset.mode=mode;id('pf25Spatial-current-mode').textContent={home:'Clock',notes:'Notes',worklog:'Worklog',context:'Now',settings:'Settings'}[mode];
   for(const dot of root.querySelectorAll('.pf25Spatial-mode-dot'))dot.dataset.active=String(dot.dataset.target===mode);
-  sessionStorage.setItem('pacefold.spatial.mode',mode);
+  sessionStorage.setItem('pacefold.spatial.mode',mode);window.dispatchEvent(new CustomEvent('pacefold:spatial-mode',{detail:{mode}}));
   refresh(true);
   requestAnimationFrame(()=>root.querySelector(`[data-face="${mode}"]`)?.focus?.({preventScroll:true}));
 }
@@ -5434,7 +5434,7 @@ function buildDayUnfold(){
   sun.id='pf25Spatial-day-sun';events.id='pf25Spatial-day-events';sessions.id='pf25Spatial-day-sessions';
   const labels=create('div','pf25Spatial-day-labels'),start=create('span','pf25Spatial-day-start','--'),caption=create('span','pf25Spatial-day-caption','The day is opening'),end=create('span','pf25Spatial-day-end','--');
   labels.append(start,caption,end);region.append(sky,horizon,sessions,events,sun,labels);
-  const status=id('pf25Spatial-status');hero.insertBefore(region,status||$('.pf25Spatial-progress')||null);
+  const status=id('pf25Spatial-status'),progress=$('.pf25Spatial-progress');const anchor=status?.parentElement===hero?status:progress?.parentElement===hero?progress:null;if(anchor)hero.insertBefore(region,anchor);else hero.append(region);
   return region;
 }
 function buildCueCluster(){
