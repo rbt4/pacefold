@@ -47,15 +47,14 @@ async function sanitizeText(){
     if(next!==source)await fs.writeFile(file,next);
   }
 }
-async function renameRuntimeFiles(){
-  const appIndex=path.join(root,'app','index.html'),publicIndex=path.join(root,'index.html'),worker=path.join(root,'service-worker.js');
-  let appHtml=await fs.readFile(appIndex,'utf8'),publicHtml=await fs.readFile(publicIndex,'utf8'),sw=await fs.readFile(worker,'utf8');
+async function canonicalRuntimeFiles(){
+  const appIndex=path.join(root,'app','index.html'),worker=path.join(root,'service-worker.js');
+  let appHtml=await fs.readFile(appIndex,'utf8'),sw=await fs.readFile(worker,'utf8');
   appHtml=appHtml.replace(/\.\/app\.js(?:\?[^"']*)?/g,`./pacefold-v25-engine.js?v=${RELEASE}-${REVISION}`);
-  publicHtml=publicHtml.replace(/\.\/site\.js(?:\?[^"']*)?/g,`./pacefold-v25-site.js?v=${RELEASE}-${REVISION}`);
-  sw=sw.replace(/\.\/site\.js/g,'./pacefold-v25-site.js').replace(/\.\/app\/app\.js/g,'./app/pacefold-v25-engine.js');
-  await fs.writeFile(appIndex,appHtml);await fs.writeFile(publicIndex,publicHtml);await fs.writeFile(worker,sw);
+  sw=sw.replace(/\s*['"]\.\/site\.js['"],?/g,'').replace(/\.\/app\/app\.js/g,'./app/pacefold-v25-engine.js');
+  await fs.writeFile(appIndex,appHtml);await fs.writeFile(worker,sw);
   await fs.rename(path.join(root,'app','app.js'),path.join(root,'app','pacefold-v25-engine.js'));
-  await fs.rename(path.join(root,'site.js'),path.join(root,'pacefold-v25-site.js'));
+  await fs.rm(path.join(root,'site.js'),{force:true});
 }
 async function markCanonical(){
   const marker=`${RELEASE} ${REVISION}\n`;
@@ -68,7 +67,7 @@ async function markCanonical(){
   await fs.writeFile(path.join(root,'app','index.html'),appHtml);
 }
 async function verify(){
-  const active=['index.html','service-worker.js','pacefold-v25-site.js','onenote-setup.html','app/index.html','app/service-worker.js','app/pacefold-v25-engine.js','app/pacefold-v25-preboot.js','app/pacefold-v25-core.js','app/pacefold-v25-recovery.js','app/pacefold-v25-core.css'];
+  const active=['index.html','service-worker.js','onenote-setup.html','app/index.html','app/service-worker.js','app/pacefold-v25-engine.js','app/pacefold-v25-preboot.js','app/pacefold-v25-core.js','app/pacefold-v25-recovery.js','app/pacefold-v25-core.css'];
   const forbiddenGlobal=/__PACEFOLD_(?:MA_|V19|V21|V23|156_)/;
   const forbiddenVersions=new RegExp(VERSION_RELICS.map(value=>value.replace(/\./g,'\\.')).join('|'));
   for(const rel of active){
@@ -76,14 +75,14 @@ async function verify(){
     if(forbiddenGlobal.test(source))throw new Error(`Canonical V25 still exposes an old runtime namespace in ${rel}`);
     if(forbiddenVersions.test(source))throw new Error(`Canonical V25 still exposes an old product version in ${rel}`);
   }
-  const appHtml=await fs.readFile(path.join(root,'app','index.html'),'utf8'),publicHtml=await fs.readFile(path.join(root,'index.html'),'utf8'),sw=await fs.readFile(path.join(root,'service-worker.js'),'utf8');
+  const appHtml=await fs.readFile(path.join(root,'app','index.html'),'utf8'),sw=await fs.readFile(path.join(root,'service-worker.js'),'utf8');
   if(!appHtml.includes('pacefold-v25-engine.js'))throw new Error('Canonical V25 engine filename is not active');
-  if(!publicHtml.includes('pacefold-v25-site.js'))throw new Error('Canonical V25 site runtime filename is not active');
-  if(!sw.includes('./app/pacefold-v25-engine.js')||!sw.includes('./pacefold-v25-site.js'))throw new Error('Canonical V25 worker still caches pre-canonical runtime filenames');
+  if(sw.includes('./site.js')||sw.includes('./app/app.js'))throw new Error('Canonical V25 worker still caches pre-canonical runtime filenames');
+  try{await fs.access(path.join(root,'site.js'));throw new Error('Dead site.js still exists in canonical runtime')}catch(error){if(error.code!=='ENOENT')throw error}
 }
 
 await sanitizeText();
-await renameRuntimeFiles();
+await canonicalRuntimeFiles();
 await markCanonical();
 await verify();
 console.log(`Canonicalized Pacefold ${RELEASE} ${REVISION}; old runtime namespaces/version identities removed while persistent data schema keys remain compatible.`);
