@@ -15,8 +15,10 @@ const files=walk(site),appHtml=fs.readFileSync(path.join(site,'app','index.html'
 const obsoletePath=/(^|\/)(?:pacefold-(?:ma(?:\.|-)|hub(?:\.|-)|integrated(?:\.|-)|revamp(?:\.|-)|resilience(?:\.|-)|theme-boot(?:\.|-)|v(?:19|20|21|22|23|24)(?:\.|-)|public-v24(?:\.|-)|site-v19(?:\.|-)|daylight(?:\.|-)|hub-version(?:\.|-))|ONENOTE_SETUP\.md$)/i;
 const relicFiles=files.filter(file=>obsoletePath.test(file));
 assert(!relicFiles.length,`Legacy files leaked into Pages artifact: ${relicFiles.join(', ')}`);
+const activeRelic=/(?:pacefold-(?:ma|hub|integrated|revamp|resilience|theme-boot|v(?:19|20|21|22|23|24)|public-v24|site-v19)|15\.2\.2|20\.0\.1|22\.0\.2|24\.0\.0)/i;
 for(const [label,text] of [['app/index.html',appHtml],['index.html',publicHtml],['service-worker.js',worker],['app/service-worker.js',appWorker]]){
-  assert(!/(?:pacefold-(?:ma|hub|integrated|revamp|resilience|theme-boot|v(?:19|20|21|22|23|24)|public-v24|site-v19)|15\.2\.2|20\.0\.1|22\.0\.2|24\.0\.0)/i.test(text),`${label} still exposes a legacy release reference`);
+  const match=text.match(activeRelic);
+  assert(!match,`${label} still exposes legacy token ${JSON.stringify(match?.[0]||'unknown')}`);
 }
 const required=[
   'pacefold-v25-public.css','pacefold-v25-public.js','pacefold-build.txt','pacefold-experience.txt','pacefold-stability.txt',
