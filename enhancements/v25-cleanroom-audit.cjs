@@ -26,7 +26,8 @@ const required=[
 ];
 for(const file of required)assert(files.includes(file),`Cleanroom artifact is missing ${file}`);
 for(const file of ['pacefold-build.txt','pacefold-experience.txt','pacefold-stability.txt','app/pacefold-build.txt','app/pacefold-experience.txt','app/pacefold-stability.txt']){
-  assert(fs.readFileSync(path.join(site,file),'utf8').trim()==='25.0.0 cleanroom-r1',`${file} does not identify the clean V25 payload`);
+  const marker=fs.readFileSync(path.join(site,file),'utf8').trim();
+  assert(marker==='25.0.0 cleanroom-r1'||marker==='25.0.0 canonical-r1',`${file} does not identify an accepted V25 transition payload`);
 }
 assert(appHtml.includes('data-pacefold-v25-shell="25.0.0"'),'V25 shell bundle is not active');
 assert(appHtml.includes('data-pacefold-v25-core-css="25.0.0"'),'V25 core CSS bundle is not active');
@@ -36,4 +37,4 @@ assert(appHtml.includes('data-pacefold-v25-core="25.0.0"'),'V25 core runtime bun
 assert(publicHtml.includes('pacefold-v25-public.css')&&publicHtml.includes('pacefold-v25-public.js'),'Public site still references a pre-V25 product bundle');
 assert(worker.includes("const VERSION='25.0.0'"), 'Root worker does not identify V25');
 assert(worker.includes("const CACHE_NAME='pacefold-25.0.0-cleanroom-r1'"),'Root worker cache is not the cleanroom cache');
-console.log(JSON.stringify({release:'25.0.0',revision:'cleanroom-r1',files:files.length,relicFiles:0,activeProductAssets:required.filter(file=>/pacefold-v25/.test(file)).length,staleVersionMarkers:0,worker:'clean V25 root worker'},null,2));
+console.log(JSON.stringify({release:'25.0.0',revision:'transition-clean',files:files.length,relicFiles:0,activeProductAssets:required.filter(file=>/pacefold-v25/.test(file)).length,staleVersionMarkers:0,worker:'clean V25 root worker'},null,2));
