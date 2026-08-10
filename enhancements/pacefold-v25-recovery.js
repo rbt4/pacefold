@@ -64,8 +64,8 @@ function performCue(source){
   const alias={water:'water',noodle:'noodle',away:'away',lunch:'lunch',eyes:'eyes',body:'body'}[source],control=alias&&id(`pf23-action-${alias}`);if(control)control.click();else window.__PACEFOLD_CUES__?.acknowledge?.(source)
 }
 function buildCueDots(){
-  const bar=$('.pf22-topbar');if(!bar||id('pf25-cue-dots'))return;
-  const wrap=create('div','pf25-cue-dots');wrap.id='pf25-cue-dots';wrap.setAttribute('aria-label','Waiting Pacefold cues');bar.insertBefore(wrap,id('pf22-quiet')||null)
+  const root=id('pf22-spatial-root');if(!root||id('pf25-cue-dots'))return;
+  const wrap=create('div','pf25-cue-dots');wrap.id='pf25-cue-dots';wrap.setAttribute('aria-label','Waiting Pacefold cues');wrap.style.setProperty('position','absolute');wrap.style.setProperty('z-index','85');wrap.style.setProperty('top','40px');wrap.style.setProperty('right','clamp(108px,10vw,150px)');wrap.style.setProperty('pointer-events','auto');root.append(wrap)
 }
 function renderCues(){
   buildCueDots();const wrap=id('pf25-cue-dots');if(!wrap)return;wrap.hidden=!cueDotsEnabled();if(wrap.hidden)return;
