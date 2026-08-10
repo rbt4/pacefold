@@ -47,7 +47,7 @@ jobs:
             ['pf-v24','pf-v25-surface'],['pf24','pf25-surface'],
             ['Pacefold Ma','Pacefold UI'],
             ['pf-hub-root','pf25-root'],['pf-hub-mounted','pf25-mounted'],
-            ['pf-resilience-busy','pf25-busy'],
+            ['pf-resilience-busy','pf25-busy'],['pf-hub','pf25-root'],['pf-resilience','pf25-diagnostics'],
             ['__PACEFOLD_RESILIENCE__','__PACEFOLD_DIAGNOSTICS__'],
             ['pf-flow-integrated','pf25-workspace-active'],
             ['pf-revamp-title','pf25-notebook-title'],['pf-revamp-offhours','pf25-offhours'],
