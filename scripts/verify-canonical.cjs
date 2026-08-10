@@ -25,6 +25,9 @@ for(const rel of files){
 
 for(const rel of ['pacefold-build.txt','pacefold-experience.txt','pacefold-stability.txt','pacefold-canonical.txt','app/pacefold-build.txt','app/pacefold-experience.txt','app/pacefold-stability.txt'])if(fs.readFileSync(path.join(root,rel),'utf8').trim()!=='25.0.0 canonical-r1')fail(`${rel} is not canonical-r1`);
 const appHtml=fs.readFileSync(path.join(root,'app/index.html'),'utf8'),worker=fs.readFileSync(path.join(root,'service-worker.js'),'utf8');
+const recoveryCss=fs.readFileSync(path.join(root,'app/pacefold-v25-recovery.css'),'utf8'),recoveryJs=fs.readFileSync(path.join(root,'app/pacefold-v25-recovery.js'),'utf8');
+if(!recoveryCss.includes('Pacefold 25 coherence r1'))fail('Coherence CSS contract is missing');
+if(!recoveryJs.includes("coherence-r1"))fail('Coherence runtime marker is missing');
 if(!appHtml.includes('pacefold-v25-engine.js'))fail('Canonical engine is not active');
 if(worker.includes('./site.js')||worker.includes('./app/app.js'))fail('Canonical service worker caches old/dead runtime names');
 if(files.includes('site.js')||files.includes('app/app.js'))fail('Dead pre-canonical runtime file still exists');

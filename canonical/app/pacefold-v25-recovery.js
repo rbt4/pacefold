@@ -128,7 +128,7 @@ function repairActivitySchema(){
   if(value.waterDate&&String(value.waterDate)!==today&&Number(value.waterSips)>0){patch.waterSips=0;patch.waterDate=today}
   const key=JSON.stringify(patch);if(Object.keys(patch).length&&key!==lastRepair){lastRepair=key;patchPrefs(patch)}
 }
-function renderVersion(){for(const node of document.querySelectorAll('.pf25Spatial-version'))node.textContent=`Pacefold ${RELEASE} · private local recovery`;const root=id('pf25Spatial-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.recovery=REVISION}document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE}
+function renderVersion(){for(const node of document.querySelectorAll('.pf25Spatial-version'))node.textContent=`Pacefold ${RELEASE} · private local recovery`;const root=id('pf25Spatial-spatial-root');if(root){root.dataset.release=RELEASE;root.dataset.recovery=REVISION;root.dataset.coherence='coherence-r1'}document.body.dataset.pacefoldExperience=RELEASE;document.documentElement.dataset.pacefoldExperience=RELEASE}
 function currentMode(){return id('pf25Spatial-spatial-root')?.dataset.mode||'home'}
 function home(){window.__PACEFOLD_SPATIAL__?.go?.('home')}
 function navigationCapture(event){
