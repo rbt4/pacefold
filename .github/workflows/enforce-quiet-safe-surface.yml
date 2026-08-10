@@ -1,0 +1,35 @@
+name: Enforce Quiet safe surface
+
+on:
+  push:
+    branches:
+      - agent/pacefold-25-privacy-return
+
+permissions:
+  contents: write
+
+jobs:
+  enforce:
+    if: "!contains(github.event.head_commit.message, '[quiet-safe-surface]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-25-privacy-return
+          fetch-depth: 0
+      - name: Apply continuous Quiet enforcement
+        run: node scripts/enforce-quiet-safe-surface.cjs
+      - name: Verify
+        run: |
+          node scripts/verify-canonical.cjs canonical
+          node --check canonical/app/pacefold-v25-private.js
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add canonical/app/pacefold-v25-private.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Continuously enforce Quiet safe surface [quiet-safe-surface]"
+          git push origin HEAD:agent/pacefold-25-privacy-return
