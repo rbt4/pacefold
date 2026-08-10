@@ -62,10 +62,12 @@ async function patchAppHtml(){
   html=removeByBasenames(html,appBundles.themeBoot.files,'script');
   html=removeByBasenames(html,appBundles.preboot.files,'script');
   html=removeByBasenames(html,appBundles.coreJs.files,'script');
-  html=html.replace('</head>',`<link rel="stylesheet" href="./${appBundles.shellCss.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-shell="${RELEASE}">\n</head>`);
-  const baseStyleAnchor='<link rel="stylesheet" href="./pacefold-v25-recovery.css?v=25.0.0-recovery-r2" data-pacefold-v25-css="25.0.0">';
-  if(!html.includes(baseStyleAnchor))throw new Error('Pacefold 25 recovery stylesheet anchor missing');
-  html=html.replace(baseStyleAnchor,`<link rel="stylesheet" href="./${appBundles.coreCss.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-core-css="${RELEASE}">\n${baseStyleAnchor}`);
+  const firstBaseStyle='<link rel="stylesheet" href="./app-style-01.css">';
+  if(!html.includes(firstBaseStyle))throw new Error('Pacefold base stylesheet anchor missing');
+  html=html.replace(firstBaseStyle,`<link rel="stylesheet" href="./${appBundles.shellCss.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-shell="${RELEASE}">\n${firstBaseStyle}`);
+  const recoveryStyle='<link rel="stylesheet" href="./pacefold-v25-recovery.css?v=25.0.0-recovery-r2" data-pacefold-v25-css="25.0.0">';
+  if(!html.includes(recoveryStyle))throw new Error('Pacefold 25 recovery stylesheet anchor missing');
+  html=html.replace(recoveryStyle,`<link rel="stylesheet" href="./${appBundles.coreCss.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-core-css="${RELEASE}">\n${recoveryStyle}`);
   const vendorAnchor='<script src="./vendor/msal-browser-5.17.1.min.js"></script>';
   if(!html.includes(vendorAnchor))throw new Error('MSAL anchor missing');
   html=html.replace(vendorAnchor,`<script src="./${appBundles.themeBoot.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-theme="${RELEASE}"></script>\n${vendorAnchor}`);
