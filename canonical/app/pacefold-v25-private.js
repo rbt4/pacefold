@@ -139,8 +139,9 @@ function reconcile(){
   frame=0;const r=root();if(!r)return;discreetHome();buildDaybook();syncDaybook();renderPrivateNow();quietPass();r.dataset.privacyRevision=REVISION;document.documentElement.dataset.pacefoldPrivacy=REVISION;
 }
 function queue(){if(frame)return;frame=requestAnimationFrame(reconcile)}
+function bindSpatialNavigation(){const spatial=window.__PACEFOLD_SPATIAL__;if(!spatial||typeof spatial.go!=='function'||spatial.__privacyBound)return;const original=spatial.go.bind(spatial);spatial.go=(mode,...args)=>{const result=original(mode,...args);queue();requestAnimationFrame(queue);setTimeout(queue,380);return result};Object.defineProperty(spatial,'__privacyBound',{value:true,configurable:true})}
 function install(){
-  if(observer)return;queue();
+  if(observer)return;bindSpatialNavigation();queue();
   observer=new MutationObserver(mutations=>{if(mutations.some(m=>m.target?.closest?.('#pf25-private-now,#pf25-private-daybook-sheet')))return;queue()});observer.observe(document.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-mode','data-open','data-quiet','data-state','data-source','aria-label','title']});
   document.addEventListener('pointerdown',event=>{const tray=id('pf25Surface-fold-tray');if(tray?.dataset.open==='true'){if(tray.contains(event.target))resetDaybookTimer();else closeDaybook()}},true);
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&id('pf25Surface-fold-tray')?.dataset.open==='true'){event.preventDefault();event.stopImmediatePropagation();closeDaybook()}},true);
