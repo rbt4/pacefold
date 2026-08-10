@@ -7,7 +7,7 @@ const ROOT_ID='pf25Spatial-spatial-root';
 const PRIVATE_LABEL='data-pf-private-label';
 const SENSITIVE=/\b(?:fajr|dhuhr|asr|maghrib|isha|prayer|water|sip|hydrate|noodle|prep|lunch|meal|away|eye|eyes|movement|move|stretch|body|notes?|daybook|worklog|focus|field|desk|capture|incidents?|inspections?|jhsc|construction|follow-?ups?|resources?)\b/gi;
 const sourceColor={prayer:'var(--pf25-prayer)',sunrise:'var(--pf25-warm)',water:'var(--pf25-water)',noodle:'var(--pf25-prep)',away:'var(--pf25-away)',lunch:'var(--pf25-meal)',eyes:'var(--pf25-eyes)',body:'var(--pf25-body)',flow:'var(--pf25-flow)'};
-let frame=0,observer=null,daybookTimer=0,quietActive=false,quietTitle='',quietRecords=[],lastPrivateMinute=-1,lastDaybookOpen=false;
+let frame=0,observer=null,daybookTimer=0,quietScrubTimer=0,quietActive=false,quietTitle='',quietRecords=[],lastPrivateMinute=-1,lastDaybookOpen=false;
 let quietSeen=new WeakMap();
 const id=value=>document.getElementById(value);
 const $=selector=>document.querySelector(selector);
@@ -117,12 +117,12 @@ function syncDaybook(){
   lastDaybookOpen=open;
 }
 
-function beginQuietScrub(){if(quietActive)return;quietActive=true;quietTitle=document.title;quietRecords=[];quietSeen=new WeakMap();document.title='Clock';scrubQuiet()}
+function beginQuietScrub(){if(quietActive)return;quietActive=true;quietTitle=document.title;quietRecords=[];quietSeen=new WeakMap();document.title='Clock';scrubQuiet();clearInterval(quietScrubTimer);quietScrubTimer=setInterval(()=>{if(quietActive)scrubQuiet()},50)}
 function remember(record){
   if(!record?.node)return;let seen=quietSeen.get(record.node);if(!seen){seen=new Set();quietSeen.set(record.node,seen)}const key=record.kind==='attr'?`attr:${record.attr}`:'text';if(seen.has(key))return;seen.add(key);quietRecords.push(record)
 }
 function blankQuietContainers(){
-  for(const selector of ['.pf25Spatial-face:not(.pf25Spatial-face-home)','#pf25Surface-fold-tray','#pf-local-workspace','#pf25-root','#panel','#foldDrawer','body>main'])for(const container of document.querySelectorAll(selector)){
+  for(const selector of ['.pf25Spatial-face:not(.pf25Spatial-face-home)','.pf25Spatial-edge-nav','.pf25Spatial-current-mode','.pf25Spatial-mode-dots','.pf25Spatial-context-glimpse','.pf25Spatial-nav-hint','#pf25Surface-fold-tray','#pf-local-workspace','#pf25-root','#panel','#foldDrawer','body>main'])for(const container of document.querySelectorAll(selector)){
     for(const node of container.querySelectorAll('[aria-label],[title]'))for(const attr of ['aria-label','title']){const value=node.getAttribute(attr);if(value){remember({kind:'attr',node,attr,value});node.setAttribute(attr,'Pacefold')}}
     const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT);let current;while((current=walker.nextNode())){const parent=current.parentElement;if(!parent||/^(?:SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName))continue;const value=current.nodeValue||'';if(!value.trim())continue;remember({kind:'text',node:current,value});current.nodeValue=''}
   }
@@ -132,7 +132,7 @@ function scrubQuiet(){
   for(const node of document.querySelectorAll('[aria-label],[title]'))for(const attr of ['aria-label','title']){const value=node.getAttribute(attr);if(value&&SENSITIVE.test(value)){SENSITIVE.lastIndex=0;remember({kind:'attr',node,attr,value});node.setAttribute(attr,'Pacefold')}else SENSITIVE.lastIndex=0}
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let current;while((current=walker.nextNode())){const parent=current.parentElement;if(!parent||/^(?:SCRIPT|STYLE|NOSCRIPT)$/i.test(parent.tagName))continue;const value=current.nodeValue||'';if(!value||!SENSITIVE.test(value)){SENSITIVE.lastIndex=0;continue}SENSITIVE.lastIndex=0;remember({kind:'text',node:current,value});current.nodeValue=value.replace(SENSITIVE,'').replace(/\s{2,}/g,' ').trim()}
 }
-function endQuietScrub(){if(!quietActive)return;quietActive=false;for(const record of quietRecords.reverse()){try{if(record.kind==='attr'&&record.node?.isConnected)record.node.setAttribute(record.attr,record.value);else if(record.kind==='text'&&record.node?.isConnected)record.node.nodeValue=record.value}catch{}}quietRecords=[];quietSeen=new WeakMap();document.title=quietTitle||'Pacefold — Quiet Workday Rhythm';quietTitle='';setTimeout(()=>{window.__PACEFOLD_SPATIAL__?.refresh?.();window.__PACEFOLD_SURFACE__?.reconcile?.();queue()},0)}
+function endQuietScrub(){if(!quietActive)return;quietActive=false;clearInterval(quietScrubTimer);quietScrubTimer=0;for(const record of quietRecords.reverse()){try{if(record.kind==='attr'&&record.node?.isConnected)record.node.setAttribute(record.attr,record.value);else if(record.kind==='text'&&record.node?.isConnected)record.node.nodeValue=record.value}catch{}}quietRecords=[];quietSeen=new WeakMap();document.title=quietTitle||'Pacefold — Quiet Workday Rhythm';quietTitle='';setTimeout(()=>{window.__PACEFOLD_SPATIAL__?.refresh?.();window.__PACEFOLD_SURFACE__?.reconcile?.();queue()},0)}
 function quietPass(){if(quiet()){beginQuietScrub();scrubQuiet();closeDaybook()}else endQuietScrub()}
 
 function reconcile(){
