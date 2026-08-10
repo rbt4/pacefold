@@ -77,7 +77,10 @@ async function patchAppHtml(){
   const recoveryAnchor=html.match(/<script[^>]+src=["']\.\/pacefold-v25-recovery\.js(?:\?[^"']*)?["'][^>]*><\/script>/i)?.[0];
   if(!recoveryAnchor)throw new Error('V25 recovery tag missing after cleanup');
   html=html.replace(recoveryAnchor,`<script defer src="./${appBundles.coreJs.out}?v=${RELEASE}-${REVISION}" data-pacefold-v25-core="${RELEASE}"></script>\n${recoveryAnchor}`);
-  html=html.replace(/\s*<meta\s+name=["']pacefold-release["'][^>]*>/gi,'').replace('</head>',`<meta name="pacefold-release" content="${REVISION}">\n</head>`);
+  html=html
+    .replace(/\s*<meta\s+name=["']pacefold-build["'][^>]*>/gi,'')
+    .replace(/\s*<meta\s+name=["']pacefold-release["'][^>]*>/gi,'')
+    .replace('</head>',`<meta name="pacefold-build" content="${RELEASE} ${REVISION}">\n<meta name="pacefold-release" content="${REVISION}">\n</head>`);
   await fs.writeFile(file,html);
 }
 async function patchPublicHtml(){
@@ -120,6 +123,7 @@ async function verify(){
   const forbidden=/(?:pacefold-(?:ma|hub|integrated|revamp|resilience|theme-boot|v(?:19|20|21|22|23|24)|public-v24|site-v19)|pacefold-daylight|pacefold-hub-version)/i;
   if(forbidden.test(appHtml)||forbidden.test(publicHtml)||forbidden.test(worker))throw new Error('Pacefold 25 cleanroom left a legacy asset reference in active HTML or worker');
   for(const token of ['pacefold-v25-shell-boot.css','pacefold-v25-core.css','pacefold-v25-theme-boot.js','pacefold-v25-preboot.js','pacefold-v25-core.js','pacefold-v25-recovery.js'])if(!appHtml.includes(token))throw new Error(`Pacefold 25 cleanroom app omits ${token}`);
+  if(!appHtml.includes(`<meta name="pacefold-build" content="${RELEASE} ${REVISION}">`))throw new Error('Pacefold 25 cleanroom app build metadata is stale');
   if(!publicHtml.includes('pacefold-v25-public.css')||!publicHtml.includes('pacefold-v25-public.js'))throw new Error('Pacefold 25 public bundle references are missing');
   if(!worker.includes("const VERSION='25.0.0'"))throw new Error('Pacefold 25 root worker version is stale');
 }
