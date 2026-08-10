@@ -1,0 +1,33 @@
+name: Stabilize private mobile capture
+
+on:
+  push:
+    branches:
+      - agent/pacefold-25-privacy-return
+
+permissions:
+  contents: write
+
+jobs:
+  stabilize:
+    if: "!contains(github.event.head_commit.message, '[private-mobile-capture]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          ref: agent/pacefold-25-privacy-return
+          fetch-depth: 0
+      - name: Stabilize mobile capture
+        run: node scripts/stabilize-private-mobile-capture.cjs
+      - name: Verify
+        run: node --check scripts/v25-privacy-audit.cjs
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/v25-privacy-audit.cjs
+          git diff --cached --quiet && exit 0
+          git commit -m "Wait for settled clock before mobile fold capture [private-mobile-capture]"
+          git push origin HEAD:agent/pacefold-25-privacy-return
