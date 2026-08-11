@@ -1,0 +1,11 @@
+{
+  "name": "pacefold",
+  "private": true,
+  "version": "25.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-v25.mjs _site",
+    "verify": "node scripts/verify-v25.mjs _site",
+    "dev": "node scripts/preview.mjs"
+  }
+}

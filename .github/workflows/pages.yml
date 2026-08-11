@@ -1,4 +1,4 @@
-name: Verify and publish Pacefold 25
+name: Build, verify and publish Pacefold 25
 
 on:
   push:
@@ -16,39 +16,27 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Canonical source guard
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build direct Pacefold source
+        run: node scripts/build-v25.mjs _site
+      - name: Static and core verification
         run: |
-          node scripts/verify-canonical.cjs canonical
-          node --check canonical/service-worker.js
-          node --check canonical/app/service-worker.js
-          node --check canonical/app/pacefold-v25-engine.js
-          node --check canonical/app/pacefold-v25-theme-boot.js
-          node --check canonical/app/pacefold-v25-preboot.js
-          node --check canonical/app/pacefold-v25-core.js
-          node --check canonical/app/pacefold-v25-boot.js
-          node --check canonical/app/pacefold-v25-recovery.js
-          node --check scripts/v25-coherence-audit.cjs
-
+          node scripts/verify-v25.mjs _site
+          node tests/core.mjs
       - name: Install browser audit runtime
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
-
-      - name: Full Pacefold 25 browser audit
-        run: |
-          mkdir -p /tmp/pacefold-25-audit
-          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-audit.cjs canonical /tmp/pacefold-25-audit
-
-      - name: Pacefold 25 coherence audit
-        run: |
-          timeout 300s env NODE_PATH=/tmp/pacefold-browser-audit/node_modules node scripts/v25-coherence-audit.cjs canonical /tmp/pacefold-25-audit
-
-      - name: Upload release captures
+      - name: Current-product browser audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit.cjs _site /tmp/pacefold-25-audit
+      - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -61,7 +49,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: validate
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     permissions:
       contents: read
       pages: write
@@ -72,18 +60,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Verify exact canonical payload
-        run: node scripts/verify-canonical.cjs canonical
-
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build exact verified site
+        run: |
+          node scripts/build-v25.mjs _site
+          node scripts/verify-v25.mjs _site
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: canonical
-
+          path: _site
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

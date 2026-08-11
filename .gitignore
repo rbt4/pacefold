@@ -1,0 +1,4 @@
+_site/
+artifacts/
+node_modules/
+npm-debug.log*
