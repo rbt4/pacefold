@@ -2,77 +2,60 @@
 
 **Your day, quietly kept.**
 
-Pacefold is a private, offline-ready workday instrument. The clock remains the centre while Notes, Worklog, Now and Settings stay one deliberate direction away.
+Pacefold is a private, offline-ready workday clock for rhythm, notes, care and focus.
 
-## Current public release
+## Current release
 
-**Pacefold 24.0.0 — Unified Day Instrument**
+**Pacefold 25.1.0 — Page refinement**
 
-- analog and digital clock with a live second hand
-- Day Unfold workday arc with a moving sun and scheduled markers
-- optional location-aware Islamic prayer rhythm or editable personal moments
-- one-tap hydration, preparation timer, rest, meal, eye-reset and movement logging
-- visible Daybook fold with today’s totals and recent notes
-- focused Notes, Worklog, Now and Settings pages
-- quiet taskbar/browser cues when the platform permits them
-- local notes and records with downloadable backup
-- installable PWA and offline shell
-- no account, analytics or advertising
+- one direct application runtime and one application stylesheet
+- clock-first launch with analog and digital time plus live seconds
+- Day Unfold progress with a moving sun and scheduled markers
+- location- and timezone-aware prayer rhythm with Hanafi Asr support, or generic/custom moments
+- coloured quiet cues for prayer, water, preparation, away, meal, eyes and movement
+- one-tap water, preparation, away, meal, eye and movement logging
+- calendar-backed local Daybook with inline editing, category filters and monthly activity context
+- a daily story, balance view and richer workday timeline
+- a focused Now surface for waiting cues, active timers, weather and the next scheduled moment
+- a simplified Settings control centre with a live setup and data-health overview
+- JSON export/restore and an optional live backup file in supported Edge/Chromium browsers
+- local focus sound and optional OneNote copy
+- installable offline PWA with no Pacefold account, analytics or advertising
 
 Open the public site at **https://rbt4.github.io/pacefold/**.
-
-## Product architecture
-
-Pacefold 24 has one public surface and one current release gate. A checksum-verified local engine remains underneath to preserve established preferences, notes and records. Historical visual experiments and compatibility tests no longer define the public product or block releases.
-
-The former Ma product layer is not loaded by the public app. A small Pacefold 24 rhythm kernel supplies current quiet-mode, cue, badge, backup and storage behaviour while retaining compatibility with established local data contracts.
 
 ## Spatial model
 
 - **Clock:** home
 - **Up:** Notes
-- **Left:** Worklog
+- **Left:** Day log
 - **Right:** Now
-- **Down:** Settings and Sound
+- **Down:** Settings
 
-On a secondary page, the first directional action returns to Clock. The next action chooses another page. This keeps the clock as a dependable centre rather than turning the app into a long dashboard.
+On a secondary page, the first directional action returns to Clock. The next directional action opens another page. Direct buttons can always open their named destination.
 
-## Privacy
+## Data compatibility
 
-Pacefold is local first:
+Pacefold 25 continues to read and write the established local keys:
 
-- no Pacefold account
-- no analytics or advertising
-- notes and workday records remain in browser storage
-- local audio stays in the browser
-- backups are downloaded or written only when the user asks
-- weather requests go directly to the configured weather provider
+- `pacefoldPrefsV15`
+- `pacefold.notebook.entries.v2`
+- `pacefold.dayflow.v1`
 
-See `SECURITY.md` and the public `privacy.html` page for boundaries.
+Legacy preference and note shapes are normalized in place. Existing settings, notes and compatible day-log events remain available after the release.
 
-## Build
+## Direct-source architecture
 
-The release reconstructs the checksum-verified engine, composes the current public surface, runs the Pacefold 24 browser audit, and publishes through GitHub Pages.
+The public product lives in `src/`. Production no longer reconstructs a V15 archive or injects V19–V24 layers over it.
 
 ```bash
-cat release/pacefold-v15.zip.b64.part-* | base64 --decode > /tmp/pacefold-v15.zip
-mkdir _release
-unzip -q /tmp/pacefold-v15.zip -d _release
-node _release/scripts/build.mjs _release
-node _release/scripts/validate.mjs _release
-node enhancements/inject.mjs _release
-node enhancements/inject-v22-hardening.mjs _release
-node enhancements/inject-v22-daylight.mjs _release
-node enhancements/inject-v23.mjs _release
-node enhancements/inject-v24.mjs _release
+npm run build
+npm run verify
+node --test tests/core.mjs
 ```
 
-The final public shell must report:
-
-```text
-24.0.0 unified-r1
-```
+The browser audit is `tests/browser-audit.cjs`. CI installs its pinned Playwright runtime, captures desktop/mobile screenshots, and tests clean launch, data migration, logging, notes, directional return, persistence and responsive overflow.
 
 ## Release workflow
 
-`.github/workflows/pages.yml` is the single production workflow. It validates the current product and deploys the exact verified site. Historical Ma, V19 and V20 browser suites are not production gates.
+`.github/workflows/pages.yml` is the only production workflow. A pull request builds and validates the exact direct source. A push to `main` runs the same validation before GitHub Pages deployment.

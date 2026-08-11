@@ -1,0 +1,25 @@
+{
+  "id":"./",
+  "name":"Pacefold — Your day, quietly kept",
+  "short_name":"Pacefold",
+  "description":"A private, offline-ready clock for workday rhythm, notes, breaks and focus.",
+  "start_url":"./app/",
+  "scope":"./",
+  "display":"standalone",
+  "display_override":["window-controls-overlay","standalone"],
+  "background_color":"#ebe7dc",
+  "theme_color":"#e9e4d8",
+  "orientation":"any",
+  "categories":["productivity","utilities","lifestyle"],
+  "launch_handler":{"client_mode":"focus-existing"},
+  "icons":[
+    {"src":"./app/icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./app/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ],
+  "shortcuts":[
+    {"name":"Clock","short_name":"Clock","url":"./app/"},
+    {"name":"Notes","short_name":"Notes","url":"./app/?mode=notes"},
+    {"name":"Day log","short_name":"Day","url":"./app/?mode=worklog"},
+    {"name":"Now","short_name":"Now","url":"./app/?mode=now"}
+  ]
+}

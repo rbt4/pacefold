@@ -6,7 +6,7 @@ Pacefold publishes through `.github/workflows/pages.yml`. There is no scheduled,
 
 1. Build and review the release on a branch.
 2. Merge the approved pull request into `main`.
-3. Confirm **Build, verify and publish Pacefold 24** starts for the merge commit.
+3. Confirm **Build, verify and publish Pacefold 25** starts for the merge commit.
 4. If GitHub did not create a push run, open the workflow and choose **Run workflow → main**.
 5. Wait for `validate` and `deploy` to succeed.
 6. Verify the public website, `/app/`, `pacefold-experience.txt` and the service-worker release marker before calling it live.

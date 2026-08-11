@@ -1,44 +1,46 @@
-# Pacefold 24.0.0 release
+# Pacefold 25.1.0 refinement release
 
-## Release identity
+## Identity
 
-- Public release: **24.0.0**
-- Experience revision: **unified-r1**
-- Product: **Pacefold — Quiet Workday Rhythm**
+- Public release: **25.1.0**
+- Experience revision: **polish-r2**
+- Product: **Pacefold — Your day, quietly kept**
 - Public site: **https://rbt4.github.io/pacefold/**
 
-## What changed
+## Recovery decision
 
-Pacefold 24 consolidates the strongest ideas from the project into one current product:
+Pacefold 24 loaded eleven application runtimes and twelve style sheets from six generations. Its service worker cached most of that obsolete stack. V25 replaces the composed product with direct source rather than adding another compatibility layer.
 
-1. The Clock becomes a complete day instrument with analog and digital time, live seconds, Day Unfold progress and a moving workday sun.
-2. Prayer or personal rhythm appears as a timezone-aware schedule rather than a detached legacy status line.
-3. The six quick actions use explicit states and write the current logging schema.
-4. The Daybook remains visibly present as a lower fold with today’s totals and recent notes.
-5. Notes, Worklog, Now, Settings and Sound share one visual language.
-6. The public website, manifest, offline shell, version markers and app copy all identify the same release.
-7. The former Ma public layer and its active release audit are removed from the production product.
-8. The production gate now tests Pacefold 24 itself instead of historical visual surfaces.
+## What is restored
 
-## Compatibility
+1. The clock is the initial document, eliminating the legacy-surface startup flash.
+2. Live seconds, Day Unfold, the moving sun and scheduled markers stay on the primary face.
+3. Notes, Day log, Now and Settings use the original directional model with Clock as the dependable centre.
+4. Prayer times use the configured coordinates, timezone, twilight angle, per-prayer offsets and Hanafi or standard Asr.
+5. Coloured cue dots and silent system cues represent their actual source.
+6. Water, preparation, away, meal, eye and movement controls use explicit states and update the day log.
+7. Daybook provides a note-count calendar, search, editing, deletion and recent notes on Clock.
+8. Backups include preferences, notes and day-log data; supported browsers can maintain one user-chosen live file.
+9. The mini focus-sound bar remains visible without opening another workspace.
+10. Optional OneNote copying is local-first and no longer presented as active unless configured.
 
-The checksum-verified local engine is preserved to protect existing preferences, notes and workday records. Pacefold 24’s rhythm kernel provides current quiet, cue, badge, backup and storage behaviour while maintaining compatibility with established local data adapters.
+## What 25.1 refines
+
+1. Notes has monthly activity context, category filters, word and entry summaries, and inline editing instead of browser prompts.
+2. Day Log explains the day through a balance strip, narrative summary, clearer session states and a richer timeline.
+3. Now combines the next moment, quiet cues, active timers, focus controls, schedule and weather into one decision surface.
+4. Settings opens with a live setup overview, clearer section navigation, a clock-format control and local data-health details.
+5. Mobile retains a compact two-column action dock and gives every secondary page a dedicated responsive layout.
 
 ## Release gates
 
-- source syntax and unsafe-DOM guard
-- checksum reconstruction and engine validation
-- idempotent V24 composition
-- no former Ma public assets in the final app HTML
-- current public website and manifest assertions
-- timezone-aware ordered rhythm schedule
-- analog clock, Day Unfold and visible Daybook fold
-- quick-action schema write
-- note save and fold reflection
-- essential settings
-- desktop and mobile overflow
-- offline worker assets
-
-## Deployment
-
-The only production workflow is `.github/workflows/pages.yml`. A push to `main` or a manual workflow dispatch builds, verifies and deploys the exact current site.
+- single-runtime and single-stylesheet contract
+- no V15–V24 product assets in the public shell
+- JavaScript syntax and local-reference validation
+- Toronto DST and ordered prayer schedule tests
+- legacy preference and note migration tests
+- clean clock-only startup
+- data action, note save and preference persistence tests
+- two-step spatial return contract
+- desktop and 390px mobile overflow checks
+- visual captures for all five views at desktop and mobile sizes

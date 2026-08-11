@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en" data-mode="home">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#e9e4d8">
+  <meta name="color-scheme" content="light dark">
+  <meta name="application-name" content="Pacefold">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="description" content="A private, offline-ready clock for workday rhythm, notes, breaks and focus.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://login.microsoftonline.com https://graph.microsoft.com; frame-src https://login.microsoftonline.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://login.microsoftonline.com">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" id="app-favicon" href="./icons/fold-mark.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./pacefold.css?v=25.1.0">
+  <title>Pacefold — Your day, quietly kept</title>
+</head>
+<body>
+  <div class="boot-cover" aria-hidden="true"><span></span></div>
+  <div class="paper-grain" aria-hidden="true"></div>
+
+  <header class="app-bar">
+    <button class="brand" type="button" data-go="home" aria-label="Return to Clock">
+      <img src="./icons/fold-mark.svg" alt="">
+      <span><strong>Pacefold</strong><small>Your day, quietly kept</small></span>
+    </button>
+    <div class="bar-status">
+      <button class="cue-cluster" id="cue-cluster" type="button" aria-label="No waiting cues"></button>
+      <button class="quiet-button" id="quiet-button" type="button" aria-pressed="false"><span></span><b>Quiet</b></button>
+      <button class="bar-clock" id="bar-clock" type="button" data-go="home">--:--</button>
+    </div>
+  </header>
+
+  <nav class="edge-nav" aria-label="Pacefold directions">
+    <button class="edge edge-up" type="button" data-go="notes"><span>↑</span><b>Notes</b></button>
+    <button class="edge edge-left" type="button" data-go="worklog"><span>←</span><b>Day</b></button>
+    <button class="edge edge-right" type="button" data-go="now"><b>Now</b><span>→</span></button>
+    <button class="edge edge-down" type="button" data-go="settings"><b>Settings</b><span>↓</span></button>
+  </nav>
+
+  <main class="stage" id="stage">
+    <section class="view view-home" data-view="home" aria-label="Clock">
+      <div class="home-grid">
+        <section class="clock-card">
+          <div class="clock-identity"><span id="day-phase">Workday</span><strong id="clock-status">Quietly keeping pace</strong></div>
+          <div class="clock-instrument">
+            <div class="analog" id="analog" aria-label="Analog clock">
+              <div class="clock-ticks" id="clock-ticks" aria-hidden="true"></div>
+              <i class="hand hand-hour"></i><i class="hand hand-minute"></i><i class="hand hand-second"></i><i class="clock-pin"></i>
+            </div>
+            <div class="digital-wrap">
+              <div class="digital"><span id="clock-hour">--</span><i>:</i><span id="clock-minute">--</span><small id="clock-seconds">--</small></div>
+              <div class="clock-date" id="clock-date">Loading today…</div>
+              <button class="next-moment" id="next-moment" type="button" data-go="now"><span>Next</span><strong>Calculating rhythm…</strong><small></small></button>
+            </div>
+          </div>
+
+          <section class="day-unfold" aria-label="Workday progress">
+            <header><span><small>Day unfold</small><strong id="day-copy">Before work</strong></span><b id="day-percent">0%</b></header>
+            <div class="day-sky">
+              <div class="sky-glow"></div><i class="day-line"></i><b class="day-sun"></b><div class="day-markers" id="day-markers"></div>
+            </div>
+            <footer><span id="work-start">8:30</span><span>Now</span><span id="work-end">4:30</span></footer>
+          </section>
+        </section>
+
+        <aside class="rhythm-card">
+          <header><span><small id="rhythm-kicker">Prayer rhythm</small><strong id="rhythm-title">Today</strong></span><button type="button" data-go="settings" data-settings-target="rhythm">Adjust</button></header>
+          <div class="rhythm-list" id="rhythm-list"></div>
+          <p id="rhythm-meta">Your configured location and calculation method appear here.</p>
+        </aside>
+      </div>
+
+      <section class="action-dock" aria-label="Quick actions">
+        <header><span><small>One tap</small><strong>Keep the day honest</strong></span><button type="button" id="clear-cues">Clear dots</button></header>
+        <div class="action-grid">
+          <button class="quick-action action-water" type="button" data-action="water"><i></i><span><strong>Water</strong><small id="water-state">0 / 24 oz</small></span><em id="water-meter"></em></button>
+          <button class="quick-action action-prep" type="button" data-action="prep"><i></i><span><strong>Prep</strong><small id="prep-state">30 min</small></span><em></em></button>
+          <button class="quick-action action-away" type="button" data-action="away"><i></i><span><strong>Step away</strong><small id="away-state">Ready</small></span><em></em></button>
+          <button class="quick-action action-meal" type="button" data-action="meal"><i></i><span><strong>Meal</strong><small id="meal-state">20 min</small></span><em></em></button>
+          <button class="quick-action action-eyes" type="button" data-action="eyes"><i></i><span><strong>Look far</strong><small id="eyes-state">20-second reset</small></span><em></em></button>
+          <button class="quick-action action-move" type="button" data-action="move"><i></i><span><strong>Move</strong><small id="move-state">Posture reset</small></span><em></em></button>
+        </div>
+      </section>
+
+      <section class="daybook-fold">
+        <header>
+          <span><small>Daybook</small><strong>Always within reach</strong></span>
+          <nav><button type="button" data-go="notes">Notes</button><button type="button" data-go="worklog">Day log</button><button type="button" data-go="now">Now</button></nav>
+        </header>
+        <div class="fold-summary" id="fold-summary"></div>
+        <div class="fold-notes" id="fold-notes"></div>
+      </section>
+    </section>
+
+    <section class="view view-notes" data-view="notes" aria-label="Notes">
+      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Up from Clock</small><h1>Notes</h1><p>A calm local notebook, organized by the day it belongs to.</p></span><b id="notes-total">0 notes</b></header>
+      <div class="notes-layout">
+        <aside class="calendar-card">
+          <header><button type="button" id="calendar-prev" aria-label="Previous month">←</button><strong id="calendar-title">Month</strong><button type="button" id="calendar-next" aria-label="Next month">→</button></header>
+          <div class="calendar-week"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <div class="calendar-summary" id="calendar-summary" aria-live="polite"></div>
+          <button class="today-button" id="calendar-today" type="button">Return to today</button>
+        </aside>
+        <section class="notebook-card">
+          <header><span><small id="note-date-kicker">Selected day</small><strong id="note-date-title">Today</strong></span><div class="note-find"><label class="filter"><span>Kind</span><select id="note-filter" aria-label="Filter notes by category"><option value="all">All kinds</option><option>Note</option><option>Follow-up</option><option>Decision</option><option>Inspection</option><option>JHSC</option><option>Idea</option></select></label><label class="search"><span>Search</span><input id="note-search" type="search" placeholder="Search every note"></label></div></header>
+          <div class="note-insights" id="note-insights" aria-live="polite"></div>
+          <form class="note-compose" id="note-form">
+            <textarea id="note-input" maxlength="6000" placeholder="A decision, follow-up, observation or thought…"></textarea>
+            <div><select id="note-category" aria-label="Note category"><option>Note</option><option>Follow-up</option><option>Decision</option><option>Inspection</option><option>JHSC</option><option>Idea</option></select><span id="note-save-status">Saved on this device</span><span id="note-count">0 / 6000</span><button class="note-cancel" type="button" id="note-cancel" hidden>Cancel</button><button type="submit" id="note-submit">Keep this</button></div>
+          </form>
+          <div class="note-list" id="note-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view view-worklog" data-view="worklog" aria-label="Worklog">
+      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Left from Clock</small><h1>Day log</h1><p>Transitions and breaks, recorded without turning your day into surveillance.</p></span><button class="head-action" type="button" id="export-day">Export day</button></header>
+      <section class="day-story" aria-label="Today at a glance"><span><small>Today at a glance</small><strong id="day-story-title">A quiet start</strong><p id="day-story-copy">Your day will explain itself as you use Pacefold.</p></span><div class="day-balance"><div id="day-balance-bar"></div><footer id="day-balance-legend"></footer></div></section>
+      <div class="metric-grid" id="metric-grid"></div>
+      <div class="log-layout">
+        <section class="timeline-card"><header><span><small>Today</small><strong>What actually happened</strong><em id="timeline-meta">Nothing logged yet</em></span><button type="button" id="focus-toggle">Start focus</button></header><div class="timeline" id="timeline"></div></section>
+        <aside class="log-tools"><small>Manual controls</small><h2>Log a transition</h2><p>Clock actions log themselves. These cover the moments they cannot see.</p><button type="button" data-log="field" id="field-toggle"><i>↗</i><span><strong>Field work</strong><small id="field-toggle-state">Start a field session</small></span></button><button type="button" data-log="focus"><i>◎</i><span><strong>Focus block</strong><small id="focus-tool-state">Start protected time</small></span></button><button type="button" data-log="reset"><i>↻</i><span><strong>Quick reset</strong><small>Log a movement break</small></span></button><button class="close-sessions" type="button" id="clear-open-sessions">Close all open sessions</button></aside>
+      </div>
+    </section>
+
+    <section class="view view-now" data-view="now" aria-label="Now">
+      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Right from Clock</small><h1>Now</h1><p>Only the context that helps with the next decision.</p></span><b id="now-live">Live</b></header>
+      <div class="now-grid">
+        <section class="now-primary"><div class="now-orbit" aria-hidden="true"><i></i><span></span></div><small>Next moment</small><h2 id="now-next-name">—</h2><strong id="now-next-time">—</strong><p id="now-countdown">Calculating…</p><div class="now-guidance" id="now-guidance">The day is clear. Keep your current pace.</div><div class="now-actions"><button type="button" data-action="ack" id="now-clear-cue">Clear cue</button><button type="button" data-action="snooze" id="now-snooze">Snooze 10m</button></div></section>
+        <section class="now-schedule"><header><small id="now-schedule-kicker">Today’s rhythm</small><strong id="now-schedule-date">Today</strong></header><div id="now-schedule-list"></div></section>
+        <section class="now-cues"><header><small>Quiet cues</small><strong id="now-cue-count">Nothing waiting</strong></header><div id="now-cue-list"></div></section>
+        <section class="now-weather"><header><small>Outside</small><strong id="weather-place">Weather</strong></header><div id="weather-content"><p>Weather appears when enabled.</p></div><button type="button" id="weather-refresh">Refresh</button></section>
+        <section class="now-active"><header><small>Active</small><strong>Timers and focus</strong></header><div id="active-list"></div><div class="now-quick"><button type="button" data-action="prep">Prep</button><button type="button" data-action="away">Away</button><button type="button" data-action="meal">Meal</button><button type="button" data-log="focus">Focus</button></div></section>
+      </div>
+    </section>
+
+    <section class="view view-settings" data-view="settings" aria-label="Settings">
+      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 25.1.0</b></header>
+      <section class="settings-summary" id="settings-summary" aria-label="Current setup"></section>
+      <div class="settings-layout">
+        <nav class="settings-nav" id="settings-nav"><button class="active" type="button" data-settings-tab="essentials"><strong>Essentials</strong><small>Daily behaviour</small></button><button type="button" data-settings-tab="rhythm"><strong>Rhythm</strong><small>Prayer and moments</small></button><button type="button" data-settings-tab="care"><strong>Care</strong><small>Water and resets</small></button><button type="button" data-settings-tab="data"><strong>Data</strong><small>Backup and OneNote</small></button><button type="button" data-settings-tab="advanced"><strong>Advanced</strong><small>Recovery tools</small></button></nav>
+        <div class="settings-panels">
+          <section data-settings-panel="essentials">
+            <header><small>Essentials</small><h2>The controls that matter daily</h2></header>
+            <div class="toggle-grid">
+              <button class="setting-toggle" type="button" data-setting="quietMode"><span><strong>Quiet mode</strong><small>Keep prayer and active timers; reduce care cues</small></span><i></i></button>
+              <button class="setting-toggle" type="button" data-setting="showSeconds"><span><strong>Seconds</strong><small>Show the second hand and digital seconds</small></span><i></i></button>
+              <button class="setting-toggle" type="button" data-setting="notifications"><span><strong>System cues</strong><small>Silent browser notifications when allowed</small></span><i></i></button>
+              <button class="setting-toggle" type="button" data-setting="weatherEnabled"><span><strong>Weather</strong><small>Use your coordinates for current conditions</small></span><i></i></button>
+            </div>
+            <div class="settings-form three-col"><label>Workday starts<input id="work-start-input" type="time"></label><label>Workday ends<input id="work-end-input" type="time"></label><label>Clock format<select id="time-format-input"><option value="12">12 hour</option><option value="24">24 hour</option></select></label></div>
+            <fieldset class="workdays"><legend>Work days</legend><label><input type="checkbox" data-workday="1">Mon</label><label><input type="checkbox" data-workday="2">Tue</label><label><input type="checkbox" data-workday="3">Wed</label><label><input type="checkbox" data-workday="4">Thu</label><label><input type="checkbox" data-workday="5">Fri</label><label><input type="checkbox" data-workday="6">Sat</label><label><input type="checkbox" data-workday="0">Sun</label></fieldset>
+          </section>
+          <section data-settings-panel="rhythm" hidden>
+            <header><small>Rhythm</small><h2>Prayer or personal moments</h2></header>
+            <div class="settings-form two-col"><label>Profile<select id="profile-input"><option value="original">Original · Muslim</option><option value="muslim">Muslim</option><option value="everyday">Everyday</option><option value="mindful">Mindful</option><option value="custom">Custom moments</option></select></label><label>Time zone<input id="timezone-input" type="text" spellcheck="false"></label><label>Location label<input id="location-input" type="text"></label><label class="coordinate-row">Coordinates<span><input id="latitude-input" type="number" step="0.0001" aria-label="Latitude"><input id="longitude-input" type="number" step="0.0001" aria-label="Longitude"></span></label></div>
+            <button class="secondary-button" type="button" id="use-location">Use this device’s location</button>
+            <div class="settings-form two-col muslim-settings"><label>Twilight angle<select id="method-input"><option value="15">15° · ISNA style</option><option value="18">18°</option></select></label><label>Asr<select id="asr-input"><option value="hanafi">Hanafi · shadow 2×</option><option value="standard">Standard · shadow 1×</option></select></label></div>
+            <div class="custom-moments" id="custom-moments" hidden><strong>Custom moments</strong><p>Name and time up to four moments. Blank rows are ignored.</p><div id="custom-moment-rows"></div></div>
+            <details><summary>Minute adjustments</summary><div class="offset-grid" id="offset-grid"></div></details>
+          </section>
+          <section data-settings-panel="care" hidden>
+            <header><small>Care</small><h2>Useful defaults, not nagging</h2></header>
+            <div class="settings-form two-col"><label>Water target (oz)<input id="water-target-input" type="number" min="8" max="128"></label><label>Each water tap (oz)<input id="water-step-input" type="number" min="1" max="16"></label><label>Hydration cadence (min)<input id="water-cadence-input" type="number" min="15" max="180"></label><label>Eye cadence (min)<input id="eye-cadence-input" type="number" min="10" max="120"></label><label>Movement cadence (min)<input id="body-cadence-input" type="number" min="15" max="180"></label><label>Prep timer (min)<select id="prep-minutes-input"><option>15</option><option>30</option><option>45</option><option>60</option><option>90</option></select></label><label>Meal window (min)<input id="meal-minutes-input" type="number" min="5" max="120"></label><label>Away default (min)<input id="away-minutes-input" type="number" min="1" max="120"></label></div>
+          </section>
+          <section data-settings-panel="data" hidden>
+            <header><small>Data</small><h2>Your local record, under your control</h2></header>
+            <div class="data-actions"><button type="button" id="backup-download"><strong>Download backup</strong><small>Notes, settings and day log in one JSON file</small></button><button type="button" id="backup-restore"><strong>Restore backup</strong><small>Review before replacing current local data</small></button><button type="button" id="backup-file"><strong>Choose live backup file</strong><small>Edge can update the same file after each change</small></button></div>
+            <div class="data-health" id="data-health"></div><p class="setting-status" id="backup-status">Local browser storage is active.</p>
+            <details class="onenote-settings"><summary>Optional Microsoft OneNote copy</summary><p>Pacefold always saves locally first. If your organization permits Microsoft Graph, new notes can also copy to one OneNote section.</p><div class="settings-form"><label>Entra application (client) ID<input id="onenote-client-input" type="text" spellcheck="false"></label><label>Tenant<input id="onenote-tenant-input" type="text" spellcheck="false"></label></div><div class="inline-actions"><button type="button" id="onenote-connect">Connect and choose notebook</button><button type="button" id="onenote-sync">Sync unsynced notes</button><button type="button" id="onenote-disconnect">Disconnect</button></div><div id="onenote-picker"></div><p class="setting-status" id="onenote-status">Not configured.</p></details>
+          </section>
+          <section data-settings-panel="advanced" hidden>
+            <header><small>Advanced</small><h2>Recovery and diagnostics</h2></header>
+            <div class="data-actions"><button type="button" id="self-check"><strong>Run self-check</strong><small>Storage, schedule, offline worker and interface</small></button><button type="button" id="reset-today"><strong>Reset today’s counters</strong><small>Water and active timers only; notes stay</small></button><button class="danger" type="button" id="reset-app"><strong>Reset Pacefold</strong><small>Delete local Pacefold settings, notes and logs</small></button></div>
+            <pre id="diagnostic-output">Pacefold 25.1.0 · polish-r2</pre>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <button class="return-cue" id="return-cue" type="button" data-go="home" hidden>Clock in 10s</button>
+
+  <section class="sound-bar" id="sound-bar" aria-label="Focus sound">
+    <button class="sound-toggle" id="sound-toggle" type="button" aria-label="Play focus sound">▶</button>
+    <span><small>Focus sound</small><strong id="sound-name">Brown hush</strong></span>
+    <select id="sound-choice" aria-label="Focus sound"><option value="brown">Brown hush</option><option value="rain">Rain glass</option><option value="fan">Soft fan</option><option value="local">Local audio</option></select>
+    <input id="sound-volume" type="range" min="0" max="1" step="0.01" aria-label="Volume">
+    <button type="button" id="sound-file">Choose file</button>
+  </section>
+
+  <dialog class="setup-dialog" id="setup-dialog">
+    <form method="dialog"><button class="dialog-close" value="close" aria-label="Close setup">×</button></form>
+    <span class="setup-mark"><img src="./icons/fold-mark.svg" alt=""></span>
+    <small>One-time setup</small><h2>Keep the clock. Choose the rhythm.</h2><p>Your existing Pacefold settings are imported automatically. New installs can start with one simple choice.</p>
+    <div class="setup-choices"><button type="button" data-setup-profile="original"><strong>Original</strong><small>Muslim rhythm · Hanafi Asr · Toronto defaults</small></button><button type="button" data-setup-profile="everyday"><strong>Everyday</strong><small>Morning, midday and afternoon resets</small></button></div>
+    <button class="secondary-button" type="button" id="setup-later">Keep defaults and continue</button>
+  </dialog>
+
+  <dialog class="confirm-dialog" id="confirm-dialog"><h2 id="confirm-title">Confirm</h2><p id="confirm-copy"></p><form method="dialog"><button value="cancel">Cancel</button><button class="confirm-primary" value="confirm">Continue</button></form></dialog>
+  <input id="restore-file-input" type="file" accept="application/json,.json" hidden>
+  <input id="audio-file-input" type="file" accept="audio/*" hidden>
+  <audio id="audio-player" preload="metadata"></audio>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script defer src="./vendor/msal-browser-5.17.1.min.js"></script>
+  <script type="module" src="./pacefold.mjs?v=25.1.0"></script>
+</body>
+</html>
