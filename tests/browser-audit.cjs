@@ -16,7 +16,7 @@ function serve(){
       if(!file.startsWith(site)){response.writeHead(403);response.end();return}
       fs.readFile(file,(error,buffer)=>{
         if(error){response.writeHead(404);response.end('Not found');return}
-        const type={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.png':'image/png','.svg':'image/svg+xml'}[path.extname(file)]||'application/octet-stream';
+        const type={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.webmanifest':'application/manifest+json','.woff2':'font/woff2','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml'}[path.extname(file)]||'application/octet-stream';
         response.writeHead(200,{'content-type':type,'cache-control':'no-store'});response.end(buffer);
       });
     });
@@ -46,11 +46,11 @@ async function main(){
       styles:[...document.styleSheets].map(sheet=>sheet.href).filter(Boolean),scripts:[...document.scripts].map(script=>script.src).filter(Boolean),overflow:document.documentElement.scrollWidth-innerWidth,
       release:window.__PACEFOLD__.version,notes:window.__PACEFOLD__.notes.length,discretion:window.__PACEFOLD__.prefs.rhythmDiscretion,clockText:document.querySelector('[data-view="home"]').innerText,rhythmMeta:document.getElementById('rhythm-meta').textContent,
       svg:Boolean(document.getElementById('day-arc-path')&&document.getElementById('day-sun-group')&&document.getElementById('day-now-line')),polish:['note-insights','day-story-title','now-cue-list','settings-summary','clock-note-input'].every(id=>document.getElementById(id)),brand:document.querySelector('.brand strong')?.textContent,title:document.title,
-      coverTime:document.getElementById('cover-time')?.textContent||'',music:document.getElementById('music-launch')?.href||'',stageInert:document.getElementById('stage')?.inert===true
+      coverTime:document.getElementById('cover-time')?.textContent||'',player:Boolean(document.getElementById('stream-player')),oldLaunch:document.getElementById('music-launch')?getComputedStyle(document.getElementById('music-launch')).display:'missing',peelText:document.getElementById('cover-peel')?.innerText||'',stageInert:document.getElementById('stage')?.inert===true
     }));
-    assert(home.mode==='home'&&home.views.join(',')==='home','Clock is not the only initial view');assert(home.cover==='on'&&home.coverTime&&home.stageInert,'Simple cover is not the initial interaction surface');assert(home.music==='https://music.youtube.com/','Bottom music control does not hand off to YouTube Music');
+    assert(home.mode==='home'&&home.views.join(',')==='home','Clock is not the only initial view');assert(home.cover==='on'&&home.coverTime&&home.stageInert,'Simple cover is not the initial interaction surface');assert(home.player&&home.oldLaunch==='none','Bottom row is not the integrated mini player');assert(!/Open Pacefold/i.test(home.peelText),'Reveal handle is still too literal');
     assert(home.ticks===60,'Analog clock is incomplete');assert(home.actions===6,'Quick actions are incomplete');assert(home.rhythm===6,'Rhythm rows are incomplete');
-    assert(home.styles.filter(url=>url.includes('/app/')).length===1,'More than one app stylesheet loaded');assert(home.scripts.filter(url=>!url.includes('msal-')).length===1,'More than one Pacefold runtime loaded');assert(home.overflow<=1,`Desktop overflow is ${home.overflow}px`);
+    assert(home.styles.filter(url=>url.includes('/app/')).length===1,'More than one app stylesheet loaded');assert(home.scripts.filter(url=>!url.includes('msal-')).length===1,'More than one Pacefold runtime loaded before media is requested');assert(home.overflow<=1,`Desktop overflow is ${home.overflow}px`);
     assert(home.release==='27.0.0'&&home.notes===1,'Migration did not preserve the V27 release or note');assert(home.discretion==='neutral','Existing installs must default to neutral Clock discretion');assert(home.rhythmMeta==='','Clock rhythm metadata is not empty');
     assert(!privateTerms.test(home.clockText),'Neutral Clock leaked prayer, method or location vocabulary');assert(home.svg&&home.polish,'V27 Clock surfaces are incomplete');assert(home.brand==='Clock'&&home.title.startsWith('Clock'),'Ambient chrome is not discreet');
     await page.waitForTimeout(360);await page.screenshot({path:path.join(artifacts,'pacefold-27-surface.png'),fullPage:true});
@@ -88,7 +88,7 @@ async function main(){
     const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,timezoneId:'America/Toronto'}),m=await mobile.newPage();
     await m.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');if(!localStorage.getItem('pacefoldPrefsV15'))localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'everyday',timeZone:'America/Toronto',workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,weatherEnabled:false}))});
     await m.goto(`${origin}/app/`,{waitUntil:'networkidle'});await m.waitForFunction(()=>window.__PACEFOLD__?.version==='27.0.0');
-    const mobileSurface=await m.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,cover:document.documentElement.dataset.cover,music:document.getElementById('music-launch')?.href||''}));assert(mobileSurface.overflow<=1&&mobileSurface.cover==='on'&&mobileSurface.music==='https://music.youtube.com/','Mobile simple surface or music handoff is incomplete');
+    const mobileSurface=await m.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,cover:document.documentElement.dataset.cover,player:Boolean(document.getElementById('stream-player'))}));assert(mobileSurface.overflow<=1&&mobileSurface.cover==='on'&&mobileSurface.player,'Mobile simple surface or mini player row is incomplete');
     await m.waitForTimeout(360);await m.screenshot({path:path.join(artifacts,'pacefold-27-mobile-surface.png'),fullPage:true});await m.click('#cover-peel');await m.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
     const mobileState=await m.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,edgeDisplay:getComputedStyle(document.querySelector('.edge-nav')).display,mobileNavDisplay:getComputedStyle(document.getElementById('mobile-nav')).display,actions:document.querySelectorAll('.quick-action').length,brand:document.querySelector('.brand strong')?.textContent}));
     assert(mobileState.overflow<=1,`Mobile overflow is ${mobileState.overflow}px`);assert(mobileState.edgeDisplay==='none'&&mobileState.mobileNavDisplay!=='none'&&mobileState.actions===6,'Mobile navigation or actions are incomplete');assert(mobileState.brand==='Clock','Mobile ambient chrome is not discreet');
@@ -99,7 +99,7 @@ async function main(){
       if(view==='now'){const text=await m.locator('[data-view="now"]').innerText();assert(!privateTerms.test(text),'Mobile Now view leaked private rhythm or location vocabulary')}
       await m.screenshot({path:path.join(artifacts,`pacefold-27-mobile-${view}.png`),fullPage:true});
     }
-    await mobile.close();console.log('Pacefold 27 browser audit passed: simple cover, discreet Clock, Daybook, persistence and touch navigation.');
+    await mobile.close();console.log('Pacefold 27 browser audit passed: clean daily surface, integrated player, discreet Clock, Daybook, persistence and touch navigation.');
   }finally{if(browser)await browser.close();server.close()}
 }
 main().catch(error=>{console.error(`::error title=Pacefold browser audit failed::${String(error.message||error).replace(/\n/g,'%0A')}`);console.error(error.stack||error);process.exitCode=1});
