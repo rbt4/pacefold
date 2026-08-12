@@ -38,20 +38,22 @@ for(const file of['index.html','privacy.html','app/index.html','app/auth.html'])
 
 const app=read('app/index.html'),runtime=read('app/pacefold.mjs'),styles=read('app/pacefold.css'),worker=read('service-worker.js'),manifest=JSON.parse(read('manifest.webmanifest'));
 const packageJson=JSON.parse(fs.readFileSync(path.resolve('package.json'),'utf8'));
-const cueSource=fs.readFileSync(path.resolve('src/modules/cues.js'),'utf8'),windowCueSource=fs.readFileSync(path.resolve('src/modules/window-cues.js'),'utf8'),cueStoreSource=fs.readFileSync(path.resolve('src/modules/cue-store.js'),'utf8'),scheduleSource=fs.readFileSync(path.resolve('src/modules/schedule.js'),'utf8'),clockSource=fs.readFileSync(path.resolve('src/modules/clock.js'),'utf8'),daylogSource=fs.readFileSync(path.resolve('src/modules/daylog.js'),'utf8'),nowSource=fs.readFileSync(path.resolve('src/modules/now.js'),'utf8'),mainSource=fs.readFileSync(path.resolve('src/modules/main.mjs'),'utf8'),stateSource=fs.readFileSync(path.resolve('src/modules/state.js'),'utf8'),notesSource=fs.readFileSync(path.resolve('src/modules/notes.js'),'utf8'),edgeSource=fs.readFileSync(path.resolve('src/modules/edges.js'),'utf8');
+const cueSource=fs.readFileSync(path.resolve('src/modules/cues.js'),'utf8'),windowCueSource=fs.readFileSync(path.resolve('src/modules/window-cues.js'),'utf8'),startCoverSource=fs.readFileSync(path.resolve('src/modules/start-cover.js'),'utf8'),cueStoreSource=fs.readFileSync(path.resolve('src/modules/cue-store.js'),'utf8'),scheduleSource=fs.readFileSync(path.resolve('src/modules/schedule.js'),'utf8'),clockSource=fs.readFileSync(path.resolve('src/modules/clock.js'),'utf8'),daylogSource=fs.readFileSync(path.resolve('src/modules/daylog.js'),'utf8'),nowSource=fs.readFileSync(path.resolve('src/modules/now.js'),'utf8'),mainSource=fs.readFileSync(path.resolve('src/modules/main.mjs'),'utf8'),stateSource=fs.readFileSync(path.resolve('src/modules/state.js'),'utf8'),notesSource=fs.readFileSync(path.resolve('src/modules/notes.js'),'utf8'),edgeSource=fs.readFileSync(path.resolve('src/modules/edges.js'),'utf8');
 
 assert(packageJson.version==='27.0.0','Package release identity is wrong');
 assert(packageJson.devDependencies?.esbuild==='0.28.1','esbuild must stay exactly pinned');
 assert((app.match(/<link[^>]+stylesheet/g)||[]).length===1,'App must load exactly one stylesheet');
 assert((app.match(/<script/g)||[]).length===2,'App must load only MSAL and one Pacefold runtime');
 assert(!runtime.includes('./core.mjs')&&!runtime.includes('../modules/'),'Built runtime still references source modules');
-assert(mainSource.includes('installCueStore(ctx)')&&mainSource.includes('installWindowCues(ctx)')&&mainSource.includes('installEdges(ctx)')&&mainSource.includes('installRelease(ctx)'),'V27 runtime modules are not fully wired');
+assert(mainSource.includes('installCueStore(ctx)')&&mainSource.includes('installWindowCues(ctx)')&&mainSource.includes('installStartCover(ctx)')&&mainSource.includes('installEdges(ctx)')&&mainSource.includes('installRelease(ctx)'),'V27 runtime modules are not fully wired');
 assert(cueSource.includes('notify-${iconName}-128.png')&&cueSource.includes('badge-96.png'),'Raster notification URLs are missing');
 assert(!cueSource.includes('Waiting on the clock'),'Duplicate Clock cue header returned');
 assert(windowCueSource.includes("document.title='Clock'")&&windowCueSource.includes('data:image/svg+xml')&&windowCueSource.includes('document.hasFocus()'),'Edge-tab cue or focused-window notification policy is incomplete');
 assert(windowCueSource.includes('windowCueBloomUntil')&&windowCueSource.includes('node.dataset.bloom=String(bloom)'),'Window cue bloom lifecycle is incomplete');
 assert(windowCueSource.includes('cluster.hidden=!cues.length')&&windowCueSource.includes('clearDots.hidden=!cues.length'),'Empty cue chrome cleanup is incomplete');
-assert(worker.includes("const VERSION='27.0.0'")&&worker.includes('polish-r2-window-cues'),'Service-worker cache identity is stale');
+assert(startCoverSource.includes("const SEARCH_BASE='https://www.bing.com/search?q='")&&startCoverSource.includes("const YOUTUBE_MUSIC='https://music.youtube.com/'"),'Start cover search or YouTube Music handoff is missing');
+assert(startCoverSource.includes("ctx.captureNote?.(noteInput.value,'Note')")&&startCoverSource.includes('ctx.setStartCover')&&startCoverSource.includes("launch.id='music-launch'"),'Start cover note capture, peel, or music control is incomplete');
+assert(worker.includes("const VERSION='27.0.0'")&&worker.includes('polish-r2-window-cues-start-cover'),'Service-worker cache identity is stale');
 assert(worker.includes("indexedDB.open('pacefold-v26'"),'Durable cue database must remain continuous across V27');
 assert(worker.includes("event.action==='ack'")&&worker.includes("event.action==='snooze'"),'Closed-window notification actions are incomplete');
 assert(cueStoreSource.includes("named=ctx.rhythmMode?.()==='names'")&&cueStoreSource.includes("label:named?item.label:'Scheduled moment'"),'Background cue mirror can leak named rhythm data');
@@ -62,6 +64,7 @@ assert(nowSource.includes("hourly:'temperature_2m,precipitation_probability,prec
 assert(styles.includes('.day-now-line')&&styles.includes('.day-compare-grid')&&styles.includes('.weather-nowcast')&&styles.includes('.metric-card[data-zero="true"]'),'V27 visual hierarchy stylesheet was not compiled');
 assert(styles.includes('.clock-cue-notch')&&styles.includes('.title-cue-strip')&&styles.includes('.edge-nav .edge.is-expanded'),'Cue chrome or edge navigation styles are incomplete');
 assert(styles.includes('.window-cue-bubble')&&styles.includes('.window-cues')&&styles.includes('.clock-cue-panel{display:none!important}'),'Window-native cue stylesheet was not compiled');
+assert(styles.includes('.pace-cover')&&styles.includes('.cover-omnibox')&&styles.includes('.music-launch')&&styles.includes('html[data-cover="peeled"] .pace-cover'),'Simple cover or peel stylesheet was not compiled');
 assert(styles.includes('display-mode: window-controls-overlay')&&styles.includes('app-region:drag')&&styles.includes('app-region:no-drag'),'Window-controls overlay contract is incomplete');
 assert(notesSource.includes("placeholder='Log a thought.'")&&notesSource.includes('clock-carry')&&notesSource.includes('note-inline-input'),'Clock Daybook capture or inline editing is missing');
 assert(edgeSource.includes('setTimeout')&&edgeSource.includes('120')&&edgeSource.includes('260'),'Edge preview timing contract is missing');
@@ -81,4 +84,4 @@ const migrated=migratePrefs({profile:'original',waterSips:8,noodleMinutes:45,sho
 const migratedNotes=normalizeNotes([{id:'old',text:'Old note',createdAt:'2026-08-10T12:00:00Z'}]);assert(migratedNotes[0].body==='Old note','Legacy note migration failed');
 const key=dateKey(summer,'America/Toronto'),sampleLog=normalizeLog({days:{[key]:{events:[{id:'f',type:'focus',source:'focus',label:'Focus',start:summer.getTime()-3600000,end:summer.getTime()}]}}}),metrics=metricsForDay(sampleLog,key,toronto,summer.getTime());assert(metrics.focus===3600000,'Day-log metrics failed');
 
-console.log(JSON.stringify({release:'27.0.0',revision:'polish-r2-window-cues',runtimes:1,stylesheets:1,discreetChrome:'checked',windowCues:'checked',focusedNotificationSuppression:'checked',backgroundPrivacy:'checked',dayComparison:'checked',weatherContext:'checked',movingNowMarker:'checked',storageContinuity:'checked',prayerSchedule:'passed'},null,2));
+console.log(JSON.stringify({release:'27.0.0',revision:'polish-r2-window-cues',runtimes:1,stylesheets:1,discreetChrome:'checked',windowCues:'checked',startCover:'checked',youtubeMusic:'checked',focusedNotificationSuppression:'checked',backgroundPrivacy:'checked',dayComparison:'checked',weatherContext:'checked',movingNowMarker:'checked',storageContinuity:'checked',prayerSchedule:'passed'},null,2));
