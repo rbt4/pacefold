@@ -9,6 +9,7 @@ import{installNow}from'./now.js';
 import{installSettings}from'./settings.js';
 import{installSync}from'./sync.js';
 import{installEdges}from'./edges.js';
+import{installRelease}from'./release.js';
 import{installApp}from'./app.js';
 
 const ctx=createContext();
@@ -23,6 +24,7 @@ installNow(ctx);
 installSettings(ctx);
 installSync(ctx);
 installEdges(ctx);
+installRelease(ctx);
 installApp(ctx);
 
 ctx.initialize().catch(error=>{
