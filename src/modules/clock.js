@@ -22,7 +22,8 @@ export function installClock(ctx){
     const state=ctx.getSchedule(now);
     const next=state.next;
     const copy=id('next-moment');
-    copy.querySelector('strong').textContent=next?`${next.label} · ${ctx.formatTime(next.date)}`:'Today is complete';
+    const homeLabel=ctx.clockMomentLabel(next);
+    copy.querySelector('strong').textContent=next?`${homeLabel} · ${ctx.formatTime(next.date)}`:'Today is complete';
     copy.querySelector('small').textContent=next?ctx.relativeUntil(next.date,now):'';
     id('now-next-name').textContent=next?.label||'Today is complete';
     id('now-next-time').textContent=next?ctx.formatTime(next.date):'—';
