@@ -1,4 +1,5 @@
 /* Final-final chrome polish: an empty Music player belongs to the window chrome, not over page content. */
+.stream-chooser{display:block!important;box-sizing:border-box!important;isolation:isolate!important}.stream-chooser[hidden]{display:none!important}.stream-chooser .stream-add-form{position:relative;z-index:2}.stream-chooser .stream-library{position:relative;z-index:1}
 html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]){
   top:max(8px,env(safe-area-inset-top))!important;
   bottom:auto!important;
