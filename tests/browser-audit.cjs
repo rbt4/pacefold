@@ -33,8 +33,8 @@ async function main(){
     page.on('pageerror',error=>errors.push(`page: ${error.message}`));page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text()}`)});
     await page.addInitScript(()=>{
       localStorage.setItem('pacefoldOnboardedV15','1');
-      localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',lat:43.6205,lng:-79.5132,locationLabel:'Etobicoke, Toronto',timeZone:'America/Toronto',method:'15',asr:'hanafi',showSeconds:true,waterTarget:24,waterSips:6,waterDate:new Date().toLocaleDateString('en-CA',{timeZone:'America/Toronto'}),workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,quietMode:false,weatherEnabled:false}));
-      localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify([{id:'existing',date:new Date().toLocaleDateString('en-CA',{timeZone:'America/Toronto'}),body:'Existing Pacefold note',category:'Note',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}]));
+      if(!localStorage.getItem('pacefoldPrefsV15'))localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',lat:43.6205,lng:-79.5132,locationLabel:'Etobicoke, Toronto',timeZone:'America/Toronto',method:'15',asr:'hanafi',showSeconds:true,waterTarget:24,waterSips:6,waterDate:new Date().toLocaleDateString('en-CA',{timeZone:'America/Toronto'}),workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,quietMode:false,weatherEnabled:false}));
+      if(!localStorage.getItem('pacefold.notebook.entries.v2'))localStorage.setItem('pacefold.notebook.entries.v2',JSON.stringify([{id:'existing',date:new Date().toLocaleDateString('en-CA',{timeZone:'America/Toronto'}),body:'Existing Pacefold note',category:'Note',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}]));
     });
     await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.version==='26.0.0');await page.waitForSelector('html.ready');
 
@@ -73,7 +73,7 @@ async function main(){
     await fresh.click('#setup-later');await fresh.reload({waitUntil:'domcontentloaded'});await fresh.waitForTimeout(550);assert(await fresh.locator('#setup-dialog[open]').count()===0,'First-run setup repeated after completion');await firstRun.close();
 
     const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,timezoneId:'America/Toronto'}),m=await mobile.newPage();
-    await m.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'everyday',timeZone:'America/Toronto',workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,weatherEnabled:false}))});
+    await m.addInitScript(()=>{localStorage.setItem('pacefoldOnboardedV15','1');if(!localStorage.getItem('pacefoldPrefsV15'))localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'everyday',timeZone:'America/Toronto',workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,weatherEnabled:false}))});
     await m.goto(`${origin}/app/`,{waitUntil:'networkidle'});await m.waitForFunction(()=>window.__PACEFOLD__?.version==='26.0.0');
     const mobileState=await m.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,edgeDisplay:getComputedStyle(document.querySelector('.edge-nav')).display,mobileNavDisplay:getComputedStyle(document.getElementById('mobile-nav')).display,actions:document.querySelectorAll('.quick-action').length}));
     assert(mobileState.overflow<=1,`Mobile overflow is ${mobileState.overflow}px`);assert(mobileState.edgeDisplay==='none'&&mobileState.mobileNavDisplay!=='none'&&mobileState.actions===6,'Mobile navigation or actions are incomplete');
