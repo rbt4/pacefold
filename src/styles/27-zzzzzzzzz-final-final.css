@@ -64,7 +64,7 @@ html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player
 }
 @media(max-width:760px){
   .stream-chooser .stream-add-form{gap:6px!important}.stream-chooser .stream-add-form button:first-of-type{display:block!important}.stream-chooser .stream-add-form button{min-width:48px!important;padding-inline:8px!important;font-size:9px!important}
-  html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]){left:108px!important;width:36px!important;height:36px!important}
+  html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]){left:120px!important;width:36px!important;height:36px!important}
   html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]) .stream-player,
   html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]) .stream-dock,
   html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]) .stream-source{width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important}
