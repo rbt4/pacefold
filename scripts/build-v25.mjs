@@ -25,14 +25,25 @@ async function writeDailyImage(){
   await fs.writeFile(path.join(target,'app','daily-image.json'),JSON.stringify(metadata));
 }
 
-async function hardenPlayerCsp(){
+async function prepareAppShell(){
   const file=path.join(target,'app','index.html');let html=await fs.readFile(file,'utf8');
-  html=html.replace("script-src 'self';","script-src 'self' https://www.youtube.com;").replace('frame-src https://login.microsoftonline.com;','frame-src https://login.microsoftonline.com https://www.youtube.com;');
+  html=html
+    .replace("script-src 'self';","script-src 'self' https://www.youtube.com;")
+    .replace('frame-src https://login.microsoftonline.com;','frame-src https://login.microsoftonline.com https://www.youtube.com;')
+    .replace('<meta name="application-name" content="Pacefold">','<meta name="application-name" content="Clock">')
+    .replace('./pacefold.css?v=25.1.0','./pacefold.css?v=27.1.0')
+    .replace('<title>Pacefold — Your day, quietly kept</title>','<title>Clock</title>')
+    .replace('<span><strong>Pacefold</strong><small>Your day, quietly kept</small></span>','<span><strong>Clock</strong><small hidden></small></span>')
+    .replace('id="rhythm-kicker">Prayer rhythm<','id="rhythm-kicker">Today’s rhythm<')
+    .replace('id="rhythm-meta">Your configured location and calculation method appear here.<','id="rhythm-meta"><')
+    .replace('data-action="prep"><i></i><span><strong>Prep</strong>','data-action="prep"><i></i><span><strong>Noodles</strong>')
+    .replace('<button type="button" data-action="prep">Prep</button>','<button type="button" data-action="prep">Noodles</button>')
+    .replace('<b>Pacefold 25.1.0</b>','<b>Pacefold 27.1.0</b>');
   await fs.writeFile(file,html);
 }
 
 await writeDailyImage();
-await hardenPlayerCsp();
+await prepareAppShell();
 await build({entryPoints:[path.join(source,'modules','main.mjs')],outfile:path.join(target,'app','pacefold.mjs'),bundle:true,minify:true,format:'esm',platform:'browser',target:['es2022'],legalComments:'none',sourcemap:false,charset:'utf8'});
 
 const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(await fs.readdir(styleRoot)).filter(file=>file.endsWith('.css')).sort()}catch{}
