@@ -1,4 +1,4 @@
-name: Build, verify and publish Pacefold 25
+name: Build, verify and publish Pacefold 26
 
 on:
   push:
@@ -24,24 +24,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Build direct Pacefold source
-        run: node scripts/build-v25.mjs _site
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build Pacefold bundle
+        run: npm run build
       - name: Static and core verification
         run: |
-          node scripts/verify-v25.mjs _site
+          npm run verify
           node tests/core.mjs
       - name: Install browser audit runtime
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
       - name: Current-product browser audit
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit.cjs _site /tmp/pacefold-25-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit.cjs _site /tmp/pacefold-26-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-25-audit-${{ github.run_id }}
-          path: /tmp/pacefold-25-audit/
+          name: pacefold-26-audit-${{ github.run_id }}
+          path: /tmp/pacefold-26-audit/
           if-no-files-found: warn
           retention-days: 7
 
@@ -64,10 +66,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund
       - name: Build exact verified site
         run: |
-          node scripts/build-v25.mjs _site
-          node scripts/verify-v25.mjs _site
+          npm run build
+          npm run verify
+          node tests/core.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
