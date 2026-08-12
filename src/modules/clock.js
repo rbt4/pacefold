@@ -47,39 +47,31 @@ export function installClock(ctx){
     sky.style.setProperty('--sky-from',firstHalf?'var(--blue-soft)':'var(--amber-soft)');
     sky.style.setProperty('--sky-to',firstHalf?'var(--amber-soft)':'color-mix(in srgb,var(--amber-soft),var(--red) 22%)');
     sky.style.setProperty('--sky-mix',`${Math.round((firstHalf?progress*2:(progress-.5)*2)*100)}%`);
-    if(progressPath){
-      progressPath.style.strokeDasharray='1';
-      progressPath.style.strokeDashoffset=String(1-progress);
-    }
-
+    if(progressPath){progressPath.style.strokeDasharray='1';progressPath.style.strokeDashoffset=String(1-progress)}
     if(stateName==='off'){
       sun.hidden=true;if(glow)glow.hidden=true;if(shadow)shadow.hidden=true;
       ctx.renderDayMarkers(state,range,now,progress);return;
     }
-
     sun.hidden=false;if(glow)glow.hidden=false;if(shadow)shadow.hidden=false;
     const length=path.getTotalLength();
     const point=stateName==='active'?path.getPointAtLength(length*progress):stateName==='before'?{x:20,y:121}:{x:580,y:121};
     const elevation=stateName==='active'?4*progress*(1-progress):0;
     const transform=`translate(${point.x}px,${point.y}px)`;
-    sun.style.transform=transform;
-    sun.dataset.muted=String(stateName!=='active');
-    if(glow){
-      glow.style.transform=transform;
-      glow.setAttribute('r',String(20+elevation*5));
-      glow.style.opacity=String(.22+elevation*.24);
-    }
+    sun.style.transform=transform;sun.dataset.muted=String(stateName!=='active');
+    if(glow){glow.style.transform=transform;glow.setAttribute('r',String(20+elevation*5));glow.style.opacity=String(.22+elevation*.24)}
     if(shadow){
       shadow.style.transform=`translate(${point.x}px,110px)`;
-      shadow.setAttribute('rx',String(35-elevation*18));
-      shadow.setAttribute('ry',String(3.8-elevation*1.5));
-      shadow.style.opacity=String(.2-elevation*.08);
+      shadow.setAttribute('rx',String(35-elevation*18));shadow.setAttribute('ry',String(3.8-elevation*1.5));shadow.style.opacity=String(.2-elevation*.08);
     }
     ctx.renderDayMarkers(state,range,now,progress);
   };
 
-  ctx.renderClock=(now=new Date())=>{
-    const part=ctx.clockParts(now);
+  ctx.renderBarClock=(now=new Date(),part=ctx.clockParts(now))=>{
+    id('bar-clock').textContent=ctx.formatTime(now,{second:ctx.prefs.showSeconds?'2-digit':undefined});
+    return part;
+  };
+
+  ctx.renderHomeClock=(now=new Date(),part=ctx.clockParts(now))=>{
     const minutes=part.minute+part.second/60;
     const hours=(part.hour%12)+minutes/60;
     const root=document.documentElement;
@@ -87,35 +79,37 @@ export function installClock(ctx){
     root.style.setProperty('--minute-angle',`${minutes*6}deg`);
     root.style.setProperty('--second-angle',`${part.second*6}deg`);
     root.classList.toggle('seconds-off',!ctx.prefs.showSeconds);
-
     id('clock-hour').textContent=String(ctx.prefs.timeFormat==='24'?part.hour:(part.hour%12||12)).padStart(ctx.prefs.timeFormat==='24'?2:1,'0');
     id('clock-minute').textContent=String(part.minute).padStart(2,'0');
     id('clock-seconds').textContent=String(part.second).padStart(2,'0');
     id('clock-date').textContent=ctx.formatDate(now);
-    id('bar-clock').textContent=ctx.formatTime(now,{second:ctx.prefs.showSeconds?'2-digit':undefined});
 
-    const state=ctx.getSchedule(now);
-    const next=state.next;
-    const copy=id('next-moment');
+    const state=ctx.getSchedule(now),next=state.next,copy=id('next-moment');
     const homeLabel=ctx.clockMomentLabel(next);
     copy.querySelector('strong').textContent=next?`${homeLabel} · ${ctx.formatTime(next.date)}`:'Today is complete';
     copy.querySelector('small').textContent=next?ctx.relativeUntil(next.date,now):'';
-    id('now-next-name').textContent=next?.label||'Today is complete';
-    id('now-next-time').textContent=next?ctx.formatTime(next.date):'—';
-    id('now-countdown').textContent=next?ctx.relativeUntil(next.date,now):'The next day will begin quietly.';
 
     const range=ctx.workRange(ctx.prefs,now);
     const decimal=part.hour+part.minute/60;
     const progress=ctx.clamp((decimal-range.start)/(range.end-range.start),0,1,0);
     const dayState=!range.activeDay?'Off day':decimal<range.start?'Before work':decimal>range.end?'Workday complete':'Workday unfolding';
     id('day-percent').textContent=`${Math.round(progress*100)}%`;
-    id('day-copy').textContent=dayState;
-    id('day-phase').textContent=range.activeDay?'Workday':'Off day';
-    id('work-start').textContent=ctx.formatTime(ctx.zonedForToday(range.start,now));
-    id('work-end').textContent=ctx.formatTime(ctx.zonedForToday(range.end,now));
-    id('clock-status').textContent=ctx.prefs.quietMode
-      ?'Quiet mode is keeping only essentials'
-      :ctx.currentCues.length?`${ctx.currentCues.length} quiet cue${ctx.currentCues.length===1?'':'s'} waiting`:'Quietly keeping pace';
+    id('day-copy').textContent=dayState;id('day-phase').textContent=range.activeDay?'Workday':'Off day';
+    id('work-start').textContent=ctx.formatTime(ctx.zonedForToday(range.start,now));id('work-end').textContent=ctx.formatTime(ctx.zonedForToday(range.end,now));
+    id('clock-status').textContent=ctx.prefs.quietMode?'Quiet mode is keeping only essentials':ctx.currentCues.length?`${ctx.currentCues.length} quiet cue${ctx.currentCues.length===1?'':'s'} waiting`:'Quietly keeping pace';
     ctx.renderDaySky(now,state,range,part);
+  };
+
+  ctx.renderNowClock=(now=new Date())=>{
+    const state=ctx.getSchedule(now),next=state.next;
+    id('now-next-name').textContent=next?.label||'Today is complete';
+    id('now-next-time').textContent=next?ctx.formatTime(next.date):'—';
+    id('now-countdown').textContent=next?ctx.relativeUntil(next.date,now):'The next day will begin quietly.';
+  };
+
+  ctx.renderClock=(now=new Date())=>{
+    const part=ctx.renderBarClock(now);
+    if(ctx.mode==='home')ctx.renderHomeClock(now,part);
+    if(ctx.mode==='now')ctx.renderNowClock(now);
   };
 }
