@@ -1,12 +1,24 @@
 import{$,$$,id,el}from'./state.js';
 
 export function installSettings(ctx){
+  ctx.setRhythmDiscretion=mode=>{
+    if(!['names','neutral','hidden'].includes(mode))return;
+    ctx.rhythmRevealUntil=0;
+    ctx.storePrefs({rhythmDiscretion:mode},'rhythm-discretion');
+    ctx.renderAll?.();
+  };
+
   ctx.renderSettings=()=>{
     for(const node of $$('.setting-toggle')){
       const on=Boolean(ctx.prefs[node.dataset.setting]);
       node.setAttribute('aria-pressed',String(on));
     }
     id('quiet-button').setAttribute('aria-pressed',String(ctx.prefs.quietMode));
+    for(const node of $$('[data-rhythm-discretion]')){
+      const selected=node.dataset.rhythmDiscretion===ctx.prefs.rhythmDiscretion;
+      node.setAttribute('aria-pressed',String(selected));
+      node.classList.toggle('active',selected);
+    }
 
     const [start,end]=ctx.prefs.workHours.split('-');
     id('work-start-input').value=start;
@@ -47,12 +59,13 @@ export function installSettings(ctx){
         :ctx.prefs.oneNoteClientId?'Configured · choose a destination':'Not configured.';
 
     const profileNames={original:'Original · Muslim',muslim:'Muslim',everyday:'Everyday',mindful:'Mindful',custom:'Custom'};
+    const discretionNames={names:'Names on Clock',neutral:'Neutral on Clock',hidden:'Hidden from Clock'};
     const summary=id('settings-summary');
     const meta=ctx.safeGet(ctx.KEYS.backupMeta,null);
     const waiting=ctx.currentCues.length;
     summary.replaceChildren();
     for(const [label,value,color] of [
-      ['Profile',profileNames[ctx.prefs.profile]||'Original','#426b5b'],
+      ['Profile',`${profileNames[ctx.prefs.profile]||'Original'} · ${discretionNames[ctx.prefs.rhythmDiscretion]||'Neutral on Clock'}`,'#426b5b'],
       ['Workday',`${ctx.formatTime(ctx.zonedForToday(Number(start.slice(0,2))+Number(start.slice(3))/60))}–${ctx.formatTime(ctx.zonedForToday(Number(end.slice(0,2))+Number(end.slice(3))/60))}`,'#3f718b'],
       ['Cues',ctx.prefs.quietMode?'Quiet essentials':ctx.prefs.notifications?'System + dots':`${waiting} dot${waiting===1?'':'s'} waiting`,'#a66f2d'],
       ['Backup',ctx.liveBackupHandle?'Live file connected':meta?.updatedAt?'Downloaded before':'Local only','#77638e']
