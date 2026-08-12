@@ -1,18 +1,24 @@
 import{$,$$,id,el,button}from'./state.js';
 
 export function installApp(ctx){
-  ctx.renderAll=()=>{
-    ctx.refreshCues();
-    ctx.renderClock();
-    ctx.renderRhythm();
-    ctx.renderActions();
-    ctx.renderFold();
-    ctx.renderNotes();
-    ctx.renderWorklog();
-    ctx.renderActive();
-    ctx.renderSettings();
-    ctx.renderWeather();
+  ctx.render=(view=ctx.mode,{notify=false}={})=>{
+    ctx.refreshCues(notify);
+    ctx.renderClock(new Date());
+    if(view==='home'){
+      ctx.renderRhythm(new Date(),{home:true,nowView:false});
+      ctx.renderActions();
+      ctx.renderFold();
+    }
+    if(view==='notes')ctx.renderNotes();
+    if(view==='worklog')ctx.renderWorklog();
+    if(view==='now'){
+      ctx.renderRhythm(new Date(),{home:false,nowView:true});
+      ctx.renderActive();
+      ctx.renderWeather();
+    }
+    if(view==='settings')ctx.renderSettings();
   };
+  ctx.renderAll=()=>ctx.render(ctx.mode);
 
   ctx.go=(target,{directional=false}={})=>{
     if(!['home','notes','worklog','now','settings'].includes(target))target='home';
@@ -24,7 +30,8 @@ export function installApp(ctx){
     id('return-cue').hidden=true;
     window.scrollTo({top:0,behavior:'smooth'});
     if(ctx.mode==='notes')requestAnimationFrame(()=>id('note-input')?.focus({preventScroll:true}));
-    ctx.renderAll();
+    ctx.render(ctx.mode);
+    if(ctx.mode==='now')void ctx.fetchWeather(false);
   };
 
   ctx.blockedFromReturn=()=>Boolean($('input:focus,textarea:focus,select:focus,dialog[open]'));
@@ -69,19 +76,16 @@ export function installApp(ctx){
       const block=el('section','rhythm-discretion-setting');block.id='rhythm-discretion-setting';
       const copy=el('span');copy.append(el('small','','Clock privacy'),el('strong','','Moment names on the Clock'),el('p','','Choose how much the ambient Clock reveals. Now and Settings keep the full schedule available.'));
       const choices=el('div','rhythm-discretion-choices');
-      for(const [mode,title,detail] of [
+      for(const[mode,title,detail]of[
         ['neutral','Neutral','Times and colour only · recommended'],
         ['hidden','Hidden','Remove the rhythm card from Clock'],
         ['names','Names','Show full moment names on Clock']
       ]){
         const control=button('',`${title}: ${detail}`);
-        control.dataset.rhythmDiscretion=mode;
-        control.setAttribute('aria-pressed','false');
-        control.append(el('strong','',title),el('small','',detail));
-        choices.append(control);
+        control.dataset.rhythmDiscretion=mode;control.setAttribute('aria-pressed','false');
+        control.append(el('strong','',title),el('small','',detail));choices.append(control);
       }
-      block.append(copy,choices);
-      rhythmPanel.querySelector(':scope > header')?.after(block);
+      block.append(copy,choices);rhythmPanel.querySelector(':scope > header')?.after(block);
     }
 
     const originalSetup=$('[data-setup-profile="original"] small');
@@ -91,10 +95,8 @@ export function installApp(ctx){
       const block=el('section','setup-discretion');block.id='setup-discretion';
       const copy=el('span');copy.append(el('strong','','Show moment names on the clock?'),el('small','','Default is no. You can reveal names temporarily or change this later.'));
       const choices=el('div');
-      const neutral=button('',`Keep moment names neutral on the Clock`,'Keep neutral');
-      neutral.dataset.setupDiscretion='neutral';neutral.setAttribute('aria-pressed','true');
-      const names=button('',`Show full moment names on the Clock`,'Show names');
-      names.dataset.setupDiscretion='names';names.setAttribute('aria-pressed','false');
+      const neutral=button('',`Keep moment names neutral on the Clock`,'Keep neutral');neutral.dataset.setupDiscretion='neutral';neutral.setAttribute('aria-pressed','true');
+      const names=button('',`Show full moment names on the Clock`,'Show names');names.dataset.setupDiscretion='names';names.setAttribute('aria-pressed','false');
       choices.append(neutral,names);block.append(copy,choices);setupChoices?.after(block);
     }
     id('setup-later').textContent='Continue';
@@ -119,7 +121,7 @@ export function installApp(ctx){
         if(source==='field')ctx.toggleSession('field','field','Field work');
         if(source==='focus')ctx.toggleSession('focus','focus','Focus block');
         if(source==='reset')ctx.addMoment('move','Manual reset','Logged from Day view');
-        ctx.renderAll();return;
+        ctx.render(ctx.mode);return;
       }
       const tab=target.closest('[data-settings-tab]');
       if(tab){ctx.settingsTab=tab.dataset.settingsTab;ctx.renderSettings();return}
@@ -131,13 +133,13 @@ export function installApp(ctx){
       if(setupDiscretion){
         ctx.storePrefs({rhythmDiscretion:setupDiscretion.dataset.setupDiscretion},'onboarding-discretion');
         for(const node of $$('[data-setup-discretion]'))node.setAttribute('aria-pressed',String(node===setupDiscretion));
-        ctx.renderAll();return;
+        ctx.render(ctx.mode);return;
       }
       const setup=target.closest('[data-setup-profile]');
       if(setup){
         ctx.storePrefs({profile:setup.dataset.setupProfile},'onboarding-profile');
         for(const node of $$('[data-setup-profile]'))node.setAttribute('aria-pressed',String(node===setup));
-        ctx.renderAll();return;
+        ctx.render(ctx.mode);return;
       }
       const oneNoteItem=target.closest('[data-onenote-id]');
       if(oneNoteItem){const item=ctx.oneNoteCatalog.find(row=>String(row.id)===oneNoteItem.dataset.onenoteId);if(item)void ctx.chooseOneNoteItem(item)}
@@ -150,7 +152,7 @@ export function installApp(ctx){
       if(event.key==='Escape'||event.key==='Home'){event.preventDefault();ctx.go('home')}
     });
 
-    for(const name of ['pointerdown','wheel','touchstart'])document.addEventListener(name,ctx.registerActivity,{passive:true});
+    for(const name of['pointerdown','wheel','touchstart'])document.addEventListener(name,ctx.registerActivity,{passive:true});
     id('quiet-button').addEventListener('click',()=>void ctx.toggleSetting('quietMode'));
     id('cue-cluster').addEventListener('click',()=>ctx.go('now'));
     id('clear-cues').addEventListener('click',ctx.clearAllCues);
@@ -169,17 +171,16 @@ export function installApp(ctx){
 
     id('focus-toggle').addEventListener('click',()=>ctx.toggleSession('focus','focus','Focus block'));
     id('export-day').addEventListener('click',()=>{
-      const key=ctx.todayKey();
-      ctx.download(`pacefold-day-${key}.json`,'application/json',JSON.stringify({release:ctx.RELEASE,date:key,metrics:ctx.metricsForDay(ctx.log,key,ctx.prefs),notes:ctx.notesForDate(key)},null,2));
+      const key=ctx.todayKey();ctx.download(`pacefold-day-${key}.json`,'application/json',JSON.stringify({release:ctx.RELEASE,date:key,metrics:ctx.metricsForDay(ctx.log,key,ctx.prefs),notes:ctx.notesForDate(key)},null,2));
     });
     id('clear-open-sessions').addEventListener('click',()=>{
-      for(const source of ['focus','field','prep','away','meal'])ctx.closeSession(source,'Closed manually');
-      ctx.storePrefs({noodleStart:0,awayStart:0,lunchStart:0},'close-sessions');ctx.renderAll();ctx.toast('Open sessions closed');
+      for(const source of['focus','field','prep','away','meal'])ctx.closeSession(source,'Closed manually');
+      ctx.storePrefs({noodleStart:0,awayStart:0,lunchStart:0},'close-sessions');ctx.render(ctx.mode);ctx.toast('Open sessions closed');
     });
 
     for(const input of $$('.settings-panels input,.settings-panels select'))input.addEventListener('change',ctx.settingsInput);
     for(const input of $$('[data-offset]'))input.addEventListener('change',()=>{
-      ctx.storePrefs({offsets:{...ctx.prefs.offsets,[input.dataset.offset]:Number(input.value)||0}},'prayer-offset');ctx.renderAll();
+      ctx.storePrefs({offsets:{...ctx.prefs.offsets,[input.dataset.offset]:Number(input.value)||0}},'prayer-offset');ctx.render(ctx.mode);
     });
     id('use-location').addEventListener('click',ctx.useDeviceLocation);
     id('weather-refresh').addEventListener('click',()=>void ctx.fetchWeather(true));
@@ -194,7 +195,7 @@ export function installApp(ctx){
 
     id('reset-today').addEventListener('click',async()=>{
       if(!await ctx.confirmAction('Reset today’s counters?','Water and active timers will reset. Notes and completed day-log entries stay.'))return;
-      ctx.storePrefs({waterOz:0,waterSips:0,waterDate:ctx.todayKey(),noodleStart:0,awayStart:0,lunchStart:0},'reset-today');ctx.renderAll();ctx.toast('Today’s counters reset');
+      ctx.storePrefs({waterOz:0,waterSips:0,waterDate:ctx.todayKey(),noodleStart:0,awayStart:0,lunchStart:0},'reset-today');ctx.render(ctx.mode);ctx.toast('Today’s counters reset');
     });
     id('reset-app').addEventListener('click',async()=>{
       if(!await ctx.confirmAction('Delete local Pacefold data?','This removes settings, notes and the day log from this browser. Download a backup first if you may need them.'))return;
@@ -213,12 +214,10 @@ export function installApp(ctx){
       const file=event.target.files?.[0];if(!file)return;
       if(ctx.localAudioUrl)URL.revokeObjectURL(ctx.localAudioUrl);
       ctx.localAudioUrl=URL.createObjectURL(file);
-      ctx.storePrefs({soundChoice:'local',soundLabel:file.name.replace(/\.[^.]+$/,'').slice(0,70)},'sound-file');
-      void ctx.startSound();event.target.value='';
+      ctx.storePrefs({soundChoice:'local',soundLabel:file.name.replace(/\.[^.]+$/,'').slice(0,70)},'sound-file');void ctx.startSound();event.target.value='';
     });
     id('setup-later').addEventListener('click',()=>{
-      ctx.storePrefs({rhythmDiscretion:ctx.prefs.rhythmDiscretion||'neutral'},'onboarding-complete');
-      id('setup-dialog').close();ctx.renderAll();ctx.toast('Pacefold is ready');
+      ctx.storePrefs({rhythmDiscretion:ctx.prefs.rhythmDiscretion||'neutral'},'onboarding-complete');id('setup-dialog').close();ctx.render(ctx.mode);ctx.toast('Pacefold is ready');
     });
 
     window.addEventListener('storage',event=>{
@@ -228,12 +227,16 @@ export function installApp(ctx){
       }
       if(event.key===ctx.KEYS.notes)ctx.notes=ctx.normalizeNotes(ctx.parseJson(event.newValue,[]));
       if(event.key===ctx.KEYS.log)ctx.log=ctx.normalizeLog(ctx.parseJson(event.newValue,{}));
-      if(event.key===ctx.KEYS.cueState){ctx.cueState=ctx.parseJson(event.newValue,{ack:{},notified:{},snoozeUntil:0});ctx.refreshCues()}
-      ctx.renderAll();
+      if(event.key===ctx.KEYS.cueState)ctx.cueState=ctx.parseJson(event.newValue,{ack:{},notified:{},snoozeUntil:0});
+      ctx.render(ctx.mode);
     });
 
-    window.addEventListener('focus',()=>{ctx.renderAll();void ctx.syncOneNote(false)});
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden){ctx.renderAll();void ctx.syncOneNote(false)}});
+    window.addEventListener('focus',()=>{if(!document.hidden){ctx.render(ctx.mode);ctx.renderIdle();void ctx.syncOneNote(false)}});
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden)return;
+      ctx.minuteSeen=-1;ctx.render(ctx.mode);ctx.renderIdle();void ctx.syncOneNote(false);
+      if(ctx.mode==='now')void ctx.fetchWeather(false);
+    });
     window.addEventListener('beforeunload',()=>{if(ctx.localAudioUrl)URL.revokeObjectURL(ctx.localAudioUrl)});
     navigator.serviceWorker?.addEventListener('message',event=>{
       if(event.data?.type==='PACEFOLD_ACK'){
@@ -250,18 +253,23 @@ export function installApp(ctx){
     const requested=new URLSearchParams(location.search).get('mode');
     if(['notes','worklog','now','settings'].includes(requested))ctx.mode=requested;
     document.documentElement.dataset.mode=ctx.mode;
-    ctx.renderAll();
+    ctx.render(ctx.mode);
     await ctx.registerWorker();
-    void ctx.fetchWeather(false);
+    if(ctx.mode==='now')void ctx.fetchWeather(false);
 
     setInterval(()=>{
+      if(document.hidden)return;
       const now=new Date(),minute=now.getMinutes();
-      ctx.renderClock(now);ctx.renderActions();ctx.renderActive();ctx.renderIdle();
+      ctx.renderClock(now);ctx.renderIdle();
+      if(ctx.mode==='home')ctx.renderActions();
+      if(ctx.mode==='now')ctx.renderActive();
       if(minute!==ctx.minuteSeen){
-        ctx.minuteSeen=minute;ctx.refreshCues(true);ctx.renderRhythm(now);ctx.renderFold();void ctx.fetchWeather(false);
+        ctx.minuteSeen=minute;ctx.refreshCues(true);
+        if(ctx.mode==='home'){ctx.renderRhythm(now,{home:true,nowView:false});ctx.renderFold()}
+        if(ctx.mode==='now'){ctx.renderRhythm(now,{home:false,nowView:true});void ctx.fetchWeather(false)}
+        if(ctx.mode==='worklog')ctx.renderWorklog();
       }
     },1000);
-    setInterval(ctx.renderIdle,1000);
 
     if(hadExisting){localStorage.setItem(ctx.KEYS.onboarding,'1');localStorage.setItem(ctx.KEYS.setupDismissed,'1')}
     else setTimeout(()=>id('setup-dialog').showModal(),420);
@@ -269,8 +277,8 @@ export function installApp(ctx){
 
     window.__PACEFOLD__={
       version:ctx.RELEASE,revision:ctx.REVISION,
-      get prefs(){return ctx.prefs},get notes(){return ctx.notes},get log(){return ctx.log},
-      go:ctx.go,render:ctx.renderAll,schedule:()=>ctx.getSchedule(new Date()),backup:ctx.currentBackup,selfCheck:ctx.runSelfCheck
+      get prefs(){return ctx.prefs},get notes(){return ctx.notes},get log(){return ctx.log},get cues(){return ctx.currentCues},
+      go:ctx.go,render:ctx.render,schedule:()=>ctx.getSchedule(new Date()),backup:ctx.currentBackup,selfCheck:ctx.runSelfCheck
     };
   };
 }
