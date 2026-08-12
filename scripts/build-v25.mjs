@@ -38,7 +38,8 @@ async function prepareAppShell(){
     .replace('id="rhythm-meta">Your configured location and calculation method appear here.<','id="rhythm-meta"><')
     .replace('data-action="prep"><i></i><span><strong>Prep</strong>','data-action="prep"><i></i><span><strong>Noodles</strong>')
     .replace('<button type="button" data-action="prep">Prep</button>','<button type="button" data-action="prep">Noodles</button>')
-    .replace('<b>Pacefold 25.1.0</b>','<b>Pacefold 27.1.0</b>');
+    .replace(/Pacefold\s+\d+\.\d+\.\d+/g,'Pacefold 27.1.0')
+    .replace('Pacefold 27.1.0 · polish-r2','Pacefold 27.1.0 · final-form-r1');
   await fs.writeFile(file,html);
 }
 
