@@ -5,36 +5,32 @@ import{build}from'esbuild';
 const root=process.cwd();
 const source=path.join(root,'src');
 const target=path.resolve(process.argv[2]||path.join(root,'_site'));
-
 if(target===root||target===path.parse(target).root)throw new Error(`Unsafe build target: ${target}`);
 
 await fs.rm(target,{recursive:true,force:true});
 await fs.mkdir(target,{recursive:true});
 await fs.cp(source,target,{recursive:true});
 
-await build({
-  entryPoints:[path.join(source,'modules','main.mjs')],
-  outfile:path.join(target,'app','pacefold.mjs'),
-  bundle:true,
-  minify:true,
-  format:'esm',
-  platform:'browser',
-  target:['es2022'],
-  legalComments:'none',
-  sourcemap:false,
-  charset:'utf8'
-});
+async function writeDailyImage(){
+  const metadata={date:'',url:'',credit:'',creditUrl:'',source:'Bing image of the day'};
+  try{
+    const response=await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-CA',{headers:{'user-agent':'Pacefold/27'}});if(!response.ok)throw new Error(`metadata ${response.status}`);
+    const item=(await response.json())?.images?.[0];if(!item?.url)throw new Error('missing image URL');
+    const imageUrl=new URL(item.url,'https://www.bing.com');
+    const imageResponse=await fetch(imageUrl,{headers:{'user-agent':'Pacefold/27'}});if(!imageResponse.ok)throw new Error(`image ${imageResponse.status}`);
+    await fs.writeFile(path.join(target,'app','daily-image.jpg'),Buffer.from(await imageResponse.arrayBuffer()));
+    metadata.date=String(item.startdate||'');metadata.url='./daily-image.jpg';metadata.credit=String(item.copyright||'Bing image of the day');metadata.creditUrl=String(item.copyrightlink||'https://www.bing.com/').replace(/^http:/,'https:');
+    console.log(`Packed Bing image of the day ${metadata.date||'today'}`);
+  }catch(error){console.warn(`Bing daily image unavailable; using visual fallback: ${error.message}`)}
+  await fs.writeFile(path.join(target,'app','daily-image.json'),JSON.stringify(metadata));
+}
 
-const styleRoot=path.join(source,'styles');
-let styleFiles=[];
-try{styleFiles=(await fs.readdir(styleRoot)).filter(file=>file.endsWith('.css')).sort()}catch{}
-const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8');
-const additions=[];
-for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
+await writeDailyImage();
+await build({entryPoints:[path.join(source,'modules','main.mjs')],outfile:path.join(target,'app','pacefold.mjs'),bundle:true,minify:true,format:'esm',platform:'browser',target:['es2022'],legalComments:'none',sourcemap:false,charset:'utf8'});
+
+const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(await fs.readdir(styleRoot)).filter(file=>file.endsWith('.css')).sort()}catch{}
+const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
-
-await fs.rm(path.join(target,'modules'),{recursive:true,force:true});
-await fs.rm(path.join(target,'styles'),{recursive:true,force:true});
-await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.0.0 polish-r2-window-cues\n');
-console.log(`Built Pacefold 27 window-cue polish bundle and single stylesheet at ${target}`);
+await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.0.0 polish-r3-daily-surface\n');
+console.log(`Built Pacefold 27 daily-surface bundle and single stylesheet at ${target}`);
