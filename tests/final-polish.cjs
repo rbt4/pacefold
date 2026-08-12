@@ -8,7 +8,7 @@ function serve(){return new Promise(resolve=>{const server=http.createServer((re
 const seed=()=>{
   const now=Date.now();
   localStorage.setItem('pacefoldOnboardedV15','1');
-  localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',rhythmDiscretion:'neutral',timeZone:'America/Toronto',method:'15',asr:'hanafi',showSeconds:true,timeFormat:'12',workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,quietMode:false,weatherEnabled:false,waterTarget:24,waterStep:2,waterOz:0,waterLastAt:now,waterCadence:45,gazeLastCompleted:now,eyeCadence:20,bodyLastCompleted:now,bodyCadence:45,noteCategories:['Note','Follow-up'] }));
+  localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',rhythmDiscretion:'neutral',timeZone:'America/Toronto',method:'15',asr:'hanafi',showSeconds:true,timeFormat:'12',workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,quietMode:false,weatherEnabled:false,waterTarget:24,waterStep:2,waterOz:0,waterLastAt:now,waterCadence:45,gazeLastCompleted:now,eyeCadence:20,bodyLastCompleted:now,bodyCadence:45,noteCategories:['Note','Follow-up']}));
   localStorage.setItem('pacefold.notebook.entries.v2','[]');
 };
 
@@ -27,15 +27,16 @@ async function checkChrome(page,label){
   await page.click('#stream-source');
   const chooser=page.locator('#stream-chooser');assert(await chooser.isVisible(),`${label}: Music picker did not open from chrome`);
   const box=await chooser.boundingBox(),viewport=page.viewportSize();assert(box&&box.x>=0&&box.y>=state.barBottom-2&&box.x+box.width<=viewport.width+1,`${label}: Music picker is outside the viewport`);
-  await page.click('#stream-chooser button:not(.primary)');
+  await page.click('#stream-add-form button:not(.primary)');
 }
 
 async function main(){
-  const app=fs.readFileSync(path.join(site,'app','index.html'),'utf8'),styles=fs.readFileSync(path.join(site,'app','pacefold.css'),'utf8'),worker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8');
+  const app=fs.readFileSync(path.join(site,'app','index.html'),'utf8'),styles=fs.readFileSync(path.join(site,'app','pacefold.css'),'utf8'),worker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8'),homeStart=app.indexOf('<section class="view view-home"'),homeEnd=app.indexOf('<section class="view view-notes"'),homeShell=homeStart>=0&&homeEnd>homeStart?app.slice(homeStart,homeEnd):'';
   assert(app.includes('<meta name="application-name" content="Clock">'),'Built shell application name is stale');
   assert(app.includes('<title>Clock</title>'),'Built shell title is stale');
   assert(app.includes('./pacefold.css?v=27.1.0'),'Built shell stylesheet cache key is stale');
-  assert(!app.includes('Pacefold 25.1.0')&&!app.includes('Prayer rhythm'),'Built shell can flash stale/private copy before runtime');
+  assert(!app.includes('Pacefold 25.1.0'),'Built shell still carries the old release label');
+  assert(homeShell&&!homeShell.includes('Prayer rhythm')&&!homeShell.includes('Etobicoke, Toronto'),'Visible Clock shell can flash private rhythm/location copy before runtime');
   assert(app.includes('<strong>Noodles</strong>')&&app.includes('data-action="prep">Noodles</button>'),'Original-profile noodle defaults are not present in the built shell');
   assert(styles.includes('empty Music player belongs to the window chrome'),'Final empty-Music chrome polish is missing');
   assert(worker.includes('final-form-r1-final-polish')&&worker.includes("indexedDB.open('pacefold-v26'"),'Final cache roll or durable cue DB continuity is wrong');
