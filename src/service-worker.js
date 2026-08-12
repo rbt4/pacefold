@@ -1,6 +1,6 @@
 'use strict';
 const VERSION='27.0.0';
-const CACHE_NAME=`pacefold-v${VERSION}-polish-r3-daily-surface`;
+const CACHE_NAME=`pacefold-v${VERSION}-polish-r4-player-tab`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
