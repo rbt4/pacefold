@@ -50,6 +50,7 @@ assert(cueSource.includes('notify-${iconName}-128.png')&&cueSource.includes('bad
 assert(!cueSource.includes('Waiting on the clock'),'Duplicate Clock cue header returned');
 assert(windowCueSource.includes("document.title='Clock'")&&windowCueSource.includes('data:image/svg+xml')&&windowCueSource.includes('document.hasFocus()'),'Edge-tab cue or focused-window notification policy is incomplete');
 assert(windowCueSource.includes('windowCueBloomUntil')&&windowCueSource.includes('node.dataset.bloom=String(bloom)'),'Window cue bloom lifecycle is incomplete');
+assert(windowCueSource.includes('cluster.hidden=!cues.length')&&windowCueSource.includes('clearDots.hidden=!cues.length'),'Empty cue chrome cleanup is incomplete');
 assert(worker.includes("const VERSION='27.0.0'")&&worker.includes('polish-r2-window-cues'),'Service-worker cache identity is stale');
 assert(worker.includes("indexedDB.open('pacefold-v26'"),'Durable cue database must remain continuous across V27');
 assert(worker.includes("event.action==='ack'")&&worker.includes("event.action==='snooze'"),'Closed-window notification actions are incomplete');
