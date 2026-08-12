@@ -20,14 +20,10 @@ export function installSchedule(ctx){
     if(ctx.rhythmMode()!=='neutral')return;
     ctx.rhythmRevealUntil=Date.now()+6000;
     clearTimeout(ctx.rhythmRevealTimer);
-    ctx.renderRhythm?.();
-    ctx.renderClock?.();
-    ctx.refreshCues?.();
+    ctx.renderRhythm?.();ctx.renderClock?.();ctx.refreshCues?.();
     ctx.rhythmRevealTimer=setTimeout(()=>{
       ctx.rhythmRevealUntil=0;
-      ctx.renderRhythm?.();
-      ctx.renderClock?.();
-      ctx.refreshCues?.();
+      ctx.renderRhythm?.();ctx.renderClock?.();ctx.refreshCues?.();
     },6050);
   };
 
@@ -43,27 +39,32 @@ export function installSchedule(ctx){
       holdTimer=setTimeout(ctx.revealRhythm,600);
     };
     if(matchMedia('(hover: hover) and (pointer: fine)').matches){
-      card.addEventListener('pointerenter',start);
-      card.addEventListener('pointerleave',cancel);
+      card.addEventListener('pointerenter',start);card.addEventListener('pointerleave',cancel);
     }
     card.addEventListener('pointerdown',event=>{if(event.pointerType!=='mouse')start()});
-    card.addEventListener('pointerup',cancel);
-    card.addEventListener('pointercancel',cancel);
+    card.addEventListener('pointerup',cancel);card.addEventListener('pointercancel',cancel);
   };
 
-  ctx.renderDayMarkers=(state,range,now)=>{
-    const container=id('day-markers');
-    if(!container)return;
+  ctx.renderDayMarkers=(state,range,now,currentProgress=0)=>{
+    const container=id('day-markers'),path=id('day-arc-path');
+    if(!container||!path)return;
     const named=ctx.clockNamesVisible();
-    const key=`${ctx.todayKey(now)}|${range.start}|${range.end}|${named}|${state.today.map(item=>`${item.id}:${item.hours.toFixed(3)}`).join('|')}`;
+    const key=`${ctx.todayKey(now)}|${range.start}|${range.end}|${named}|${range.activeDay}|${currentProgress.toFixed(3)}|${state.today.map(item=>`${item.id}:${item.hours.toFixed(3)}`).join('|')}`;
     if(container.dataset.key===key)return;
     container.dataset.key=key;
     container.replaceChildren();
+    if(!range.activeDay)return;
+    const length=path.getTotalLength();
     for(const item of state.today){
       if(item.hours<range.start||item.hours>range.end)continue;
+      const markerProgress=ctx.clamp((item.hours-range.start)/(range.end-range.start),0,1,0);
+      const point=path.getPointAtLength(length*markerProgress);
       const label=named?`${item.label} at ${ctx.formatTime(item.date)}`:`Scheduled moment at ${ctx.formatTime(item.date)}`;
-      const node=button('',label);
-      node.style.setProperty('--marker',String((item.hours-range.start)/(range.end-range.start)));
+      const node=button('day-marker-button',label);
+      node.style.setProperty('--marker-x',`${point.x/600*100}%`);
+      node.style.setProperty('--marker-y',`${point.y/130*100}%`);
+      node.dataset.nearSun=String(Math.abs(markerProgress-currentProgress)<.03);
+      if(named)node.title=label;
       node.addEventListener('click',()=>ctx.go?.('now'));
       container.append(node);
     }
@@ -118,7 +119,7 @@ export function installSchedule(ctx){
   };
 
   ctx.scheduleDescription=()=>{
-    const [start,end]=ctx.prefs.workHours.split('-');
+    const[start,end]=ctx.prefs.workHours.split('-');
     return{start,end,profile:ctx.prefs.profile,timeZone:ctx.prefs.timeZone};
   };
 }
