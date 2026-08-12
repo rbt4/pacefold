@@ -41,7 +41,7 @@ function weatherFixture(){
 async function main(){
   const worker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8'),manifest=JSON.parse(fs.readFileSync(path.join(site,'manifest.webmanifest'),'utf8'));
   assert(worker.includes("const VERSION='27.0.0'"),'V27 service-worker identity missing');
-  assert(worker.includes('polish-r2-window-cues'),'Window-cue cache revision is missing');
+  assert(worker.includes('polish-r2-window-cues-start-cover'),'Start-cover cache revision is missing');
   assert(worker.includes("indexedDB.open('pacefold-v26'"),'V27 must preserve the durable cue database');
   assert(manifest.name==='Clock'&&manifest.short_name==='Clock','Installed app chrome is not discreet');
 
@@ -58,10 +58,17 @@ async function main(){
     });
     await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.version==='27.0.0');
 
+    const surface=await page.evaluate(()=>({cover:document.documentElement.dataset.cover,time:document.getElementById('cover-time')?.textContent||'',search:document.getElementById('cover-search')?.placeholder||'',music:document.getElementById('music-launch')?.href||'',stageInert:document.getElementById('stage')?.inert===true}));
+    assert(surface.cover==='on'&&surface.time&&surface.search==='Search the web','Simple start surface did not boot as the default view');
+    assert(surface.music==='https://music.youtube.com/'&&surface.stageInert,'YouTube Music handoff or covered-stage interaction guard is missing');
+    await page.click('[data-cover-mode="note"]');await page.fill('#cover-note','Quick note from the start surface');await page.keyboard.press('Enter');await page.waitForTimeout(70);
+    assert(await page.evaluate(()=>window.__PACEFOLD__.notes.some(note=>note.body==='Quick note from the start surface')),'Start-surface quick note did not reach the Daybook');
+    await page.click('#cover-peel');await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
+
     const privateTerms=/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i;
-    const home=await page.evaluate(()=>({text:document.querySelector('[data-view="home"]').innerText,cues:window.__PACEFOLD__.cues.length,revision:window.__PACEFOLD__.revision,notches:document.querySelectorAll('#clock-cue-ring .clock-cue-notch').length,title:document.title,brand:document.querySelector('.brand strong')?.textContent,tagline:getComputedStyle(document.querySelector('.brand small')).display,nowLine:Boolean(document.getElementById('day-now-line')),percent:document.getElementById('day-percent')?.textContent,duplicateCueHeader:Boolean(document.getElementById('clock-cue-count')),windowBubbles:document.querySelectorAll('.window-cue-bubble').length,blooming:document.querySelectorAll('.window-cue-bubble[data-bloom="true"]').length,fullPanel:getComputedStyle(document.getElementById('clock-cue-panel')).display,favicon:document.getElementById('app-favicon')?.href||''}));
+    const home=await page.evaluate(()=>({text:document.querySelector('[data-view="home"]').innerText,cues:window.__PACEFOLD__.cues.length,revision:window.__PACEFOLD__.revision,notches:document.querySelectorAll('#clock-cue-ring .clock-cue-notch').length,title:document.title,brand:document.querySelector('.brand strong')?.textContent,tagline:getComputedStyle(document.querySelector('.brand small')).display,nowLine:Boolean(document.getElementById('day-now-line')),percent:document.getElementById('day-percent')?.textContent,duplicateCueHeader:Boolean(document.getElementById('clock-cue-count')),windowBubbles:document.querySelectorAll('.window-cue-bubble').length,blooming:document.querySelectorAll('.window-cue-bubble[data-bloom="true"]').length,fullPanel:getComputedStyle(document.getElementById('clock-cue-panel')).display,favicon:document.getElementById('app-favicon')?.href||'',stageInert:document.getElementById('stage')?.inert===true}));
     assert(!privateTerms.test(home.text),'Neutral Clock leaked private rhythm/location vocabulary');
-    assert(home.revision==='polish-r2-window-cues','Window-cue revision did not boot');
+    assert(home.revision==='polish-r2-window-cues','Window-cue revision did not boot');assert(!home.stageInert,'Peeling the surface did not restore the full Pacefold interaction layer');
     assert(home.cues>0&&home.notches===Math.min(7,home.cues),`Cue notch contract failed: cues=${home.cues}, notches=${home.notches}`);
     assert(home.title==='Clock'&&home.brand==='Clock'&&home.tagline==='none','Edge-tab Clock chrome is not discreet');
     assert(home.windowBubbles===Math.min(4,home.cues)&&home.blooming===0,'Existing cues should load as quiet beads without replaying alerts');
@@ -94,7 +101,7 @@ async function main(){
     const worklog=await page.evaluate(()=>({metrics:document.getElementById('metric-grid')?.innerText||'',comparison:Boolean(document.getElementById('day-compare')),dueCopy:document.querySelector('[data-action="eyes"] small')?.textContent||''}));
     assert(worklog.comparison,'Yesterday comparison surface is missing');assert(/AT WORK/.test(worklog.metrics)&&!/\bDESK\b/.test(worklog.metrics),'Day Log terminology did not move from Desk to At work');assert(!/due now/i.test(worklog.dueCopy),'Quick action still shouts Due now');
     assert(!errors.length,errors.join('\n'));await context.close();
-    console.log('Pacefold 27 window-cue release contract passed.');
+    console.log('Pacefold 27 start-surface and window-cue release contract passed.');
   }finally{if(browser)await browser.close();server.close()}
 }
 main().catch(error=>{console.error(error.stack||error);process.exitCode=1});
