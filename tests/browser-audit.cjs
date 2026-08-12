@@ -68,8 +68,7 @@ async function main(){
     const nowText=await page.locator('[data-view="now"]').innerText();assert(!privateTerms.test(nowText),'Neutral Now view leaked rhythm names');
     await page.keyboard.press('ArrowDown');await page.waitForFunction(()=>document.documentElement.dataset.mode==='home');await page.keyboard.press('ArrowDown');await page.waitForFunction(()=>document.documentElement.dataset.mode==='settings');
     await page.click('[data-setting="showSeconds"]');await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.version==='27.0.0');assert(await page.evaluate(()=>window.__PACEFOLD__.prefs.showSeconds===false),'Seconds preference did not persist');
-    assert(await page.evaluate(()=>document.documentElement.dataset.cover)==='on','Reload should return to the simple surface');
-    await page.click('#cover-peel');await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
+    assert(await page.evaluate(()=>document.documentElement.dataset.cover)==='peeled','Direct settings route should bypass the simple surface after reload');
 
     await page.evaluate(()=>window.__PACEFOLD__.go('home'));await page.waitForTimeout(360);await page.screenshot({path:path.join(artifacts,'pacefold-27-home.png'),fullPage:true});
     for(const view of['notes','worklog','now','settings']){
