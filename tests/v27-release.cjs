@@ -57,16 +57,21 @@ async function main(){
     });
     await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.version==='27.0.0');
 
+    const privateTerms=/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i;
     const home=await page.evaluate(()=>({text:document.querySelector('[data-view="home"]').innerText,cues:window.__PACEFOLD__.cues.length,notches:document.querySelectorAll('#clock-cue-ring .clock-cue-notch').length,title:document.title,brand:document.querySelector('.brand strong')?.textContent,tagline:getComputedStyle(document.querySelector('.brand small')).display,nowLine:Boolean(document.getElementById('day-now-line')),percent:document.getElementById('day-percent')?.textContent,duplicateCueHeader:Boolean(document.getElementById('clock-cue-count'))}));
-    assert(!/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i.test(home.text),'Neutral Clock leaked private rhythm/location vocabulary');
+    assert(!privateTerms.test(home.text),'Neutral Clock leaked private rhythm/location vocabulary');
     assert(home.cues>0&&home.notches===Math.min(7,home.cues),`Cue notch contract failed: cues=${home.cues}, notches=${home.notches}`);
     assert(home.title===`Clock · ${home.cues}`&&home.brand==='Clock'&&home.tagline==='none','Ambient Clock chrome is not discreet');
     assert(home.nowLine&&/% of workday|Off day/.test(home.percent),'Day Unfold current-time/percentage contract failed');
     assert(!home.duplicateCueHeader,'Duplicate Clock cue header returned');
 
-    await page.evaluate(()=>window.__PACEFOLD__.go('now'));await page.waitForSelector('.weather-nowcast .weather-hour');await page.waitForTimeout(50);
+    await page.locator('.rhythm-card').hover();await page.waitForTimeout(900);
+    const hoverText=await page.locator('[data-view="home"]').innerText();
+    assert(!privateTerms.test(hoverText),'Neutral Clock revealed private rhythm vocabulary from passive hover');
+
+    await page.evaluate(()=>window.__PACEFOLD__.go('now'));await page.waitForSelector('.weather-nowcast .weather-hour');await page.waitForTimeout(80);
     const nowView=await page.evaluate(()=>({text:document.querySelector('[data-view="now"]').innerText,next:document.getElementById('now-next-name')?.textContent,actions:getComputedStyle(document.querySelector('.now-actions')).display,nowcast:document.querySelectorAll('.weather-nowcast .weather-hour').length,weatherDetail:document.querySelectorAll('.weather-detail-grid .weather-mini').length,rain:document.querySelector('.weather-rain-window')?.innerText||'',place:document.getElementById('weather-place')?.textContent||''}));
-    assert(!/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto/i.test(nowView.text),'Neutral Now view leaked private rhythm/location vocabulary');
+    assert(!privateTerms.test(nowView.text),'Neutral Now view leaked private rhythm/location vocabulary');
     assert(nowView.next==='Scheduled moment'||nowView.next==='Today is complete',`Now discretion failed: ${nowView.next}`);
     assert(nowView.actions==='none','Duplicated clear/snooze block is still visible in Next moment');
     assert(nowView.nowcast===2,`Weather nowcast expected 2 cards, got ${nowView.nowcast}`);
@@ -74,7 +79,7 @@ async function main(){
     assert(/Rain window/i.test(nowView.rain)&&/55%/.test(nowView.rain),`Weather rain window failed: ${nowView.rain}`);
     assert(nowView.place==='Local conditions',`Neutral weather location leaked: ${nowView.place}`);
 
-    await page.evaluate(()=>window.__PACEFOLD__.go('worklog'));await page.waitForTimeout(60);
+    await page.evaluate(()=>window.__PACEFOLD__.go('worklog'));await page.waitForTimeout(80);
     const worklog=await page.evaluate(()=>({metrics:document.getElementById('metric-grid')?.innerText||'',comparison:Boolean(document.getElementById('day-compare')),dueCopy:document.querySelector('[data-action="eyes"] small')?.textContent||''}));
     assert(worklog.comparison,'Yesterday comparison surface is missing');assert(/AT WORK/.test(worklog.metrics)&&!/\bDESK\b/.test(worklog.metrics),'Day Log terminology did not move from Desk to At work');assert(!/due now/i.test(worklog.dueCopy),'Quick action still shouts Due now');
     assert(!errors.length,errors.join('\n'));await context.close();
