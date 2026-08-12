@@ -63,6 +63,7 @@ html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player
   overflow:auto!important;
 }
 @media(max-width:760px){
+  .stream-chooser .stream-add-form{grid-template-columns:minmax(0,1fr) auto auto!important;gap:6px!important}.stream-chooser .stream-add-form button:first-of-type{display:block!important}.stream-chooser .stream-add-form button{padding-inline:9px!important;font-size:9px!important}
   html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]){left:108px!important;width:36px!important;height:36px!important}
   html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]) .stream-player,
   html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]) .stream-dock,
