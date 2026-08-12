@@ -1,5 +1,9 @@
 export function installRelease(ctx){
   document.documentElement.dataset.release=ctx.RELEASE;
+  document.title='Clock';
+  const appName=document.querySelector('meta[name="application-name"]');if(appName)appName.content='Clock';
+  const brand=document.querySelector('.brand');
+  if(brand){brand.setAttribute('aria-label','Return to Clock');const title=brand.querySelector('strong'),tagline=brand.querySelector('small');if(title)title.textContent='Clock';if(tagline){tagline.textContent='';tagline.hidden=true}}
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   const replacements=[];
   while(walker.nextNode()){
