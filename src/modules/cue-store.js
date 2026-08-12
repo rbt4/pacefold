@@ -53,15 +53,15 @@ export function installCueStore(ctx){
 
   ctx.syncCueMirror=()=>{
     try{
-      const now=new Date(),range=ctx.workRange(ctx.prefs,now),part=ctx.zoneParts(now,ctx.prefs.timeZone),workStart=ctx.zonedForToday(range.start,now).getTime(),workEnd=ctx.zonedForToday(range.end,now).getTime();
-      const schedule=ctx.getSchedule(now).today.filter(item=>item.alert).map(item=>({source:'prayer',key:`prayer:${ctx.todayKey(item.date)}:${item.id}`,label:item.label,detail:`${item.label} · ${ctx.formatTime(item.date)}`,priority:100,dueAt:item.date.getTime()}));
+      const now=new Date(),range=ctx.workRange(ctx.prefs,now),part=ctx.zoneParts(now,ctx.prefs.timeZone),workStart=ctx.zonedForToday(range.start,now).getTime(),workEnd=ctx.zonedForToday(range.end,now).getTime(),named=ctx.rhythmMode?.()==='names';
+      const schedule=ctx.getSchedule(now).today.filter(item=>item.alert).map(item=>({source:'prayer',key:`prayer:${ctx.todayKey(item.date)}:${item.id}`,label:named?item.label:'Scheduled moment',detail:named?`${item.label} · ${ctx.formatTime(item.date)}`:`Due · ${ctx.formatTime(item.date)}`,priority:100,dueAt:item.date.getTime()}));
       const timers={
         prep:{start:Number(ctx.prefs.noodleStart)||0,duration:ctx.prefs.prepMinutes*60000,label:'Preparation ready',detail:'Your preparation timer is complete',priority:90},
         away:{start:Number(ctx.prefs.awayStart)||0,duration:ctx.prefs.awayMinutes*60000,label:'Return when ready',detail:'The away timer is complete',priority:76},
         meal:{start:Number(ctx.prefs.lunchStart)||0,duration:ctx.prefs.mealMinutes*60000,label:'Meal window complete',detail:'Return when you are ready',priority:80}
       };
       void ctx.writeCueMirror({
-        notifications:Boolean(ctx.prefs.notifications),quietMode:Boolean(ctx.prefs.quietMode),timeZone:ctx.prefs.timeZone,activeDay:Boolean(range.activeDay),workStart,workEnd,
+        notifications:Boolean(ctx.prefs.notifications),quietMode:Boolean(ctx.prefs.quietMode),discreet:!named,timeZone:ctx.prefs.timeZone,activeDay:Boolean(range.activeDay),workStart,workEnd,
         water:{current:Number(ctx.prefs.waterOz??ctx.prefs.waterSips)||0,target:Number(ctx.prefs.waterTarget)||24,lastAt:Number(ctx.prefs.waterLastAt)||workStart,cadence:Number(ctx.prefs.waterCadence)*60000},
         eyes:{lastAt:Number(ctx.prefs.gazeLastCompleted)||workStart,cadence:Number(ctx.prefs.eyeCadence)*60000},
         move:{lastAt:Number(ctx.prefs.bodyLastCompleted)||workStart,cadence:Number(ctx.prefs.bodyCadence)*60000},schedule,timers,mirroredAt:{hour:part.hour,minute:part.minute}
