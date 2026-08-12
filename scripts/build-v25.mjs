@@ -25,12 +25,19 @@ async function writeDailyImage(){
   await fs.writeFile(path.join(target,'app','daily-image.json'),JSON.stringify(metadata));
 }
 
+async function hardenPlayerCsp(){
+  const file=path.join(target,'app','index.html');let html=await fs.readFile(file,'utf8');
+  html=html.replace("script-src 'self';","script-src 'self' https://www.youtube.com;").replace('frame-src https://login.microsoftonline.com;','frame-src https://login.microsoftonline.com https://www.youtube.com;');
+  await fs.writeFile(file,html);
+}
+
 await writeDailyImage();
+await hardenPlayerCsp();
 await build({entryPoints:[path.join(source,'modules','main.mjs')],outfile:path.join(target,'app','pacefold.mjs'),bundle:true,minify:true,format:'esm',platform:'browser',target:['es2022'],legalComments:'none',sourcemap:false,charset:'utf8'});
 
 const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(await fs.readdir(styleRoot)).filter(file=>file.endsWith('.css')).sort()}catch{}
 const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.0.0 polish-r3-daily-surface\n');
-console.log(`Built Pacefold 27 daily-surface bundle and single stylesheet at ${target}`);
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.0.0 polish-r4-player-tab\n');
+console.log(`Built Pacefold 27 player/tab polish bundle and single stylesheet at ${target}`);
