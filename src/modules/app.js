@@ -1,4 +1,4 @@
-import{$,$$,id,el}from'./state.js';
+import{$,$$,id,el,button}from'./state.js';
 
 export function installApp(ctx){
   ctx.renderAll=()=>{
@@ -63,6 +63,41 @@ export function installApp(ctx){
         row.append(name,time);custom.append(row);
       }
     }
+
+    const rhythmPanel=$('[data-settings-panel="rhythm"]');
+    if(rhythmPanel&&!id('rhythm-discretion-setting')){
+      const block=el('section','rhythm-discretion-setting');block.id='rhythm-discretion-setting';
+      const copy=el('span');copy.append(el('small','','Clock privacy'),el('strong','','Moment names on the Clock'),el('p','','Choose how much the ambient Clock reveals. Now and Settings keep the full schedule available.'));
+      const choices=el('div','rhythm-discretion-choices');
+      for(const [mode,title,detail] of [
+        ['neutral','Neutral','Times and colour only · recommended'],
+        ['hidden','Hidden','Remove the rhythm card from Clock'],
+        ['names','Names','Show full moment names on Clock']
+      ]){
+        const control=button('',`${title}: ${detail}`);
+        control.dataset.rhythmDiscretion=mode;
+        control.setAttribute('aria-pressed','false');
+        control.append(el('strong','',title),el('small','',detail));
+        choices.append(control);
+      }
+      block.append(copy,choices);
+      rhythmPanel.querySelector(':scope > header')?.after(block);
+    }
+
+    const originalSetup=$('[data-setup-profile="original"] small');
+    if(originalSetup)originalSetup.textContent='Five daily moments · tuned defaults';
+    if(!id('setup-discretion')){
+      const setupChoices=$('.setup-choices');
+      const block=el('section','setup-discretion');block.id='setup-discretion';
+      const copy=el('span');copy.append(el('strong','','Show moment names on the clock?'),el('small','','Default is no. You can reveal names temporarily or change this later.'));
+      const choices=el('div');
+      const neutral=button('',`Keep moment names neutral on the Clock`,'Keep neutral');
+      neutral.dataset.setupDiscretion='neutral';neutral.setAttribute('aria-pressed','true');
+      const names=button('',`Show full moment names on the Clock`,'Show names');
+      names.dataset.setupDiscretion='names';names.setAttribute('aria-pressed','false');
+      choices.append(neutral,names);block.append(copy,choices);setupChoices?.after(block);
+    }
+    id('setup-later').textContent='Continue';
   };
 
   ctx.bind=()=>{
@@ -88,10 +123,22 @@ export function installApp(ctx){
       }
       const tab=target.closest('[data-settings-tab]');
       if(tab){ctx.settingsTab=tab.dataset.settingsTab;ctx.renderSettings();return}
+      const discretion=target.closest('[data-rhythm-discretion]');
+      if(discretion){ctx.setRhythmDiscretion(discretion.dataset.rhythmDiscretion);return}
       const toggle=target.closest('[data-setting]');
       if(toggle){void ctx.toggleSetting(toggle.dataset.setting);return}
+      const setupDiscretion=target.closest('[data-setup-discretion]');
+      if(setupDiscretion){
+        ctx.storePrefs({rhythmDiscretion:setupDiscretion.dataset.setupDiscretion},'onboarding-discretion');
+        for(const node of $$('[data-setup-discretion]'))node.setAttribute('aria-pressed',String(node===setupDiscretion));
+        ctx.renderAll();return;
+      }
       const setup=target.closest('[data-setup-profile]');
-      if(setup){ctx.storePrefs({profile:setup.dataset.setupProfile},'onboarding');id('setup-dialog').close();ctx.renderAll();ctx.toast('Pacefold is ready');return}
+      if(setup){
+        ctx.storePrefs({profile:setup.dataset.setupProfile},'onboarding-profile');
+        for(const node of $$('[data-setup-profile]'))node.setAttribute('aria-pressed',String(node===setup));
+        ctx.renderAll();return;
+      }
       const oneNoteItem=target.closest('[data-onenote-id]');
       if(oneNoteItem){const item=ctx.oneNoteCatalog.find(row=>String(row.id)===oneNoteItem.dataset.onenoteId);if(item)void ctx.chooseOneNoteItem(item)}
     });
@@ -169,10 +216,16 @@ export function installApp(ctx){
       ctx.storePrefs({soundChoice:'local',soundLabel:file.name.replace(/\.[^.]+$/,'').slice(0,70)},'sound-file');
       void ctx.startSound();event.target.value='';
     });
-    id('setup-later').addEventListener('click',()=>{ctx.storePrefs({},'onboarding');id('setup-dialog').close();ctx.renderAll()});
+    id('setup-later').addEventListener('click',()=>{
+      ctx.storePrefs({rhythmDiscretion:ctx.prefs.rhythmDiscretion||'neutral'},'onboarding-complete');
+      id('setup-dialog').close();ctx.renderAll();ctx.toast('Pacefold is ready');
+    });
 
     window.addEventListener('storage',event=>{
-      if(event.key===ctx.KEYS.prefs)ctx.prefs=ctx.migratePrefs(ctx.parseJson(event.newValue,{}));
+      if(event.key===ctx.KEYS.prefs){
+        ctx.prefs=ctx.migratePrefs(ctx.parseJson(event.newValue,{}));
+        ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
+      }
       if(event.key===ctx.KEYS.notes)ctx.notes=ctx.normalizeNotes(ctx.parseJson(event.newValue,[]));
       if(event.key===ctx.KEYS.log)ctx.log=ctx.normalizeLog(ctx.parseJson(event.newValue,{}));
       if(event.key===ctx.KEYS.cueState){ctx.cueState=ctx.parseJson(event.newValue,{ack:{},notified:{},snoozeUntil:0});ctx.refreshCues()}
@@ -192,7 +245,7 @@ export function installApp(ctx){
 
   ctx.initialize=async()=>{
     const hadExisting=Object.keys(ctx.rawPrefs||{}).length>5||localStorage.getItem(ctx.KEYS.onboarding)==='1';
-    ctx.generateStatic();ctx.bind();ctx.resetDailyIfNeeded();
+    ctx.generateStatic();ctx.bind();ctx.bindRhythmReveal?.();ctx.resetDailyIfNeeded();
     ctx.liveBackupHandle=await ctx.readHandle();ctx.renderBackupStatus();ctx.renderSound();
     const requested=new URLSearchParams(location.search).get('mode');
     if(['notes','worklog','now','settings'].includes(requested))ctx.mode=requested;
