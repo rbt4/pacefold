@@ -69,13 +69,15 @@ export function installCues(ctx){
     const cluster=id('cue-cluster');
     if(cluster){
       cluster.replaceChildren();
+      const named=ctx.clockNamesVisible?.()??true;
       for(const cue of ctx.currentCues.slice(0,7)){
         const dot=el('i','cue-dot');
         dot.dataset.source=cue.source;
-        dot.title=cue.label;
+        if(named||cue.source!=='prayer')dot.title=cue.label;
         cluster.append(dot);
       }
-      cluster.setAttribute('aria-label',ctx.currentCues.length?`Waiting cues: ${ctx.currentCues.map(cue=>cue.label).join(', ')}`:'No waiting cues');
+      const visibleLabels=ctx.currentCues.map(cue=>(named||cue.source!=='prayer')?cue.label:'Scheduled moment');
+      cluster.setAttribute('aria-label',ctx.currentCues.length?`Waiting cues: ${visibleLabels.join(', ')}`:'No waiting cues');
     }
     ctx.renderCuePanel?.();
     ctx.updateFaviconAndBadge();
