@@ -92,6 +92,7 @@ export function installSchedule(ctx){
     const mode=ctx.rhythmMode();
     const named=ctx.clockNamesVisible();
     const card=document.querySelector('.rhythm-card');
+    const grid=document.querySelector('.home-grid');
     const header=card?.querySelector(':scope > header');
     const adjust=header?.querySelector('button');
     const kicker=id('rhythm-kicker');
@@ -99,6 +100,7 @@ export function installSchedule(ctx){
     const meta=id('rhythm-meta');
 
     if(card)card.hidden=mode==='hidden';
+    if(grid)grid.dataset.rhythmHidden=String(mode==='hidden');
     if(meta){meta.textContent='';meta.hidden=true}
     if(kicker){kicker.textContent=named?(muslim?'Prayer rhythm':'Personal rhythm'):'';kicker.hidden=!named}
     if(adjust)adjust.hidden=!named;
