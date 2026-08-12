@@ -61,16 +61,22 @@ async function main(){
       overflow:document.documentElement.scrollWidth-innerWidth,
       release:window.__PACEFOLD__.version,
       notes:window.__PACEFOLD__.notes.length,
+      discretion:window.__PACEFOLD__.prefs.rhythmDiscretion,
+      clockText:document.querySelector('[data-view="home"]').innerText,
+      rhythmMeta:document.getElementById('rhythm-meta').textContent,
       polish:['note-insights','day-story-title','now-cue-list','settings-summary'].every(id=>document.getElementById(id))
     }));
     assert(home.mode==='home'&&home.views.join(',')==='home','Clock is not the only initial view');
     assert(home.ticks===60,'Analog clock is incomplete');
     assert(home.actions===6,'Quick actions are incomplete');
-    assert(home.rhythm===6,'Prayer rhythm is incomplete');
+    assert(home.rhythm===6,'Rhythm rows are incomplete');
     assert(home.styles.filter(url=>url.includes('/app/')).length===1,'More than one app stylesheet loaded');
     assert(home.scripts.filter(url=>!url.includes('msal-')).length===1,'More than one Pacefold runtime loaded');
     assert(home.overflow<=1,`Desktop overflow is ${home.overflow}px`);
     assert(home.release==='26.0.0'&&home.notes===1,'Migration did not preserve the V26 release or note');
+    assert(home.discretion==='neutral','Existing installs must default to neutral Clock discretion');
+    assert(home.rhythmMeta==='','Clock rhythm metadata is not empty');
+    assert(!/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i.test(home.clockText),'Neutral Clock leaked prayer, method or location vocabulary');
     assert(home.polish,'Page-specific surfaces are incomplete');
 
     await page.click('[data-action="water"]');
@@ -113,6 +119,9 @@ async function main(){
     await fresh.goto(`${origin}/app/`,{waitUntil:'domcontentloaded'});
     await fresh.waitForSelector('#setup-dialog[open]',{timeout:3000});
     assert(await fresh.locator('#setup-dialog[open]').count()===1,'First-run setup did not appear exactly once');
+    const setupText=await fresh.locator('#setup-dialog').innerText();
+    assert(!/\b(Muslim|Hanafi|Fajr|Dhuhr|Asr|Maghrib|Isha|prayer)\b|Etobicoke|Toronto/i.test(setupText),'First-run setup leaked private rhythm vocabulary');
+    assert(await fresh.locator('[data-setup-discretion="neutral"]').getAttribute('aria-pressed')==='true','First-run Clock privacy must default to neutral');
     await fresh.click('#setup-later');
     await fresh.reload({waitUntil:'domcontentloaded'});await fresh.waitForTimeout(550);
     assert(await fresh.locator('#setup-dialog[open]').count()===0,'First-run setup repeated after completion');
@@ -137,7 +146,7 @@ async function main(){
       await m.screenshot({path:path.join(artifacts,`pacefold-26-mobile-${view}.png`),fullPage:true});
     }
     await mobile.close();
-    console.log('Pacefold 26 browser audit passed: clean launch, one runtime, one stylesheet, migration, actions, notes, spatial return, persistence and mobile layout.');
+    console.log('Pacefold 26 browser audit passed: modular runtime, one stylesheet, discreet Clock, migration, actions, notes, persistence and mobile layout.');
   }finally{if(browser)await browser.close();server.close()}
 }
 
