@@ -103,7 +103,7 @@ export function installSchedule(ctx){
       if(card)card.hidden=mode==='hidden';
       if(grid)grid.dataset.rhythmHidden=String(mode==='hidden');
       if(meta){meta.textContent='';meta.hidden=true}
-      if(kicker){kicker.textContent=named?(muslim?'Prayer rhythm':'Personal rhythm'):'';kicker.hidden=!named}
+      if(kicker){kicker.textContent=named?(muslim?'Prayer rhythm':'Personal rhythm'):'Today’s rhythm';kicker.hidden=false}
       if(adjust)adjust.hidden=!named;
       if(title){
         title.textContent=named
@@ -114,8 +114,9 @@ export function installSchedule(ctx){
       ctx.rhythmRows(id('rhythm-list'),state,now,{compact:true,discreet:true});
     }
     if(nowView){
-      ctx.rhythmRows(id('now-schedule-list'),state,now,{compact:false,discreet:false});
-      id('now-schedule-kicker').textContent=muslim?'Prayer schedule':'Today’s moments';
+      const discreet=ctx.rhythmMode()!=='names';
+      ctx.rhythmRows(id('now-schedule-list'),state,now,{compact:false,discreet});
+      id('now-schedule-kicker').textContent=discreet?'Today’s rhythm':(muslim?'Prayer schedule':'Today’s moments');
       id('now-schedule-date').textContent=ctx.formatDate(now,{weekday:undefined});
     }
   };
