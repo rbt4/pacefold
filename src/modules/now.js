@@ -43,7 +43,8 @@ export function installNow(ctx){
   };
 
   ctx.renderWeather=(value=ctx.safeGet(ctx.KEYS.weather,null))=>{
-    id('weather-place').textContent=ctx.prefs.locationLabel||'Local conditions';
+    const discreet=ctx.rhythmMode?.()!=='names';
+    id('weather-place').textContent=discreet?'Local conditions':(ctx.prefs.locationLabel||'Local conditions');
     const content=id('weather-content');
     if(!ctx.prefs.weatherEnabled){content.replaceChildren(el('p','','Weather is off in Settings.'));return}
     if(!value?.current){content.replaceChildren(el('p','','Weather will appear after the next refresh.'));return}
@@ -57,7 +58,7 @@ export function installNow(ctx){
 
     const children=[reading];
     if(Array.isArray(hourly.time)&&hourly.time.length){
-      const currentStamp=String(current.time||''),start=Math.max(0,hourly.time.findIndex(time=>String(time)>=currentStamp)),from=start<0?0:start;
+      const currentStamp=String(current.time||''),found=hourly.time.findIndex(time=>String(time)>=currentStamp),from=found>=0?found:Math.max(0,hourly.time.length-1);
       const rainIndex=hourly.time.slice(from,from+12).findIndex((_,offset)=>Number(hourly.precipitation_probability?.[from+offset])>=35||Number(hourly.precipitation?.[from+offset])>.1);
       const rain=el('div','weather-rain-window');
       if(rainIndex>=0){const index=from+rainIndex,prob=Math.round(Number(hourly.precipitation_probability?.[index])||0),amount=Number(hourly.precipitation?.[index])||0;rain.append(el('small','','Rain window'),el('strong','',`${ctx.weatherClock(hourly.time[index])} · ${prob}%`),el('span','',amount>0?`${amount.toFixed(1)} mm forecast`:'Precipitation possible'))}
