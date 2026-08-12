@@ -27,7 +27,7 @@ async function checkChrome(page,label){
   await page.click('#stream-source');
   const chooser=page.locator('#stream-chooser');assert(await chooser.isVisible(),`${label}: Music picker did not open from chrome`);
   const box=await chooser.boundingBox(),viewport=page.viewportSize();assert(box&&box.x>=0&&box.y>=state.barBottom-2&&box.x+box.width<=viewport.width+1,`${label}: Music picker is outside the viewport`);
-  await page.click('#stream-add-form button:not(.primary)');
+  await page.click('#stream-chooser .stream-add-form button:not(.primary)');
 }
 
 async function main(){
