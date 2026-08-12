@@ -12,8 +12,7 @@ export function installCues(ctx){
   const clockCard=document.querySelector('.clock-card');
   if(clockCard&&!id('clock-cue-panel')){
     const panel=el('section','clock-cue-panel');panel.id='clock-cue-panel';panel.hidden=true;panel.setAttribute('aria-live','polite');
-    const head=el('header'),copy=el('span'),count=el('b','','0');copy.append(el('small','','Quiet cues'),el('strong','','Waiting on the clock'));count.id='clock-cue-count';head.append(copy,count);
-    const list=el('div','clock-cue-list');list.id='clock-cue-list';panel.append(head,list);clockCard.querySelector('.day-unfold')?.before(panel);
+    const list=el('div','clock-cue-list');list.id='clock-cue-list';panel.append(list);clockCard.querySelector('.day-unfold')?.before(panel);
   }
   const appBar=document.querySelector('.app-bar');
   if(appBar&&!id('title-cue-strip')){
@@ -70,41 +69,40 @@ export function installCues(ctx){
   ctx.renderClockCueRing=()=>{
     const ring=id('clock-cue-ring');if(!ring)return;ring.replaceChildren();
     for(const cue of ctx.currentCues.slice(0,7)){
-      const spoke=el('span','clock-cue-spoke');spoke.style.setProperty('--cue-angle',`${ctx.cueAngle(cue)}deg`);const copy=ctx.clockCueCopy(cue),notch=button('clock-cue-notch',`Clear ${copy.label}`);notch.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);if(cue.source!=='prayer'||ctx.clockNamesVisible?.())notch.title=`${cue.label} · right-click to snooze`;ctx.bindCueGesture(notch,cue);spoke.append(notch);ring.append(spoke);
+      const spoke=el('span','clock-cue-spoke');spoke.style.setProperty('--cue-angle',`${ctx.cueAngle(cue)}deg`);const copy=ctx.clockCueCopy(cue),notch=button('clock-cue-notch',`Clear ${copy.label}`);notch.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);notch.dataset.source=cue.source;if(cue.source!=='prayer'||ctx.clockNamesVisible?.())notch.title=`${cue.label} · right-click to snooze`;ctx.bindCueGesture(notch,cue);spoke.append(notch);ring.append(spoke);
     }
   };
 
   ctx.renderClockCuePanel=()=>{
-    const panel=id('clock-cue-panel'),list=id('clock-cue-list'),count=id('clock-cue-count');if(!panel||!list||!count)return;panel.hidden=!ctx.currentCues.length;count.textContent=String(ctx.currentCues.length);list.replaceChildren();
+    const panel=id('clock-cue-panel'),list=id('clock-cue-list');if(!panel||!list)return;panel.hidden=!ctx.currentCues.length;list.replaceChildren();
     for(const cue of ctx.currentCues){const copy=ctx.clockCueCopy(cue),row=el('article','clock-cue-row');row.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);const dot=el('i'),text=el('span');text.append(el('strong','',copy.label),el('small','',copy.detail));const clear=button('',`Clear ${copy.label}`,'Clear');clear.addEventListener('click',()=>{ctx.acknowledgeCue(cue);ctx.toast(`${copy.label} cleared`)});row.append(dot,text,clear);list.append(row)}
   };
 
   ctx.renderWindowCueChrome=()=>{
     const segments=id('title-cue-segments'),count=id('title-cue-count'),strip=id('title-cue-strip');
     if(segments){segments.replaceChildren();for(const cue of ctx.currentCues.slice(0,7)){const segment=el('i');segment.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);segments.append(segment)}}
-    if(count)count.textContent=ctx.currentCues.length?String(ctx.currentCues.length):'';if(strip)strip.dataset.active=String(Boolean(ctx.currentCues.length));document.title=ctx.currentCues.length?`● Pacefold — ${ctx.currentCues.length} waiting`:'Pacefold';
+    if(count)count.textContent=ctx.currentCues.length?String(ctx.currentCues.length):'';if(strip)strip.dataset.active=String(Boolean(ctx.currentCues.length));document.title=ctx.currentCues.length?`Clock · ${ctx.currentCues.length}`:'Clock';
   };
 
   ctx.refreshCues=(notify=false)=>{
     ctx.currentCues=ctx.computeCues();const cluster=id('cue-cluster');
     if(cluster){
       cluster.replaceChildren();const named=ctx.clockNamesVisible?.()??true;if(!ctx.currentCues.length){const anchor=el('i','cue-anchor');anchor.setAttribute('aria-hidden','true');cluster.append(anchor)}
-      for(const cue of ctx.currentCues.slice(0,7)){const dot=el('i','cue-dot');dot.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);if(named||cue.source!=='prayer')dot.title=cue.label;ctx.bindCueGesture(dot,cue,{stop:true});cluster.append(dot)}
+      for(const cue of ctx.currentCues.slice(0,7)){const dot=el('i','cue-dot');dot.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);dot.dataset.source=cue.source;if(named||cue.source!=='prayer')dot.title=cue.label;ctx.bindCueGesture(dot,cue,{stop:true});cluster.append(dot)}
       const visibleLabels=ctx.currentCues.map(cue=>(named||cue.source!=='prayer')?cue.label:'Scheduled moment');cluster.setAttribute('aria-label',ctx.currentCues.length?`Waiting cues: ${visibleLabels.join(', ')}`:'No waiting cues');
     }
     ctx.renderClockCueRing();ctx.renderClockCuePanel();ctx.renderCuePanel?.();ctx.renderWindowCueChrome();ctx.updateAppBadge();ctx.syncCueMirror?.();if(notify)void ctx.deliverNotification(ctx.currentCues[0]);
   };
 
   ctx.renderCuePanel=()=>{
-    const list=id('now-cue-list'),count=id('now-cue-count'),guidance=id('now-guidance'),clear=id('now-clear-cue'),snooze=id('now-snooze');if(!list)return;list.replaceChildren();count.textContent=ctx.currentCues.length?`${ctx.currentCues.length} waiting`:'Nothing waiting';clear.disabled=!ctx.currentCues.length;snooze.disabled=!ctx.currentCues.length;
-    if(!ctx.currentCues.length){const empty=el('div','cue-empty');empty.append(el('strong','','All clear'),el('span','','Pacefold will place the next quiet dot here.'));list.append(empty);guidance.textContent='The day is clear. Keep your current pace.';return}
-    const lead=ctx.currentCues[0];guidance.textContent=`${lead.label}. ${lead.detail}.`;
-    for(const cue of ctx.currentCues){const row=el('article','cue-row'),dot=el('i'),copy=el('span'),remove=button('',`Clear ${cue.label}`,'Clear');row.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);copy.append(el('strong','',cue.label),el('small','',cue.detail));remove.addEventListener('click',()=>{ctx.acknowledgeCue(cue);ctx.toast(`${cue.label} cleared`)});row.append(dot,copy,remove);list.append(row)}
+    const list=id('now-cue-list'),count=id('now-cue-count');if(!list)return;list.replaceChildren();count.textContent=ctx.currentCues.length?`${ctx.currentCues.length} waiting`:'Nothing waiting';
+    if(!ctx.currentCues.length){const empty=el('div','cue-empty');empty.append(el('strong','','All clear'),el('span','','The next quiet dot will appear here.'));list.append(empty);return}
+    for(const cue of ctx.currentCues){const copy=ctx.clockCueCopy(cue),row=el('article','cue-row'),dot=el('i'),text=el('span'),remove=button('',`Clear ${copy.label}`,'Clear');row.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);text.append(el('strong','',copy.label),el('small','',copy.detail));remove.addEventListener('click',()=>{ctx.acknowledgeCue(cue);ctx.toast(`${copy.label} cleared`)});row.append(dot,text,remove);list.append(row)}
   };
 
   ctx.deliverNotification=async cue=>{
     if(!cue||!ctx.prefs.notifications||(ctx.prefs.quietMode&&['water','eyes','move'].includes(cue.source)))return;if(!('Notification'in window)||Notification.permission!=='granted'||ctx.cueState.notified[cue.key])return;
-    try{const registration=await navigator.serviceWorker?.ready,iconName=ICON_NAMES[cue.source];await registration?.showNotification?.(cue.label,{body:cue.detail,tag:`pacefold-${cue.source}`,silent:true,renotify:false,requireInteraction:false,icon:iconName?`./icons/notify-${iconName}-128.png`:'./icons/icon-192.png',badge:'./icons/badge-96.png',data:{source:cue.source,key:cue.key},actions:[{action:'ack',title:'Clear'},{action:'snooze',title:'Snooze 10m'}]});ctx.cueState.notified[cue.key]=Date.now();ctx.saveCueState()}catch(error){console.warn('[Pacefold] notification failed',error)}
+    try{const registration=await navigator.serviceWorker?.ready,iconName=ICON_NAMES[cue.source],copy=ctx.clockCueCopy(cue);await registration?.showNotification?.(copy.label,{body:copy.detail,tag:`pacefold-${cue.source}`,silent:true,renotify:false,requireInteraction:false,icon:iconName?`./icons/notify-${iconName}-128.png`:'./icons/icon-192.png',badge:'./icons/badge-96.png',data:{source:cue.source,key:cue.key},actions:[{action:'ack',title:'Clear'},{action:'snooze',title:'Snooze 10m'}]});ctx.cueState.notified[cue.key]=Date.now();ctx.saveCueState()}catch(error){console.warn('[Pacefold] notification failed',error)}
   };
 
   ctx.acknowledgeCue=(cue=ctx.currentCues[0])=>{if(!cue)return false;ctx.cueState.ack[cue.key]=Date.now();ctx.saveCueState();ctx.refreshCues();ctx.renderAll?.();return true};
