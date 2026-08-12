@@ -8,7 +8,7 @@ export function installSchedule(ctx){
     const configured=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
     return ctx.prefs.quietMode&&configured==='names'?'neutral':configured;
   };
-  ctx.clockNamesVisible=()=>ctx.rhythmMode()==='names'||Date.now()<ctx.rhythmRevealUntil;
+  ctx.clockNamesVisible=()=>ctx.rhythmMode()==='names'||(ctx.mode==='home'&&Date.now()<ctx.rhythmRevealUntil);
   ctx.clockMomentLabel=(item,fallback='Scheduled moment')=>ctx.clockNamesVisible()?(item?.label||fallback):fallback;
   ctx.clockCountdown=(date,now=new Date())=>{
     if(!date)return'';
@@ -17,13 +17,14 @@ export function installSchedule(ctx){
   };
 
   ctx.revealRhythm=()=>{
-    if(ctx.rhythmMode()!=='neutral')return;
+    if(ctx.rhythmMode()!=='neutral'||ctx.mode!=='home')return;
     ctx.rhythmRevealUntil=Date.now()+6000;
     clearTimeout(ctx.rhythmRevealTimer);
     ctx.renderRhythm?.(new Date(),{home:true,nowView:false});ctx.renderClock?.(new Date());ctx.refreshCues?.();
     ctx.rhythmRevealTimer=setTimeout(()=>{
       ctx.rhythmRevealUntil=0;
-      ctx.renderRhythm?.(new Date(),{home:true,nowView:false});ctx.renderClock?.(new Date());ctx.refreshCues?.();
+      if(ctx.mode==='home')ctx.renderRhythm?.(new Date(),{home:true,nowView:false});
+      ctx.renderClock?.(new Date());ctx.refreshCues?.();
     },6050);
   };
 
@@ -35,14 +36,11 @@ export function installSchedule(ctx){
     const cancel=()=>{clearTimeout(holdTimer);holdTimer=0};
     const start=()=>{
       cancel();
-      if(ctx.rhythmMode()!=='neutral')return;
-      holdTimer=setTimeout(ctx.revealRhythm,600);
+      if(ctx.rhythmMode()!=='neutral'||ctx.mode!=='home')return;
+      holdTimer=setTimeout(ctx.revealRhythm,650);
     };
-    if(matchMedia('(hover: hover) and (pointer: fine)').matches){
-      card.addEventListener('pointerenter',start);card.addEventListener('pointerleave',cancel);
-    }
-    card.addEventListener('pointerdown',event=>{if(event.pointerType!=='mouse')start()});
-    card.addEventListener('pointerup',cancel);card.addEventListener('pointercancel',cancel);
+    card.addEventListener('pointerdown',start);
+    card.addEventListener('pointerup',cancel);card.addEventListener('pointercancel',cancel);card.addEventListener('pointerleave',cancel);
   };
 
   ctx.renderDayMarkers=(state,range,now,currentProgress=0)=>{
