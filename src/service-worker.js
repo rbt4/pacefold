@@ -1,6 +1,6 @@
 'use strict';
-const VERSION='26.0.0';
-const CACHE_NAME=`pacefold-v${VERSION}-r1`;
+const VERSION='27.0.0';
+const CACHE_NAME=`pacefold-v${VERSION}-polish-r1`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
