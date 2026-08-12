@@ -1,4 +1,4 @@
-name: Build, verify and publish Pacefold 26
+name: Build, verify and publish Pacefold 27
 
 on:
   push:
@@ -36,14 +36,16 @@ jobs:
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+      - name: V27 release contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v27-release.cjs _site
       - name: Current-product browser audit
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit.cjs _site /tmp/pacefold-26-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-26-audit-${{ github.run_id }}
-          path: /tmp/pacefold-26-audit/
+          name: pacefold-27-audit-${{ github.run_id }}
+          path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7
 

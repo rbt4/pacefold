@@ -1,7 +1,7 @@
 {
   "id":"./",
-  "name":"Pacefold — Your day, quietly kept",
-  "short_name":"Pacefold",
+  "name":"Clock",
+  "short_name":"Clock",
   "description":"A private, offline-ready clock for workday rhythm, notes, breaks and focus.",
   "start_url":"./app/",
   "scope":"./",

@@ -20,8 +20,8 @@ import{
   backupPayload
 }from'../app/core.mjs';
 
-export const RELEASE='26.0.0';
-export const REVISION='foundation-r1';
+export const RELEASE='27.0.0';
+export const REVISION='polish-r1';
 export const KEYS={...CORE_KEYS,cueState:'pacefold.cues.v1'};
 export const CUE_COLORS={
   water:'#4b8fb0',prayer:'#4c8a6a',prep:'#bd7f33',away:'#806699',
