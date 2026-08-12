@@ -1,7 +1,7 @@
 import{
   VERSION as CORE_VERSION,
   REVISION as CORE_REVISION,
-  KEYS,
+  KEYS as CORE_KEYS,
   DEFAULT_PREFS,
   ALERT_PRAYERS,
   parseJson,
@@ -22,6 +22,7 @@ import{
 
 export const RELEASE='26.0.0';
 export const REVISION='foundation-r1';
+export const KEYS={...CORE_KEYS,cueState:'pacefold.cues.v1'};
 export const CUE_COLORS={
   water:'#4b8fb0',prayer:'#4c8a6a',prep:'#bd7f33',away:'#806699',
   meal:'#b06653',eyes:'#5d85a5',move:'#7d8751',focus:'#58645e'
@@ -58,7 +59,7 @@ export function normalizeNoteCategories(value){
 }
 
 export function normalizeV26Notes(value){
-  const source=Array.isArray(value)?value:[];
+  const source=Array.isArray(value)?value:Array.isArray(value?.items)?value.items:[];
   const base=normalizeLegacyNotes(source);
   const rawById=new Map(source.filter(item=>item&&typeof item==='object').map(item=>[String(item.id||''),item]));
   return base.map(note=>{
@@ -82,14 +83,29 @@ export function normalizeV26Notes(value){
   });
 }
 
+function normalizeCueState(value){
+  const state=value&&typeof value==='object'?value:{};
+  return{v:1,ack:state.ack&&typeof state.ack==='object'?state.ack:{},notified:state.notified&&typeof state.notified==='object'?state.notified:{},snoozeUntil:Number(state.snoozeUntil)||0};
+}
+
 export function createContext(){
   const safeGet=(key,fallback)=>parseJson(localStorage.getItem(key),fallback);
   const rawPrefs=safeGet(KEYS.prefs,{});
   const prefs=migratePrefs(rawPrefs);
+  prefs.v=1;
   prefs.noteCategories=normalizeNoteCategories(prefs.noteCategories);
   prefs.rhythmDiscretion=['names','neutral','hidden'].includes(prefs.rhythmDiscretion)?prefs.rhythmDiscretion:'neutral';
-  const notes=normalizeV26Notes(safeGet(KEYS.notes,[]));
-  const log=normalizeLog(safeGet(KEYS.log,{}));
+  const rawNotes=safeGet(KEYS.notes,[]);
+  const notes=normalizeV26Notes(rawNotes);
+  const rawLog=safeGet(KEYS.log,{});
+  const log=normalizeLog(rawLog);log.v=1;log.version=RELEASE;
+  const legacyCue=safeGet(CORE_KEYS.cueState,{ack:{},notified:{},snoozeUntil:0});
+  const cueState=normalizeCueState(safeGet(KEYS.cueState,legacyCue));
+
+  localStorage.setItem(KEYS.prefs,JSON.stringify(prefs));
+  localStorage.setItem(KEYS.notes,JSON.stringify({v:1,items:notes,savedAt:new Date().toISOString()}));
+  localStorage.setItem(KEYS.log,JSON.stringify(log));
+  localStorage.setItem(KEYS.cueState,JSON.stringify(cueState));
 
   const ctx={
     RELEASE,REVISION,CORE_VERSION,CORE_REVISION,KEYS,DEFAULT_PREFS,ALERT_PRAYERS,
@@ -102,6 +118,7 @@ export function createContext(){
     settingsTab:'essentials',
     editingNoteId:'',
     inlineEditingNoteId:'',
+    noteFocusId:'',
     noteFilter:'all',
     newNoteCategory:prefs.noteCategories[0]||'Note',
     clockNoteCategory:prefs.noteCategories[0]||'Note',
@@ -111,7 +128,7 @@ export function createContext(){
     weatherBusy:false,
     backupTimer:0,
     liveBackupHandle:null,
-    cueState:safeGet(KEYS.cueState,{ack:{},notified:{},snoozeUntil:0}),
+    cueState,
     currentCues:[],
     audioContext:null,
     audioSource:null,
@@ -141,6 +158,7 @@ export function createContext(){
 
   ctx.storePrefs=(patch={},reason='settings')=>{
     ctx.prefs=migratePrefs({...ctx.prefs,...patch});
+    ctx.prefs.v=1;
     ctx.prefs.noteCategories=normalizeNoteCategories(ctx.prefs.noteCategories);
     ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
     if(!ctx.prefs.noteCategories.includes(ctx.newNoteCategory))ctx.newNoteCategory=ctx.prefs.noteCategories[0];
@@ -153,13 +171,14 @@ export function createContext(){
 
   ctx.storeNotes=(reason='notes')=>{
     ctx.notes=normalizeV26Notes(ctx.notes);
-    localStorage.setItem(KEYS.notes,JSON.stringify(ctx.notes));
+    localStorage.setItem(KEYS.notes,JSON.stringify({v:1,items:ctx.notes,savedAt:new Date().toISOString()}));
     ctx.dispatchChange(KEYS.notes,reason);
   };
 
   ctx.storeLog=(reason='log')=>{
     ctx.log.savedAt=new Date().toISOString();
     ctx.log.version=RELEASE;
+    ctx.log.v=1;
     localStorage.setItem(KEYS.log,JSON.stringify(ctx.log));
     ctx.dispatchChange(KEYS.log,reason);
   };
@@ -247,6 +266,6 @@ export function createContext(){
     const elapsed=Date.now()-start;
     return{source,start,duration,running:elapsed<duration,done:elapsed>=duration,remaining:Math.max(0,duration-elapsed),progress:clamp(elapsed/duration,0,1,0)};
   };
-  ctx.currentBackup=()=>backupPayload({prefs:ctx.prefs,notes:ctx.notes,log:ctx.log,player:{soundChoice:ctx.prefs.soundChoice,soundVolume:ctx.prefs.soundVolume}});
+  ctx.currentBackup=()=>({...backupPayload({prefs:ctx.prefs,notes:ctx.notes,log:ctx.log,player:{soundChoice:ctx.prefs.soundChoice,soundVolume:ctx.prefs.soundVolume}}),release:RELEASE});
   return ctx;
 }
