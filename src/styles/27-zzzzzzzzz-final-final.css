@@ -1,0 +1,74 @@
+/* Final-final chrome polish: an empty Music player belongs to the window chrome, not over page content. */
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]){
+  top:max(8px,env(safe-area-inset-top))!important;
+  bottom:auto!important;
+  left:116px!important;
+  right:auto!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:0!important;
+  transform:none!important;
+  z-index:99!important;
+}
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-player{
+  width:38px!important;
+  min-width:38px!important;
+  margin:0!important;
+}
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-dock{
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:38px!important;
+  width:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  height:38px!important;
+  padding:0!important;
+  border:1px solid color-mix(in srgb,var(--line) 78%,transparent)!important;
+  border-radius:999px!important;
+  background:color-mix(in srgb,var(--paper) 90%,transparent)!important;
+  box-shadow:0 5px 16px rgba(31,40,36,.08)!important;
+  backdrop-filter:blur(12px)!important;
+  -webkit-backdrop-filter:blur(12px)!important;
+  overflow:hidden!important;
+}
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-source{
+  display:grid!important;
+  place-items:center!important;
+  box-sizing:border-box!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:var(--ink)!important;
+}
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-source span,
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-meta{display:none!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-source:hover,
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-source:focus-visible{
+  background:color-mix(in srgb,var(--ink) 7%,transparent)!important;
+}
+html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-chooser{
+  position:fixed!important;
+  top:58px!important;
+  left:116px!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:min(520px,calc(100vw - 140px))!important;
+  max-height:calc(100dvh - 74px)!important;
+  overflow:auto!important;
+}
+@media(max-width:760px){
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]){left:108px!important;width:36px!important;height:36px!important}
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-player,
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-dock,
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-source{width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important}
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-dock{grid-template-columns:36px!important}
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) .stream-chooser{top:56px!important;left:8px!important;right:8px!important;width:auto!important;max-height:calc(100dvh - 68px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-cover="peeled"] .sound-bar[data-streaming="true"]:has(.stream-player[data-state="empty"]) *{transition:none!important}
+}
