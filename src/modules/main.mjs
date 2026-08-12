@@ -2,6 +2,7 @@ import{createContext}from'./state.js';
 import{installCueStore}from'./cue-store.js';
 import{installSchedule}from'./schedule.js';
 import{installCues}from'./cues.js';
+import{installWindowCues}from'./window-cues.js';
 import{installClock}from'./clock.js';
 import{installNotes}from'./notes.js';
 import{installDaylog}from'./daylog.js';
@@ -17,6 +18,7 @@ ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhyth
 installCueStore(ctx);
 installSchedule(ctx);
 installCues(ctx);
+installWindowCues(ctx);
 installClock(ctx);
 installNotes(ctx);
 installDaylog(ctx);

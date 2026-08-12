@@ -41,6 +41,7 @@ function weatherFixture(){
 async function main(){
   const worker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8'),manifest=JSON.parse(fs.readFileSync(path.join(site,'manifest.webmanifest'),'utf8'));
   assert(worker.includes("const VERSION='27.0.0'"),'V27 service-worker identity missing');
+  assert(worker.includes('polish-r2-window-cues'),'Window-cue cache revision is missing');
   assert(worker.includes("indexedDB.open('pacefold-v26'"),'V27 must preserve the durable cue database');
   assert(manifest.name==='Clock'&&manifest.short_name==='Clock','Installed app chrome is not discreet');
 
@@ -58,16 +59,26 @@ async function main(){
     await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.version==='27.0.0');
 
     const privateTerms=/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i;
-    const home=await page.evaluate(()=>({text:document.querySelector('[data-view="home"]').innerText,cues:window.__PACEFOLD__.cues.length,notches:document.querySelectorAll('#clock-cue-ring .clock-cue-notch').length,title:document.title,brand:document.querySelector('.brand strong')?.textContent,tagline:getComputedStyle(document.querySelector('.brand small')).display,nowLine:Boolean(document.getElementById('day-now-line')),percent:document.getElementById('day-percent')?.textContent,duplicateCueHeader:Boolean(document.getElementById('clock-cue-count'))}));
+    const home=await page.evaluate(()=>({text:document.querySelector('[data-view="home"]').innerText,cues:window.__PACEFOLD__.cues.length,revision:window.__PACEFOLD__.revision,notches:document.querySelectorAll('#clock-cue-ring .clock-cue-notch').length,title:document.title,brand:document.querySelector('.brand strong')?.textContent,tagline:getComputedStyle(document.querySelector('.brand small')).display,nowLine:Boolean(document.getElementById('day-now-line')),percent:document.getElementById('day-percent')?.textContent,duplicateCueHeader:Boolean(document.getElementById('clock-cue-count')),windowBubbles:document.querySelectorAll('.window-cue-bubble').length,blooming:document.querySelectorAll('.window-cue-bubble[data-bloom="true"]').length,fullPanel:getComputedStyle(document.getElementById('clock-cue-panel')).display,favicon:document.getElementById('app-favicon')?.href||''}));
     assert(!privateTerms.test(home.text),'Neutral Clock leaked private rhythm/location vocabulary');
+    assert(home.revision==='polish-r2-window-cues','Window-cue revision did not boot');
     assert(home.cues>0&&home.notches===Math.min(7,home.cues),`Cue notch contract failed: cues=${home.cues}, notches=${home.notches}`);
-    assert(home.title===`Clock · ${home.cues}`&&home.brand==='Clock'&&home.tagline==='none','Ambient Clock chrome is not discreet');
+    assert(home.title==='Clock'&&home.brand==='Clock'&&home.tagline==='none','Edge-tab Clock chrome is not discreet');
+    assert(home.windowBubbles===Math.min(4,home.cues)&&home.blooming===0,'Existing cues should load as quiet beads without replaying alerts');
+    assert(home.fullPanel==='none','The retired full Clock cue panel is still visible');
+    assert(home.favicon.startsWith('data:image/svg+xml'),'Waiting cues did not reach the real browser-tab favicon');
     assert(home.nowLine&&/% of workday|Off day/.test(home.percent),'Day Unfold current-time/percentage contract failed');
     assert(!home.duplicateCueHeader,'Duplicate Clock cue header returned');
 
     await page.locator('.rhythm-card').hover();await page.waitForTimeout(900);
     const hoverText=await page.locator('[data-view="home"]').innerText();
     assert(!privateTerms.test(hoverText),'Neutral Clock revealed private rhythm vocabulary from passive hover');
+
+    await page.evaluate(()=>{window.__PACEFOLD__.prefs.gazeLastCompleted=Date.now()-31*60000;window.__PACEFOLD__.render('home')});
+    await page.waitForSelector('.window-cue-bubble[data-source="eyes"][data-bloom="true"]');
+    const bloom=await page.evaluate(()=>({title:document.title,text:document.querySelector('.window-cue-bubble[data-source="eyes"]')?.innerText||'',favicon:document.getElementById('app-favicon')?.href||'',count:document.querySelectorAll('.window-cue-bubble[data-bloom="true"]').length}));
+    assert(bloom.title==='Clock','A new window cue made the browser tab noisy');assert(/Look far/i.test(bloom.text),'The new eye cue did not bloom with useful copy');assert(!privateTerms.test(bloom.text),'Window cue leaked private rhythm vocabulary');assert(bloom.favicon.startsWith('data:image/svg+xml')&&bloom.count>=1,'Bubble or tab favicon did not react to a new cue');
+    await page.locator('.window-cue-bubble[data-source="eyes"]').click();await page.waitForTimeout(60);assert(await page.locator('.window-cue-bubble[data-source="eyes"]').count()===0,'Clicking a window bubble did not quietly clear it');
 
     await page.evaluate(()=>window.__PACEFOLD__.go('now'));await page.waitForSelector('.weather-nowcast .weather-hour');await page.waitForTimeout(80);
     const nowView=await page.evaluate(()=>({text:document.querySelector('[data-view="now"]').innerText,next:document.getElementById('now-next-name')?.textContent,actions:getComputedStyle(document.querySelector('.now-actions')).display,nowcast:document.querySelectorAll('.weather-nowcast .weather-hour').length,weatherDetail:document.querySelectorAll('.weather-detail-grid .weather-mini').length,rain:document.querySelector('.weather-rain-window')?.innerText||'',place:document.getElementById('weather-place')?.textContent||''}));
@@ -83,7 +94,7 @@ async function main(){
     const worklog=await page.evaluate(()=>({metrics:document.getElementById('metric-grid')?.innerText||'',comparison:Boolean(document.getElementById('day-compare')),dueCopy:document.querySelector('[data-action="eyes"] small')?.textContent||''}));
     assert(worklog.comparison,'Yesterday comparison surface is missing');assert(/AT WORK/.test(worklog.metrics)&&!/\bDESK\b/.test(worklog.metrics),'Day Log terminology did not move from Desk to At work');assert(!/due now/i.test(worklog.dueCopy),'Quick action still shouts Due now');
     assert(!errors.length,errors.join('\n'));await context.close();
-    console.log('Pacefold 27 release contract passed.');
+    console.log('Pacefold 27 window-cue release contract passed.');
   }finally{if(browser)await browser.close();server.close()}
 }
 main().catch(error=>{console.error(error.stack||error);process.exitCode=1});

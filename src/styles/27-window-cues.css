@@ -1,0 +1,44 @@
+/* Pacefold 27.1 — window-native quiet cues */
+
+/* The Clock reads like the active tab of the Pacefold window. */
+@media(min-width:761px){
+  .brand{align-self:flex-end;height:48px;margin-bottom:-1px;padding:0 15px 0 11px;border:1px solid var(--line);border-bottom-color:color-mix(in srgb,var(--paper),transparent 2%);border-radius:15px 15px 0 0;background:color-mix(in srgb,var(--paper),white 18%);box-shadow:0 -5px 18px rgba(40,43,35,.035);gap:9px}
+  .brand img{width:24px;height:24px}.brand strong{font-size:13px!important;font-weight:670;letter-spacing:.015em}
+}
+
+/* Window cues live on the chrome boundary instead of becoming another card. */
+.window-cues{position:fixed;z-index:56;top:calc(var(--bar) - 7px);right:28px;display:flex;align-items:flex-start;justify-content:flex-end;gap:6px;max-width:min(58vw,620px);pointer-events:none}
+.window-cue-bubble,.window-cue-more{pointer-events:auto;appearance:none;border:1px solid color-mix(in srgb,var(--cue,var(--line-strong)) 28%,var(--line));box-shadow:0 2px 10px rgba(35,41,37,.05);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.window-cue-bubble{width:14px;height:14px;min-width:14px;padding:0;display:flex;align-items:center;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--paper-2),transparent 5%);transform:translateY(0);transition:width .42s cubic-bezier(.22,.82,.2,1),height .42s cubic-bezier(.22,.82,.2,1),padding .42s cubic-bezier(.22,.82,.2,1),transform .42s cubic-bezier(.22,.82,.2,1),box-shadow .25s ease,background .25s ease}
+.window-cue-orb{width:8px;height:8px;min-width:8px;margin:auto;border-radius:50%;background:var(--cue);box-shadow:0 0 0 2px color-mix(in srgb,var(--cue) 14%,transparent);transition:margin .32s ease,transform .32s ease}
+.window-cue-copy{display:grid;min-width:0;max-width:0;margin-left:0;opacity:0;text-align:left;overflow:hidden;transition:max-width .38s cubic-bezier(.22,.82,.2,1),margin-left .32s ease,opacity .2s ease}
+.window-cue-copy strong,.window-cue-copy small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.window-cue-copy strong{font-size:10px;font-weight:720}.window-cue-copy small{margin-top:1px;font-size:8px;color:var(--muted)}
+.window-cue-bubble[data-bloom="true"]{width:min(214px,42vw);height:38px;padding:0 11px 0 9px;transform:translateY(8px);background:color-mix(in srgb,var(--paper-2),white 12%);box-shadow:0 9px 28px rgba(35,41,37,.12),0 0 0 1px color-mix(in srgb,var(--cue) 9%,transparent)}
+.window-cue-bubble[data-bloom="true"] .window-cue-orb{margin:0;transform:scale(1.05)}.window-cue-bubble[data-bloom="true"] .window-cue-copy{max-width:170px;margin-left:8px;opacity:1}
+.window-cue-bubble:focus-visible{width:min(214px,42vw);height:38px;padding:0 11px 0 9px;transform:translateY(8px);outline:2px solid color-mix(in srgb,var(--cue) 38%,transparent);outline-offset:2px}.window-cue-bubble:focus-visible .window-cue-orb{margin:0}.window-cue-bubble:focus-visible .window-cue-copy{max-width:170px;margin-left:8px;opacity:1}
+.window-cue-more{height:18px;min-width:24px;padding:0 6px;margin-top:-2px;border-radius:999px;background:color-mix(in srgb,var(--paper-2),transparent 4%);font-size:8px;color:var(--muted)}
+.window-cues[data-active="false"]{display:none}
+
+/* The old full Clock cue panel is intentionally retired; dial notches + window bubbles + Now are enough. */
+.clock-cue-panel{display:none!important}
+
+/* Existing app-bar dots become a quiet persistent ledger, not the alert itself. */
+.cue-cluster{min-width:48px!important;width:auto!important;flex:0 0 auto!important;padding-inline:10px!important;background:rgba(255,255,255,.24)!important;border-color:var(--line)!important;box-shadow:none!important}.cue-dot{width:7px!important;height:7px!important;flex-basis:7px!important;animation:none!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--cue) 10%,transparent)!important}.cue-anchor{width:16px!important;background:var(--line-strong)!important}
+
+/* WCO keeps the same language: the tab edge carries tiny colour rather than a numeric badge. */
+html[data-wco="on"] .title-cue-count{display:none!important}html[data-wco="on"] .title-cue-strip{height:2px!important;opacity:.22!important}html[data-wco="on"] .title-cue-strip[data-active="true"]{opacity:.76!important}html[data-wco="on"] .title-cue-segments i{height:2px!important}
+
+@media(max-width:760px){
+  .window-cues{top:calc(var(--bar) - 6px);right:12px;gap:5px;max-width:calc(100vw - 24px)}
+  .window-cue-bubble{width:12px;height:12px;min-width:12px}.window-cue-orb{width:7px;height:7px;min-width:7px}
+  .window-cue-bubble[data-bloom="true"],.window-cue-bubble:focus-visible{width:min(192px,62vw);height:36px;transform:translateY(7px)}
+  .window-cue-copy strong{font-size:9px}.window-cue-copy small{font-size:7px}.cue-cluster{min-width:38px!important;padding-inline:8px!important}
+}
+
+@media(prefers-color-scheme:dark){
+  .brand{background:color-mix(in srgb,var(--paper-2),black 6%);border-bottom-color:var(--paper)}
+  .window-cue-bubble,.window-cue-more{background:color-mix(in srgb,var(--paper-2),black 8%);box-shadow:0 8px 24px rgba(0,0,0,.2)}
+  .window-cue-bubble[data-bloom="true"]{background:color-mix(in srgb,var(--paper-2),black 2%)}
+}
+
+@media(prefers-reduced-motion:reduce){.window-cue-bubble,.window-cue-orb,.window-cue-copy{transition:none!important}}

@@ -1,6 +1,6 @@
 'use strict';
 const VERSION='27.0.0';
-const CACHE_NAME=`pacefold-v${VERSION}-polish-r1`;
+const CACHE_NAME=`pacefold-v${VERSION}-polish-r2-window-cues`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
@@ -78,6 +78,8 @@ function backgroundCues(mirror,state,now=Date.now()){
 
 async function deliverBackgroundCue(){
   try{
+    const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    if(windows.some(client=>client.visibilityState==='visible'&&client.focused))return;
     const mirror=await readDb(MIRROR_KEY),state=normalizeCueState(await readDb(CUE_KEY)),cue=backgroundCues(mirror,state)[0];
     if(!cue)return;
     const iconName=ICON_NAMES[cue.source];
