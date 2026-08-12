@@ -10,6 +10,7 @@ import{installSync}from'./sync.js';
 import{installApp}from'./app.js';
 
 const ctx=createContext();
+ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
 installSchedule(ctx);
 installCues(ctx);
 installClock(ctx);
