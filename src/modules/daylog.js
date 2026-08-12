@@ -15,7 +15,7 @@ export function installDaylog(ctx){
     }
     const eyeDue=ctx.currentCues.some(cue=>cue.source==='eyes'),moveDue=ctx.currentCues.some(cue=>cue.source==='move'),waterDue=ctx.currentCues.some(cue=>cue.source==='water');
     $('[data-action="eyes"]').dataset.due=String(eyeDue);$('[data-action="move"]').dataset.due=String(moveDue);$('[data-action="water"]').dataset.due=String(waterDue);
-    id('eyes-state').textContent=eyeDue?'Due now':'20-second reset';id('move-state').textContent=moveDue?'Due now':`${ctx.prefs.bodyCadence}-min cadence`;
+    id('eyes-state').textContent='20-second reset';id('move-state').textContent=`${ctx.prefs.bodyCadence}-min cadence`;
   };
 
   ctx.performAction=action=>{
@@ -41,7 +41,7 @@ export function installDaylog(ctx){
     }
     if(action==='eyes'){ctx.storePrefs({gazeLastCompleted:now},'eyes');ctx.addMoment('eyes','Distance look','20-second eye reset',now,'eyes');ctx.toast('Distance look logged')}
     if(action==='move'){ctx.storePrefs({bodyLastCompleted:now},'move');ctx.addMoment('move','Movement reset','Changed position and moved',now,'move');ctx.toast('Movement reset logged')}
-    if(action==='ack'){const cue=ctx.currentCues[0];if(cue){ctx.acknowledgeCue(cue);ctx.toast(`${cue.label} cleared`)}else ctx.toast('No waiting cue')}
+    if(action==='ack'){const cue=ctx.currentCues[0];if(cue){ctx.acknowledgeCue(cue);ctx.toast(`${ctx.clockCueCopy?.(cue)?.label||cue.label} cleared`)}else ctx.toast('No waiting cue')}
     if(action==='snooze')ctx.snoozeCues(10);
     ctx.refreshCues();ctx.renderAll?.();
   };
@@ -53,13 +53,41 @@ export function installDaylog(ctx){
     return ctx.notes.find(note=>Math.abs(new Date(note.context?.at||note.createdAt).getTime()-at)<60000)||null;
   };
 
+  ctx.previousDayKey=key=>{
+    const[y,m,d]=String(key).split('-').map(Number),date=new Date(Date.UTC(y,m-1,d-1));
+    return date.toISOString().slice(0,10);
+  };
+
+  ctx.renderYesterdayComparison=(todayKey,todayMetrics,todayNotes)=>{
+    const view=$('.view-worklog'),layout=$('.log-layout');if(!view||!layout)return;
+    let section=id('day-compare');
+    if(!section){section=el('section','day-compare');section.id='day-compare';section.setAttribute('aria-label','Yesterday comparison');layout.after(section)}
+    const yesterdayKey=ctx.previousDayKey(todayKey),nowPart=ctx.zoneParts(new Date(),ctx.prefs.timeZone),[y,m,d]=yesterdayKey.split('-').map(Number),decimal=nowPart.hour+nowPart.minute/60+nowPart.second/3600,yesterdayNow=ctx.zonedDate(y,m,d,decimal,ctx.prefs.timeZone).getTime(),yesterdayMetrics=ctx.metricsForDay(ctx.log,yesterdayKey,ctx.prefs,yesterdayNow),yesterdayNotes=ctx.notesForDate(yesterdayKey).filter(note=>new Date(note.context?.at||note.createdAt).getTime()<=yesterdayNow);
+    const hasYesterday=yesterdayMetrics.events.length||yesterdayNotes.length;
+    section.replaceChildren();
+    const head=el('header'),copy=el('span');copy.append(el('small','','Against yesterday'),el('strong','',hasYesterday?'Same point in the day':'No comparison yet'));head.append(copy,el('b','',yesterdayKey));section.append(head);
+    if(!hasYesterday){const empty=el('p','day-compare-empty','Yesterday is quiet at this point. Pacefold will compare the days once there is something useful to compare.');section.append(empty);return}
+    const rows=[
+      ['At work',todayMetrics.desk,yesterdayMetrics.desk,'duration'],
+      ['Focus',todayMetrics.focus,yesterdayMetrics.focus,'duration'],
+      ['Breaks',todayMetrics.breaks,yesterdayMetrics.breaks,'count'],
+      ['Notes',todayNotes.length,yesterdayNotes.length,'count']
+    ],grid=el('div','day-compare-grid');
+    for(const[label,current,previous,kind]of rows){
+      const card=el('article','day-compare-card'),delta=current-previous,sign=delta>0?'+':delta<0?'−':'',absolute=Math.abs(delta),value=kind==='duration'?ctx.durationText(current):String(current),deltaText=!delta?'Same':kind==='duration'?`${sign}${ctx.durationText(absolute)}`:`${sign}${absolute}`;
+      card.dataset.direction=delta>0?'up':delta<0?'down':'same';card.dataset.zero=String(current===0&&previous===0);
+      card.append(el('span','',label),el('strong','',value),el('small','',`${deltaText} vs yesterday`));grid.append(card);
+    }
+    section.append(grid);
+  };
+
   ctx.renderWorklog=()=>{
     const key=ctx.todayKey(),metrics=ctx.metricsForDay(ctx.log,key,ctx.prefs),todayNotes=ctx.notesForDate(key);
-    const values=[['Elapsed',metrics.elapsed],['Desk',metrics.desk],['Focus',metrics.focus],['Away',metrics.away+metrics.meal],['Breaks',metrics.breaks],['Notes',todayNotes.length]];
+    const values=[['Elapsed',metrics.elapsed,'duration'],['At work',metrics.desk,'duration'],['Focus',metrics.focus,'duration'],['Away',metrics.away+metrics.meal,'duration'],['Breaks',metrics.breaks,'count'],['Notes',todayNotes.length,'count']];
     const grid=id('metric-grid');grid.replaceChildren();
-    for(const[label,value]of values){const card=el('article','metric-card');card.dataset.tone=label.toLowerCase();card.append(el('span','',label),el('strong','',typeof value==='number'&&!['Breaks','Notes'].includes(label)?ctx.durationText(value):value));grid.append(card)}
+    for(const[label,value,kind]of values){const card=el('article','metric-card');card.dataset.tone=label.toLowerCase().replace(/\s+/g,'-');card.dataset.zero=String(Number(value)===0);card.append(el('span','',label),el('strong','',kind==='duration'?ctx.durationText(value):value));grid.append(card)}
 
-    const elapsed=Math.max(1,metrics.elapsed),segments=[['Desk',metrics.desk,'#426b5b'],['Away',metrics.away,'#77638e'],['Meal',metrics.meal,'#a25047'],['Field',metrics.field,'#3f718b']];
+    const elapsed=Math.max(1,metrics.elapsed),segments=[['At work',metrics.desk,'#426b5b'],['Away',metrics.away,'#77638e'],['Meal',metrics.meal,'#a25047'],['Field',metrics.field,'#3f718b']];
     const bar=id('day-balance-bar'),legend=id('day-balance-legend');bar.replaceChildren();legend.replaceChildren();
     for(const[label,value,color]of segments){
       if(value>0){const segment=el('span');segment.style.setProperty('--segment',color);segment.style.width=`${Math.max(1,value/elapsed*100)}%`;bar.append(segment)}
@@ -87,6 +115,7 @@ export function installDaylog(ctx){
 
     const focus=ctx.findOpen('focus'),field=ctx.findOpen('field');
     id('focus-toggle').textContent=focus?'End focus':'Start focus';id('focus-toggle').dataset.active=String(Boolean(focus));id('focus-tool-state').textContent=focus?`Running · ${ctx.durationText(Date.now()-focus.start)}`:'Start protected time';id('field-toggle-state').textContent=field?`Running · ${ctx.durationText(Date.now()-field.start)}`:'Start a field session';id('field-toggle').dataset.active=String(Boolean(field));
+    ctx.renderYesterdayComparison(key,metrics,todayNotes);
   };
 
   ctx.renderActive=()=>{
