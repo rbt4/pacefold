@@ -31,7 +31,7 @@ async function main(){
     browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH}:{})});
     const context=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'America/Toronto'});
     const page=await context.newPage();const errors=[];
-    page.on('pageerror',error=>errors.push(`page: ${error.message}`));page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text())}`)});
+    page.on('pageerror',error=>errors.push(`page: ${error.message}`));page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text()}`)});
     await page.addInitScript(()=>{
       localStorage.setItem('pacefoldOnboardedV15','1');
       if(!localStorage.getItem('pacefoldPrefsV15'))localStorage.setItem('pacefoldPrefsV15',JSON.stringify({profile:'original',lat:43.6205,lng:-79.5132,locationLabel:'Etobicoke, Toronto',timeZone:'America/Toronto',method:'15',asr:'hanafi',showSeconds:true,waterTarget:24,waterSips:6,waterDate:new Date().toLocaleDateString('en-CA',{timeZone:'America/Toronto'}),workHours:'08:30-16:30',workDays:[1,2,3,4,5],notifications:false,quietMode:false,weatherEnabled:false}));
