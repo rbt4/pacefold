@@ -130,17 +130,9 @@ export function installApp(ctx){
       const toggle=target.closest('[data-setting]');
       if(toggle){void ctx.toggleSetting(toggle.dataset.setting);return}
       const setupDiscretion=target.closest('[data-setup-discretion]');
-      if(setupDiscretion){
-        ctx.storePrefs({rhythmDiscretion:setupDiscretion.dataset.setupDiscretion},'onboarding-discretion');
-        for(const node of $$('[data-setup-discretion]'))node.setAttribute('aria-pressed',String(node===setupDiscretion));
-        ctx.render(ctx.mode);return;
-      }
+      if(setupDiscretion){ctx.storePrefs({rhythmDiscretion:setupDiscretion.dataset.setupDiscretion},'onboarding-discretion');for(const node of $$('[data-setup-discretion]'))node.setAttribute('aria-pressed',String(node===setupDiscretion));ctx.render(ctx.mode);return}
       const setup=target.closest('[data-setup-profile]');
-      if(setup){
-        ctx.storePrefs({profile:setup.dataset.setupProfile},'onboarding-profile');
-        for(const node of $$('[data-setup-profile]'))node.setAttribute('aria-pressed',String(node===setup));
-        ctx.render(ctx.mode);return;
-      }
+      if(setup){ctx.storePrefs({profile:setup.dataset.setupProfile},'onboarding-profile');for(const node of $$('[data-setup-profile]'))node.setAttribute('aria-pressed',String(node===setup));ctx.render(ctx.mode);return}
       const oneNoteItem=target.closest('[data-onenote-id]');
       if(oneNoteItem){const item=ctx.oneNoteCatalog.find(row=>String(row.id)===oneNoteItem.dataset.onenoteId);if(item)void ctx.chooseOneNoteItem(item)}
     });
@@ -164,24 +156,14 @@ export function installApp(ctx){
     id('note-cancel').addEventListener('click',()=>{ctx.resetNoteComposer();ctx.renderNotes();ctx.toast('Edit cancelled')});
     id('calendar-prev').addEventListener('click',()=>{ctx.calendarCursor=new Date(ctx.calendarCursor.getFullYear(),ctx.calendarCursor.getMonth()-1,1);ctx.renderCalendar()});
     id('calendar-next').addEventListener('click',()=>{ctx.calendarCursor=new Date(ctx.calendarCursor.getFullYear(),ctx.calendarCursor.getMonth()+1,1);ctx.renderCalendar()});
-    id('calendar-today').addEventListener('click',()=>{
-      if(ctx.editingNoteId)ctx.resetNoteComposer();
-      ctx.selectedDate=ctx.todayKey();ctx.calendarCursor=new Date(`${ctx.selectedDate}T12:00:00`);ctx.renderNotes();
-    });
+    id('calendar-today').addEventListener('click',()=>{if(ctx.inlineEditingNoteId)ctx.resetNoteComposer();ctx.selectedDate=ctx.todayKey();ctx.calendarCursor=new Date(`${ctx.selectedDate}T12:00:00`);ctx.renderNotes()});
 
     id('focus-toggle').addEventListener('click',()=>ctx.toggleSession('focus','focus','Focus block'));
-    id('export-day').addEventListener('click',()=>{
-      const key=ctx.todayKey();ctx.download(`pacefold-day-${key}.json`,'application/json',JSON.stringify({release:ctx.RELEASE,date:key,metrics:ctx.metricsForDay(ctx.log,key,ctx.prefs),notes:ctx.notesForDate(key)},null,2));
-    });
-    id('clear-open-sessions').addEventListener('click',()=>{
-      for(const source of['focus','field','prep','away','meal'])ctx.closeSession(source,'Closed manually');
-      ctx.storePrefs({noodleStart:0,awayStart:0,lunchStart:0},'close-sessions');ctx.render(ctx.mode);ctx.toast('Open sessions closed');
-    });
+    id('export-day').addEventListener('click',()=>{const key=ctx.todayKey();ctx.download(`pacefold-day-${key}.json`,'application/json',JSON.stringify({release:ctx.RELEASE,date:key,metrics:ctx.metricsForDay(ctx.log,key,ctx.prefs),notes:ctx.notesForDate(key)},null,2))});
+    id('clear-open-sessions').addEventListener('click',()=>{for(const source of['focus','field','prep','away','meal'])ctx.closeSession(source,'Closed manually');ctx.storePrefs({noodleStart:0,awayStart:0,lunchStart:0},'close-sessions');ctx.render(ctx.mode);ctx.toast('Open sessions closed')});
 
     for(const input of $$('.settings-panels input,.settings-panels select'))input.addEventListener('change',ctx.settingsInput);
-    for(const input of $$('[data-offset]'))input.addEventListener('change',()=>{
-      ctx.storePrefs({offsets:{...ctx.prefs.offsets,[input.dataset.offset]:Number(input.value)||0}},'prayer-offset');ctx.render(ctx.mode);
-    });
+    for(const input of $$('[data-offset]'))input.addEventListener('change',()=>{ctx.storePrefs({offsets:{...ctx.prefs.offsets,[input.dataset.offset]:Number(input.value)||0}},'prayer-offset');ctx.render(ctx.mode)});
     id('use-location').addEventListener('click',ctx.useDeviceLocation);
     id('weather-refresh').addEventListener('click',()=>void ctx.fetchWeather(true));
     id('backup-download').addEventListener('click',ctx.downloadBackup);
@@ -193,68 +175,48 @@ export function installApp(ctx){
     id('onenote-disconnect').addEventListener('click',ctx.disconnectOneNote);
     id('self-check').addEventListener('click',ctx.runSelfCheck);
 
-    id('reset-today').addEventListener('click',async()=>{
-      if(!await ctx.confirmAction('Reset today’s counters?','Water and active timers will reset. Notes and completed day-log entries stay.'))return;
-      ctx.storePrefs({waterOz:0,waterSips:0,waterDate:ctx.todayKey(),noodleStart:0,awayStart:0,lunchStart:0},'reset-today');ctx.render(ctx.mode);ctx.toast('Today’s counters reset');
-    });
-    id('reset-app').addEventListener('click',async()=>{
-      if(!await ctx.confirmAction('Delete local Pacefold data?','This removes settings, notes and the day log from this browser. Download a backup first if you may need them.'))return;
-      for(const key of Object.values(ctx.KEYS))localStorage.removeItem(key);location.reload();
-    });
+    id('reset-today').addEventListener('click',async()=>{if(!await ctx.confirmAction('Reset today’s counters?','Water and active timers will reset. Notes and completed day-log entries stay.'))return;ctx.storePrefs({waterOz:0,waterSips:0,waterDate:ctx.todayKey(),noodleStart:0,awayStart:0,lunchStart:0},'reset-today');ctx.render(ctx.mode);ctx.toast('Today’s counters reset')});
+    id('reset-app').addEventListener('click',async()=>{if(!await ctx.confirmAction('Delete local Pacefold data?','This removes settings, notes and the day log from this browser. Download a backup first if you may need them.'))return;for(const key of Object.values(ctx.KEYS))localStorage.removeItem(key);location.reload()});
 
     id('sound-toggle').addEventListener('click',()=>ctx.soundPlaying?ctx.stopSound():void ctx.startSound());
     id('sound-choice').addEventListener('change',event=>{ctx.storePrefs({soundChoice:event.target.value},'sound');if(ctx.soundPlaying)void ctx.startSound();else ctx.renderSound()});
-    id('sound-volume').addEventListener('input',event=>{
-      const value=ctx.clamp(event.target.value,0,1,.18);ctx.prefs.soundVolume=value;
-      if(ctx.audioGain&&ctx.audioContext)ctx.audioGain.gain.setTargetAtTime(value,ctx.audioContext.currentTime,.05);
-      id('audio-player').volume=value;localStorage.setItem(ctx.KEYS.prefs,JSON.stringify(ctx.prefs));
-    });
+    id('sound-volume').addEventListener('input',event=>{const value=ctx.clamp(event.target.value,0,1,.18);ctx.prefs.soundVolume=value;if(ctx.audioGain&&ctx.audioContext)ctx.audioGain.gain.setTargetAtTime(value,ctx.audioContext.currentTime,.05);id('audio-player').volume=value;localStorage.setItem(ctx.KEYS.prefs,JSON.stringify(ctx.prefs))});
     id('sound-file').addEventListener('click',()=>id('audio-file-input').click());
-    id('audio-file-input').addEventListener('change',event=>{
-      const file=event.target.files?.[0];if(!file)return;
-      if(ctx.localAudioUrl)URL.revokeObjectURL(ctx.localAudioUrl);
-      ctx.localAudioUrl=URL.createObjectURL(file);
-      ctx.storePrefs({soundChoice:'local',soundLabel:file.name.replace(/\.[^.]+$/,'').slice(0,70)},'sound-file');void ctx.startSound();event.target.value='';
-    });
-    id('setup-later').addEventListener('click',()=>{
-      ctx.storePrefs({rhythmDiscretion:ctx.prefs.rhythmDiscretion||'neutral'},'onboarding-complete');id('setup-dialog').close();ctx.render(ctx.mode);ctx.toast('Pacefold is ready');
-    });
+    id('audio-file-input').addEventListener('change',event=>{const file=event.target.files?.[0];if(!file)return;if(ctx.localAudioUrl)URL.revokeObjectURL(ctx.localAudioUrl);ctx.localAudioUrl=URL.createObjectURL(file);ctx.storePrefs({soundChoice:'local',soundLabel:file.name.replace(/\.[^.]+$/,'').slice(0,70)},'sound-file');void ctx.startSound();event.target.value=''});
+    id('setup-later').addEventListener('click',()=>{ctx.storePrefs({rhythmDiscretion:ctx.prefs.rhythmDiscretion||'neutral'},'onboarding-complete');id('setup-dialog').close();ctx.render(ctx.mode);ctx.toast('Pacefold is ready')});
 
     window.addEventListener('storage',event=>{
-      if(event.key===ctx.KEYS.prefs){
-        ctx.prefs=ctx.migratePrefs(ctx.parseJson(event.newValue,{}));
-        ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
-      }
+      if(event.key===ctx.KEYS.prefs){ctx.prefs=ctx.migratePrefs(ctx.parseJson(event.newValue,{}));ctx.prefs.v=1;ctx.prefs.noteCategories=ctx.normalizeNoteCategories(ctx.prefs.noteCategories);ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral'}
       if(event.key===ctx.KEYS.notes)ctx.notes=ctx.normalizeNotes(ctx.parseJson(event.newValue,[]));
-      if(event.key===ctx.KEYS.log)ctx.log=ctx.normalizeLog(ctx.parseJson(event.newValue,{}));
-      if(event.key===ctx.KEYS.cueState)ctx.cueState=ctx.parseJson(event.newValue,{ack:{},notified:{},snoozeUntil:0});
+      if(event.key===ctx.KEYS.log){ctx.log=ctx.normalizeLog(ctx.parseJson(event.newValue,{}));ctx.log.v=1;ctx.log.version=ctx.RELEASE}
+      if(event.key===ctx.KEYS.cueState)ctx.cueState=ctx.parseJson(event.newValue,{v:1,ack:{},notified:{},snoozeUntil:0});
       ctx.render(ctx.mode);
     });
 
-    window.addEventListener('focus',()=>{if(!document.hidden){ctx.render(ctx.mode);ctx.renderIdle();void ctx.syncOneNote(false)}});
-    document.addEventListener('visibilitychange',()=>{
+    const resume=async()=>{
       if(document.hidden)return;
-      ctx.minuteSeen=-1;ctx.render(ctx.mode);ctx.renderIdle();void ctx.syncOneNote(false);
-      if(ctx.mode==='now')void ctx.fetchWeather(false);
-    });
+      await ctx.pullCueState?.();ctx.minuteSeen=-1;ctx.render(ctx.mode);ctx.renderIdle();void ctx.syncOneNote(false);if(ctx.mode==='now')void ctx.fetchWeather(false);
+    };
+    window.addEventListener('focus',()=>void resume());
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)void resume()});
     window.addEventListener('beforeunload',()=>{if(ctx.localAudioUrl)URL.revokeObjectURL(ctx.localAudioUrl)});
     navigator.serviceWorker?.addEventListener('message',event=>{
-      if(event.data?.type==='PACEFOLD_ACK'){
-        const cue=ctx.currentCues.find(item=>item.key===event.data.key)||ctx.currentCues.find(item=>item.source===event.data.source);
-        if(cue)ctx.acknowledgeCue(cue);
-      }
+      if(event.data?.type==='PACEFOLD_ACK'||event.data?.type==='PACEFOLD_SNOOZE')void(async()=>{await ctx.pullCueState?.();ctx.render(ctx.mode)})();
     });
   };
 
   ctx.initialize=async()=>{
     const hadExisting=Object.keys(ctx.rawPrefs||{}).length>5||localStorage.getItem(ctx.KEYS.onboarding)==='1';
     ctx.generateStatic();ctx.bind();ctx.bindRhythmReveal?.();ctx.resetDailyIfNeeded();
+    await ctx.initCueStore?.();
     ctx.liveBackupHandle=await ctx.readHandle();ctx.renderBackupStatus();ctx.renderSound();
     const requested=new URLSearchParams(location.search).get('mode');
     if(['notes','worklog','now','settings'].includes(requested))ctx.mode=requested;
     document.documentElement.dataset.mode=ctx.mode;
     ctx.render(ctx.mode);
     await ctx.registerWorker();
+    ctx.syncCueMirror?.();
+    void ctx.registerPeriodicCueSync?.();
     if(ctx.mode==='now')void ctx.fetchWeather(false);
 
     setInterval(()=>{
