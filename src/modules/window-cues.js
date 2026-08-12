@@ -27,6 +27,9 @@ export function installWindowCues(ctx){
     const cues=ctx.currentCues||[],now=Date.now(),visible=!document.hidden;
     tray.dataset.active=String(Boolean(cues.length));
     tray.replaceChildren();
+    const cluster=id('cue-cluster'),clearDots=id('clear-cues');
+    if(cluster)cluster.hidden=!cues.length;
+    if(clearDots)clearDots.hidden=!cues.length;
 
     if(!ctx.windowCuePrimed){for(const cue of cues)ctx.windowCueSeen.add(cue.key);ctx.windowCuePrimed=true}
 
