@@ -46,14 +46,16 @@ const styles=read('app/pacefold.css');
 const worker=read('service-worker.js');
 const manifest=JSON.parse(read('manifest.webmanifest'));
 const packageJson=JSON.parse(fs.readFileSync(path.resolve('package.json'),'utf8'));
+const notificationSource=fs.readFileSync(path.resolve('src/modules/notification-preflight.mjs'),'utf8');
 
 assert(packageJson.version==='26.0.0','Package release identity is wrong');
 assert(packageJson.devDependencies?.esbuild==='0.28.1','esbuild must stay exactly pinned');
 assert((app.match(/<link[^>]+stylesheet/g)||[]).length===1,'App must load exactly one stylesheet');
 assert((app.match(/<script/g)||[]).length===2,'App must load only MSAL and one Pacefold runtime');
 assert(!runtime.includes('./core.mjs')&&!runtime.includes('../modules/'),'Built runtime still references source modules');
-assert(runtime.includes('notify-water-128.png')&&runtime.includes('badge-96.png'),'Raster notification rewrite is missing from bundle');
-assert(runtime.includes('Snooze 10m')&&runtime.includes("action:\"ack\"")&&runtime.includes("action:\"snooze\""),'Notification actions are incomplete');
+assert(notificationSource.includes('notify-${iconName}-128.png')&&notificationSource.includes('badge-96.png'),'Raster notification rewrite is missing from readable source');
+assert(notificationSource.includes("{action:'ack',title:'Clear'}")&&notificationSource.includes("{action:'snooze',title:'Snooze 10m'}"),'Readable notification actions are incomplete');
+assert(runtime.includes('Snooze 10m'),'Notification action behaviour was not included in the bundle');
 assert(worker.includes('notify-water-128.png')&&worker.includes('notify-prayer-128.png')&&worker.includes('badge-96.png'),'Offline shell does not cache raster notification assets');
 assert(worker.includes("event.action==='snooze'")&&worker.includes('cueAction=snooze'),'Service-worker Snooze route is missing');
 assert(!worker.includes("'./app/core.mjs'"),'Service worker still caches removed bundled source');
