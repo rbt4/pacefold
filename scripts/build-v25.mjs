@@ -36,5 +36,5 @@ await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions]
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});
 await fs.rm(path.join(target,'styles'),{recursive:true,force:true});
 await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'26.0.0 foundation-r1\n');
-console.log(`Built Pacefold 26 single-runtime bundle and single stylesheet at ${target}`);
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.0.0 polish-r1\n');
+console.log(`Built Pacefold 27 single-runtime bundle and single stylesheet at ${target}`);
