@@ -33,7 +33,6 @@ function loadYouTube(){
 export function installStreamPlayer(ctx){
   const sound=id('sound-bar');if(!sound||id('stream-player'))return;
   sound.dataset.streaming='player';sound.setAttribute('aria-label','Streaming music player');for(const child of[...sound.children])child.hidden=true;
-
   const shell=el('section','stream-player');shell.id='stream-player';shell.dataset.state='empty';
   const video=el('div','stream-video');video.id='stream-video';video.hidden=true;
   let mount=el('div','stream-video-mount');mount.id='stream-youtube';const videoClose=button('stream-video-close','Pause and collapse video','×');video.append(mount,videoClose);
@@ -63,7 +62,7 @@ export function installStreamPlayer(ctx){
     currentMedia=media;shell.dataset.state='loading';title.textContent='Loading…';author.textContent=media.listId?'YouTube playlist':'YouTube';setVideo(true);destroyPlayer();
     try{
       const YT=await loadYouTube(),playerVars={playsinline:1,controls:1,rel:0,enablejsapi:1,origin:location.origin};if(media.listId){playerVars.listType='playlist';playerVars.list=media.listId}
-      player=new YT.Player(ensureMount(),{width:356,height:200,videoId:media.videoId||undefined,playerVars,events:{
+      const target=ensureMount().id;player=new YT.Player(target,{width:356,height:200,videoId:media.videoId||undefined,playerVars,events:{
         onReady:event=>{ready=true;event.target.setVolume?.(Number(volume.value));const at=resume?Number(saved.time)||0:0;if(at>1)event.target.seekTo?.(at,true);shell.dataset.state='ready';updateMeta();startProgress();if(autoplay)event.target.playVideo?.()},
         onStateChange:event=>{const state=Number(event.data);setPlaying(state===1);if(state===1)setVideo(true);updateMeta();updateProgress();if(state===0){saved.time=0;persist()}},
         onError:()=>{shell.dataset.state='error';title.textContent='This item cannot play here';author.textContent='Try another YouTube link';setPlaying(false)}
