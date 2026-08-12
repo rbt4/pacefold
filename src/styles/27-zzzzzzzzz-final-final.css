@@ -3,7 +3,7 @@
 html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]){
   top:max(8px,env(safe-area-inset-top))!important;
   bottom:auto!important;
-  left:116px!important;
+  left:130px!important;
   right:auto!important;
   width:38px!important;
   height:38px!important;
@@ -55,10 +55,10 @@ html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player
 html[data-cover="peeled"] .sound-bar[data-streaming="player"]:has(.stream-player[data-state="empty"]) .stream-chooser{
   position:fixed!important;
   top:64px!important;
-  left:116px!important;
+  left:130px!important;
   right:auto!important;
   bottom:auto!important;
-  width:min(520px,calc(100vw - 140px))!important;
+  width:min(520px,calc(100vw - 154px))!important;
   max-height:calc(100dvh - 80px)!important;
   overflow:auto!important;
 }
