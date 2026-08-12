@@ -36,8 +36,8 @@ jobs:
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
-      - name: V27 regression contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v27-contract.cjs _site
+      - name: V27 release contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v27-release.cjs _site
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
