@@ -26,7 +26,7 @@ export function installNow(ctx){
         current:'temperature_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m',
         hourly:'temperature_2m,precipitation_probability,precipitation,weather_code',
         daily:'sunrise,sunset,uv_index_max',
-        timezone:ctx.prefs.timeZone,forecast_days:'1'
+        timezone:ctx.prefs.timeZone,forecast_days:'2'
       });
       const response=await fetch(`https://api.open-meteo.com/v1/forecast?${query}`);
       if(!response.ok)throw new Error(`Weather ${response.status}`);

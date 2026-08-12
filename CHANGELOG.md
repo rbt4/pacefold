@@ -1,5 +1,37 @@
 # Changelog
 
+## 27.1.0 — Final Form
+
+- Consolidated the conception-to-current product invariants into `docs/ORIGIN_TO_FINAL.md` so future cleanup cannot silently erase original behavior.
+- Preserved the giant daily-image Clock surface while locking it as a true single-screen surface instead of allowing scroll-through into the underlying app.
+- Restored the original-profile **Noodles** timer identity while retaining generic **Prep** for other profiles.
+- Integrated the original Brown hush, Rain glass, Soft fan and local-audio focus sounds inside the current Music picker.
+- Kept YouTube/YouTube Music playlist playback, direct track selection, previous/next, seek, volume, shuffle, loop and local My Music.
+- Added My Music/stream state to JSON and live backups and restore.
+- Expanded custom-moment editing to all eight slots already supported by storage migration, preventing hidden rows from being lost during settings changes.
+- Extended weather to a two-day horizon so the near-term rain window remains meaningful across midnight.
+- Upgraded the live clock favicon/taskbar identity to carry several waiting cue colours instead of only the highest-priority cue.
+- Corrected privacy-setting copy so Clock and Now accurately describe the same discretion rules.
+- Expanded self-check coverage for the start surface, privacy, custom moments, Music/focus integration and My Music backup.
+- Rolled the production service-worker cache while retaining durable cue and backup-handle databases.
+
+## 27.0.0 — Clock-first surface and integrated player
+
+- Made the giant Clock the dominant start surface over a locally packed daily Bing image.
+- Added the Google/address omnibox and quick note without turning the start surface into another dashboard.
+- Hardened rhythm discretion across Clock, Now, cue dots, window chrome and background cue mirrors.
+- Refined Day Unfold, dial markers, cue contrast, weather context and same-point-yesterday Day Log comparison.
+- Replaced the simple music link with an official YouTube IFrame API player for YouTube and YouTube Music links/playlists.
+- Added playlist track selection, shuffle, loop and persistent local My Music.
+- Added a live analog-clock favicon with discreet cue state.
+- Added release/browser contracts for privacy, playlist interaction and desktop/mobile visuals.
+
+## 26.0.0 — Re-integration
+
+- Re-established Clock as the page left open during the day and strengthened the folding edge-navigation model.
+- Re-integrated quiet cues, schedule context, Daybook and day-state presentation after V25 Recovery.
+- Added explicit discretion controls for ambient schedule names and richer window-native cue behavior.
+
 ## 25.1.0 — Page refinement
 
 - Reworked Notes with category filtering, monthly activity summaries, note insights and in-page editing.
@@ -27,4 +59,4 @@
 
 ## Earlier releases
 
-Earlier release history remains available in Git history. It is not shipped as part of the current runtime.
+V15–V24 remain in Git history. Their durable product ideas are summarized in `docs/ORIGIN_TO_FINAL.md`; their archive/injector implementation is intentionally not part of the current runtime.

@@ -14,8 +14,10 @@ import{installSync}from'./sync.js';
 import{installEdges}from'./edges.js';
 import{installRelease}from'./release.js';
 import{installApp}from'./app.js';
+import{prepareFinalForm,installFinalForm}from'./final-form.js';
 
 const ctx=createContext();
+prepareFinalForm(ctx);
 ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
 installCueStore(ctx);
 installSchedule(ctx);
@@ -32,6 +34,7 @@ installSync(ctx);
 installEdges(ctx);
 installRelease(ctx);
 installApp(ctx);
+installFinalForm(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

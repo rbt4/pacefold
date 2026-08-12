@@ -14,10 +14,10 @@ await fs.cp(source,target,{recursive:true});
 async function writeDailyImage(){
   const metadata={date:'',url:'',credit:'',creditUrl:'',source:'Bing image of the day'};
   try{
-    const response=await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-CA',{headers:{'user-agent':'Pacefold/27'}});if(!response.ok)throw new Error(`metadata ${response.status}`);
+    const response=await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-CA',{headers:{'user-agent':'Pacefold/27.1'}});if(!response.ok)throw new Error(`metadata ${response.status}`);
     const item=(await response.json())?.images?.[0];if(!item?.url)throw new Error('missing image URL');
     const imageUrl=new URL(item.url,'https://www.bing.com');
-    const imageResponse=await fetch(imageUrl,{headers:{'user-agent':'Pacefold/27'}});if(!imageResponse.ok)throw new Error(`image ${imageResponse.status}`);
+    const imageResponse=await fetch(imageUrl,{headers:{'user-agent':'Pacefold/27.1'}});if(!imageResponse.ok)throw new Error(`image ${imageResponse.status}`);
     await fs.writeFile(path.join(target,'app','daily-image.jpg'),Buffer.from(await imageResponse.arrayBuffer()));
     metadata.date=String(item.startdate||'');metadata.url='./daily-image.jpg';metadata.credit=String(item.copyright||'Bing image of the day');metadata.creditUrl=String(item.copyrightlink||'https://www.bing.com/').replace(/^http:/,'https:');
     console.log(`Packed Bing image of the day ${metadata.date||'today'}`);
@@ -39,5 +39,5 @@ const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(awa
 const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.0.0 polish-r5-wow-player\n');
-console.log(`Built Pacefold 27 wow-player bundle and single stylesheet at ${target}`);
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 final-form-r1\n');
+console.log(`Built Pacefold 27.1 final-form bundle and single stylesheet at ${target}`);
