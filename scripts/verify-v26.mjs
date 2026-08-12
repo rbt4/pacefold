@@ -17,6 +17,7 @@ const required=[
 ];
 for(const file of required)assert(exists(file),`Missing ${file}`);
 assert(!exists('modules'),'Readable source modules must not be shipped');
+assert(!exists('styles'),'Readable style modules must not be shipped');
 assert(!exists('app/core.mjs'),'Core must be bundled into the single application runtime');
 assert(read('pacefold-experience.txt').trim()==='26.0.0 foundation-r1','Build identity is wrong');
 
@@ -46,21 +47,26 @@ const styles=read('app/pacefold.css');
 const worker=read('service-worker.js');
 const manifest=JSON.parse(read('manifest.webmanifest'));
 const packageJson=JSON.parse(fs.readFileSync(path.resolve('package.json'),'utf8'));
-const notificationSource=fs.readFileSync(path.resolve('src/modules/notification-preflight.mjs'),'utf8');
+const cueSource=fs.readFileSync(path.resolve('src/modules/cues.js'),'utf8');
+const scheduleSource=fs.readFileSync(path.resolve('src/modules/schedule.js'),'utf8');
+const mainSource=fs.readFileSync(path.resolve('src/modules/main.mjs'),'utf8');
 
 assert(packageJson.version==='26.0.0','Package release identity is wrong');
 assert(packageJson.devDependencies?.esbuild==='0.28.1','esbuild must stay exactly pinned');
 assert((app.match(/<link[^>]+stylesheet/g)||[]).length===1,'App must load exactly one stylesheet');
 assert((app.match(/<script/g)||[]).length===2,'App must load only MSAL and one Pacefold runtime');
 assert(!runtime.includes('./core.mjs')&&!runtime.includes('../modules/'),'Built runtime still references source modules');
-assert(notificationSource.includes('notify-${iconName}-128.png')&&notificationSource.includes('badge-96.png'),'Raster notification rewrite is missing from readable source');
-assert(notificationSource.includes("{action:'ack',title:'Clear'}")&&notificationSource.includes("{action:'snooze',title:'Snooze 10m'}"),'Readable notification actions are incomplete');
+assert(cueSource.includes('notify-${iconName}-128.png')&&cueSource.includes('badge-96.png'),'Raster notification URLs are missing from readable cue source');
+assert(cueSource.includes("{action:'ack',title:'Clear'}")&&cueSource.includes("{action:'snooze',title:'Snooze 10m'}"),'Readable notification actions are incomplete');
 assert(runtime.includes('Snooze 10m'),'Notification action behaviour was not included in the bundle');
 assert(worker.includes('notify-water-128.png')&&worker.includes('notify-prayer-128.png')&&worker.includes('badge-96.png'),'Offline shell does not cache raster notification assets');
 assert(worker.includes("event.action==='snooze'")&&worker.includes('cueAction=snooze'),'Service-worker Snooze route is missing');
 assert(!worker.includes("'./app/core.mjs'"),'Service worker still caches removed bundled source');
 assert(styles.includes('display-mode: window-controls-overlay')&&styles.includes('app-region:drag')&&styles.includes('min-width:120px'),'WCO drag contract is incomplete');
 assert(styles.includes('app-region:no-drag'),'WCO interactive controls are not protected');
+assert(styles.includes('.rhythm-discretion-setting')&&styles.includes('.home-grid[data-rhythm-hidden="true"]'),'Discretion styles were not compiled into the single stylesheet');
+assert(mainSource.includes("'neutral'")&&scheduleSource.includes("ctx.rhythmMode()==='names'")&&scheduleSource.includes('rhythmRevealUntil'),'Neutral rhythm default or temporary reveal contract is missing');
+assert(scheduleSource.includes("meta.textContent='';meta.hidden=true"),'Clock rhythm metadata must stay empty and hidden');
 assert(app.includes('data-view="home"')&&app.includes('data-view="notes"')&&app.includes('data-view="worklog"')&&app.includes('data-view="now"')&&app.includes('data-view="settings"'),'Spatial views are incomplete');
 assert((app.match(/class="quick-action/g)||[]).length===6,'Quick action dock is incomplete');
 assert(app.includes('id="clock-seconds"')&&styles.includes('.hand-second'),'Live seconds are missing');
@@ -86,4 +92,4 @@ const sampleLog=normalizeLog({days:{[key]:{events:[{id:'f',type:'focus',source:'
 const metrics=metricsForDay(sampleLog,key,toronto,summer.getTime());
 assert(metrics.focus===3600000,'Day-log metrics failed');
 
-console.log(JSON.stringify({release:'26.0.0',revision:'foundation-r1',runtimes:1,stylesheets:1,wco:'checked',notificationPng:'checked',notificationActions:2,notesMigration:'passed',prayerSchedule:'passed'},null,2));
+console.log(JSON.stringify({release:'26.0.0',revision:'foundation-r1',runtimes:1,stylesheets:1,wco:'checked',notificationPng:'checked',notificationActions:2,rhythmDiscretion:'checked',notesMigration:'passed',prayerSchedule:'passed'},null,2));
