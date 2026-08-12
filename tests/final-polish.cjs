@@ -17,11 +17,12 @@ async function checkChrome(page,label){
   await page.click('#cover-peel');
   await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
   const state=await page.evaluate(()=>{
-    const sound=document.getElementById('sound-bar').getBoundingClientRect(),bar=document.querySelector('.app-bar').getBoundingClientRect(),player=document.getElementById('stream-player');
-    return{sound:{top:sound.top,bottom:sound.bottom,left:sound.left,right:sound.right,width:sound.width},barBottom:bar.bottom,state:player.dataset.state,returnText:document.getElementById('cover-return')?.innerText||'',logVersion:JSON.parse(localStorage.getItem('pacefold.dayflow.v1')||'{}').version||''};
+    const sound=document.getElementById('sound-bar').getBoundingClientRect(),bar=document.querySelector('.app-bar').getBoundingClientRect(),brand=document.querySelector('.brand').getBoundingClientRect(),player=document.getElementById('stream-player');
+    return{sound:{top:sound.top,bottom:sound.bottom,left:sound.left,right:sound.right,width:sound.width},brandRight:brand.right,barBottom:bar.bottom,state:player.dataset.state,returnText:document.getElementById('cover-return')?.innerText||'',logVersion:JSON.parse(localStorage.getItem('pacefold.dayflow.v1')||'{}').version||''};
   });
   assert(state.state==='empty',`${label}: expected empty Music state`);
   assert(state.sound.width<=42&&state.sound.top>=0&&state.sound.bottom<=state.barBottom+2,`${label}: empty Music control escaped the app chrome`);
+  assert(state.sound.left-state.brandRight>=6,`${label}: Music chrome crowds the Clock brand (${Math.round(state.sound.left-state.brandRight)}px gap)`);
   assert(/Start/i.test(state.returnText),`${label}: start-surface return control is unclear`);
   assert(state.logVersion==='27.1.0',`${label}: persisted day-log release identity is stale (${state.logVersion})`);
   await page.click('#stream-source');
@@ -45,7 +46,7 @@ async function main(){
     browser=await chromium.launch({headless:true});
     const desktop=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'America/Toronto'}),page=await desktop.newPage();await page.addInitScript(seed);await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await checkChrome(page,'desktop');await desktop.close();
     const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,timezoneId:'America/Toronto'}),m=await mobile.newPage();await m.addInitScript(seed);await m.goto(`${origin}/app/`,{waitUntil:'networkidle'});await checkChrome(m,'mobile');await mobile.close();
-    console.log('Pacefold 27.1 final polish contract passed: clean boot shell, chrome-safe empty Music and release continuity.');
+    console.log('Pacefold 27.1 final polish contract passed: clean boot shell, chrome-safe Music, picker actions and release continuity.');
   }finally{if(browser)await browser.close();server.close()}
 }
 main().catch(error=>{console.error(error.stack||error);process.exitCode=1});
