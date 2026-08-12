@@ -20,10 +20,10 @@ export function installSchedule(ctx){
     if(ctx.rhythmMode()!=='neutral')return;
     ctx.rhythmRevealUntil=Date.now()+6000;
     clearTimeout(ctx.rhythmRevealTimer);
-    ctx.renderRhythm?.();ctx.renderClock?.();ctx.refreshCues?.();
+    ctx.renderRhythm?.(new Date(),{home:true,nowView:false});ctx.renderClock?.(new Date());ctx.refreshCues?.();
     ctx.rhythmRevealTimer=setTimeout(()=>{
       ctx.rhythmRevealUntil=0;
-      ctx.renderRhythm?.();ctx.renderClock?.();ctx.refreshCues?.();
+      ctx.renderRhythm?.(new Date(),{home:true,nowView:false});ctx.renderClock?.(new Date());ctx.refreshCues?.();
     },6050);
   };
 
@@ -87,35 +87,37 @@ export function installSchedule(ctx){
     }
   };
 
-  ctx.renderRhythm=(now=new Date())=>{
+  ctx.renderRhythm=(now=new Date(),{home=ctx.mode==='home',nowView=ctx.mode==='now'}={})=>{
     const state=ctx.getSchedule(now);
     const muslim=state.muslim;
-    const mode=ctx.rhythmMode();
-    const named=ctx.clockNamesVisible();
-    const card=document.querySelector('.rhythm-card');
-    const grid=document.querySelector('.home-grid');
-    const header=card?.querySelector(':scope > header');
-    const adjust=header?.querySelector('button');
-    const kicker=id('rhythm-kicker');
-    const title=id('rhythm-title');
-    const meta=id('rhythm-meta');
-
-    if(card)card.hidden=mode==='hidden';
-    if(grid)grid.dataset.rhythmHidden=String(mode==='hidden');
-    if(meta){meta.textContent='';meta.hidden=true}
-    if(kicker){kicker.textContent=named?(muslim?'Prayer rhythm':'Personal rhythm'):'';kicker.hidden=!named}
-    if(adjust)adjust.hidden=!named;
-    if(title){
-      title.textContent=named
-        ?(state.next?`Next · ${state.next.label}`:'Today complete')
-        :(state.next?`Next · ${ctx.clockCountdown(state.next.date,now)}`:'Today complete');
+    if(home){
+      const mode=ctx.rhythmMode();
+      const named=ctx.clockNamesVisible();
+      const card=document.querySelector('.rhythm-card');
+      const grid=document.querySelector('.home-grid');
+      const header=card?.querySelector(':scope > header');
+      const adjust=header?.querySelector('button');
+      const kicker=id('rhythm-kicker');
+      const title=id('rhythm-title');
+      const meta=id('rhythm-meta');
+      if(card)card.hidden=mode==='hidden';
+      if(grid)grid.dataset.rhythmHidden=String(mode==='hidden');
+      if(meta){meta.textContent='';meta.hidden=true}
+      if(kicker){kicker.textContent=named?(muslim?'Prayer rhythm':'Personal rhythm'):'';kicker.hidden=!named}
+      if(adjust)adjust.hidden=!named;
+      if(title){
+        title.textContent=named
+          ?(state.next?`Next · ${state.next.label}`:'Today complete')
+          :(state.next?`Next · ${ctx.clockCountdown(state.next.date,now)}`:'Today complete');
+      }
+      if(header)header.dataset.discreet=String(!named);
+      ctx.rhythmRows(id('rhythm-list'),state,now,{compact:true,discreet:true});
     }
-    if(header)header.dataset.discreet=String(!named);
-
-    ctx.rhythmRows(id('rhythm-list'),state,now,{compact:true,discreet:true});
-    ctx.rhythmRows(id('now-schedule-list'),state,now,{compact:false,discreet:false});
-    id('now-schedule-kicker').textContent=muslim?'Prayer schedule':'Today’s moments';
-    id('now-schedule-date').textContent=ctx.formatDate(now,{weekday:undefined});
+    if(nowView){
+      ctx.rhythmRows(id('now-schedule-list'),state,now,{compact:false,discreet:false});
+      id('now-schedule-kicker').textContent=muslim?'Prayer schedule':'Today’s moments';
+      id('now-schedule-date').textContent=ctx.formatDate(now,{weekday:undefined});
+    }
   };
 
   ctx.scheduleDescription=()=>{
