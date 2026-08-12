@@ -1,0 +1,2 @@
+.stream-queue-grid{grid-auto-flow:row;grid-auto-rows:minmax(40px,auto);align-items:stretch;isolation:isolate}.stream-track{box-sizing:border-box;position:relative;width:100%;max-width:100%;min-width:0;height:40px;overflow:hidden;align-self:stretch;z-index:0}.stream-track:hover,.stream-track:focus-visible,.stream-track.active{z-index:1}.stream-track b,.stream-track span{min-width:0;pointer-events:none}
+@media(max-width:760px){.stream-queue-grid{grid-auto-rows:minmax(38px,auto)}.stream-track{height:38px}}
