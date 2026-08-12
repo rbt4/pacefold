@@ -25,7 +25,16 @@ await build({
   charset:'utf8'
 });
 
+const styleRoot=path.join(source,'styles');
+let styleFiles=[];
+try{styleFiles=(await fs.readdir(styleRoot)).filter(file=>file.endsWith('.css')).sort()}catch{}
+const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8');
+const additions=[];
+for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
+await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
+
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});
+await fs.rm(path.join(target,'styles'),{recursive:true,force:true});
 await fs.rm(path.join(target,'app','core.mjs'),{force:true});
 await fs.writeFile(path.join(target,'pacefold-experience.txt'),'26.0.0 foundation-r1\n');
-console.log(`Built Pacefold 26 single-runtime bundle at ${target}`);
+console.log(`Built Pacefold 26 single-runtime bundle and single stylesheet at ${target}`);
