@@ -17,18 +17,25 @@ async function checkChrome(page,label){
   await page.click('#cover-peel');
   await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
   const state=await page.evaluate(()=>{
-    const sound=document.getElementById('sound-bar').getBoundingClientRect(),bar=document.querySelector('.app-bar').getBoundingClientRect(),brand=document.querySelector('.brand').getBoundingClientRect(),player=document.getElementById('stream-player');
-    return{sound:{top:sound.top,bottom:sound.bottom,left:sound.left,right:sound.right,width:sound.width},brandRight:brand.right,barBottom:bar.bottom,state:player.dataset.state,returnText:document.getElementById('cover-return')?.innerText||'',logVersion:JSON.parse(localStorage.getItem('pacefold.dayflow.v1')||'{}').version||''};
+    const sound=document.getElementById('sound-bar'),bar=document.querySelector('.app-bar').getBoundingClientRect(),music=document.getElementById('music-room-open').getBoundingClientRect(),player=document.getElementById('stream-player');
+    return{soundDisplay:getComputedStyle(sound).display,music:{top:music.top,bottom:music.bottom,left:music.left,right:music.right,width:music.width,height:music.height},bar:{top:bar.top,bottom:bar.bottom,left:bar.left,right:bar.right},state:player.dataset.state,returnText:document.getElementById('cover-return')?.innerText||'',logVersion:JSON.parse(localStorage.getItem('pacefold.dayflow.v1')||'{}').version||''};
   });
   assert(state.state==='empty',`${label}: expected empty Music state`);
-  assert(state.sound.width<=42&&state.sound.top>=0&&state.sound.bottom<=state.barBottom+2,`${label}: empty Music control escaped the app chrome`);
-  assert(state.sound.left-state.brandRight>=6,`${label}: Music chrome crowds the Clock brand (${Math.round(state.sound.left-state.brandRight)}px gap)`);
+  assert(state.soundDisplay==='none',`${label}: legacy Music circle is still rendered when the full player is closed`);
+  assert(state.music.width>0&&state.music.height>0&&state.music.top>=state.bar.top-1&&state.music.bottom<=state.bar.bottom+1,`${label}: named Music button is not contained in the app chrome`);
   assert(/Start/i.test(state.returnText),`${label}: start-surface return control is unclear`);
   assert(state.logVersion==='27.1.0',`${label}: persisted day-log release identity is stale (${state.logVersion})`);
-  await page.click('#stream-source');
-  const chooser=page.locator('#stream-chooser');assert(await chooser.isVisible(),`${label}: Music picker did not open from chrome`);
-  const box=await chooser.boundingBox(),viewport=page.viewportSize();assert(box&&box.x>=0&&box.y>=state.barBottom-2&&box.x+box.width<=viewport.width+1,`${label}: Music picker is outside the viewport`);
+
+  await page.click('#music-room-open');
+  await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='true');
+  const chooser=page.locator('#stream-chooser');assert(await chooser.isVisible(),`${label}: Music library did not open inside the full player`);
+  const box=await chooser.boundingBox(),shell=await page.locator('#stream-player').boundingBox(),viewport=page.viewportSize();
+  const geometry={library:box,shell,viewport};
+  assert(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=viewport.width+1&&box.y+box.height<=viewport.height+1,`${label}: full-player Music library is outside the viewport ${JSON.stringify(geometry)}`);
+  assert(shell&&shell.x>=-1&&shell.y>=-1&&shell.x+shell.width<=viewport.width+1&&shell.y+shell.height<=viewport.height+1,`${label}: full Music room is outside the viewport ${JSON.stringify(geometry)}`);
   await page.click('#stream-chooser .stream-add-form button:not(.primary)');
+  await page.click('#music-room-close');
+  await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='false');
 }
 
 async function main(){
@@ -39,14 +46,14 @@ async function main(){
   assert(!app.includes('Pacefold 25.1.0'),'Built shell still carries the old release label');
   assert(homeShell&&!homeShell.includes('Prayer rhythm')&&!homeShell.includes('Etobicoke, Toronto'),'Visible Clock shell can flash private rhythm/location copy before runtime');
   assert(app.includes('<strong>Noodles</strong>')&&app.includes('data-action="prep">Noodles</button>'),'Original-profile noodle defaults are not present in the built shell');
-  assert(styles.includes('empty Music player belongs to the window chrome'),'Final empty-Music chrome polish is missing');
+  assert(styles.includes('full Music room')&&styles.includes('one deliberate entry point'),'Full Music room polish or single-entry cleanup is missing');
   assert(worker.includes('final-form-r1-final-polish')&&worker.includes("indexedDB.open('pacefold-v26'"),'Final cache roll or durable cue DB continuity is wrong');
 
   const{server,origin}=await serve();let browser;try{
     browser=await chromium.launch({headless:true});
     const desktop=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'America/Toronto'}),page=await desktop.newPage();await page.addInitScript(seed);await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await checkChrome(page,'desktop');await desktop.close();
     const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,timezoneId:'America/Toronto'}),m=await mobile.newPage();await m.addInitScript(seed);await m.goto(`${origin}/app/`,{waitUntil:'networkidle'});await checkChrome(m,'mobile');await mobile.close();
-    console.log('Pacefold 27.1 final polish contract passed: clean boot shell, chrome-safe Music, picker actions and release continuity.');
+    console.log('Pacefold 27.1 final polish contract passed: clean boot shell, one Music entry, full-player geometry and release continuity.');
   }finally{if(browser)await browser.close();server.close()}
 }
 main().catch(error=>{console.error(error.stack||error);process.exitCode=1});
