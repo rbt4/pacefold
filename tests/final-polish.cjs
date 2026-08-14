@@ -30,8 +30,9 @@ async function checkChrome(page,label){
   await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='true');
   const chooser=page.locator('#stream-chooser');assert(await chooser.isVisible(),`${label}: Music library did not open inside the full player`);
   const box=await chooser.boundingBox(),shell=await page.locator('#stream-player').boundingBox(),viewport=page.viewportSize();
-  assert(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=viewport.width+1&&box.y+box.height<=viewport.height+1,`${label}: full-player Music library is outside the viewport`);
-  assert(shell&&shell.x>=-1&&shell.y>=-1&&shell.x+shell.width<=viewport.width+1&&shell.y+shell.height<=viewport.height+1,`${label}: full Music room is outside the viewport`);
+  const geometry={library:box,shell,viewport};
+  assert(box&&box.x>=-1&&box.y>=-1&&box.x+box.width<=viewport.width+1&&box.y+box.height<=viewport.height+1,`${label}: full-player Music library is outside the viewport ${JSON.stringify(geometry)}`);
+  assert(shell&&shell.x>=-1&&shell.y>=-1&&shell.x+shell.width<=viewport.width+1&&shell.y+shell.height<=viewport.height+1,`${label}: full Music room is outside the viewport ${JSON.stringify(geometry)}`);
   await page.click('#stream-chooser .stream-add-form button:not(.primary)');
   await page.click('#music-room-close');
   await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='false');
