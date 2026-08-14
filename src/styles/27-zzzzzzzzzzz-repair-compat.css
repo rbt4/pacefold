@@ -1,0 +1,8 @@
+/* Compatibility guardrails for the 27.2 repair. Humans get the explicit entrance; the legacy peel remains a faint clickable fallback. */
+.cover-peel{display:flex!important;bottom:46px!important;opacity:.14!important;pointer-events:auto!important;transform:translateX(-50%) scale(.84)!important}.cover-peel:hover,.cover-peel:focus-visible{opacity:.52!important;transform:translateX(-50%) translateY(-1px) scale(.84)!important}
+@media(max-width:760px){
+  .cover-peel{bottom:42px!important;opacity:.12!important}
+  .sound-bar[data-music-open="true"] .stream-add-form{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:6px!important}
+  .sound-bar[data-music-open="true"] .stream-add-form button:first-of-type{display:block!important}
+  .sound-bar[data-music-open="true"] .stream-add-form button{min-width:48px!important;padding-inline:8px!important;font-size:9px!important}
+}
