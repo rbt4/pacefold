@@ -1,5 +1,6 @@
 /* Compatibility guardrails for the 27.2 repair. Humans get the explicit entrance; the legacy peel remains a faint clickable fallback. */
 .cover-peel{display:flex!important;bottom:46px!important;opacity:.14!important;pointer-events:auto!important;transform:translateX(-50%) scale(.84)!important}.cover-peel:hover,.cover-peel:focus-visible{opacity:.52!important;transform:translateX(-50%) translateY(-1px) scale(.84)!important}
+.cover-music-button{top:70px!important}
 
 /* Old final-form rules deliberately miniaturize an empty player. Once the Music room is open, they must never win the cascade. */
 html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]){position:fixed!important;inset:0!important;top:0!important;right:0!important;bottom:0!important;left:0!important;display:grid!important;place-items:center!important;width:auto!important;height:auto!important;min-width:0!important;padding:16px!important;transform:none!important;overflow:auto!important;opacity:1!important;pointer-events:auto!important;background:rgba(13,20,20,.48)!important}
@@ -17,6 +18,7 @@ html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="t
 }
 @media(max-width:760px){
   .cover-peel{bottom:42px!important;opacity:.12!important}
+  .cover-music-button{top:62px!important}
   .sound-bar[data-music-open="true"] .stream-add-form{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:6px!important}
   .sound-bar[data-music-open="true"] .stream-add-form button:first-of-type{display:block!important}
   .sound-bar[data-music-open="true"] .stream-add-form button{min-width:48px!important;padding-inline:8px!important;font-size:9px!important}
