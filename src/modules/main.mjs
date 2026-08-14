@@ -15,6 +15,7 @@ import{installEdges}from'./edges.js';
 import{installRelease}from'./release.js';
 import{installApp}from'./app.js';
 import{prepareFinalForm,installFinalForm}from'./final-form.js';
+import{installRepair}from'./repair.js';
 
 const ctx=createContext();
 prepareFinalForm(ctx);
@@ -35,6 +36,7 @@ installEdges(ctx);
 installRelease(ctx);
 installApp(ctx);
 installFinalForm(ctx);
+installRepair(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);
