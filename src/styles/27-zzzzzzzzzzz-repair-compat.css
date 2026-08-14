@@ -35,7 +35,10 @@ html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="t
 @media(max-width:760px){
   .cover-peel{bottom:42px!important;opacity:.12!important}
   .cover-music-button{top:62px!important}
-  .sound-bar[data-music-open="true"] .stream-add-form{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:6px!important}
-  .sound-bar[data-music-open="true"] .stream-add-form button:first-of-type{display:block!important}
-  .sound-bar[data-music-open="true"] .stream-add-form button{min-width:48px!important;padding-inline:8px!important;font-size:9px!important}
+  .sound-bar[data-music-open="true"] .stream-add-form{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:7px!important;align-items:center!important}
+  .sound-bar[data-music-open="true"] .stream-add-form input{display:block!important;grid-column:1/-1!important;grid-row:1!important;box-sizing:border-box!important;width:100%!important;min-width:0!important;height:44px!important;padding:0 12px!important;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent)!important;border-radius:12px!important;background:var(--paper)!important;color:var(--ink)!important;font-size:11px!important;opacity:1!important}
+  .sound-bar[data-music-open="true"] .stream-add-form input::placeholder{color:var(--muted)!important;opacity:.82!important}
+  .sound-bar[data-music-open="true"] .stream-add-form button{grid-row:2!important;display:block!important;min-width:56px!important;height:38px!important;padding-inline:10px!important;font-size:9px!important}
+  .sound-bar[data-music-open="true"] .stream-add-form button:first-of-type{grid-column:2!important}
+  .sound-bar[data-music-open="true"] .stream-add-form button.primary{grid-column:3!important}
 }
