@@ -62,7 +62,8 @@ export function installRepair(ctx){
   const frameProps=['position','inset','top','right','bottom','left','width','height','min-width','margin','padding','transform','translate','display','place-items','grid-template-columns','grid-template-rows','overflow','opacity','pointer-events'];
   const applyOpenFrame=()=>{
     const set=(name,value)=>sound.style.setProperty(name,value,'important');
-    set('position','fixed');set('inset','0');set('top','0');set('right','0');set('bottom','0');set('left','0');set('width','auto');set('height','auto');set('min-width','0');set('margin','0');set('padding','16px');set('transform','none');set('translate','none');set('display','grid');set('place-items','center');set('grid-template-columns','1fr');set('grid-template-rows','1fr');set('overflow','auto');set('opacity','1');set('pointer-events','auto');
+    const compact=window.matchMedia('(max-width:900px)').matches;
+    set('position','fixed');set('inset','0');set('top','0');set('right','0');set('bottom','0');set('left','0');set('width','auto');set('height','auto');set('min-width','0');set('margin','0');set('padding',compact?'0':'16px');set('transform','none');set('translate','none');set('display','grid');set('place-items','center');set('grid-template-columns','1fr');set('grid-template-rows','1fr');set('overflow',compact?'hidden':'auto');set('opacity','1');set('pointer-events','auto');
   };
   const clearOpenFrame=()=>{for(const name of frameProps)sound.style.removeProperty(name)};
 
