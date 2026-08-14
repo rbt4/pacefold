@@ -42,6 +42,8 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v27-release.cjs _site
       - name: Final polish contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/final-polish.cjs _site
+      - name: Setup and full-player repair contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/repair-player.cjs _site
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
