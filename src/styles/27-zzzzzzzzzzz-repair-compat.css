@@ -1,5 +1,20 @@
 /* Compatibility guardrails for the 27.2 repair. Humans get the explicit entrance; the legacy peel remains a faint clickable fallback. */
 .cover-peel{display:flex!important;bottom:46px!important;opacity:.14!important;pointer-events:auto!important;transform:translateX(-50%) scale(.84)!important}.cover-peel:hover,.cover-peel:focus-visible{opacity:.52!important;transform:translateX(-50%) translateY(-1px) scale(.84)!important}
+
+/* Old final-form rules deliberately miniaturize an empty player. Once the Music room is open, they must never win the cascade. */
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]){position:fixed!important;inset:0!important;top:0!important;right:0!important;bottom:0!important;left:0!important;display:grid!important;place-items:center!important;width:auto!important;height:auto!important;min-width:0!important;padding:16px!important;transform:none!important;overflow:auto!important;opacity:1!important;pointer-events:auto!important;background:rgba(13,20,20,.48)!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-player{width:min(1180px,calc(100vw - 32px))!important;min-width:0!important;height:auto!important;min-height:min(720px,calc(100dvh - 32px))!important;max-height:calc(100dvh - 32px)!important;margin:0!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-dock{display:grid!important;grid-template-columns:auto minmax(130px,.7fr) auto minmax(180px,1.3fr) auto auto auto auto!important;width:auto!important;min-width:0!important;height:auto!important;min-height:64px!important;padding:9px 11px!important;border-radius:18px!important;overflow:visible!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-source{display:flex!important;width:auto!important;min-width:88px!important;height:auto!important;min-height:0!important;padding:7px 9px!important;border-radius:12px!important;justify-content:flex-start!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-source span{display:inline!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-meta{display:grid!important}
+html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-chooser{position:relative!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;width:auto!important;max-height:none!important;overflow:auto!important}
+
+@media(max-width:900px){
+  html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]){padding:0!important}
+  html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-player{width:100vw!important;min-height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
+  html[data-cover="peeled"] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player[data-state="empty"]) .stream-dock{grid-template-columns:auto minmax(0,1fr) auto auto auto!important;min-height:56px!important}
+}
 @media(max-width:760px){
   .cover-peel{bottom:42px!important;opacity:.12!important}
   .sound-bar[data-music-open="true"] .stream-add-form{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto!important;gap:6px!important}
