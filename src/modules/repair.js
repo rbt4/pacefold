@@ -28,19 +28,19 @@ export function installRepair(ctx){
 
   const sound=id('sound-bar'),player=id('stream-player'),appBar=document.querySelector('.app-bar');
   if(!sound||!player||!appBar)return;
-  sound.dataset.musicOpen='false';
+  sound.dataset.musicOpen='false';player.dataset.room='true';
 
   const head=el('header','music-room-head');
-  const identity=el('div','music-room-identity');identity.append(el('small','','PACEFOLD MUSIC'),el('strong','','Music'),el('p','','A full player for YouTube and YouTube Music links. Browse the service itself in its own tab, then keep playback and your saved library here.'));
+  const identity=el('div','music-room-identity');const roomTitle=el('strong','','Music');roomTitle.id='music-room-title';identity.append(el('small','','PACEFOLD MUSIC'),roomTitle,el('p','','YouTube Music when you want to browse. Pacefold when you want the music to stay with the day.'));
   const links=el('nav','music-room-links');
   const browse=el('a','music-room-link music-room-browse','Browse YouTube Music ↗');browse.id='music-room-browse';browse.href=YTM;browse.target='_blank';browse.rel='noopener noreferrer';
   const current=el('a','music-room-link music-room-current','Open current ↗');current.id='music-room-current';current.target='_blank';current.rel='noopener noreferrer';current.hidden=true;
   const close=button('music-room-close','Close music player','×');close.id='music-room-close';
-  links.append(browse,current,close);head.append(identity,links);player.prepend(head);
+  links.append(browse,current,close);head.append(identity,links);player.prepend(head);sound.setAttribute('aria-labelledby','music-room-title');
 
   const stage=el('section','music-room-stage');stage.id='music-room-stage';
   const art=el('div','music-room-art');art.append(el('i'),el('i'),el('i'));
-  const stageCopy=el('div');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Bring a track or playlist into Pacefold'),el('p','','Use Browse YouTube Music for discovery, then paste a song or playlist link into My Music. Playback, queue, seek, volume, shuffle and loop stay inside Pacefold.'));
+  const stageCopy=el('div');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Browse YouTube Music, paste a song or playlist once, and keep playback, saved music and focus sound in one quiet room.'));
   stage.append(art,stageCopy);player.insertBefore(stage,id('stream-video'));
 
   const appOpen=button('music-open-button','Open full music player');appOpen.id='music-room-open';appOpen.append(el('i'),el('span','','Music'));
@@ -68,12 +68,12 @@ export function installRepair(ctx){
   const clearOpenFrame=()=>{for(const name of frameProps)sound.style.removeProperty(name)};
 
   const openMusic=({showChooser=true}={})=>{
-    sound.dataset.musicOpen='true';document.documentElement.dataset.music='open';applyOpenFrame();updateCurrent();
+    sound.dataset.musicOpen='true';document.documentElement.dataset.music='open';sound.setAttribute('role','dialog');sound.setAttribute('aria-modal','true');applyOpenFrame();updateCurrent();
     if(showChooser){const chooser=id('stream-chooser'),queue=id('stream-queue');if(queue)queue.hidden=true;if(chooser)chooser.hidden=false}
     requestAnimationFrame(()=>close.focus({preventScroll:true}));
   };
   const closeMusic=()=>{
-    sound.dataset.musicOpen='false';document.documentElement.dataset.music='closed';clearOpenFrame();
+    sound.dataset.musicOpen='false';document.documentElement.dataset.music='closed';sound.removeAttribute('role');sound.removeAttribute('aria-modal');clearOpenFrame();
     id('stream-chooser')?.setAttribute('hidden','');id('stream-queue')?.setAttribute('hidden','');
     (document.documentElement.dataset.cover==='on'?coverOpen:appOpen)?.focus({preventScroll:true});
   };
