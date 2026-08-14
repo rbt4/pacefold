@@ -1,0 +1,2 @@
+/* Polish-r2 screenshot correction: the return control exists only after Pacefold has been opened. */
+html[data-cover="on"] .cover-return{opacity:0!important;pointer-events:none!important;transform:translateX(-50%) translateY(-10px)!important}
