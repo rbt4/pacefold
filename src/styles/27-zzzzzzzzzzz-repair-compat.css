@@ -1,6 +1,8 @@
 /* Compatibility guardrails for the 27.2 repair. Humans get the explicit entrance; the legacy peel remains a faint clickable fallback. */
 .cover-peel{display:flex!important;bottom:46px!important;opacity:.14!important;pointer-events:auto!important;transform:translateX(-50%) scale(.84)!important}.cover-peel:hover,.cover-peel:focus-visible{opacity:.52!important;transform:translateX(-50%) translateY(-1px) scale(.84)!important}
 .cover-music-button{top:70px!important}
+/* Closed Music has one deliberate entry point: the named Music button. The old sound-bar circle remains only as player plumbing and is not rendered. */
+html[data-cover] .sound-bar[data-streaming="player"]:not([data-music-open="true"]){display:none!important}
 
 /* An open Music room is viewport-native, never the old bottom-centered sound bar. This selector deliberately matches/outscores the historic :has() mini-player rules on both covered and peeled surfaces. */
 html[data-cover] .sound-bar[data-streaming="player"][data-music-open="true"]:has(.stream-player){position:fixed!important;inset:0!important;top:0!important;right:0!important;bottom:0!important;left:0!important;width:auto!important;height:auto!important;min-width:0!important;margin:0!important;padding:16px!important;transform:none!important;translate:none!important;display:grid!important;place-items:center!important;overflow:auto!important;opacity:1!important;pointer-events:auto!important;background:rgba(13,20,20,.48)!important;box-shadow:none!important}
