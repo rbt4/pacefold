@@ -56,13 +56,13 @@ export function installRepair(ctx){
     }else{current.removeAttribute('href');current.hidden=true}
   };
 
-  // The historic player was a bottom-centered bar with left:50% + translateX(-50%).
-  // Those declarations are !important in old release CSS, so an open Music room owns
-  // its viewport frame inline. Closing removes only these temporary frame properties.
-  const frameProps=['position','inset','top','right','bottom','left','width','height','min-width','margin','padding','transform','translate','display','place-items','overflow','opacity','pointer-events'];
+  // The original sound bar is a five-column grid. A full-width child centered inside
+  // its old 34px first column lands hundreds of pixels off-screen, so the open Music
+  // room owns both the viewport frame and a single-cell grid. Closing restores CSS.
+  const frameProps=['position','inset','top','right','bottom','left','width','height','min-width','margin','padding','transform','translate','display','place-items','grid-template-columns','grid-template-rows','overflow','opacity','pointer-events'];
   const applyOpenFrame=()=>{
     const set=(name,value)=>sound.style.setProperty(name,value,'important');
-    set('position','fixed');set('inset','0');set('top','0');set('right','0');set('bottom','0');set('left','0');set('width','auto');set('height','auto');set('min-width','0');set('margin','0');set('padding','16px');set('transform','none');set('translate','none');set('display','grid');set('place-items','center');set('overflow','auto');set('opacity','1');set('pointer-events','auto');
+    set('position','fixed');set('inset','0');set('top','0');set('right','0');set('bottom','0');set('left','0');set('width','auto');set('height','auto');set('min-width','0');set('margin','0');set('padding','16px');set('transform','none');set('translate','none');set('display','grid');set('place-items','center');set('grid-template-columns','1fr');set('grid-template-rows','1fr');set('overflow','auto');set('opacity','1');set('pointer-events','auto');
   };
   const clearOpenFrame=()=>{for(const name of frameProps)sound.style.removeProperty(name)};
 
