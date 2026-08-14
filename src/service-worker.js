@@ -1,6 +1,6 @@
 'use strict';
 const VERSION='27.1.0';
-const CACHE_NAME=`pacefold-v${VERSION}-final-form-r1-final-polish`;
+const CACHE_NAME=`pacefold-v${VERSION}-final-form-r1-player-repair`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
