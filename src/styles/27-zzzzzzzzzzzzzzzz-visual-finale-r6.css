@@ -1,0 +1,130 @@
+/* Clock 27.1 — visual finale r6
+   One visual language: instrument-like Clock, notebook-like Daybook,
+   high-contrast Now, quieter Day Log, and more deliberate Settings. */
+:root{
+  --vf-surface:color-mix(in srgb,var(--paper-2) 92%,white 8%);
+  --vf-surface-soft:color-mix(in srgb,var(--paper-2) 82%,transparent);
+  --vf-edge:rgba(24,33,30,.105);
+  --vf-edge-strong:rgba(24,33,30,.18);
+  --vf-shadow:0 24px 70px rgba(31,38,33,.105),0 3px 12px rgba(31,38,33,.055);
+  --vf-shadow-high:0 34px 90px rgba(31,38,33,.15),0 7px 20px rgba(31,38,33,.07);
+  --vf-inset:inset 0 1px 0 rgba(255,255,255,.82),inset 0 -1px 0 rgba(24,33,30,.035);
+}
+
+html[data-cover="peeled"] body{background:var(--paper)!important}
+html[data-cover="peeled"] body:before,html[data-cover="peeled"] body:after{content:"";position:fixed;z-index:-2;border-radius:50%;pointer-events:none;filter:blur(80px)}
+html[data-cover="peeled"] body:before{width:34vw;height:34vw;min-width:360px;min-height:360px;left:-12vw;top:-10vw;background:rgba(255,255,255,.52)}
+html[data-cover="peeled"] body:after{width:30vw;height:30vw;min-width:320px;min-height:320px;right:-11vw;bottom:-12vw;background:rgba(189,205,195,.26)}
+.paper-grain{opacity:.17!important}
+
+/* chrome: quieter, sharper, less dashboard-like */
+.app-bar{height:66px!important;padding:0 31px!important;background:rgba(239,236,227,.79)!important;border-bottom-color:rgba(24,33,30,.09)!important;box-shadow:0 1px 0 rgba(255,255,255,.62),0 8px 30px rgba(35,40,35,.035)!important}
+.brand img{width:25px!important;height:25px!important;filter:drop-shadow(0 4px 8px rgba(24,33,30,.14))}
+.bar-clock,.quiet-button,.cue-cluster{min-height:36px!important;background:rgba(255,255,255,.34)!important;border-color:rgba(24,33,30,.11)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.68)}
+.edge-nav .edge{background:transparent!important;border-color:transparent!important;backdrop-filter:none!important;box-shadow:none!important;opacity:.44;transition:opacity .2s ease,transform .2s ease,color .2s ease!important}
+.edge-nav .edge:hover,.edge-nav .edge:focus-visible{opacity:1;background:rgba(248,246,239,.76)!important;border-color:var(--vf-edge)!important;box-shadow:0 8px 26px rgba(31,38,33,.08)!important}
+.stage{padding-top:108px!important}
+
+/* shared surfaces */
+.clock-card,.rhythm-card,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.timeline-card,.log-tools,.now-grid>section,.settings-nav,.settings-panels{
+  border-color:var(--vf-edge)!important;
+  background:var(--vf-surface-soft)!important;
+  box-shadow:var(--vf-shadow),var(--vf-inset)!important;
+  backdrop-filter:blur(24px) saturate(1.05)!important;
+}
+.view-head{margin-bottom:27px!important;align-items:flex-start!important}
+.view-head>button:first-child{margin-top:7px!important;background:rgba(255,255,255,.38)!important;border-color:var(--vf-edge)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.72)!important;transition:transform .18s ease,box-shadow .18s ease!important}
+.view-head>button:first-child:hover{transform:translateX(-2px);box-shadow:0 8px 22px rgba(31,38,33,.08),var(--vf-inset)!important}
+.view-head h1{font-size:clamp(56px,5.8vw,82px)!important;line-height:.91!important;letter-spacing:-.058em!important;font-weight:310!important;margin:.11em 0 .16em!important}
+.view-head>span>small{letter-spacing:.19em!important;font-weight:720!important;color:var(--green)!important}
+.view-head p{max-width:630px!important;font-size:14px!important;line-height:1.55!important;color:color-mix(in srgb,var(--muted) 90%,var(--ink))!important}
+.view-head>b{margin-top:12px!important;letter-spacing:.15em!important}
+
+/* Clock = a physical instrument, not a card dashboard */
+.clock-card{border-radius:34px!important;padding:32px 37px 30px!important;background:rgba(249,247,240,.82)!important;box-shadow:var(--vf-shadow-high),var(--vf-inset)!important;isolation:isolate}
+.clock-card:before{content:"";position:absolute;z-index:0;left:31px;right:31px;top:0;height:1px;background:rgba(255,255,255,.96);pointer-events:none}
+.clock-card:after{width:310px!important;height:310px!important;right:-138px!important;top:-172px!important;background:rgba(201,216,206,.46)!important;filter:blur(4px)!important}
+.clock-identity{padding-bottom:4px}
+.clock-identity span{letter-spacing:.19em!important}.clock-identity strong{font-size:10px!important;letter-spacing:.17em!important}
+.clock-instrument{grid-template-columns:258px 1fr!important;gap:39px!important;min-height:292px!important}
+.analog{width:246px!important;border-color:rgba(24,33,30,.16)!important;background:#f7f4ec!important;box-shadow:0 30px 52px rgba(36,42,36,.12),0 5px 14px rgba(36,42,36,.06),inset 0 0 0 1px rgba(255,255,255,.9),inset 0 0 0 10px rgba(255,255,255,.34),inset 0 -18px 35px rgba(73,69,54,.055)!important}
+.analog:before{content:"";position:absolute;inset:14px;border-radius:50%;border:1px solid rgba(24,33,30,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);pointer-events:none}
+.analog:after{content:"";position:absolute;inset:31px;border-radius:50%;border:1px solid rgba(24,33,30,.035);pointer-events:none}
+.clock-ticks i{top:10px!important;transform-origin:50% 113px!important;background:rgba(24,33,30,.27)!important}.clock-ticks i.major{background:rgba(24,33,30,.59)!important}
+.hand-hour{height:61px!important}.hand-minute{height:84px!important}.hand-second{height:96px!important}
+.clock-pin{width:13px!important;height:13px!important;box-shadow:0 0 0 5px #f7f4ec,0 3px 10px rgba(24,33,30,.18)!important}
+.digital>span{font-size:clamp(74px,7.4vw,118px)!important;font-weight:255!important;letter-spacing:-.075em!important}.digital>i{opacity:.29!important}.digital>small{margin-left:14px!important;font-size:20px!important;color:color-mix(in srgb,var(--red) 78%,var(--ink))!important}
+.clock-date{font-size:15px!important;letter-spacing:.015em!important}
+.next-moment{margin-top:25px!important;padding:14px 16px!important;border-radius:17px!important;background:rgba(218,230,224,.62)!important;border-color:rgba(66,107,91,.13)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.56)!important;transition:transform .18s ease,box-shadow .18s ease,background .18s ease!important}
+.next-moment:hover{transform:translateY(-2px);background:rgba(211,226,218,.78)!important;box-shadow:0 10px 25px rgba(45,58,50,.08),inset 0 1px 0 rgba(255,255,255,.7)!important}
+.day-unfold{padding-top:24px!important}.day-unfold header strong{font-size:15px!important}.day-unfold header>b{font-size:12px!important;letter-spacing:.05em!important}
+.day-sky{height:83px!important;margin-top:14px!important;border-radius:20px!important;border:1px solid rgba(24,33,30,.07)!important;background:rgba(227,235,231,.56)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.72),inset 0 -16px 30px rgba(172,152,110,.055)!important}
+.sky-glow{filter:blur(8px)!important;opacity:.92}.day-line{bottom:18px!important;left:16px!important;right:16px!important}.day-sun{bottom:11px!important;width:16px!important;height:16px!important;box-shadow:0 0 0 8px rgba(216,154,62,.13),0 6px 18px rgba(166,111,45,.22)!important}
+.day-markers button{bottom:12px!important;width:10px!important;height:10px!important}
+
+/* rhythm becomes a quiet vertical score */
+.rhythm-card{border-radius:31px!important;padding:25px!important;background:rgba(246,244,237,.76)!important}
+.rhythm-card>header{padding-bottom:16px!important}.rhythm-list{position:relative;gap:2px!important;padding-left:2px}.rhythm-list:before{content:"";position:absolute;left:11px;top:16px;bottom:16px;width:1px;background:rgba(24,33,30,.08);pointer-events:none}
+.rhythm-row{position:relative;grid-template-columns:15px 1fr auto!important;min-height:47px!important;padding:10px 8px!important;border-bottom-color:rgba(24,33,30,.055)!important}.rhythm-row i{z-index:1;border:2px solid var(--vf-surface);box-sizing:content-box}.rhythm-row[data-state="next"]{margin:3px 0;border:1px solid rgba(66,107,91,.08)!important;background:rgba(213,227,219,.76)!important;box-shadow:0 7px 20px rgba(45,58,50,.05)!important}
+
+/* actions: tactile, coloured only where meaning exists */
+.action-dock{border-radius:31px!important;padding:21px!important;background:rgba(248,246,239,.72)!important}
+.action-grid{gap:10px!important}
+.quick-action{--vf-action:var(--green);position:relative;overflow:hidden;border:1px solid rgba(24,33,30,.085)!important;border-radius:19px!important;background:rgba(255,255,255,.31)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important}
+.quick-action:before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:2px;border-radius:0 3px 3px 0;background:var(--vf-action);opacity:.62}
+.action-water{--vf-action:#4b8fb0}.action-prep{--vf-action:#bd7f33}.action-away{--vf-action:#806699}.action-meal{--vf-action:#b06653}.action-eyes{--vf-action:#5d85a5}.action-move{--vf-action:#7d8751}
+.quick-action:hover,.quick-action:focus-visible{transform:translateY(-4px);border-color:color-mix(in srgb,var(--vf-action) 25%,transparent)!important;box-shadow:0 15px 32px rgba(31,38,33,.10),inset 0 1px 0 rgba(255,255,255,.75)!important}.quick-action:active{transform:translateY(-1px)}
+.quick-action i{box-shadow:0 0 0 5px color-mix(in srgb,var(--vf-action) 10%,transparent)!important}.quick-action strong{font-size:13px!important}.quick-action small{letter-spacing:.09em!important}
+
+/* Daybook: notebook character returns to the Clock */
+.daybook-fold{position:relative;overflow:hidden;border-radius:29px!important;background:#f8f5ed!important;box-shadow:0 20px 52px rgba(43,45,37,.08),var(--vf-inset)!important}
+.daybook-fold:before{content:"";position:absolute;left:28px;right:28px;top:0;height:7px;border-top:1px solid rgba(24,33,30,.08);border-bottom:1px solid rgba(24,33,30,.035);opacity:.75;pointer-events:none}
+.daybook-fold:after{content:"";position:absolute;right:0;bottom:0;width:34px;height:34px;border-left:1px solid rgba(24,33,30,.07);border-top:1px solid rgba(24,33,30,.07);background:rgba(226,221,209,.45);border-radius:12px 0 0 0;pointer-events:none}
+.clock-note-compose textarea{font-size:16px!important;line-height:1.55!important;letter-spacing:.005em!important}.clock-recent-note,.clock-carry-note{border-radius:15px!important;background:rgba(255,255,255,.34)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.58)!important;transition:transform .16s ease,background .16s ease!important}.clock-recent-note:hover{transform:translateY(-2px);background:rgba(255,255,255,.58)!important}
+
+/* Notes: a real notebook page, not another settings panel */
+.notes-layout{gap:22px!important}.calendar-card{border-radius:28px!important;background:rgba(248,246,239,.80)!important;box-shadow:0 18px 48px rgba(37,43,37,.08),var(--vf-inset)!important}.calendar-grid button{border-radius:10px!important;transition:transform .14s ease,background .14s ease!important}.calendar-grid button:hover{transform:translateY(-1px)}.calendar-grid button[data-selected="true"]{box-shadow:0 7px 18px rgba(24,33,30,.14)!important}
+.notebook-card{position:relative;overflow:hidden;border-radius:31px!important;background:#faf8f2!important;box-shadow:var(--vf-shadow-high),var(--vf-inset)!important}.notebook-card:before{content:"";position:absolute;left:20px;top:23px;bottom:23px;width:1px;background:rgba(171,82,70,.16);pointer-events:none}.notebook-card>header,.note-insights,.note-compose,.note-list{position:relative;z-index:1}
+.note-insights{gap:9px!important}.note-insight{border-color:rgba(24,33,30,.075)!important;background:rgba(239,241,234,.72)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.68)!important}
+.note-compose{border-radius:22px!important;background:#fffdf8!important;border-color:rgba(66,107,91,.25)!important;box-shadow:0 12px 30px rgba(37,43,37,.07),inset 0 1px 0 rgba(255,255,255,.85)!important}
+.note-compose textarea,.note-inline-input{line-height:30px!important;background-color:#fffdf8!important;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 29px,rgba(63,113,139,.085) 29px,rgba(63,113,139,.085) 30px)!important;background-position:0 10px!important}
+.note-item{border-radius:18px!important;background:rgba(255,255,255,.31)!important;border-color:rgba(24,33,30,.085)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.64)!important;transition:transform .17s ease,box-shadow .17s ease,background .17s ease!important}.note-item:hover{transform:translateY(-2px);background:rgba(255,255,255,.5)!important;box-shadow:0 11px 28px rgba(37,43,37,.07),var(--vf-inset)!important}
+
+/* Now: one decisive dark instrument surrounded by quiet context */
+.now-grid{gap:20px!important}.now-grid>section{border-radius:29px!important}.now-primary{background:#18211e!important;color:#f4f1e8!important;border-color:#18211e!important;box-shadow:0 30px 72px rgba(20,29,25,.24),inset 0 1px 0 rgba(255,255,255,.065)!important;overflow:hidden}.now-primary>small{color:rgba(244,241,232,.62)!important;letter-spacing:.18em!important}.now-primary h2{font-weight:300!important;letter-spacing:-.052em!important;line-height:.94!important}.now-primary>strong{color:#f4f1e8!important}.now-primary>p{color:rgba(244,241,232,.61)!important}.now-guidance{background:rgba(255,255,255,.055)!important;border-left-color:#8eb5a2!important;color:rgba(244,241,232,.78)!important}.now-orbit{opacity:.7!important}.now-orbit:before,.now-orbit:after,.now-orbit i{border-color:rgba(244,241,232,.13)!important}.now-orbit span{background:#7faa91!important;box-shadow:0 0 0 9px rgba(127,170,145,.1),0 0 32px rgba(127,170,145,.28)!important}.now-actions button{background:rgba(255,255,255,.09)!important;color:#f4f1e8!important;border-color:rgba(255,255,255,.12)!important}.now-actions button:hover{background:rgba(255,255,255,.15)!important}
+.now-schedule{background:rgba(248,246,239,.84)!important}.now-schedule [data-state="next"],.now-schedule .active{box-shadow:0 8px 20px rgba(45,58,50,.06)!important}.now-cues,.now-weather,.now-active{background:rgba(248,246,239,.74)!important}.now-cues>header,.now-weather>header,.now-active>header{padding-bottom:14px!important}.now-cues #now-cue-list>*,.now-active #active-list>*{border-radius:15px!important;background:rgba(255,255,255,.35)!important}
+
+/* Day Log: stronger story, lighter metrics, calmer timeline */
+.day-story{border-radius:27px!important;border-color:rgba(66,107,91,.13)!important;background:rgba(217,228,221,.56)!important;box-shadow:0 16px 38px rgba(45,58,50,.07),var(--vf-inset)!important;padding:24px 27px!important}.day-story strong{font-size:24px!important;letter-spacing:-.025em!important}.day-balance>div{height:12px!important;border-radius:999px!important;box-shadow:inset 0 1px 3px rgba(24,33,30,.12)!important}.metric-grid{gap:10px!important}.metric-grid>*{border-radius:18px!important;background:rgba(255,255,255,.33)!important;border-color:rgba(24,33,30,.08)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7)!important}.timeline-card{border-radius:29px!important;background:rgba(250,248,242,.78)!important}.timeline:before{background:rgba(66,107,91,.14)!important}.timeline article{border-radius:16px!important;transition:background .16s ease!important}.timeline article:hover{background:rgba(255,255,255,.42)!important}.log-tools{border-radius:27px!important;background:rgba(245,243,236,.82)!important}.log-tools>button:not(.close-sessions){border-radius:16px!important;background:rgba(255,255,255,.35)!important;transition:transform .16s ease,box-shadow .16s ease!important}.log-tools>button:not(.close-sessions):hover{transform:translateX(3px);box-shadow:0 8px 20px rgba(31,38,33,.07)!important}
+
+/* Settings: setup console rather than a large generic form */
+.settings-summary{gap:10px!important}.settings-summary>*{border-radius:17px!important;background:rgba(255,255,255,.37)!important;border-color:rgba(24,33,30,.08)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.72)!important}
+.settings-layout{gap:20px!important}.settings-nav{border-radius:26px!important;padding:9px!important;background:rgba(246,244,237,.76)!important;box-shadow:0 16px 42px rgba(37,43,37,.075),var(--vf-inset)!important}.settings-nav button{border-radius:15px!important;transition:transform .15s ease,background .15s ease!important}.settings-nav button:not(.active):hover{transform:translateX(2px);background:rgba(255,255,255,.42)!important}.settings-nav button.active{background:#18211e!important;color:#f4f1e8!important;box-shadow:0 9px 20px rgba(24,33,30,.15)!important}.settings-nav button.active small{color:rgba(244,241,232,.6)!important}.settings-panels{position:relative;overflow:hidden;border-radius:31px!important;background:rgba(250,248,242,.78)!important;box-shadow:var(--vf-shadow-high),var(--vf-inset)!important}.settings-panels:after{content:"";position:absolute;right:-72px;top:-80px;width:190px;height:190px;border:1px solid rgba(66,107,91,.09);border-radius:50%;box-shadow:0 0 0 26px rgba(66,107,91,.025),0 0 0 52px rgba(66,107,91,.018);pointer-events:none}.settings-panels>section{position:relative;z-index:1}.setting-toggle{border-radius:17px!important;background:rgba(255,255,255,.36)!important;border-color:rgba(24,33,30,.085)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.66)!important;transition:transform .15s ease,background .15s ease!important}.setting-toggle:hover{transform:translateY(-1px);background:rgba(255,255,255,.54)!important}.settings-panels input,.settings-panels select{border-radius:14px!important;background:rgba(255,255,255,.46)!important;border-color:rgba(24,33,30,.11)!important}
+
+/* entrance rhythm: feels folded into place, not merely faded */
+@keyframes vf-enter{0%{opacity:0;transform:translateY(13px) scale(.992)}100%{opacity:1;transform:none}}
+@keyframes vf-card{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+.view{animation:vf-enter .36s cubic-bezier(.2,.75,.25,1) both!important}
+html[data-mode="home"] .clock-card,html[data-mode="home"] .rhythm-card,html[data-mode="home"] .action-dock,html[data-mode="home"] .daybook-fold,
+html[data-mode="notes"] .calendar-card,html[data-mode="notes"] .notebook-card,
+html[data-mode="worklog"] .day-story,html[data-mode="worklog"] .metric-grid,html[data-mode="worklog"] .timeline-card,html[data-mode="worklog"] .log-tools,
+html[data-mode="now"] .now-grid>section,
+html[data-mode="settings"] .settings-summary,html[data-mode="settings"] .settings-nav,html[data-mode="settings"] .settings-panels{animation:vf-card .42s cubic-bezier(.2,.75,.25,1) both}
+html[data-mode="home"] .rhythm-card,html[data-mode="notes"] .notebook-card,html[data-mode="worklog"] .metric-grid,html[data-mode="now"] .now-schedule,html[data-mode="settings"] .settings-nav{animation-delay:.035s}
+html[data-mode="home"] .action-dock,html[data-mode="worklog"] .timeline-card,html[data-mode="now"] .now-cues,html[data-mode="settings"] .settings-panels{animation-delay:.07s}
+html[data-mode="home"] .daybook-fold,html[data-mode="worklog"] .log-tools,html[data-mode="now"] .now-weather{animation-delay:.105s}
+html[data-mode="now"] .now-active{animation-delay:.14s}
+
+/* mobile: keep the wow, lose the bulk */
+@media(max-width:760px){
+  .app-bar{height:58px!important;padding:0 12px!important}.stage{padding:87px 12px 92px!important}.view-head{margin-bottom:20px!important}.view-head h1{font-size:48px!important}.view-head p{font-size:12px!important}.edge-nav .edge{opacity:.34}
+  .clock-card{border-radius:27px!important;padding:22px 19px 21px!important}.clock-instrument{grid-template-columns:132px minmax(0,1fr)!important;gap:16px!important;min-height:172px!important}.analog{width:132px!important}.analog:before{inset:9px}.analog:after{inset:19px}.clock-ticks i{transform-origin:50% 59px!important}.hand-hour{height:33px!important}.hand-minute{height:46px!important}.hand-second{height:52px!important}.digital>span{font-size:clamp(48px,16vw,74px)!important}.digital>small{font-size:14px!important;margin-left:7px!important}.clock-date{font-size:12px!important}.next-moment{margin-top:14px!important;padding:11px 12px!important}.day-sky{height:68px!important}
+  .rhythm-card,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.timeline-card,.log-tools,.now-grid>section,.settings-nav,.settings-panels{border-radius:24px!important}
+  .action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.quick-action{min-height:76px!important}.quick-action:hover{transform:none}
+  .notes-layout{gap:14px!important}.notebook-card:before{left:12px}.note-compose textarea,.note-inline-input{line-height:28px!important;background-position:0 8px!important;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,rgba(63,113,139,.08) 27px,rgba(63,113,139,.08) 28px)!important}
+  .now-primary{min-height:285px!important}.now-primary h2{font-size:clamp(44px,14vw,68px)!important}.day-story{padding:20px!important}.settings-layout{gap:13px!important}
+}
+
+@media(max-width:430px){.clock-instrument{grid-template-columns:116px minmax(0,1fr)!important}.analog{width:116px!important}.clock-ticks i{transform-origin:50% 51px!important}.digital>span{font-size:44px!important}.digital>small{font-size:12px!important}.day-unfold header>b{display:none}.quick-action{padding-inline:10px!important}.view-head h1{font-size:44px!important}}
+
+@media(prefers-reduced-motion:reduce){.view,.clock-card,.rhythm-card,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.day-story,.metric-grid,.timeline-card,.log-tools,.now-grid>section,.settings-summary,.settings-nav,.settings-panels{animation:none!important}.quick-action,.next-moment,.note-item,.clock-recent-note,.settings-nav button,.setting-toggle,.log-tools>button{transition:none!important}}
