@@ -16,7 +16,7 @@ const seed=()=>{
 
 async function main(){
   const app=fs.readFileSync(path.join(site,'app','index.html'),'utf8'),auth=fs.readFileSync(path.join(site,'app','auth.html'),'utf8'),worker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8'),experience=fs.readFileSync(path.join(site,'pacefold-experience.txt'),'utf8').trim();
-  assert(experience==='27.1.0 wow-security-r4-notification-r5','WOW/security build identity missing');
+  assert(experience==='27.1.0 visual-finale-r6','WOW/security visual-finale build identity missing');
   assert(app.includes("default-src 'none'")&&app.includes("media-src 'self' blob:")&&!app.includes("media-src 'self' data: blob: https:"),'App CSP is not default-deny / media restricted');
   assert(app.includes("img-src 'self' data: blob: https://i.ytimg.com")&&app.includes('<meta name="referrer" content="strict-origin-when-cross-origin">'),'Artwork or referrer policy missing');
   assert(auth.includes("default-src 'none'; script-src 'self'")&&auth.includes("form-action 'none'")&&!auth.includes('Pacefold'),'Auth bridge is not hardened and neutral');
