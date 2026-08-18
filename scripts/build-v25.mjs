@@ -86,5 +86,5 @@ const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(awa
 const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 wow-security-r4\n');
-console.log(`Built Clock 27.1 wow-security-r4 bundle and hardened shell at ${target}`);
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 wow-security-r4-notification-r5\n');
+console.log(`Built Clock 27.1 wow-security-r4-notification-r5 bundle and hardened shell at ${target}`);
