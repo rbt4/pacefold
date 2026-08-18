@@ -11,6 +11,11 @@ await fs.rm(target,{recursive:true,force:true});
 await fs.mkdir(target,{recursive:true});
 await fs.cp(source,target,{recursive:true});
 
+const APP_CSP="default-src 'none'; script-src 'self' https://www.youtube.com; style-src 'self'; font-src 'self'; img-src 'self' data: blob: https://i.ytimg.com; media-src 'self' blob:; connect-src 'self' https://api.open-meteo.com https://login.microsoftonline.com https://graph.microsoft.com; frame-src https://login.microsoftonline.com https://www.youtube.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self' https://login.microsoftonline.com";
+const AUTH_CSP="default-src 'none'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
+const PUBLIC_CSP="default-src 'none'; style-src 'self'; img-src 'self' data:; font-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'";
+const REFERRER='<meta name="referrer" content="strict-origin-when-cross-origin">';
+
 async function writeDailyImage(){
   const metadata={date:'',url:'',credit:'',creditUrl:'',source:'Bing image of the day'};
   try{
@@ -26,12 +31,12 @@ async function writeDailyImage(){
 }
 
 const neutralizeVisibleName=value=>value.replaceAll('Pacefold','Clock').replaceAll('PACEFOLD','CLOCK');
+const addReferrer=html=>html.includes('name="referrer"')?html:html.replace(/(<meta name="viewport"[^>]*>)/,`$1\n  ${REFERRER}`);
+const replaceCsp=(html,csp)=>html.replace(/<meta http-equiv="Content-Security-Policy" content="[^"]*">/,`<meta http-equiv="Content-Security-Policy" content="${csp}">`);
 
 async function prepareAppShell(){
   const file=path.join(target,'app','index.html');let html=await fs.readFile(file,'utf8');
   html=html
-    .replace("script-src 'self';","script-src 'self' https://www.youtube.com;")
-    .replace('frame-src https://login.microsoftonline.com;','frame-src https://login.microsoftonline.com https://www.youtube.com;')
     .replace('./pacefold.css?v=25.1.0','./pacefold.css?v=27.1.0')
     .replace('id="rhythm-kicker">Prayer rhythm<','id="rhythm-kicker">Today’s rhythm<')
     .replace('id="rhythm-meta">Your configured location and calculation method appear here.<','id="rhythm-meta"><')
@@ -39,9 +44,17 @@ async function prepareAppShell(){
     .replace('<button type="button" data-action="prep">Prep</button>','<button type="button" data-action="prep">Noodles</button>')
     .replace(/Pacefold\s+\d+\.\d+\.\d+/g,'Pacefold 27.1.0')
     .replace('Pacefold 27.1.0 · polish-r2','Pacefold 27.1.0 · final-form-r1');
-  html=neutralizeVisibleName(html)
+  html=replaceCsp(addReferrer(neutralizeVisibleName(html)),APP_CSP)
     .replace('<title>Clock — Your day, quietly kept</title>','<title>Clock</title>')
     .replace('<span><strong>Clock</strong><small>Your day, quietly kept</small></span>','<span><strong>Clock</strong><small hidden></small></span>');
+  await fs.writeFile(file,html);
+}
+
+async function prepareAuthShell(){
+  const file=path.join(target,'app','auth.html');let html=await fs.readFile(file,'utf8');
+  html=replaceCsp(addReferrer(neutralizeVisibleName(html)),AUTH_CSP)
+    .replace('<title>Clock Microsoft sign-in</title>','<title>Clock sign-in</title>')
+    .replace('Returning to Clock…','Returning…');
   await fs.writeFile(file,html);
 }
 
@@ -49,6 +62,9 @@ async function preparePublicPages(){
   for(const relative of['index.html','privacy.html']){
     const file=path.join(target,relative);let html=await fs.readFile(file,'utf8');
     html=neutralizeVisibleName(html).replaceAll('25.1.0','27.1.0').replaceAll('25.1','27.1');
+    html=addReferrer(html);
+    if(html.includes('http-equiv="Content-Security-Policy"'))html=replaceCsp(html,PUBLIC_CSP);
+    else html=html.replace('</head>',`  <meta http-equiv="Content-Security-Policy" content="${PUBLIC_CSP}">\n</head>`);
     await fs.writeFile(file,html);
   }
 }
@@ -61,6 +77,7 @@ async function neutralizeRuntime(){
 
 await writeDailyImage();
 await prepareAppShell();
+await prepareAuthShell();
 await preparePublicPages();
 await build({entryPoints:[path.join(source,'modules','main.mjs')],outfile:path.join(target,'app','pacefold.mjs'),bundle:true,minify:true,format:'esm',platform:'browser',target:['es2022'],legalComments:'none',sourcemap:false,charset:'utf8'});
 await neutralizeRuntime();
@@ -69,5 +86,5 @@ const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(awa
 const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 final-form-r1\n');
-console.log(`Built Clock 27.1 final-form bundle and single stylesheet at ${target}`);
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 wow-security-r4\n');
+console.log(`Built Clock 27.1 wow-security-r4 bundle and hardened shell at ${target}`);

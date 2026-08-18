@@ -1,15 +1,12 @@
 {
-  "name": "pacefold",
-  "private": true,
-  "version": "27.1.0",
-  "type": "module",
-  "scripts": {
-    "build": "node scripts/build-v25.mjs _site",
-    "verify": "node scripts/verify-v27.mjs _site",
-    "dev": "node scripts/preview.mjs"
+  "name":"pacefold",
+  "version":"27.1.0",
+  "private":true,
+  "type":"module",
+  "scripts":{
+    "build":"node scripts/build-v25.mjs _site",
+    "verify":"node scripts/verify-v27.mjs _site",
+    "preview":"node scripts/preview.mjs _site 4173"
   },
-  "devDependencies": {
-    "esbuild": "0.28.1",
-    "playwright": "1.61.1"
-  }
+  "devDependencies":{"esbuild":"0.25.11"}
 }

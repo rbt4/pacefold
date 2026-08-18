@@ -1,4 +1,4 @@
-name: Build, verify and publish Pacefold 27.1
+name: Build, verify and publish Clock 27.1
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pacefold-pages-${{ github.ref }}
+  group: clock-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           node-version: 24
       - name: Install build dependencies
         run: npm install --no-audit --no-fund
-      - name: Build Pacefold bundle
+      - name: Build Clock bundle
         run: npm run build
       - name: Static and core verification
         run: |
@@ -44,13 +44,15 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/final-polish.cjs _site
       - name: Setup and full-player repair contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/repair-player.cjs _site /tmp/pacefold-27-audit
+      - name: WOW and security contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/security-wow.cjs _site /tmp/pacefold-27-audit
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pacefold-27-final-audit-${{ github.run_id }}
+          name: clock-27-wow-security-audit-${{ github.run_id }}
           path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7

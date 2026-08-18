@@ -1,0 +1,21 @@
+/* Clock r4 finish — use the whole Music room when no library/queue panel is open. */
+@media(min-width:901px){
+  .stream-player:not(:has(.stream-chooser:not([hidden]))):not(:has(.stream-queue:not([hidden])))>.music-room-stage{
+    grid-column:1/-1!important;
+    padding:32px 420px 32px 40px!important;
+    min-height:420px!important
+  }
+  .stream-player:not(:has(.stream-chooser:not([hidden]))):not(:has(.stream-queue:not([hidden])))>.stream-video:not([hidden]){
+    grid-column:1/-1!important;
+    margin:0 32px 32px 0!important
+  }
+  .stream-player:not(:has(.stream-chooser:not([hidden]))):not(:has(.stream-queue:not([hidden])))>.stream-dock{
+    grid-column:1/-1!important
+  }
+  .stream-player:not(:has(.stream-chooser:not([hidden]))):not(:has(.stream-queue:not([hidden])))>.music-room-stage .music-room-art{
+    width:210px!important;height:210px!important
+  }
+  .stream-player:not(:has(.stream-chooser:not([hidden]))):not(:has(.stream-queue:not([hidden])))>.music-room-stage .music-room-stage-copy{
+    max-width:430px!important
+  }
+}
