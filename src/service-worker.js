@@ -1,6 +1,6 @@
 'use strict';
 const VERSION='27.1.0';
-const CACHE_NAME=`pacefold-v${VERSION}-final-form-r1-final-polish-player-repair-polish-r2-discretion-r3-wow-security-r4`;
+const CACHE_NAME=`pacefold-v${VERSION}-final-form-r1-final-polish-player-repair-polish-r2-discretion-r3-wow-security-r4-notification-r5`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
@@ -20,12 +20,27 @@ const MIRROR_KEY='cueMirror';
 const ICON_NAMES={water:'water',prayer:'prayer',prep:'prepare',away:'away',meal:'meal',eyes:'eyes',move:'move'};
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE_NAME);await cache.addAll(SHELL);await self.skipWaiting()})()));
-self.addEventListener('activate',event=>event.waitUntil((async()=>{const names=await caches.keys();await Promise.all(names.filter(name=>name.startsWith('pacefold-')&&name!==CACHE_NAME).map(name=>caches.delete(name)));await self.clients.claim()})()));
-self.addEventListener('message',event=>{if(event.data?.type==='SKIP_WAITING')self.skipWaiting();if(event.data?.type==='PACEFOLD_VERSION')event.ports[0]?.postMessage({type:'PACEFOLD_VERSION',version:VERSION})});
+self.addEventListener('activate',event=>event.waitUntil((async()=>{const names=await caches.keys();await Promise.all(names.filter(name=>name.startsWith('pacefold-')&&name!==CACHE_NAME).map(name=>caches.delete(name)));await self.clients.claim();await refreshWorkerBadge()})()));
+self.addEventListener('message',event=>{
+  if(event.data?.type==='SKIP_WAITING'){event.waitUntil(self.skipWaiting());return}
+  if(event.data?.type==='PACEFOLD_VERSION'){event.ports[0]?.postMessage({type:'PACEFOLD_VERSION',version:VERSION});return}
+  if(event.data?.type==='CLOCK_BADGE'){event.waitUntil(setWorkerBadge(event.data.count));return}
+  if(event.data?.type==='CLOCK_CUE_CHECK'){event.waitUntil(deliverBackgroundCue())}
+});
 function openDb(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB_NAME,DB_VERSION);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}
 async function readDb(key){const db=await openDb();try{return await new Promise((resolve,reject)=>{const request=db.transaction(STORE,'readonly').objectStore(STORE).get(key);request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)})}finally{db.close()}}
 async function writeDb(key,value){const db=await openDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(value,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}finally{db.close()}}
 function normalizeCueState(value){const state=value&&typeof value==='object'?value:{};return{v:1,ack:state.ack&&typeof state.ack==='object'?state.ack:{},notified:state.notified&&typeof state.notified==='object'?state.notified:{},snoozeUntil:Number(state.snoozeUntil)||0}}
+async function setWorkerBadge(value){
+  const count=Math.max(0,Math.min(99,Number(value)||0));
+  try{
+    if(typeof self.navigator?.setAppBadge!=='function')return false;
+    if(count)await self.navigator.setAppBadge(count);
+    else if(typeof self.navigator.clearAppBadge==='function')await self.navigator.clearAppBadge();
+    else await self.navigator.setAppBadge(0);
+    return true;
+  }catch(error){console.info('[Clock] worker app badge unavailable',error?.name||error);return false}
+}
 function canonicalUrl(value){const url=new URL(typeof value==='string'?value:value.url);url.search='';url.hash='';return url.href}
 function secureResponse(response){if(!response||response.type==='opaque')return response;const headers=new Headers(response.headers);headers.set('Referrer-Policy','strict-origin-when-cross-origin');headers.set('X-Content-Type-Options','nosniff');headers.set('Content-Security-Policy',"frame-ancestors 'none'");return new Response(response.body,{status:response.status,statusText:response.statusText,headers})}
 function navigationFallback(url){if(url.pathname.endsWith('/privacy.html'))return'./privacy.html';if(url.pathname.includes('/app/'))return'./app/index.html';return'./index.html'}
@@ -39,7 +54,29 @@ self.addEventListener('fetch',event=>{
   const canonical=canonicalUrl(request);if(!SHELL_SET.has(canonical)){event.respondWith(fetch(request,{cache:'no-store',credentials:'same-origin'}).then(secureResponse));return}
   event.respondWith((async()=>{const cached=await caches.match(canonical);if(cached){event.waitUntil(fetch(canonical,{cache:'no-store',credentials:'same-origin'}).then(async response=>{if(response?.ok)await(await caches.open(CACHE_NAME)).put(canonical,response.clone())}).catch(()=>{}));return secureResponse(cached)}const response=await fetch(canonical,{cache:'no-store',credentials:'same-origin'});if(response?.ok)(await caches.open(CACHE_NAME)).put(canonical,response.clone()).catch(()=>{});return secureResponse(response)})());
 });
-function backgroundCues(mirror,state,now=Date.now()){if(!mirror||!mirror.notifications||now<Number(state.snoozeUntil||0))return[];const cues=[];const add=cue=>{if(cue?.key&&!state.ack[cue.key]&&!state.notified[cue.key])cues.push(cue)};for(const item of mirror.schedule||[]){const delta=now-Number(item.dueAt);if(delta>=0&&delta<=20*60*1000)add(item)}for(const[source,timer]of Object.entries(mirror.timers||{})){const start=Number(timer?.start)||0,duration=Number(timer?.duration)||0;if(!start||!duration||now<start+duration)continue;add({source,key:`${source}:${start}`,label:timer.label,detail:timer.detail,priority:Number(timer.priority)||70,dueAt:start+duration})}if(mirror.activeDay&&now>=Number(mirror.workStart)&&now<=Number(mirror.workEnd)){const water=mirror.water||{},eyes=mirror.eyes||{},move=mirror.move||{};if(Number(water.current)<Number(water.target)&&now-Number(water.lastAt)>=Number(water.cadence))add({source:'water',key:`water:${new Date(now).toISOString().slice(0,10)}:${Math.floor((now-Number(mirror.workStart))/Math.max(1,Number(water.cadence)))}`,label:'Take a sip',detail:'A small hydration reset',priority:40,dueAt:Number(water.lastAt)+Number(water.cadence)});if(!mirror.quietMode&&now-Number(eyes.lastAt)>=Number(eyes.cadence))add({source:'eyes',key:`eyes:bg:${Math.floor(now/Math.max(1,Number(eyes.cadence)))}`,label:'Look far',detail:'A 20-second distance look',priority:35,dueAt:Number(eyes.lastAt)+Number(eyes.cadence)});if(!mirror.quietMode&&now-Number(move.lastAt)>=Number(move.cadence))add({source:'move',key:`move:bg:${Math.floor(now/Math.max(1,Number(move.cadence)))}`,label:'Change position',detail:'A short movement reset',priority:38,dueAt:Number(move.lastAt)+Number(move.cadence)})}return cues.sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0))}
-async function deliverBackgroundCue(){try{const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});if(windows.some(client=>client.visibilityState==='visible'&&client.focused))return;const mirror=await readDb(MIRROR_KEY),state=normalizeCueState(await readDb(CUE_KEY)),cue=backgroundCues(mirror,state)[0];if(!cue)return;const iconName=ICON_NAMES[cue.source];await self.registration.showNotification(cue.label,{body:cue.detail,tag:`pacefold-${cue.source}`,silent:true,renotify:false,requireInteraction:false,icon:iconName?path(`./app/icons/notify-${iconName}-128.png`):path('./app/icons/icon-192.png'),badge:path('./app/icons/badge-96.png'),data:{source:cue.source,key:cue.key},actions:[{action:'ack',title:'Clear'},{action:'snooze',title:'Snooze 10m'}]});state.notified[cue.key]=Date.now();await writeDb(CUE_KEY,state)}catch(error){console.warn('[Clock] background cue check failed',error)}}
+function backgroundCues(mirror,state,now=Date.now()){
+  if(!mirror||now<Number(state.snoozeUntil||0))return[];
+  const cues=[],add=cue=>{if(cue?.key&&!state.ack[cue.key])cues.push(cue)};
+  for(const item of mirror.schedule||[]){const delta=now-Number(item.dueAt);if(delta>=0&&delta<=20*60*1000)add(item)}
+  for(const[source,timer]of Object.entries(mirror.timers||{})){const start=Number(timer?.start)||0,duration=Number(timer?.duration)||0;if(!start||!duration||now<start+duration)continue;add({source,key:`${source}:${start}`,label:timer.label,detail:timer.detail,priority:Number(timer.priority)||70,dueAt:start+duration})}
+  const windows=Array.isArray(mirror.workWindows)&&mirror.workWindows.length?mirror.workWindows:[{dateKey:mirror.dateKey||new Date(now).toISOString().slice(0,10),activeDay:Boolean(mirror.activeDay),start:Number(mirror.workStart),end:Number(mirror.workEnd)}],active=windows.find(item=>item?.activeDay&&now>=Number(item.start)&&now<=Number(item.end));
+  if(active){
+    const dateKey=String(active.dateKey||mirror.dateKey||new Date(now).toISOString().slice(0,10)),freshDay=dateKey!==String(mirror.dateKey||dateKey),water=mirror.water||{},eyes=mirror.eyes||{},move=mirror.move||{},workStart=Number(active.start),waterCadence=Math.max(1,Number(water.cadence)||45*60000),eyeCadence=Math.max(1,Number(eyes.cadence)||20*60000),moveCadence=Math.max(1,Number(move.cadence)||45*60000),waterCurrent=freshDay?0:Number(water.current)||0,waterLast=freshDay?workStart:Number(water.lastAt)||workStart,eyesLast=freshDay?workStart:Number(eyes.lastAt)||workStart,moveLast=freshDay?workStart:Number(move.lastAt)||workStart;
+    if(waterCurrent<Number(water.target||24)&&now-waterLast>=waterCadence)add({source:'water',key:`water:${dateKey}:${Math.floor((now-workStart)/waterCadence)}`,label:'Take a sip',detail:'A small hydration reset',priority:40,dueAt:waterLast+waterCadence});
+    if(!mirror.quietMode&&now-eyesLast>=eyeCadence)add({source:'eyes',key:`eyes:${dateKey}:${Math.floor(now/eyeCadence)}`,label:'Look far',detail:'A 20-second distance look',priority:35,dueAt:eyesLast+eyeCadence});
+    if(!mirror.quietMode&&now-moveLast>=moveCadence)add({source:'move',key:`move:${dateKey}:${Math.floor(now/moveCadence)}`,label:'Change position',detail:'A short movement reset',priority:38,dueAt:moveLast+moveCadence});
+  }
+  return cues.sort((a,b)=>(Number(b.priority)||0)-(Number(a.priority)||0));
+}
+async function refreshWorkerBadge(){try{const mirror=await readDb(MIRROR_KEY),state=normalizeCueState(await readDb(CUE_KEY)),cues=backgroundCues(mirror,state);await setWorkerBadge(cues.length);return cues}catch(error){console.info('[Clock] worker badge refresh unavailable',error?.name||error);return[]}}
+async function deliverBackgroundCue(){
+  try{
+    const mirror=await readDb(MIRROR_KEY),state=normalizeCueState(await readDb(CUE_KEY)),cues=backgroundCues(mirror,state);await setWorkerBadge(cues.length);
+    if(!cues.length||!mirror?.notifications)return;
+    const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});if(windows.some(client=>client.visibilityState==='visible'&&client.focused))return;
+    const cue=cues.find(item=>!state.notified[item.key]);if(!cue)return;
+    const iconName=ICON_NAMES[cue.source];await self.registration.showNotification(cue.label,{body:cue.detail,tag:`clock-${cue.source}`,silent:true,renotify:false,requireInteraction:false,icon:iconName?path(`./app/icons/notify-${iconName}-128.png`):path('./app/icons/icon-192.png'),badge:path('./app/icons/badge-96.png'),data:{source:cue.source,key:cue.key},actions:[{action:'ack',title:'Clear'},{action:'snooze',title:'Snooze 10m'}]});state.notified[cue.key]=Date.now();await writeDb(CUE_KEY,state);
+  }catch(error){console.warn('[Clock] background cue check failed',error)}
+}
 self.addEventListener('periodicsync',event=>{if(event.tag==='pacefold-cues')event.waitUntil(deliverBackgroundCue())});
-self.addEventListener('notificationclick',event=>{const data=event.notification.data||{};event.notification.close();event.waitUntil((async()=>{const state=normalizeCueState(await readDb(CUE_KEY));if(event.action==='ack'&&data.key){state.ack[data.key]=Date.now();await writeDb(CUE_KEY,state)}if(event.action==='snooze'){state.snoozeUntil=Date.now()+10*60*1000;await writeDb(CUE_KEY,state)}const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});if(event.action==='ack'||event.action==='snooze'){for(const client of windows)client.postMessage({type:event.action==='ack'?'PACEFOLD_ACK':'PACEFOLD_SNOOZE',source:data.source,key:data.key,snoozeUntil:state.snoozeUntil});return}const target=path('./app/?mode=now');for(const client of windows){if(!client.url.startsWith(ROOT.href))continue;if('navigate'in client)await client.navigate(target);await client.focus();return}if(self.clients.openWindow)await self.clients.openWindow(target)})())});
+self.addEventListener('notificationclick',event=>{const data=event.notification.data||{};event.notification.close();event.waitUntil((async()=>{const state=normalizeCueState(await readDb(CUE_KEY));if(event.action==='ack'&&data.key)state.ack[data.key]=Date.now();if(event.action==='snooze')state.snoozeUntil=Date.now()+10*60*1000;if(event.action==='ack'||event.action==='snooze')await writeDb(CUE_KEY,state);await refreshWorkerBadge();const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});if(event.action==='ack'||event.action==='snooze'){for(const client of windows)client.postMessage({type:event.action==='ack'?'PACEFOLD_ACK':'PACEFOLD_SNOOZE',source:data.source,key:data.key,snoozeUntil:state.snoozeUntil});return}const target=path('./app/?mode=now');for(const client of windows){if(!client.url.startsWith(ROOT.href))continue;if('navigate'in client)await client.navigate(target);await client.focus();return}if(self.clients.openWindow)await self.clients.openWindow(target)})())});
