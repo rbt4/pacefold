@@ -18,6 +18,7 @@ import{installApp}from'./app.js';
 import{prepareFinalForm,installFinalForm}from'./final-form.js';
 import{installRepair}from'./repair.js';
 import{installSecurity}from'./security.js';
+import{installNotificationHardening}from'./notification-hardening.js';
 
 const ctx=createContext();
 prepareFinalForm(ctx);
@@ -41,6 +42,7 @@ installApp(ctx);
 installFinalForm(ctx);
 installRepair(ctx);
 installSecurity(ctx);
+installNotificationHardening(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);
