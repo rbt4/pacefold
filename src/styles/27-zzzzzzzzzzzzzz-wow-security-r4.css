@@ -57,6 +57,25 @@ html[data-cover="peeled"] .quiet-button{box-shadow:none!important;background:col
 .stream-play{box-shadow:0 10px 26px rgba(20,31,28,.14)!important}.stream-control,.stream-save,.stream-queue-toggle,.stream-video-toggle{transition:transform .15s ease,background .15s ease,box-shadow .15s ease!important}.stream-control:hover,.stream-save:hover,.stream-queue-toggle:hover,.stream-video-toggle:hover{transform:translateY(-1px)}
 .stream-library-row{transition:transform .15s ease,background .15s ease!important}.stream-library-row:hover{transform:translateX(2px)}
 
+/* Loaded playback keeps album art as the hero. The official YouTube player remains
+   visible as a compact 356×200 source preview instead of replacing the entire stage. */
+.stream-player:has(.stream-video:not([hidden])) .music-room-stage{display:grid!important;place-items:start!important;align-content:center!important;justify-content:start!important;gap:16px!important;padding:26px 404px 26px 28px!important;text-align:left!important}
+.stream-player:has(.stream-video:not([hidden])) .music-room-art{width:188px!important;height:188px!important}
+.stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy{max-width:300px!important}.stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy strong{font-size:24px!important}.stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy p{font-size:10px!important}
+.sound-bar[data-music-open="true"] .stream-video:not([hidden]){grid-column:1!important;grid-row:2!important;justify-self:end!important;align-self:end!important;width:356px!important;height:200px!important;min-height:200px!important;aspect-ratio:356/200!important;margin:24px!important;z-index:4!important;border-radius:18px!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:0 22px 48px rgba(12,22,20,.22)!important}
+.sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,.sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{width:356px!important;height:200px!important;min-height:200px!important}
+
+@media(max-width:900px){
+  .stream-player:has(.stream-video:not([hidden])){grid-template-rows:auto auto auto auto minmax(0,1fr)!important}
+  .stream-player:has(.stream-video:not([hidden])) .music-room-stage{grid-column:1!important;grid-row:2!important;display:grid!important;grid-template-columns:112px minmax(0,1fr)!important;place-items:center start!important;align-content:center!important;gap:17px!important;min-height:190px!important;padding:18px!important;text-align:left!important}
+  .stream-player:has(.stream-video:not([hidden])) .music-room-art{width:112px!important;height:112px!important}
+  .stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy{max-width:none!important}.stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy strong{font-size:18px!important}.stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy p{margin-top:6px!important;font-size:9px!important}
+  .sound-bar[data-music-open="true"] .stream-video:not([hidden]){grid-column:1!important;grid-row:3!important;justify-self:center!important;align-self:start!important;width:min(356px,calc(100vw - 24px))!important;height:200px!important;min-height:200px!important;margin:0!important;border-radius:16px!important}
+  .sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,.sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{width:100%!important;height:200px!important;min-height:200px!important}
+  .stream-player:has(.stream-video:not([hidden])) .stream-dock{grid-row:4!important}
+  .stream-player:has(.stream-video:not([hidden])) .stream-chooser,.stream-player:has(.stream-video:not([hidden])) .stream-queue{grid-row:5!important}
+}
+
 @media(max-width:760px){
   .cover-dayline{width:132px;margin-top:8px}.cover-ambient{opacity:.62}.cover-clock{transform:none!important}
   html[data-cover="peeled"] .brand{width:34px!important;min-width:34px!important;padding-inline:5px!important}
