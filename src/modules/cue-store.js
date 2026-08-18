@@ -27,6 +27,7 @@ function mergeCueState(local,stored){
 }
 
 export function installCueStore(ctx){
+  ctx.periodicCueSyncStatus='unknown';
   ctx.readCueDb=()=>readValue(CUE_KEY);
   ctx.writeCueDb=value=>writeValue(CUE_KEY,normalizeCueState(value));
   ctx.writeCueMirror=value=>writeValue(MIRROR_KEY,{v:1,...value,savedAt:Date.now()});
@@ -36,44 +37,58 @@ export function installCueStore(ctx){
       const stored=await readValue(CUE_KEY);if(!stored)return ctx.cueState;
       ctx.cueState=mergeCueState(ctx.cueState,stored);
       localStorage.setItem(ctx.KEYS.cueState,JSON.stringify(ctx.cueState));return ctx.cueState;
-    }catch(error){console.warn('[Pacefold] cue state read failed',error);return ctx.cueState}
+    }catch(error){console.warn('[Clock] cue state read failed',error);return ctx.cueState}
   };
 
   ctx.initCueStore=async()=>{
     try{
       const stored=await readValue(CUE_KEY),local=normalizeCueState(ctx.cueState),merged=stored?mergeCueState(local,stored):local;
       ctx.cueState=merged;await writeValue(CUE_KEY,merged);localStorage.setItem(ctx.KEYS.cueState,JSON.stringify(merged));
-    }catch(error){console.warn('[Pacefold] cue IndexedDB unavailable',error)}
+    }catch(error){console.warn('[Clock] cue IndexedDB unavailable',error)}
   };
 
   ctx.persistCueState=()=>{
     const state=normalizeCueState(ctx.cueState);ctx.cueState=state;localStorage.setItem(ctx.KEYS.cueState,JSON.stringify(state));
-    void writeValue(CUE_KEY,state).catch(error=>console.warn('[Pacefold] cue state persistence failed',error));
+    void writeValue(CUE_KEY,state).catch(error=>console.warn('[Clock] cue state persistence failed',error));
   };
 
   ctx.syncCueMirror=()=>{
     try{
-      const now=new Date(),range=ctx.workRange(ctx.prefs,now),part=ctx.zoneParts(now,ctx.prefs.timeZone),workStart=ctx.zonedForToday(range.start,now).getTime(),workEnd=ctx.zonedForToday(range.end,now).getTime(),named=ctx.rhythmMode?.()==='names';
-      const schedule=ctx.getSchedule(now).today.filter(item=>item.alert).map(item=>({source:'prayer',key:`prayer:${ctx.todayKey(item.date)}:${item.id}`,label:named?item.label:'Scheduled moment',detail:named?`${item.label} · ${ctx.formatTime(item.date)}`:`Due · ${ctx.formatTime(item.date)}`,priority:100,dueAt:item.date.getTime()}));
+      const now=new Date(),tomorrow=new Date(now.getTime()+86400000),named=ctx.rhythmMode?.()==='names',todayKey=ctx.todayKey(now),part=ctx.zoneParts(now,ctx.prefs.timeZone);
+      const schedule=[],seen=new Set();
+      for(const date of[now,tomorrow]){
+        for(const item of ctx.getSchedule(date).today.filter(row=>row.alert)){
+          const key=`prayer:${ctx.todayKey(item.date)}:${item.id}`;if(seen.has(key))continue;seen.add(key);
+          schedule.push({source:'prayer',key,label:named?item.label:'Scheduled moment',detail:named?`${item.label} · ${ctx.formatTime(item.date)}`:`Due · ${ctx.formatTime(item.date)}`,priority:100,dueAt:item.date.getTime()});
+        }
+      }
+      const workWindows=[now,tomorrow].map(date=>{
+        const range=ctx.workRange(ctx.prefs,date),z=ctx.zoneParts(date,ctx.prefs.timeZone),start=ctx.zonedDate(z.year,z.month,z.day,range.start,ctx.prefs.timeZone).getTime(),end=ctx.zonedDate(z.year,z.month,z.day,range.end,ctx.prefs.timeZone).getTime();
+        return{dateKey:ctx.todayKey(date),activeDay:Boolean(range.activeDay),start,end};
+      });
+      const currentWindow=workWindows[0],workStart=currentWindow.start,workEnd=currentWindow.end;
       const timers={
         prep:{start:Number(ctx.prefs.noodleStart)||0,duration:ctx.prefs.prepMinutes*60000,label:'Preparation ready',detail:'Your preparation timer is complete',priority:90},
         away:{start:Number(ctx.prefs.awayStart)||0,duration:ctx.prefs.awayMinutes*60000,label:'Return when ready',detail:'The away timer is complete',priority:76},
         meal:{start:Number(ctx.prefs.lunchStart)||0,duration:ctx.prefs.mealMinutes*60000,label:'Meal window complete',detail:'Return when you are ready',priority:80}
       };
       void ctx.writeCueMirror({
-        notifications:Boolean(ctx.prefs.notifications),quietMode:Boolean(ctx.prefs.quietMode),discreet:!named,timeZone:ctx.prefs.timeZone,activeDay:Boolean(range.activeDay),workStart,workEnd,
-        water:{current:Number(ctx.prefs.waterOz??ctx.prefs.waterSips)||0,target:Number(ctx.prefs.waterTarget)||24,lastAt:Number(ctx.prefs.waterLastAt)||workStart,cadence:Number(ctx.prefs.waterCadence)*60000},
+        notifications:Boolean(ctx.prefs.notifications),quietMode:Boolean(ctx.prefs.quietMode),discreet:!named,timeZone:ctx.prefs.timeZone,dateKey:todayKey,activeDay:Boolean(currentWindow.activeDay),workStart,workEnd,workWindows,
+        water:{dateKey:String(ctx.prefs.waterDate||todayKey),current:Number(ctx.prefs.waterOz??ctx.prefs.waterSips)||0,target:Number(ctx.prefs.waterTarget)||24,lastAt:Number(ctx.prefs.waterLastAt)||workStart,cadence:Number(ctx.prefs.waterCadence)*60000},
         eyes:{lastAt:Number(ctx.prefs.gazeLastCompleted)||workStart,cadence:Number(ctx.prefs.eyeCadence)*60000},
-        move:{lastAt:Number(ctx.prefs.bodyLastCompleted)||workStart,cadence:Number(ctx.prefs.bodyCadence)*60000},schedule,timers,mirroredAt:{hour:part.hour,minute:part.minute}
+        move:{lastAt:Number(ctx.prefs.bodyLastCompleted)||workStart,cadence:Number(ctx.prefs.bodyCadence)*60000},schedule,timers,mirroredAt:{hour:part.hour,minute:part.minute,at:Date.now()}
       });
-    }catch(error){console.warn('[Pacefold] cue mirror failed',error)}
+    }catch(error){console.warn('[Clock] cue mirror failed',error)}
   };
 
   ctx.registerPeriodicCueSync=async()=>{
     try{
-      const registration=await navigator.serviceWorker?.ready;if(!registration||!('periodicSync'in registration))return false;
-      if(navigator.permissions?.query){try{const permission=await navigator.permissions.query({name:'periodic-background-sync'});if(permission.state==='denied')return false}catch{}}
-      await registration.periodicSync.register('pacefold-cues',{minInterval:15*60*1000});return true;
-    }catch(error){console.info('[Pacefold] periodic cue sync unavailable',error?.name||error);return false}
+      const registration=await navigator.serviceWorker?.ready;
+      if(!registration||!('periodicSync'in registration)){ctx.periodicCueSyncStatus='unsupported';return false}
+      if(navigator.permissions?.query){
+        try{const permission=await navigator.permissions.query({name:'periodic-background-sync'});if(permission.state==='denied'){ctx.periodicCueSyncStatus='denied';return false}}catch{}
+      }
+      await registration.periodicSync.register('pacefold-cues',{minInterval:15*60*1000});ctx.periodicCueSyncStatus='registered';return true;
+    }catch(error){ctx.periodicCueSyncStatus=String(error?.name||'unavailable');console.info('[Clock] periodic cue sync unavailable',error?.name||error);return false}
   };
 }
