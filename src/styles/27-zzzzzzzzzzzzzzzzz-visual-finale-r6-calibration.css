@@ -1,0 +1,23 @@
+/* Clock 27.1 — visual finale r6 calibration
+   Final specificity pass after screenshot audit. */
+
+/* Give Day Unfold the full instrument width. Earlier finishing layers intentionally
+   constrained it; the finale restores the whole workday as one continuous horizon. */
+.day-unfold .day-sky{width:100%!important;max-width:none!important}
+
+/* The shared section surface has higher selector specificity than a bare class.
+   Keep the Now composition intentional: one dark decision surface, quiet context. */
+.now-grid>section.now-primary{
+  background:#18211e!important;
+  color:#f4f1e8!important;
+  border-color:#18211e!important;
+  box-shadow:0 30px 72px rgba(20,29,25,.24),inset 0 1px 0 rgba(255,255,255,.065)!important;
+  backdrop-filter:blur(24px) saturate(1.05)!important;
+}
+.now-grid>section.now-schedule{background:rgba(248,246,239,.84)!important}
+.now-grid>section.now-cues,.now-grid>section.now-weather,.now-grid>section.now-active{background:rgba(248,246,239,.74)!important}
+
+@media(prefers-color-scheme:dark){
+  .now-grid>section.now-primary{background:#101714!important;border-color:#24322c!important;color:#f1f4ef!important}
+  .now-grid>section.now-schedule,.now-grid>section.now-cues,.now-grid>section.now-weather,.now-grid>section.now-active{background:rgba(32,39,36,.88)!important}
+}
