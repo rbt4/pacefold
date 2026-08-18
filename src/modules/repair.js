@@ -7,31 +7,36 @@ function safeSet(key,value){try{localStorage.setItem(key,value);return true}catc
 function readStream(){try{return JSON.parse(localStorage.getItem(STREAM_STORE)||'{}')||{}}catch{return{}}}
 
 export function installRepair(ctx){
-  // A returning install should never be forced through setup again just because an
-  // old onboarding flag disappeared or a partial preferences object was migrated.
+  // Setup is optional. Defaults are already complete enough to launch the clock, so
+  // never let onboarding become a gate or reappear after an update/restored install.
   const setup=id('setup-dialog');
-  const established=Object.keys(ctx.rawPrefs||{}).length>0||ctx.notes.length>0||Object.keys(ctx.log?.days||{}).length>0||localStorage.getItem(ctx.KEYS.setupDismissed)==='1';
-  if(established){safeSet(ctx.KEYS.onboarding,'1');safeSet(ctx.KEYS.setupDismissed,'1')}
   const rememberSetup=()=>{safeSet(ctx.KEYS.onboarding,'1');safeSet(ctx.KEYS.setupDismissed,'1')};
   setup?.addEventListener('close',rememberSetup);
   setup?.querySelector('.dialog-close')?.addEventListener('click',rememberSetup,{capture:true});
   id('setup-later')?.addEventListener('click',rememberSetup,{capture:true});
+  const baseInitialize=ctx.initialize;
+  if(typeof baseInitialize==='function')ctx.initialize=async()=>{
+    rememberSetup();
+    const result=await baseInitialize();
+    if(setup?.open)setup.close();
+    return result;
+  };
 
-  // Keep the peel idea, but never make the entrance a guessing game.
+  // Keep one obvious entrance from the start surface without exposing a project name.
   const cover=id('pace-cover');
   if(cover&&!id('cover-enter')){
-    const enter=button('cover-enter','Open Pacefold');enter.id='cover-enter';
-    enter.append(el('i'),el('span','','Open Pacefold'),el('b','','⌃'));
+    const enter=button('cover-enter','Open clock');enter.id='cover-enter';
+    enter.append(el('i'),el('span','','Open clock'),el('b','','⌃'));
     enter.addEventListener('click',()=>ctx.setStartCover?.(false));
     cover.append(enter);
   }
 
-  const sound=id('sound-bar'),player=id('stream-player'),appBar=document.querySelector('.app-bar');
-  if(!sound||!player||!appBar)return;
+  const sound=id('sound-bar'),player=id('stream-player');
+  if(!sound||!player)return;
   sound.dataset.musicOpen='false';player.dataset.room='true';
 
   const head=el('header','music-room-head');
-  const identity=el('div','music-room-identity');const roomTitle=el('strong','','Music');roomTitle.id='music-room-title';identity.append(el('small','','PACEFOLD MUSIC'),roomTitle,el('p','','YouTube Music when you want to browse. Pacefold when you want the music to stay with the day.'));
+  const identity=el('div','music-room-identity');const roomTitle=el('strong','','Music');roomTitle.id='music-room-title';identity.append(el('small','','MUSIC'),roomTitle,el('p','','Browse YouTube Music when you want discovery. Keep playback, saved music and focus sound here when you want fewer windows.'));
   const links=el('nav','music-room-links');
   const browse=el('a','music-room-link music-room-browse','Browse YouTube Music ↗');browse.id='music-room-browse';browse.href=YTM;browse.target='_blank';browse.rel='noopener noreferrer';
   const current=el('a','music-room-link music-room-current','Open current ↗');current.id='music-room-current';current.target='_blank';current.rel='noopener noreferrer';current.hidden=true;
@@ -40,14 +45,12 @@ export function installRepair(ctx){
 
   const stage=el('section','music-room-stage');stage.id='music-room-stage';
   const art=el('div','music-room-art');art.append(el('i'),el('i'),el('i'));
-  const stageCopy=el('div');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Browse YouTube Music, paste a song or playlist once, and keep playback, saved music and focus sound in one quiet room.'));
+  const stageCopy=el('div');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Paste a song or playlist once, then keep playback, saved music and focus sound in one quiet room.'));
   stage.append(art,stageCopy);player.insertBefore(stage,id('stream-video'));
 
-  const appOpen=button('music-open-button','Open full music player');appOpen.id='music-room-open';appOpen.append(el('i'),el('span','','Music'));
-  const barStatus=document.querySelector('.bar-status');barStatus?.prepend(appOpen);
-
+  // Music lives on the start surface, not in the permanent window chrome.
   let coverOpen=null;
-  if(cover){coverOpen=button('cover-music-button','Open full music player');coverOpen.id='cover-music-open';coverOpen.append(el('i'),el('span','','Music'));cover.append(coverOpen)}
+  if(cover){coverOpen=button('cover-music-button','Open music');coverOpen.id='cover-music-open';coverOpen.append(el('i'),el('span','','Music'));cover.append(coverOpen)}
 
   const updateCurrent=()=>{
     const saved=readStream(),url=String(saved.url||'');
@@ -75,10 +78,10 @@ export function installRepair(ctx){
   const closeMusic=()=>{
     sound.dataset.musicOpen='false';document.documentElement.dataset.music='closed';sound.removeAttribute('role');sound.removeAttribute('aria-modal');clearOpenFrame();
     id('stream-chooser')?.setAttribute('hidden','');id('stream-queue')?.setAttribute('hidden','');
-    (document.documentElement.dataset.cover==='on'?coverOpen:appOpen)?.focus({preventScroll:true});
+    const fallback=document.documentElement.dataset.cover==='on'?coverOpen:(id('cover-return')||id('bar-clock')||document.querySelector('.brand'));
+    fallback?.focus?.({preventScroll:true});
   };
 
-  appOpen.addEventListener('click',()=>openMusic({showChooser:true}));
   coverOpen?.addEventListener('click',()=>openMusic({showChooser:true}));
   close.addEventListener('click',closeMusic);
   id('stream-source')?.addEventListener('click',()=>openMusic({showChooser:false}),{capture:true});
