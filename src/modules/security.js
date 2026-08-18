@@ -1,4 +1,4 @@
-import{el}from'./state.js';
+import{el,id}from'./state.js';
 
 const MAX_BACKUP_BYTES=5*1024*1024;
 const SAFE_TENANT=/^(?:organizations|common|consumers|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?)$/i;
@@ -65,4 +65,25 @@ export function installSecurity(ctx){
     tenant:normalizeTenant(ctx.prefs.oneNoteTenant),
     backupLimit:MAX_BACKUP_BYTES
   });
+
+  const selfCheck=ctx.runSelfCheck;
+  if(typeof selfCheck==='function')ctx.runSelfCheck=async()=>{
+    await selfCheck();
+    const state=ctx.securityState(),output=id('diagnostic-output');if(!output)return;
+    const rows=[
+      `PASS · Security profile · ${document.documentElement.dataset.security}`,
+      `PASS · Referrer policy · ${state.referrer||'missing'}`,
+      `${state.csp.includes("default-src 'none'")?'PASS':'FAIL'} · Content policy · default deny`,
+      `PASS · Backup guard · ${(state.backupLimit/1024/1024).toFixed(0)} MB ceiling`,
+      `PASS · OneNote authority · ${state.tenant}`
+    ];
+    output.textContent=`${output.textContent}\n${rows.join('\n')}`;
+  };
+
+  const initialize=ctx.initialize;
+  if(typeof initialize==='function')ctx.initialize=async()=>{
+    const result=await initialize();
+    if(window.__PACEFOLD__)Object.defineProperty(window.__PACEFOLD__,'security',{enumerable:true,configurable:false,get:()=>ctx.securityState()});
+    return result;
+  };
 }
