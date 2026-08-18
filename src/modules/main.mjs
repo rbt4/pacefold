@@ -6,6 +6,7 @@ import{installWindowCues}from'./window-cues.js';
 import{installClock}from'./clock.js';
 import{installNotes}from'./notes.js';
 import{installStartCover}from'./start-cover.js';
+import{installAmbient}from'./ambient.js';
 import{installStreamPlayer}from'./stream-player.js';
 import{installDaylog}from'./daylog.js';
 import{installNow}from'./now.js';
@@ -16,6 +17,7 @@ import{installRelease}from'./release.js';
 import{installApp}from'./app.js';
 import{prepareFinalForm,installFinalForm}from'./final-form.js';
 import{installRepair}from'./repair.js';
+import{installSecurity}from'./security.js';
 
 const ctx=createContext();
 prepareFinalForm(ctx);
@@ -27,6 +29,7 @@ installWindowCues(ctx);
 installClock(ctx);
 installNotes(ctx);
 installStartCover(ctx);
+installAmbient(ctx);
 installStreamPlayer(ctx);
 installDaylog(ctx);
 installNow(ctx);
@@ -37,10 +40,11 @@ installRelease(ctx);
 installApp(ctx);
 installFinalForm(ctx);
 installRepair(ctx);
+installSecurity(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);
   const toast=document.getElementById('toast');
-  if(toast){toast.textContent='Pacefold could not finish loading';toast.classList.add('on')}
+  if(toast){toast.textContent='Clock could not finish loading';toast.classList.add('on')}
   document.documentElement.classList.add('ready');
 });
