@@ -15,6 +15,7 @@ const seed=()=>{
 async function checkSurface(page,label){
   await page.waitForFunction(()=>window.__PACEFOLD__?.version==='27.1.0');
   assert(await page.locator('#setup-dialog[open]').count()===0,`${label}: setup interrupted launch`);
+  assert(await page.locator('#cover-dayline').count()===1,`${label}: live day horizon is missing`);
   const music=page.locator('#cover-music-open');assert(await music.isVisible(),`${label}: start-surface Music entry is missing`);
   const musicBox=await music.boundingBox(),viewport=page.viewportSize();assert(musicBox&&musicBox.y>viewport.height*.72,`${label}: Music is still living at the top of the surface`);
   assert(await page.locator('#music-room-open').count()===0,`${label}: permanent top Music control still exists`);
@@ -27,20 +28,20 @@ async function checkSurface(page,label){
   await page.click('#music-room-close');await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='false');
 
   await page.click('#cover-enter');await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
-  const state=await page.evaluate(()=>({legacy:getComputedStyle(document.getElementById('sound-bar')).display,topMusic:Boolean(document.getElementById('music-room-open')),returnText:document.getElementById('cover-return')?.innerText||'',logVersion:JSON.parse(localStorage.getItem('pacefold.dayflow.v1')||'{}').version||'',visibleName:document.body.innerText.includes('Pacefold')}));
-  assert(state.legacy==='none',`${label}: legacy Music chrome is visible when closed`);assert(!state.topMusic,`${label}: top Music control returned after entering Clock`);assert(/Start/i.test(state.returnText),`${label}: start-surface return control is unclear`);assert(state.logVersion==='27.1.0',`${label}: persisted day-log release identity is stale`);assert(!state.visibleName,`${label}: project name is still visible in the app`);
+  const state=await page.evaluate(()=>({legacy:getComputedStyle(document.getElementById('sound-bar')).display,topMusic:Boolean(document.getElementById('music-room-open')),returnText:document.getElementById('cover-return')?.innerText||'',logVersion:JSON.parse(localStorage.getItem('pacefold.dayflow.v1')||'{}').version||'',visibleName:document.body.innerText.includes('Pacefold'),brandText:getComputedStyle(document.querySelector('.brand span')).display}));
+  assert(state.legacy==='none',`${label}: legacy Music chrome is visible when closed`);assert(!state.topMusic,`${label}: top Music control returned after entering Clock`);assert(/Start/i.test(state.returnText),`${label}: start-surface return control is unclear`);assert(state.logVersion==='27.1.0',`${label}: persisted day-log release identity is stale`);assert(!state.visibleName,`${label}: project name is still visible in the app`);assert(state.brandText==='none',`${label}: permanent brand wordmark is still visible`);
 }
 
 async function main(){
   const app=fs.readFileSync(path.join(site,'app','index.html'),'utf8'),runtime=fs.readFileSync(path.join(site,'app','pacefold.mjs'),'utf8'),styles=fs.readFileSync(path.join(site,'app','pacefold.css'),'utf8'),worker=fs.readFileSync(path.join(site,'service-worker.js'),'utf8'),homeStart=app.indexOf('<section class="view view-home"'),homeEnd=app.indexOf('<section class="view view-notes"'),homeShell=homeStart>=0&&homeEnd>homeStart?app.slice(homeStart,homeEnd):'';
   assert(app.includes('<meta name="application-name" content="Clock">'),'Built shell application name is stale');assert(app.includes('<title>Clock</title>'),'Built shell title is stale');assert(app.includes('./pacefold.css?v=27.1.0'),'Built shell stylesheet cache key is stale');assert(!app.includes('Pacefold'),'Built app shell still exposes the project name');assert(!runtime.includes('Pacefold'),'Built runtime still exposes the project name');
-  assert(homeShell&&!homeShell.includes('Prayer rhythm')&&!homeShell.includes('Etobicoke, Toronto'),'Visible Clock shell can flash private rhythm/location copy before runtime');assert(app.includes('<strong>Noodles</strong>')&&app.includes('data-action="prep">Noodles</button>'),'Original-profile noodle defaults are not present in the built shell');assert(styles.includes('Clock discretion r3')&&styles.includes('.music-open-button{display:none!important}'),'Discreet chrome polish is missing');assert(worker.includes('discretion-r3')&&worker.includes("indexedDB.open('pacefold-v26'"),'Cache roll or durable cue DB continuity is wrong');
+  assert(homeShell&&!homeShell.includes('Prayer rhythm')&&!homeShell.includes('Etobicoke, Toronto'),'Visible Clock shell can flash private rhythm/location copy before runtime');assert(app.includes('<strong>Noodles</strong>')&&app.includes('data-action="prep">Noodles</button>'),'Original-profile noodle defaults are not present in the built shell');assert(styles.includes('Clock discretion r3')&&styles.includes('Clock 27.1 — wow + security r4')&&styles.includes('.music-open-button{display:none!important}'),'Discreet/WOW chrome polish is missing');assert(worker.includes('wow-security-r4')&&worker.includes("const DB_NAME='pacefold-v26'"),'Cache roll or durable cue DB continuity is wrong');
 
   const{server,origin}=await serve();let browser;try{
     browser=await chromium.launch({headless:true});
     const desktop=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'America/Toronto'}),page=await desktop.newPage();await page.addInitScript(seed);await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await checkSurface(page,'desktop');await desktop.close();
     const mobile=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,timezoneId:'America/Toronto'}),m=await mobile.newPage();await m.addInitScript(seed);await m.goto(`${origin}/app/`,{waitUntil:'networkidle'});await checkSurface(m,'mobile');await mobile.close();
-    console.log('Clock 27.1 discretion contract passed: setup is non-blocking, project branding is absent, Music stays off permanent chrome, and full-player geometry is contained.');
+    console.log('Clock 27.1 final polish contract passed: setup is non-blocking, branding is absent, Music stays off permanent chrome, and the live day horizon is present.');
   }finally{if(browser)await browser.close();server.close()}
 }
 main().catch(error=>{console.error(error.stack||error);process.exitCode=1});
