@@ -38,14 +38,14 @@ export function installRepair(ctx){
   const head=el('header','music-room-head');
   const identity=el('div','music-room-identity');const roomTitle=el('strong','','Music');roomTitle.id='music-room-title';identity.append(el('small','','MUSIC'),roomTitle,el('p','','Browse YouTube Music when you want discovery. Keep playback, saved music and focus sound here when you want fewer windows.'));
   const links=el('nav','music-room-links');
-  const browse=el('a','music-room-link music-room-browse','Browse YouTube Music ↗');browse.id='music-room-browse';browse.href=YTM;browse.target='_blank';browse.rel='noopener noreferrer';
-  const current=el('a','music-room-link music-room-current','Open current ↗');current.id='music-room-current';current.target='_blank';current.rel='noopener noreferrer';current.hidden=true;
+  const browse=el('a','music-room-link music-room-browse','Browse YouTube Music ↗');browse.id='music-room-browse';browse.href=YTM;browse.target='_blank';browse.rel='noopener noreferrer';browse.referrerPolicy='no-referrer';
+  const current=el('a','music-room-link music-room-current','Open current ↗');current.id='music-room-current';current.target='_blank';current.rel='noopener noreferrer';current.referrerPolicy='no-referrer';current.hidden=true;
   const close=button('music-room-close','Close music player','×');close.id='music-room-close';
   links.append(browse,current,close);head.append(identity,links);player.prepend(head);sound.setAttribute('aria-labelledby','music-room-title');
 
   const stage=el('section','music-room-stage');stage.id='music-room-stage';
-  const art=el('div','music-room-art');art.append(el('i'),el('i'),el('i'));
-  const stageCopy=el('div');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Paste a song or playlist once, then keep playback, saved music and focus sound in one quiet room.'));
+  const art=el('div','music-room-art');const coverArt=el('img','music-room-cover');coverArt.id='music-room-cover';coverArt.alt='';coverArt.decoding='async';coverArt.referrerPolicy='no-referrer';art.append(coverArt,el('i'),el('i'),el('i'));
+  const stageCopy=el('div','music-room-stage-copy');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Paste a song or playlist once, then keep playback, saved music and focus sound in one quiet room.'));
   stage.append(art,stageCopy);player.insertBefore(stage,id('stream-video'));
 
   // Music lives on the start surface, not in the permanent window chrome.
