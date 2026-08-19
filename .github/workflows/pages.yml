@@ -45,18 +45,18 @@ jobs:
       - name: Setup and full-player repair contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/repair-player.cjs _site /tmp/pacefold-27-audit
       - name: WOW and security contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/security-wow.cjs _site /tmp/pacefold-27-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/security-current.cjs _site /tmp/pacefold-27-audit
       - name: Notification delivery contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/notifications-hardening.cjs _site /tmp/pacefold-27-audit
-      - name: Visual finale contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/visual-finale.cjs _site /tmp/pacefold-27-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/notifications-current.cjs _site /tmp/pacefold-27-audit
+      - name: Edge homepage readability contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/homepage-r7-current.cjs _site /tmp/pacefold-27-audit
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: clock-27-visual-finale-r6-audit-${{ github.run_id }}
+          name: clock-27-homepage-r7-audit-${{ github.run_id }}
           path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7

@@ -19,6 +19,7 @@ import{prepareFinalForm,installFinalForm}from'./final-form.js';
 import{installRepair}from'./repair.js';
 import{installSecurity}from'./security.js';
 import{installNotificationHardening}from'./notification-hardening.js';
+import{installHomepageR7}from'./homepage-r7.js';
 
 const ctx=createContext();
 prepareFinalForm(ctx);
@@ -43,6 +44,7 @@ installFinalForm(ctx);
 installRepair(ctx);
 installSecurity(ctx);
 installNotificationHardening(ctx);
+installHomepageR7(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

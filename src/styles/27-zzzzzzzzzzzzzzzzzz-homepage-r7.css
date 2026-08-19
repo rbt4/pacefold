@@ -1,0 +1,145 @@
+/* Clock 27.1 — homepage r7
+   Readability-first visual reset for an Edge home page that stays open all day.
+   Calm, opaque surfaces; restrained depth; strong text contrast; no theatrical UI. */
+:root{
+  color-scheme:light!important;
+  --paper:#f3f2ee!important;
+  --paper-2:#ffffff!important;
+  --paper-3:#e9e7e0!important;
+  --ink:#17201d!important;
+  --muted:#606b65!important;
+  --line:rgba(23,32,29,.11)!important;
+  --line-strong:rgba(23,32,29,.20)!important;
+  --green:#3e6a58!important;
+  --green-soft:#e3ece7!important;
+  --blue:#47788f!important;
+  --blue-soft:#e3edf2!important;
+  --amber:#9c6d31!important;
+  --amber-soft:#f4e8d2!important;
+  --red:#9b5148!important;
+  --violet:#735f86!important;
+  --shadow:0 14px 38px rgba(27,34,30,.075)!important;
+  --soft-shadow:0 6px 20px rgba(27,34,30,.055)!important;
+  --radius:24px!important;
+}
+html,body{background:#f3f2ee!important;color:var(--ink)!important}
+body{background-image:none!important}
+.paper-grain{opacity:.045!important}
+html[data-cover="peeled"] body:before,html[data-cover="peeled"] body:after{display:none!important}
+
+/* Home-page surface: photo first, but the clock must remain readable on every image. */
+.pace-cover{background:#25383a!important;border-radius:0!important;box-shadow:none!important}
+.pace-cover:before{filter:saturate(.9) contrast(.96) brightness(.92)!important;transform:scale(1.008)!important}
+.pace-cover:after{background:linear-gradient(180deg,rgba(7,15,18,.31),rgba(7,15,18,.07) 34%,rgba(7,15,18,.08) 62%,rgba(6,13,16,.38))!important}
+.cover-backdrop{background:none!important}
+.cover-hero{
+  width:min(690px,calc(100vw - 48px))!important;
+  margin-top:-2vh!important;
+  padding:28px 28px 25px!important;
+  border:1px solid rgba(255,255,255,.20)!important;
+  border-radius:30px!important;
+  background:rgba(9,19,21,.22)!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.12)!important;
+  -webkit-backdrop-filter:blur(12px) saturate(.95)!important;
+  backdrop-filter:blur(12px) saturate(.95)!important;
+}
+.cover-clock{text-shadow:0 2px 12px rgba(0,0,0,.34)!important}
+.cover-time{min-height:88px!important;align-items:baseline!important}
+.cover-time-main{font-size:clamp(72px,8vw,104px)!important;font-weight:390!important;line-height:.92!important;letter-spacing:-.045em!important;color:#fff!important}
+.cover-time-second{margin:0 0 0 10px!important;font-size:18px!important;font-weight:560!important;opacity:.92!important;color:#fff!important}
+.cover-time-period{margin:0 0 0 7px!important;font-size:10px!important;font-weight:700!important;opacity:.88!important;color:#fff!important}
+.cover-date{margin-top:8px!important;font-size:14px!important;font-weight:560!important;letter-spacing:0!important;color:rgba(255,255,255,.94)!important}
+.cover-utility{width:min(610px,100%)!important;margin-top:30px!important;gap:9px!important}
+.cover-omnibox{min-height:56px!important;padding:6px 7px 6px 15px!important;border:1px solid rgba(255,255,255,.72)!important;background:#fff!important;box-shadow:0 10px 30px rgba(0,0,0,.18)!important;backdrop-filter:none!important}
+.cover-omnibox:focus-within{box-shadow:0 12px 34px rgba(0,0,0,.20),0 0 0 3px rgba(255,255,255,.22)!important;transform:none!important}
+.cover-omnibox input{font-size:15px!important;font-weight:430!important;color:#202522!important}
+.cover-omnibox input::placeholder{color:#717874!important;opacity:1!important}
+.cover-note-panel{background:#fff!important;border-color:rgba(255,255,255,.78)!important;box-shadow:0 12px 34px rgba(0,0,0,.16)!important;backdrop-filter:none!important}
+.cover-note-panel textarea{background:#f8f8f5!important;color:#1e2521!important}
+.cover-peel{bottom:68px!important;padding:7px 12px!important;background:rgba(7,15,18,.38)!important;border-color:rgba(255,255,255,.34)!important;color:#fff!important;opacity:.92!important}
+.cover-photo-credit{background:rgba(7,15,18,.34)!important;color:rgba(255,255,255,.88)!important;opacity:.78!important}
+
+/* On the simple Edge home surface, only waiting cue pips are visible in the chrome. */
+html[data-cover="on"] .app-bar .bar-status{opacity:1!important;pointer-events:auto!important;position:fixed!important;top:14px!important;right:18px!important;z-index:110!important}
+html[data-cover="on"] .quiet-button,html[data-cover="on"] .bar-clock{display:none!important}
+html[data-cover="on"] .cue-cluster{min-width:0!important;min-height:34px!important;height:34px!important;padding:0 10px!important;gap:6px!important;border:1px solid rgba(255,255,255,.28)!important;background:rgba(8,17,19,.34)!important;box-shadow:0 6px 18px rgba(0,0,0,.12)!important;backdrop-filter:blur(10px)!important}
+html[data-cover="on"] .cue-cluster:not(:has(.cue-dot)){display:none!important}
+html[data-cover="on"] .cue-dot{width:9px!important;height:9px!important;box-shadow:0 0 0 2px rgba(255,255,255,.20)!important;animation:none!important}
+
+/* App chrome after opening Clock: readable and quiet. */
+.app-bar{height:60px!important;padding:0 24px!important;background:rgba(247,246,242,.96)!important;border-bottom:1px solid rgba(23,32,29,.09)!important;box-shadow:0 3px 14px rgba(25,31,28,.035)!important;backdrop-filter:blur(12px)!important}
+.brand{gap:9px!important}.brand img{width:24px!important;height:24px!important;filter:none!important}.brand strong{font-size:14px!important;font-weight:650!important;color:var(--ink)!important}
+.bar-clock,.quiet-button,.cue-cluster{min-height:34px!important;background:#fff!important;border-color:rgba(23,32,29,.10)!important;box-shadow:none!important}
+.edge-nav .edge{opacity:.58!important;color:var(--muted)!important;background:rgba(247,246,242,.93)!important;border:1px solid rgba(23,32,29,.08)!important;box-shadow:0 3px 12px rgba(25,31,28,.035)!important;backdrop-filter:blur(8px)!important}
+.edge-nav .edge:hover,.edge-nav .edge:focus-visible{opacity:1!important;background:#fff!important;transform:none!important}
+.edge-up:hover{transform:translateX(-50%)!important}.edge-left:hover{transform:translateY(-50%) rotate(180deg)!important}.edge-right:hover{transform:translateY(-50%)!important}.edge-down:hover{transform:translateX(-50%)!important}
+.stage{padding-top:98px!important;padding-left:52px!important;padding-right:52px!important}
+
+/* Shared content surfaces: opaque enough to read, shallow enough to feel calm. */
+.clock-card,.rhythm-card,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.timeline-card,.log-tools,.now-grid>section,.settings-nav,.settings-panels{
+  background:#fff!important;
+  border:1px solid rgba(23,32,29,.10)!important;
+  box-shadow:var(--soft-shadow)!important;
+  backdrop-filter:none!important;
+}
+
+/* Main Clock. */
+.home-grid{grid-template-columns:minmax(0,1.55fr) minmax(285px,.72fr)!important;gap:16px!important}
+.clock-card{border-radius:26px!important;padding:28px 31px 26px!important;box-shadow:var(--shadow)!important;overflow:hidden!important}
+.clock-card:before{display:none!important}.clock-card:after{width:250px!important;height:250px!important;right:-145px!important;top:-155px!important;background:#edf2ef!important;filter:none!important;opacity:.9!important}
+.clock-identity{padding:0!important}.clock-identity span{font-size:10px!important;font-weight:760!important;letter-spacing:.13em!important;color:var(--green)!important}.clock-identity strong{font-size:10px!important;font-weight:560!important;letter-spacing:.07em!important;color:var(--muted)!important}
+.clock-instrument{grid-template-columns:224px minmax(0,1fr)!important;gap:31px!important;min-height:248px!important}
+.analog{width:214px!important;background:#fbfbf8!important;border:1px solid rgba(23,32,29,.16)!important;box-shadow:inset 0 0 0 7px #f4f3ee,0 10px 28px rgba(28,34,31,.07)!important}
+.analog:before,.analog:after{display:none!important}.clock-ticks i{top:9px!important;transform-origin:50% 98px!important;background:rgba(23,32,29,.30)!important}.clock-ticks i.major{background:rgba(23,32,29,.58)!important}.hand-hour{height:54px!important}.hand-minute{height:73px!important}.hand-second{height:82px!important}.clock-pin{width:11px!important;height:11px!important;box-shadow:0 0 0 4px #fbfbf8!important}
+.digital{line-height:.91!important}.digital>span{font-size:clamp(68px,6.9vw,100px)!important;font-weight:330!important;letter-spacing:-.055em!important;color:var(--ink)!important}.digital>i{font-size:clamp(55px,5.8vw,82px)!important;opacity:.32!important}.digital>small{font-size:18px!important;font-weight:650!important;margin-left:10px!important;color:var(--red)!important}
+.clock-date{margin-top:12px!important;font-size:15px!important;font-weight:480!important;color:var(--muted)!important}
+.next-moment{margin-top:21px!important;padding:12px 14px!important;border-radius:14px!important;background:#eef4f1!important;border:1px solid rgba(62,106,88,.14)!important;box-shadow:none!important;transform:none!important}.next-moment:hover{background:#e8f0ec!important;transform:none!important}
+.day-unfold{padding-top:19px!important;border-top-color:rgba(23,32,29,.09)!important}.day-unfold header strong{font-size:14px!important}.day-unfold header>b{font-size:12px!important;color:var(--green)!important}.day-sky,.day-unfold .day-sky{width:100%!important;max-width:none!important;height:68px!important;margin-top:11px!important;border-radius:15px!important;border:1px solid rgba(23,32,29,.07)!important;background:linear-gradient(180deg,#dfecef,#f2e8d3)!important;box-shadow:none!important}.sky-glow{filter:none!important;opacity:.7!important}.day-line{bottom:15px!important}.day-sun{bottom:9px!important;width:13px!important;height:13px!important;box-shadow:0 0 0 6px rgba(216,154,62,.14)!important}
+
+/* Rhythm, actions and Daybook should scan in under a second. */
+.rhythm-card{border-radius:24px!important;padding:22px!important}.rhythm-card>header{padding-bottom:15px!important}.rhythm-card header strong{font-size:18px!important;color:var(--ink)!important}.rhythm-list{gap:0!important;padding:0!important}.rhythm-list:before{display:none!important}.rhythm-row{grid-template-columns:12px 1fr auto!important;min-height:43px!important;padding:9px 5px!important;border-bottom:1px solid rgba(23,32,29,.065)!important}.rhythm-row[data-state="next"]{margin:2px 0!important;padding-left:9px!important;padding-right:9px!important;background:var(--green-soft)!important;border:0!important;box-shadow:none!important}.rhythm-row i{border:0!important}.rhythm-row span,.rhythm-row strong{color:var(--ink)!important}
+.action-dock{margin-top:16px!important;border-radius:24px!important;padding:18px!important}.action-grid{gap:8px!important}.quick-action{min-height:78px!important;border:1px solid rgba(23,32,29,.085)!important;border-radius:15px!important;background:#fafaf7!important;box-shadow:none!important;transform:none!important;transition:background .14s ease,border-color .14s ease!important}.quick-action:before{left:0!important;top:13px!important;bottom:13px!important;width:3px!important;opacity:.72!important}.quick-action:hover,.quick-action:focus-visible{background:#f4f5f1!important;border-color:rgba(23,32,29,.14)!important;box-shadow:none!important;transform:none!important}.quick-action i{box-shadow:none!important}.quick-action strong{font-size:12px!important;font-weight:670!important;color:var(--ink)!important}.quick-action small{font-size:9px!important;letter-spacing:.02em!important;color:var(--muted)!important}
+.daybook-fold{margin-top:16px!important;border-radius:24px!important;padding:20px 22px 22px!important;background:#fff!important;box-shadow:var(--soft-shadow)!important}.daybook-fold:before{display:none!important}.daybook-fold:after{display:none!important}.fold-stat,.fold-note,.clock-recent-note,.clock-carry-note{background:#fafaf7!important;border-color:rgba(23,32,29,.08)!important;box-shadow:none!important;transform:none!important}.fold-stat strong,.fold-note strong{color:var(--ink)!important}
+
+/* Inner pages: normal reading sizes, not poster typography. */
+.view-head{margin-bottom:22px!important;gap:20px!important}.view-head>button:first-child{margin-top:2px!important;background:#fff!important;border-color:rgba(23,32,29,.11)!important;box-shadow:none!important;transform:none!important}.view-head>button:first-child:hover{transform:none!important}.view-head h1{font-size:clamp(42px,4.2vw,58px)!important;line-height:1!important;letter-spacing:-.035em!important;font-weight:410!important;color:var(--ink)!important;margin:2px 0 4px!important}.view-head>span>small{font-size:9px!important;letter-spacing:.13em!important;color:var(--green)!important}.view-head p{max-width:620px!important;font-size:13px!important;line-height:1.5!important;color:var(--muted)!important}.view-head>b{margin-top:5px!important;color:var(--muted)!important}
+
+/* Notes: clear paper, readable controls, subtle notebook cue. */
+.notes-layout{gap:16px!important}.calendar-card,.notebook-card{border-radius:24px!important;padding:20px!important}.calendar-card{background:#fff!important}.calendar-grid button{border-radius:9px!important}.notebook-card{background:#fff!important;box-shadow:var(--soft-shadow)!important}.notebook-card:before{left:18px!important;top:20px!important;bottom:20px!important;background:rgba(155,81,72,.12)!important}.notebook-card>header strong{color:var(--ink)!important}.note-insight{background:#f5f7f4!important;border-color:rgba(23,32,29,.07)!important;box-shadow:none!important}.note-compose{background:#fdfdfb!important;border:1px solid rgba(62,106,88,.22)!important;border-radius:18px!important;box-shadow:none!important}.note-compose textarea,.note-inline-input{background-color:#fdfdfb!important;color:var(--ink)!important;line-height:28px!important;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 27px,rgba(71,120,143,.07) 27px,rgba(71,120,143,.07) 28px)!important}.note-item{background:#fafaf7!important;border-color:rgba(23,32,29,.08)!important;border-radius:15px!important;box-shadow:none!important;transform:none!important}.note-item:hover{background:#f6f6f2!important;transform:none!important;box-shadow:none!important}.search input,.filter select{background:#fff!important;color:var(--ink)!important}
+
+/* Now: readable context, not a dark billboard. */
+.now-grid{gap:16px!important}.now-grid>section{border-radius:22px!important;padding:23px!important;background:#fff!important;color:var(--ink)!important;box-shadow:var(--soft-shadow)!important}.now-grid>section.now-primary{background:#f7faf8!important;color:var(--ink)!important;border-color:rgba(62,106,88,.18)!important;border-left:5px solid var(--green)!important;box-shadow:var(--soft-shadow)!important}.now-primary>small{color:var(--green)!important;letter-spacing:.13em!important}.now-primary h2{font-size:clamp(42px,4.8vw,64px)!important;font-weight:390!important;letter-spacing:-.035em!important;color:var(--ink)!important}.now-primary>strong{color:var(--ink)!important}.now-primary>p{color:var(--muted)!important}.now-guidance{background:#edf3ef!important;border-left-color:var(--green)!important;color:#48544e!important}.now-orbit{opacity:.28!important}.now-orbit:before,.now-orbit:after,.now-orbit i{border-color:rgba(62,106,88,.22)!important}.now-orbit span{background:var(--green)!important;box-shadow:0 0 0 6px rgba(62,106,88,.10)!important}.now-actions button{background:#fff!important;color:var(--ink)!important;border-color:rgba(23,32,29,.11)!important}.now-cues #now-cue-list>*,.now-active #active-list>*{background:#f8f8f5!important}.cue-empty{color:var(--muted)!important}
+
+/* Day Log and Settings: utility surfaces, not visual showcases. */
+.day-story{padding:21px 23px!important;border-radius:22px!important;background:#edf3ef!important;border-color:rgba(62,106,88,.13)!important;box-shadow:none!important}.day-story strong{font-size:22px!important;color:var(--ink)!important}.metric-grid{gap:8px!important}.metric-grid>*{background:#fff!important;border-color:rgba(23,32,29,.08)!important;border-radius:15px!important;box-shadow:none!important}.timeline-card,.log-tools{border-radius:22px!important}.timeline-card{background:#fff!important}.log-tools{background:#fff!important}.log-tools>button:not(.close-sessions){background:#fafaf7!important;border-radius:13px!important;box-shadow:none!important;transform:none!important}.log-tools>button:not(.close-sessions):hover{background:#f5f5f1!important;transform:none!important}
+.settings-summary{gap:8px!important}.settings-chip{background:#fff!important;border-color:rgba(23,32,29,.08)!important;border-radius:14px!important;box-shadow:none!important}.settings-layout{gap:16px!important}.settings-nav{border-radius:18px!important;padding:7px!important;background:#fff!important}.settings-nav button{border-radius:11px!important;padding:11px 12px!important}.settings-nav button.active{background:var(--ink)!important;color:#fff!important;box-shadow:none!important;transform:none!important}.settings-panels{border-radius:22px!important;padding:25px!important;min-height:500px!important;background:#fff!important;box-shadow:var(--soft-shadow)!important}.settings-panels:after{display:none!important}.settings-panels h2{font-size:24px!important;color:var(--ink)!important}.setting-toggle,.data-actions>button,details,.custom-moments{background:#fafaf7!important;border-color:rgba(23,32,29,.09)!important;box-shadow:none!important}.setting-toggle[aria-pressed="true"]{background:var(--green-soft)!important}.settings-form input,.settings-form select,.offset-grid input,.custom-moment-row input{background:#fff!important;color:var(--ink)!important;border-color:rgba(23,32,29,.13)!important}
+
+/* Keep the compact Music affordance quiet when the full Clock is open. */
+html[data-cover="peeled"] .music-launch{background:#fff!important;border-color:rgba(23,32,29,.10)!important;color:var(--ink)!important;box-shadow:0 4px 14px rgba(25,31,28,.05)!important}
+
+@media(max-width:1050px){
+  .home-grid{grid-template-columns:1fr!important}
+  .rhythm-list{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
+  .rhythm-row{border:1px solid rgba(23,32,29,.08)!important;border-radius:11px!important}
+}
+@media(max-width:760px){
+  :root{--bar:58px!important;--sound:58px!important}
+  .cover-hero{width:calc(100vw - 24px)!important;margin-top:-4vh!important;padding:22px 16px 20px!important;border-radius:24px!important;background:rgba(9,19,21,.25)!important}
+  .cover-time{min-height:70px!important}.cover-time-main{font-size:clamp(58px,18vw,76px)!important}.cover-time-second{font-size:15px!important}.cover-date{font-size:12px!important}.cover-utility{margin-top:23px!important}.cover-omnibox{min-height:52px!important}.cover-peel{bottom:76px!important}
+  html[data-cover="on"] .app-bar .bar-status{top:10px!important;right:10px!important}
+  .app-bar{height:58px!important;padding:0 12px!important}.stage{padding:78px 12px 112px!important}
+  .edge-nav{background:rgba(247,246,242,.97)!important;border-color:rgba(23,32,29,.10)!important;box-shadow:0 4px 18px rgba(25,31,28,.06)!important}
+  .edge-nav .edge{background:transparent!important;border:0!important;box-shadow:none!important;opacity:.72!important}
+  .clock-card{border-radius:22px!important;padding:20px 17px 19px!important}.clock-instrument{grid-template-columns:118px minmax(0,1fr)!important;gap:16px!important;min-height:164px!important}.analog{width:118px!important}.clock-ticks i{transform-origin:50% 52px!important}.hand-hour{height:31px!important}.hand-minute{height:42px!important}.hand-second{height:48px!important}.digital>span{font-size:clamp(45px,15vw,68px)!important}.digital>small{font-size:13px!important;margin-left:6px!important}.clock-date{font-size:12px!important}.next-moment{margin-top:13px!important;padding:10px 11px!important}.day-sky,.day-unfold .day-sky{height:58px!important}
+  .rhythm-card,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.timeline-card,.log-tools,.now-grid>section,.settings-panels{border-radius:20px!important}
+  .action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.quick-action{min-height:70px!important}
+  .view-head{margin-bottom:17px!important}.view-head h1{font-size:38px!important}.view-head p{font-size:12px!important}.view-head>span>small{font-size:8px!important}
+  .view-notes .calendar-card{padding:14px!important}.view-notes .calendar-week{margin:10px 0 3px!important}.view-notes .calendar-grid{gap:2px!important}.view-notes .calendar-grid button{height:29px!important;aspect-ratio:auto!important}.view-notes .calendar-summary{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:4px!important;margin-top:8px!important}.view-notes .calendar-summary span{padding:5px!important}.view-notes .calendar-summary small{font-size:6px!important}.view-notes .calendar-summary strong{font-size:11px!important}.view-notes .today-button{margin-top:8px!important;padding:7px!important}
+  .now-grid>section{padding:19px!important}.now-primary{min-height:260px!important}.now-primary h2{font-size:46px!important}.settings-panels{padding:19px!important}
+}
+@media(max-width:430px){
+  .clock-instrument{grid-template-columns:108px minmax(0,1fr)!important;gap:13px!important}.analog{width:108px!important}.clock-ticks i{transform-origin:50% 47px!important}.digital>span{font-size:42px!important}.digital>small{font-size:11px!important}.day-unfold header>b{display:block!important}.view-head h1{font-size:36px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}

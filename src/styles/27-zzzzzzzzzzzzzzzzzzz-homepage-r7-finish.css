@@ -1,0 +1,28 @@
+/* Clock 27.1 — homepage r7 finish
+   One cue signal on the simple surface: bare pips, no duplicate chrome bubble. */
+html[data-cover="on"] .window-cues,
+html[data-cover="on"] .title-cue-strip{display:none!important}
+html[data-cover="on"] .cue-cluster{
+  min-width:0!important;
+  width:auto!important;
+  min-height:18px!important;
+  height:18px!important;
+  padding:0!important;
+  gap:7px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html[data-cover="on"] .cue-dot{
+  width:10px!important;
+  height:10px!important;
+  flex-basis:10px!important;
+  border:1.5px solid rgba(255,255,255,.92)!important;
+  box-shadow:0 2px 8px rgba(0,0,0,.28)!important;
+}
+@media(max-width:760px){
+  html[data-cover="on"] .app-bar .bar-status{top:13px!important;right:13px!important}
+  html[data-cover="on"] .cue-dot{width:9px!important;height:9px!important;flex-basis:9px!important}
+}
