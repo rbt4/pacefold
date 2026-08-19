@@ -49,7 +49,7 @@ jobs:
       - name: Notification delivery contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/notifications-current.cjs _site /tmp/pacefold-27-audit
       - name: Edge homepage readability contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/homepage-r7.cjs _site /tmp/pacefold-27-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/homepage-r7-current.cjs _site /tmp/pacefold-27-audit
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
