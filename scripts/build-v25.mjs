@@ -86,5 +86,5 @@ const styleRoot=path.join(source,'styles');let styleFiles=[];try{styleFiles=(awa
 const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
-await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 visual-finale-r6\n');
-console.log(`Built Clock 27.1 visual-finale-r6 bundle and hardened shell at ${target}`);
+await fs.writeFile(path.join(target,'pacefold-experience.txt'),'27.1.0 homepage-r7\n');
+console.log(`Built Clock 27.1 homepage-r7 bundle and hardened shell at ${target}`);
