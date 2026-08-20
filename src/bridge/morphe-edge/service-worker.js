@@ -33,7 +33,7 @@ async function broadcast(type, payload = {}) {
   await Promise.all(tabs.filter(tab => tab.id).map(tab => chrome.tabs.sendMessage(tab.id, {type, payload}).catch(() => null)));
 }
 
-async function waitForEngine(tabId, attempts = 16) {
+async function waitForEngine(tabId, attempts = 40) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
       const response = await chrome.tabs.sendMessage(tabId, {type: 'bridge:ping'});
@@ -72,7 +72,13 @@ function musicUrl(raw) {
   if (host === 'music.youtube.com') return url.href;
   let id = '';
   if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] || '';
-  else id = url.searchParams.get('v') || '';
+  else {
+    id = url.searchParams.get('v') || '';
+    if (!id) {
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (['shorts', 'embed', 'live'].includes(parts[0])) id = parts[1] || '';
+    }
+  }
   const list = url.searchParams.get('list') || '';
   const target = new URL('https://music.youtube.com/watch');
   if (id) target.searchParams.set('v', id);
