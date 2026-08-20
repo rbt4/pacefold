@@ -58,16 +58,17 @@ export function installMusicMorpheR9(ctx){
   window.addEventListener('message',event=>{
     const message=event.data;if(event.source!==window||!message||message.source!==CHANNEL||message.direction!=='to-page')return;
     if(message.type==='bridge:ready'){extensionReady=true;refresh();if(prefs.active)send('bridge:connect',{activate:false,settings:settings()})}
-    else if(message.type==='bridge:connection'){connected=Boolean(message.payload?.connected);refresh()}
-    else if(message.type==='bridge:state'){connected=true;syncState(message.payload||{})}
+    else if(message.type==='bridge:connection'){extensionReady=true;connected=Boolean(message.payload?.connected);refresh()}
+    else if(message.type==='bridge:response'){const request=message.payload?.requestType,response=message.payload?.response||{};if(request==='bridge:hello'||request==='bridge:connect'){extensionReady=true;connected=Boolean(response.connected);refresh();if(request==='bridge:hello'&&prefs.active)send('bridge:connect',{activate:false,settings:settings()})}}
+    else if(message.type==='bridge:state'){extensionReady=true;connected=true;syncState(message.payload||{})}
     else if(message.type==='bridge:error'){connected=false;refresh();ctx.toast?.(message.payload?.message||'Music bridge unavailable')}
   });
 
   document.addEventListener('click',event=>{
     if(!prefs.active||!extensionReady)return;const target=event.target instanceof Element?event.target.closest('button'):null;if(!target)return;let command='';
     if(target.id==='stream-play')command='toggle';else if(target.id==='stream-previous')command='previous';else if(target.id==='stream-next')command='next';else if(target.id==='stream-video-toggle'||target.id==='stream-video-close'){event.preventDefault();event.stopImmediatePropagation();send('bridge:focus');return}
-    else if(target.id==='stream-loop'){prefs=write({permanentRepeat:!prefs.permanentRepeat});command='permanentRepeat'}
-    else if(target.id==='stream-shuffle')return;
+    else if(target.id==='stream-loop'){prefs=write({permanentRepeat:!prefs.permanentRepeat});target.setAttribute('aria-pressed',String(Boolean(prefs.permanentRepeat)));command='permanentRepeat'}
+    else if(target.id==='stream-shuffle')command='shuffle';
     else if(target.classList.contains('stream-library-pick')){const rows=[...document.querySelectorAll('.stream-library-row')],row=target.closest('.stream-library-row'),index=rows.indexOf(row),item=stream().library?.[index];if(item?.url){event.preventDefault();event.stopImmediatePropagation();send('bridge:command',{command:'loadUrl',value:item.url});id('stream-chooser').hidden=true;return}return}
     if(!command)return;event.preventDefault();event.stopImmediatePropagation();send('bridge:command',{command,value:command==='permanentRepeat'?Boolean(prefs.permanentRepeat):undefined});
   },true);
@@ -77,6 +78,7 @@ export function installMusicMorpheR9(ctx){
   id('stream-seek')?.addEventListener('change',event=>{if(!prefs.active||!extensionReady||!lastState?.duration)return;event.stopImmediatePropagation();send('bridge:command',{command:'seek',value:lastState.duration*Number(event.target.value)/1000})},true);
 
   refresh();
+  send('bridge:hello',{});
   setTimeout(()=>{if(!extensionReady)refresh()},900);
   ctx.musicMorpheR9={active:()=>Boolean(prefs.active&&extensionReady),connected:()=>connected,state:()=>lastState,connect:()=>connectBridge(true)};
 }
