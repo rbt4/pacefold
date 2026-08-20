@@ -1,5 +1,5 @@
 export function installMusicMagicR8Queue(ctx){
-  const grid=document.getElementById('stream-queue-grid');if(!grid||grid.dataset.magicQueue==='true')return;grid.dataset.magicQueue='true';
+  const grid=document.querySelector('.stream-queue-grid');if(!grid||grid.dataset.magicQueue==='true')return;grid.dataset.magicQueue='true';
   const enhance=()=>{
     const player=ctx.musicMagic?.player?.(),playlist=player?.getPlaylist?.()||[];
     for(const row of grid.querySelectorAll('.stream-track')){
