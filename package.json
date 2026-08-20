@@ -4,7 +4,7 @@
   "private":true,
   "type":"module",
   "scripts":{
-    "build":"node scripts/build-v25.mjs _site",
+    "build":"node scripts/build-v25.mjs _site && node scripts/cache-music-r8.mjs _site",
     "verify":"node scripts/verify-v27.mjs _site",
     "preview":"node scripts/preview.mjs _site 4173"
   },

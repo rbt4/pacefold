@@ -1,0 +1,12 @@
+/* Music Magic r8 — mobile header fit. Keep YT handoff, intermission and close reachable. */
+@media(max-width:900px){
+  .sound-bar[data-music-open="true"] .music-room-head{gap:8px!important}
+  .sound-bar[data-music-open="true"] .music-room-identity{min-width:0!important;flex:1 1 auto!important}
+  .sound-bar[data-music-open="true"] .music-room-links{flex:0 0 auto!important;gap:5px!important}
+  .sound-bar[data-music-open="true"] .music-room-browse{display:inline-flex!important;width:40px!important;min-width:40px!important;max-width:40px!important;padding:0!important;font-size:0!important}
+  .sound-bar[data-music-open="true"] .music-room-browse:after{content:"YT";font-size:8px;font-weight:760;letter-spacing:.04em}
+  .sound-bar[data-music-open="true"] .music-intermission-toggle{width:40px!important;min-width:40px!important;max-width:40px!important;padding:0!important;font-size:0!important;overflow:visible!important}
+  .sound-bar[data-music-open="true"] .music-intermission-toggle:after{content:"♪";font-size:15px;line-height:1}
+  .sound-bar[data-music-open="true"] .music-intermission-toggle[aria-pressed="true"]:after{content:"■";font-size:9px}
+  .sound-bar[data-music-open="true"] .music-room-close{width:40px!important;min-width:40px!important;padding:0!important}
+}

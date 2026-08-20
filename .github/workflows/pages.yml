@@ -34,6 +34,8 @@ jobs:
         run: |
           npm run verify
           node tests/core.mjs
+          node tests/music-magic-r8-static.cjs _site
+          node tests/music-magic-r8-policy.cjs
       - name: Install browser audit runtime
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
@@ -44,6 +46,8 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/final-polish.cjs _site
       - name: Setup and full-player repair contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/repair-player.cjs _site /tmp/pacefold-27-audit
+      - name: Music Magic r8 contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/music-magic-r8.cjs _site /tmp/pacefold-27-audit
       - name: WOW and security contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/security-current.cjs _site /tmp/pacefold-27-audit
       - name: Notification delivery contract
@@ -56,7 +60,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: clock-27-homepage-r7-audit-${{ github.run_id }}
+          name: clock-27-homepage-r7-music-r8-audit-${{ github.run_id }}
           path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7
@@ -87,6 +91,8 @@ jobs:
           npm run build
           npm run verify
           node tests/core.mjs
+          node tests/music-magic-r8-static.cjs _site
+          node tests/music-magic-r8-policy.cjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
