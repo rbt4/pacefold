@@ -68,7 +68,7 @@ export function installMusicMorpheR9(ctx){
     if(!prefs.active||!extensionReady)return;const target=event.target instanceof Element?event.target.closest('button'):null;if(!target)return;let command='';
     if(target.id==='stream-play')command='toggle';else if(target.id==='stream-previous')command='previous';else if(target.id==='stream-next')command='next';else if(target.id==='stream-video-toggle'||target.id==='stream-video-close'){event.preventDefault();event.stopImmediatePropagation();send('bridge:focus');return}
     else if(target.id==='stream-loop'){prefs=write({permanentRepeat:!prefs.permanentRepeat});target.setAttribute('aria-pressed',String(Boolean(prefs.permanentRepeat)));command='permanentRepeat'}
-    else if(target.id==='stream-shuffle')command='shuffle';
+    else if(target.id==='stream-shuffle')return;
     else if(target.classList.contains('stream-library-pick')){const rows=[...document.querySelectorAll('.stream-library-row')],row=target.closest('.stream-library-row'),index=rows.indexOf(row),item=stream().library?.[index];if(item?.url){event.preventDefault();event.stopImmediatePropagation();send('bridge:command',{command:'loadUrl',value:item.url});id('stream-chooser').hidden=true;return}return}
     if(!command)return;event.preventDefault();event.stopImmediatePropagation();send('bridge:command',{command,value:command==='permanentRepeat'?Boolean(prefs.permanentRepeat):undefined});
   },true);
