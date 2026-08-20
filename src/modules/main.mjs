@@ -20,6 +20,7 @@ import{installRepair}from'./repair.js';
 import{installSecurity}from'./security.js';
 import{installNotificationHardening}from'./notification-hardening.js';
 import{installHomepageR7}from'./homepage-r7.js';
+import{installMusicMagicR8}from'./music-magic-r8.js';
 
 const ctx=createContext();
 prepareFinalForm(ctx);
@@ -42,6 +43,7 @@ installRelease(ctx);
 installApp(ctx);
 installFinalForm(ctx);
 installRepair(ctx);
+installMusicMagicR8(ctx);
 installSecurity(ctx);
 installNotificationHardening(ctx);
 installHomepageR7(ctx);
