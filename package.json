@@ -5,7 +5,7 @@
   "type":"module",
   "scripts":{
     "build":"node scripts/build-v25.mjs _site && node scripts/cache-music-r8.mjs _site",
-    "verify":"node scripts/verify-v27.mjs _site",
+    "verify":"node scripts/verify-v27.mjs _site && node tests/music-morphe-r9.cjs",
     "preview":"node scripts/preview.mjs _site 4173"
   },
   "devDependencies":{"esbuild":"0.25.11"}
