@@ -6,6 +6,7 @@ assert(main.includes("installGuidedFoldV28")&&main.includes("from'./guided-fold-
 for(const token of["EXPERIENCE='v28-guided-fold-r1'","HOVER_DWELL=640","ctx.go?.(destination)","v28-cue-peek","v28-cue-bloom","Care defaults","Recovery & diagnostics","Calculation & location details"])assert(source.includes(token),`Guided Fold source contract missing: ${token}`);
 assert(source.includes("rename('essentials','Daily'")&&source.includes("rename('rhythm','Rhythm'")&&source.includes("rename('data','Data'"),'Settings were not collapsed to Daily / Rhythm / Data');
 assert(source.includes("nav.querySelector('[data-settings-tab=\"care\"]')?.remove()")&&source.includes("nav.querySelector('[data-settings-tab=\"advanced\"]')?.remove()"),'Redundant settings tabs remain visible');
+assert(source.includes('openCuePeek:openPeek')&&!source.includes('render:renderGuide,openCuePeek};'),'Guided Fold helper export can reference an undefined cue-peek function');
 assert(style.includes('Pacefold V28 — Guided Fold')&&style.includes('.daybook-fold nav')&&style.includes('.now-quick')&&style.includes('.v28-hover-commit')&&style.includes('.settings-summary{grid-template-columns:repeat(3'),'Guided Fold visual simplification contract is incomplete');
 assert(String(pkg.scripts.verify||'').includes('guided-fold-v28.cjs'),'Guided Fold static contract is not part of npm verify');
 console.log('Pacefold V28 Guided Fold static contract passed.');
