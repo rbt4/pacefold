@@ -1,0 +1,15 @@
+const fs=require('fs');
+const assert=require('assert');
+const read=file=>fs.readFileSync(file,'utf8');
+const bridge=read('src/modules/music-morphe-r9.js');
+const engine=read('src/bridge/morphe-edge/youtube-music-engine.js');
+const worker=read('src/bridge/morphe-edge/service-worker.js');
+const manifest=JSON.parse(read('src/bridge/morphe-edge/manifest.json'));
+assert.equal(manifest.manifest_version,3);
+assert(manifest.host_permissions.includes('https://music.youtube.com/*'));
+assert(manifest.host_permissions.includes('https://sponsor.ajay.app/*'));
+assert(bridge.includes("command:'loadUrl'")&&bridge.includes("command:'volume'")&&bridge.includes("command:'seek'"));
+assert(engine.includes("classList.contains('ad-showing')")&&engine.includes('.ytp-ad-skip-button-modern'));
+assert(engine.includes("type: 'sponsor:lookup'")&&engine.includes("'music_offtopic'"));
+assert(worker.includes('api/skipSegments')&&worker.includes('bridge:connection'));
+console.log('music-morphe-r9 static checks passed');

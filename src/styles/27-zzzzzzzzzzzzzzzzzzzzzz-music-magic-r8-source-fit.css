@@ -1,0 +1,6 @@
+/* Music Magic r8 — preserve the previously verified official YouTube preview footprint. */
+@media(min-width:901px){
+  .sound-bar[data-music-open="true"] .stream-video:not([hidden]){width:356px!important;height:200px!important;min-height:200px!important}
+  .sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,.sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{width:356px!important;height:200px!important;min-height:200px!important}
+  .stream-player:has(.stream-video:not([hidden])) .music-room-stage{padding-right:416px!important}
+}
