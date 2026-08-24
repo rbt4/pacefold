@@ -51,6 +51,10 @@ export function installEdges(ctx){
     clearTimeout(ctx.edgeTimers.get(edge));
     const timer=setTimeout(()=>{
       ctx.renderEdgePreview(edge);
+      if(document.documentElement.dataset.guidedFold==='v28'){
+        edge.dataset.previewReady='true';
+        return;
+      }
       edge.classList.add('is-expanded');
       const previous=ctx.edgeRefreshTimers.get(edge);if(previous)clearInterval(previous);
       ctx.edgeRefreshTimers.set(edge,setInterval(()=>{if(edge.classList.contains('is-expanded'))ctx.renderEdgePreview(edge)},60000));
@@ -62,6 +66,7 @@ export function installEdges(ctx){
     clearTimeout(ctx.edgeTimers.get(edge));
     const timer=setTimeout(()=>{
       edge.classList.remove('is-expanded');
+      delete edge.dataset.previewReady;
       const refresh=ctx.edgeRefreshTimers.get(edge);if(refresh)clearInterval(refresh);
       ctx.edgeRefreshTimers.delete(edge);
     },260);
