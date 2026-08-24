@@ -5,7 +5,7 @@ const Module=require('node:module');
 
 const sourceFile=path.join(__dirname,'browser-audit.cjs');
 const version=JSON.parse(fs.readFileSync(path.join(__dirname,'..','package.json'),'utf8')).version;
-let source=fs.readFileSync(sourceFile,'utf8').replaceAll('27.0.0',version);
+let source=fs.readFileSync(sourceFile,'utf8').replaceAll("'27.0.0'",`'${version}'`);
 source=source
   .replace("home.player&&home.oldLaunch==='none'","home.player&&(home.oldLaunch==='none'||home.oldLaunch==='missing')")
   .replace("'Bottom row is not the integrated mini player'","'Streaming player surface is missing or legacy launcher is visible'");
