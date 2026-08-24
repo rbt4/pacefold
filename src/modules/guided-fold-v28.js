@@ -251,5 +251,5 @@ export function installGuidedFoldV28(ctx){
     }
   };
 
-  ctx.guidedFoldV28={version:EXPERIENCE,render:renderGuide,openCuePeek};
+  ctx.guidedFoldV28={version:EXPERIENCE,render:renderGuide,openCuePeek:openPeek};
 }
