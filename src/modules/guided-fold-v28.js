@@ -14,7 +14,7 @@ export function installGuidedFoldV28(ctx){
   let knownCueKeys=new Set((ctx.currentCues||[]).map(cue=>cue.key));
 
   const cueColor=cue=>ctx.CUE_COLORS?.[cue?.source]||ctx.CUE_COLORS?.focus||'#426b5b';
-  const finePointer=()=>window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+  const finePointer=event=>event?.pointerType==='mouse'||String(event?.type||'').startsWith('mouse')||Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches);
 
   const moveIntoDetails=(details,nodes)=>{
     const body=details.querySelector('.v28-settings-body');
@@ -110,8 +110,10 @@ export function installGuidedFoldV28(ctx){
   const openPeek=()=>{clearTimeout(peekTimer);renderCuePeek();cuePeek.hidden=false};
 
   const cluster=id('cue-cluster');
-  cluster?.addEventListener('pointerenter',()=>{if(finePointer())openPeek()});
+  cluster?.addEventListener('pointerenter',event=>{if(finePointer(event))openPeek()});
+  cluster?.addEventListener('mouseenter',event=>{if(finePointer(event))openPeek()});
   cluster?.addEventListener('pointerleave',closePeek);
+  cluster?.addEventListener('mouseleave',closePeek);
   cluster?.addEventListener('focus',openPeek);
   cluster?.addEventListener('blur',closePeek);
   cuePeek.addEventListener('pointerenter',()=>clearTimeout(peekTimer));
@@ -224,17 +226,23 @@ export function installGuidedFoldV28(ctx){
     if(hoverTarget){hoverTarget.classList.remove('v28-hover-commit');hoverTarget.style.removeProperty('--v28-dwell')}
     hoverTarget=null;
   };
-  const startHover=edge=>{
-    if(!finePointer()||Date.now()<hoverCooldownUntil||document.documentElement.dataset.cover!=='peeled')return;
+  const startHover=(edge,event)=>{
+    if(!finePointer(event)||Date.now()<hoverCooldownUntil||document.documentElement.dataset.cover!=='peeled')return;
     const target=edge.dataset.go;if(!target||target===ctx.mode)return;
+    if(hoverTarget===edge&&hoverTimer)return;
     cancelHover();hoverTarget=edge;edge.classList.add('v28-hover-commit');edge.style.setProperty('--v28-dwell',`${HOVER_DWELL}ms`);
     hoverTimer=setTimeout(()=>{
       const destination=edge.dataset.go;cancelHover();hoverCooldownUntil=Date.now()+900;ctx.go?.(destination);
     },HOVER_DWELL);
   };
+  const leaveHover=edge=>{
+    requestAnimationFrame(()=>{if(!edge.matches(':hover'))cancelHover()});
+  };
   for(const edge of $$('.edge-nav .edge[data-go]')){
-    edge.addEventListener('pointerenter',()=>startHover(edge));
-    edge.addEventListener('pointerleave',cancelHover);
+    edge.addEventListener('pointerenter',event=>startHover(edge,event));
+    edge.addEventListener('mouseenter',event=>startHover(edge,event));
+    edge.addEventListener('pointerleave',()=>leaveHover(edge));
+    edge.addEventListener('mouseleave',()=>leaveHover(edge));
     edge.addEventListener('pointerdown',cancelHover);
   }
 
