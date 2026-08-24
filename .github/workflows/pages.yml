@@ -1,4 +1,4 @@
-name: Build, verify and publish Clock 27.1
+name: Build, verify and publish Clock 28
 
 on:
   push:
@@ -40,6 +40,8 @@ jobs:
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+      - name: V28 startup smoke
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 60s node tests/v28-startup-smoke.cjs _site
       - name: Final-form release contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v27-release-current.cjs _site
       - name: Final polish contract
@@ -54,13 +56,15 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/notifications-current.cjs _site /tmp/pacefold-27-audit
       - name: Edge homepage readability contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/homepage-r7-current.cjs _site /tmp/pacefold-27-audit
+      - name: Guided Fold v28 contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/guided-fold-v28-browser.cjs _site /tmp/pacefold-27-audit
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: clock-27-homepage-r7-music-r8-audit-${{ github.run_id }}
+          name: clock-28-guided-fold-audit-${{ github.run_id }}
           path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7

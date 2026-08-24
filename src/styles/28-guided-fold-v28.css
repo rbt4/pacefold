@@ -1,0 +1,186 @@
+/* Pacefold V28 — Guided Fold
+   Less dashboard, more ambient guidance. Keeps the verified r7 readability palette. */
+
+html[data-guided-fold="v28"]{
+  --v28-green:#426b5b;
+  --v28-ink:#17201d;
+  --v28-muted:#68736d;
+  --v28-line:rgba(23,32,29,.12);
+  --v28-soft:#f7f8f4;
+}
+html[data-guided-fold="v28"] .stage{padding-left:56px;padding-right:56px}
+html[data-guided-fold="v28"] .home-grid{gap:14px}
+html[data-guided-fold="v28"] .clock-card{background:#fff}
+html[data-guided-fold="v28"] .rhythm-card{background:#fff}
+html[data-guided-fold="v28"] .action-dock{margin-top:12px;padding:15px 16px;background:rgba(255,255,255,.82)}
+html[data-guided-fold="v28"] .action-dock>header{padding:0 2px 10px}
+html[data-guided-fold="v28"] #clear-cues,
+html[data-guided-fold="v28"] .daybook-fold nav,
+html[data-guided-fold="v28"] .now-quick,
+html[data-guided-fold="v28"] .log-tools [data-log="focus"]{display:none!important}
+html[data-guided-fold="v28"] .action-grid{gap:7px}
+html[data-guided-fold="v28"] .quick-action{
+  min-height:72px;
+  padding:12px;
+  background:#fafaf7;
+  color:var(--v28-ink);
+  border-color:rgba(23,32,29,.09);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,opacity .18s ease;
+}
+html[data-guided-fold="v28"] .quick-action strong{color:#17201d}
+html[data-guided-fold="v28"] .quick-action small{line-height:1.25}
+html[data-guided-fold="v28"] .quick-action.is-suggested{
+  transform:translateY(-2px);
+  border-color:color-mix(in srgb,var(--cue,var(--v28-green)) 38%,rgba(23,32,29,.12));
+  box-shadow:0 12px 28px rgba(39,58,50,.12),0 0 0 2px rgba(66,107,91,.08) inset;
+}
+html[data-guided-fold="v28"] .daybook-fold{margin-top:12px;padding-top:17px;padding-bottom:17px}
+html[data-guided-fold="v28"] .daybook-fold>header{padding-bottom:10px}
+
+/* One ambient instruction instead of six competing destinations. */
+.v28-guide{
+  --guide:var(--v28-green);
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:14px;
+  min-height:74px;
+  margin-top:12px;
+  padding:13px 15px;
+  border:1px solid var(--v28-line);
+  border-radius:20px;
+  background:linear-gradient(115deg,#fff,rgba(248,250,246,.96));
+  box-shadow:0 8px 28px rgba(38,47,42,.07);
+}
+.v28-guide-signal{
+  width:11px;height:11px;border-radius:50%;
+  background:var(--guide);
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--guide) 12%,transparent);
+}
+.v28-guide-copy{display:grid;min-width:0}
+.v28-guide-copy>small{font-size:9px;font-weight:800;letter-spacing:.14em;color:var(--guide)}
+.v28-guide-copy>strong{margin-top:2px;font-size:16px;line-height:1.15;color:var(--v28-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v28-guide-copy>p{margin:3px 0 0;font-size:11px;line-height:1.35;color:var(--v28-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v28-guide-actions{display:flex;align-items:center;gap:7px}
+.v28-guide-actions button{
+  min-height:34px;padding:0 12px;border:1px solid var(--v28-line);border-radius:999px;
+  background:#fff;color:var(--v28-ink);font-size:10px;font-weight:750;
+}
+.v28-guide-actions .v28-guide-primary{border-color:var(--guide);background:var(--guide);color:#fff}
+.v28-guide.has-cue{border-color:color-mix(in srgb,var(--guide) 28%,var(--v28-line))}
+
+/* Cues become readable on hover/focus, while taskbar dots remain discreet. */
+.cue-cluster{position:relative}
+.cue-cluster[data-count]:not([data-count="0"]){padding-right:8px}
+.cue-cluster[data-count]:not([data-count="0"])::after{
+  content:attr(data-count);display:grid;place-items:center;min-width:16px;height:16px;margin-left:3px;
+  padding:0 4px;border-radius:999px;background:rgba(23,32,29,.08);color:var(--v28-ink);font-size:9px;font-weight:800;
+}
+.v28-cue-peek{
+  position:fixed;z-index:110;top:64px;right:24px;width:min(390px,calc(100vw - 28px));
+  padding:14px;border:1px solid var(--v28-line);border-radius:20px;background:rgba(255,255,255,.97);
+  color:var(--v28-ink);box-shadow:0 24px 70px rgba(23,32,29,.18);backdrop-filter:blur(22px);
+}
+.v28-cue-peek>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.v28-cue-peek>header span{display:grid}.v28-cue-peek>header small{font-size:8px;letter-spacing:.14em;color:var(--v28-muted)}
+.v28-cue-peek>header strong{font-size:14px}.v28-peek-snooze,.v28-peek-more{padding:7px 9px;border-radius:999px;background:#f2f5f1;font-size:9px;font-weight:750}
+.v28-peek-list{display:grid;gap:4px}
+.v28-peek-row{display:grid;grid-template-columns:8px 1fr auto;align-items:center;gap:9px;padding:9px;border-radius:13px;background:#fafbf8}
+.v28-peek-row>i{width:7px;height:7px;border-radius:50%;background:var(--cue)}
+.v28-peek-row>span{display:grid;min-width:0}.v28-peek-row strong{font-size:11px}.v28-peek-row small{margin-top:2px;font-size:9px;color:var(--v28-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v28-peek-row button{padding:6px 8px;border-radius:999px;background:#fff;border:1px solid var(--v28-line);font-size:9px;font-weight:700}
+.v28-peek-empty{margin:4px 0 0;padding:11px;border-radius:13px;background:#f7f9f5;color:var(--v28-muted);font-size:10px;line-height:1.4}
+.v28-peek-more{display:block;margin:8px auto 0}
+
+.v28-cue-bloom{
+  position:fixed;z-index:120;top:86px;left:50%;display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:11px;
+  width:min(520px,calc(100vw - 28px));padding:12px 13px;border:1px solid color-mix(in srgb,var(--cue) 32%,var(--v28-line));border-radius:18px;
+  background:rgba(255,255,255,.98);box-shadow:0 20px 64px rgba(23,32,29,.18);
+  transform:translate(-50%,-14px) scale(.98);opacity:0;transition:opacity .2s ease,transform .2s ease;
+}
+.v28-cue-bloom.is-on{transform:translate(-50%,0) scale(1);opacity:1}
+.v28-cue-bloom>i{width:8px;height:8px;border-radius:50%;background:var(--cue);box-shadow:0 0 0 6px color-mix(in srgb,var(--cue) 12%,transparent)}
+.v28-cue-bloom>span{display:grid;min-width:0}.v28-cue-bloom>span small{font-size:8px;letter-spacing:.14em;color:var(--cue)}.v28-cue-bloom>span strong{font-size:13px}.v28-cue-bloom>span p{margin:2px 0 0;font-size:10px;color:var(--v28-muted)}
+.v28-cue-bloom>div{display:flex;gap:6px}.v28-cue-bloom button{padding:7px 9px;border-radius:999px;background:#f3f5f2;font-size:9px;font-weight:750}
+html[data-guided-fold="v28"] .clock-cue-list .clock-cue-row:nth-child(n+2){display:none}
+html[data-guided-fold="v28"] .clock-cue-panel{margin-top:12px}
+
+/* Hovering the fold is an action. A short dwell prevents accidental page changes. */
+html[data-guided-fold="v28"] .edge-nav .edge{overflow:hidden}
+html[data-guided-fold="v28"] .edge-nav .edge::after{
+  content:"";position:absolute;left:10px;right:10px;bottom:3px;height:2px;border-radius:999px;
+  background:var(--green);transform:scaleX(0);transform-origin:left;opacity:0;
+}
+html[data-guided-fold="v28"] .edge-nav .edge.v28-hover-commit::after{opacity:.72;animation:v28EdgeCommit var(--v28-dwell,640ms) linear forwards}
+@keyframes v28EdgeCommit{to{transform:scaleX(1)}}
+html[data-guided-fold="v28"] .edge-nav .edge.v28-hover-commit{border-color:rgba(66,107,91,.38);box-shadow:0 8px 24px rgba(41,60,51,.12)}
+
+/* Settings: three decisions, with the rarely touched details folded away. */
+html[data-guided-fold="v28"] .settings-layout{grid-template-columns:210px minmax(0,1fr);gap:14px}
+html[data-guided-fold="v28"] .settings-nav{background:#fff;padding:9px;border-radius:22px}
+html[data-guided-fold="v28"] .settings-nav button{min-height:66px;border-radius:15px;padding:11px 12px}
+html[data-guided-fold="v28"] .settings-nav button.active{background:#eef3ef}
+html[data-guided-fold="v28"] .settings-panels{background:#fff;padding:24px 26px;border-radius:24px}
+html[data-guided-fold="v28"] .settings-summary{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+html[data-guided-fold="v28"] .settings-summary .settings-chip[hidden]{display:none!important}
+html[data-guided-fold="v28"] .settings-panels>section>header{padding-bottom:14px;margin-bottom:14px}
+html[data-guided-fold="v28"] .settings-panels h2{font-size:24px}
+html[data-guided-fold="v28"] .v28-settings-disclosure{
+  margin-top:16px;border:1px solid var(--v28-line);border-radius:17px;background:#fafbf8;overflow:hidden;
+}
+html[data-guided-fold="v28"] .v28-settings-disclosure>summary{
+  min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;cursor:pointer;list-style:none;
+}
+html[data-guided-fold="v28"] .v28-settings-disclosure>summary::-webkit-details-marker{display:none}
+html[data-guided-fold="v28"] .v28-settings-disclosure>summary span{display:grid}
+html[data-guided-fold="v28"] .v28-settings-disclosure>summary strong{font-size:12px}
+html[data-guided-fold="v28"] .v28-settings-disclosure>summary small{margin-top:2px;font-size:9px;color:var(--v28-muted)}
+html[data-guided-fold="v28"] .v28-settings-disclosure>summary i{font-style:normal;color:var(--v28-muted);transition:transform .18s ease}
+html[data-guided-fold="v28"] .v28-settings-disclosure[open]>summary i{transform:rotate(45deg)}
+html[data-guided-fold="v28"] .v28-settings-body{padding:0 13px 14px;border-top:1px solid rgba(23,32,29,.08)}
+html[data-guided-fold="v28"] .v28-settings-body>.settings-form,
+html[data-guided-fold="v28"] .v28-settings-body>.data-actions,
+html[data-guided-fold="v28"] .v28-settings-body>details{margin-top:13px}
+html[data-guided-fold="v28"] [data-settings-panel="rhythm"]>.settings-form:first-of-type{grid-template-columns:minmax(220px,360px)}
+html[data-guided-fold="v28"] [data-settings-panel="rhythm"]>#use-location{margin-top:9px}
+html[data-guided-fold="v28"] .coordinate-row span{gap:8px}
+html[data-guided-fold="v28"] .view-settings .view-head{margin-bottom:13px}
+
+/* Inner pages keep one clear job each. */
+html[data-guided-fold="v28"] .now-grid{gap:12px}
+html[data-guided-fold="v28"] .now-primary{background:#f7faf8;color:#17201d}
+html[data-guided-fold="v28"] .log-layout{gap:14px}
+html[data-guided-fold="v28"] .log-tools{padding:19px}
+html[data-guided-fold="v28"] .view-head{padding-bottom:17px}
+
+/* Keep the bottom player visually subordinate until it is needed. */
+html[data-guided-fold="v28"] .sound-bar:not([data-music-open="true"]){box-shadow:0 -8px 30px rgba(24,33,30,.055)}
+html[data-guided-fold="v28"] .sound-bar:not([data-music-open="true"]) #stream-player[data-state="empty"]{opacity:.92}
+
+@media(max-width:900px){
+  html[data-guided-fold="v28"] .stage{padding-left:18px;padding-right:18px}
+  .v28-guide{grid-template-columns:auto minmax(0,1fr);gap:11px}
+  .v28-guide-actions{grid-column:2;justify-content:flex-start}
+  .v28-guide-copy>p{white-space:normal}
+  html[data-guided-fold="v28"] .settings-layout{grid-template-columns:1fr}
+  html[data-guided-fold="v28"] .settings-nav{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;position:sticky;top:calc(var(--bar) + 6px);z-index:8}
+  html[data-guided-fold="v28"] .settings-nav button{min-height:52px;padding:8px}
+  html[data-guided-fold="v28"] .settings-nav button small{display:none}
+  html[data-guided-fold="v28"] .settings-summary{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  html[data-guided-fold="v28"] .stage{padding-left:12px;padding-right:12px}
+  .v28-guide{margin-top:9px;padding:11px;border-radius:17px}
+  .v28-guide-copy>strong{font-size:14px;white-space:normal}
+  .v28-guide-actions{grid-column:1/-1;padding-left:22px}
+  .v28-cue-peek{top:58px;right:10px;width:calc(100vw - 20px)}
+  .v28-cue-bloom{top:70px;width:calc(100vw - 20px);grid-template-columns:8px 1fr}
+  .v28-cue-bloom>div{grid-column:2}
+  html[data-guided-fold="v28"] .settings-panels{padding:18px 14px}
+  html[data-guided-fold="v28"] .settings-form.two-col,
+  html[data-guided-fold="v28"] .settings-form.three-col{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-guided-fold="v28"] .edge-nav .edge.v28-hover-commit::after{animation-timing-function:steps(2,end)}
+  .v28-cue-bloom{transition:none}
+}
