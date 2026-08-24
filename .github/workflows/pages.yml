@@ -40,6 +40,8 @@ jobs:
         run: |
           npm install --prefix /tmp/pacefold-browser-audit playwright@1.61.1
           /tmp/pacefold-browser-audit/node_modules/.bin/playwright install --with-deps chromium
+      - name: V28 startup smoke
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 60s node tests/v28-startup-smoke.cjs _site
       - name: Final-form release contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v27-release-current.cjs _site
       - name: Final polish contract
