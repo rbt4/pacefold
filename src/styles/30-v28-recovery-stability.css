@@ -13,7 +13,7 @@ html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
     grid-template-columns:240px minmax(0,1fr)!important;
-    padding-right:330px!important;
+    padding-right:410px!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-art,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage .music-room-art{
@@ -28,12 +28,12 @@ html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music
     right:30px!important;left:auto!important;top:50%!important;bottom:auto!important;
     transform:translateY(-45%)!important;
     grid-column:auto!important;grid-row:auto!important;
-    width:280px!important;height:158px!important;min-height:158px!important;max-height:158px!important;
+    width:356px!important;height:200px!important;min-height:200px!important;max-height:200px!important;
     margin:0!important;border-radius:16px!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{
-    width:280px!important;height:158px!important;min-height:158px!important;
+    width:356px!important;height:200px!important;min-height:200px!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-chooser,
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue{
