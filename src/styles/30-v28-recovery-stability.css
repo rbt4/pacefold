@@ -4,6 +4,7 @@
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
     grid-template-rows:auto minmax(300px,1fr) auto auto!important;
     overflow:auto!important;
+    background:#101718!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
@@ -12,6 +13,9 @@
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-art,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage .music-room-art{
     width:230px!important;height:230px!important;min-width:230px!important;min-height:230px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy>strong{
+    font-size:40px!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-chooser,
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue{
