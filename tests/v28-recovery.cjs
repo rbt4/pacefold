@@ -1,0 +1,10 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+const root=process.cwd(),read=file=>fs.readFileSync(path.join(root,file),'utf8'),assert=(value,message)=>{if(!value)throw new Error(message)};
+const main=read('src/modules/main.mjs'),edges=read('src/modules/edges.js'),recovery=read('src/modules/recovery-v28.js'),style=read('src/styles/29-v28-recovery.css'),pkg=JSON.parse(read('package.json'));
+assert(main.includes("installRecoveryV28")&&main.includes("from'./recovery-v28.js'"),'V28 Recovery is not wired into the runtime');
+assert(edges.includes("if(stage)stage.prepend(nav)"),'Mobile navigation is still appended as a body overlay');
+for(const token of["EXPERIENCE='v28-recovery-r1'","stage.append(panel)","panel.dataset.recoveryLayout='stage'","syncMobileNav","settleEdges"])assert(recovery.includes(token),`Recovery coordinator missing: ${token}`);
+for(const token of['.view{animation:none!important}','[data-cover="peeled"] .pace-cover','.home-grid{','grid-template-columns:1fr!important','.mobile-nav{','position:static!important','.settings-summary{display:none!important','.music-morphe-panel[data-recovery-layout="stage"]','.stream-chooser,'])assert(style.includes(token),`Recovery visual contract missing: ${token}`);
+assert(String(pkg.scripts.verify||'').includes('v28-recovery.cjs'),'V28 Recovery static contract is not part of npm verify');
+console.log('Pacefold V28 Recovery static contract passed.');

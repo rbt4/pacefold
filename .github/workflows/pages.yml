@@ -1,4 +1,4 @@
-name: Build, verify and publish Clock 28
+name: Build, verify and publish Clock 28 Recovery
 
 on:
   push:
@@ -49,7 +49,7 @@ jobs:
       - name: Setup and full-player repair contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/repair-player.cjs _site /tmp/pacefold-27-audit
       - name: Music Magic r8 contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/music-magic-r8.cjs _site /tmp/pacefold-27-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/music-magic-r8-current.cjs _site /tmp/pacefold-27-audit
       - name: WOW and security contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/security-current.cjs _site /tmp/pacefold-27-audit
       - name: Notification delivery contract
@@ -58,13 +58,17 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/homepage-r7-current.cjs _site /tmp/pacefold-27-audit
       - name: Guided Fold v28 contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/guided-fold-v28-browser.cjs _site /tmp/pacefold-27-audit
+      - name: V28 Recovery geometry contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v28-recovery-browser.cjs _site /tmp/pacefold-27-audit
+      - name: V28 Recovery visual contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v28-recovery-visual.cjs _site /tmp/pacefold-27-audit
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: clock-28-guided-fold-audit-${{ github.run_id }}
+          name: clock-28-recovery-audit-${{ github.run_id }}
           path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7

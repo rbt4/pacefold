@@ -101,7 +101,8 @@ export function installEdges(ctx){
         control.append(el('span','',meta.icon),el('small','',meta.label));
         nav.append(control);
       }
-      document.body.append(nav);
+      const stage=id('stage');
+      if(stage)stage.prepend(nav);else document.body.append(nav);
     }
   };
 

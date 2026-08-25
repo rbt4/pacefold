@@ -1,0 +1,11 @@
+'use strict';
+const fs=require('node:fs');
+const path=require('node:path');
+const Module=require('node:module');
+const sourceFile=path.join(__dirname,'music-magic-r8.cjs');
+let source=fs.readFileSync(sourceFile,'utf8');
+const old="assert(visual.bg==='rgb(16, 23, 24)'&&visual.title>=30&&visual.art>=230&&visual.hue,'Premium album-room styling did not win the cascade')";
+const replacement="assert(visual.bg==='rgb(16, 23, 24)'&&visual.title>=30&&visual.art>=230&&visual.hue,`Premium album-room styling did not win the cascade: ${JSON.stringify(visual)}`)";
+if(!source.includes(old))throw new Error('Could not locate Music Magic premium visual assertion');
+source=source.replace(old,replacement);
+const test=new Module(sourceFile,module);test.filename=sourceFile;test.paths=Module._nodeModulePaths(path.dirname(sourceFile));test._compile(source,sourceFile);
