@@ -5,6 +5,14 @@ html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music
 }
 
 @media(min-width:901px){
+  /* Preserve the proven r7 Clock proportions while using the wider Recovery composition. */
+  html[data-recovery="v28"] .clock-instrument{
+    grid-template-columns:220px minmax(0,1fr)!important;
+  }
+  html[data-recovery="v28"] .analog{width:212px!important}
+  html[data-recovery="v28"] .clock-ticks i{transform-origin:50% 96px!important}
+  html[data-recovery="v28"] .day-sky{height:68px!important}
+
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
     grid-template-rows:auto minmax(300px,1fr) auto auto!important;
     overflow:auto!important;
