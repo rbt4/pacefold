@@ -1,5 +1,5 @@
-export const VERSION='29.2.0';
-export const REVISION='homepage-atmosphere-r1';
+export const VERSION='29.2.1';
+export const REVISION='homepage-atmosphere-r2';
 export const KEYS={
   prefs:'pacefoldPrefsV15',
   notes:'pacefold.notebook.entries.v2',

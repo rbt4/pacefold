@@ -1,9 +1,9 @@
-# Pacefold 29.2.0 unified recovery release
+# Pacefold 29.2.1 homepage atmosphere release
 
 ## Identity
 
-- Public release: **29.2.0**
-- Experience revision: **homepage-atmosphere-r1**
+- Public release: **29.2.1**
+- Experience revision: **homepage-atmosphere-r2**
 - Product: **Pacefold — Your day, quietly kept**
 - Public site: **https://rbt4.github.io/pacefold/**
 

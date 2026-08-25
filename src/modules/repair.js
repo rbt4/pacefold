@@ -22,14 +22,9 @@ export function installRepair(ctx){
     return result;
   };
 
-  // Keep one obvious entrance from the start surface without exposing a project name.
+  // The start surface owns its single entrance. Older builds added a second hidden
+  // control here, which left duplicate "Open clock" actions in the accessibility tree.
   const cover=id('pace-cover');
-  if(cover&&!id('cover-enter')){
-    const enter=button('cover-enter','Open clock');enter.id='cover-enter';
-    enter.append(el('i'),el('span','','Open clock'),el('b','','⌃'));
-    enter.addEventListener('click',()=>ctx.setStartCover?.(false));
-    cover.append(enter);
-  }
 
   const sound=id('sound-bar'),player=id('stream-player');
   if(!sound||!player)return;

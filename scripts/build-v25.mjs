@@ -5,8 +5,8 @@ import{build}from'esbuild';
 const root=process.cwd();
 const source=path.join(root,'src');
 const target=path.resolve(process.argv[2]||path.join(root,'_site'));
-const RELEASE='29.2.0';
-const REVISION='homepage-atmosphere-r1';
+const RELEASE='29.2.1';
+const REVISION='homepage-atmosphere-r2';
 if(target===root||target===path.parse(target).root)throw new Error(`Unsafe build target: ${target}`);
 
 await fs.rm(target,{recursive:true,force:true});

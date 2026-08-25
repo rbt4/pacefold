@@ -15,9 +15,18 @@ body{
     radial-gradient(circle at 100% 75%,rgba(224,163,74,.08),transparent 32rem),#111715!important;
   color:var(--ink)!important
 }
-.pace-cover{--cover-image:url("./homepage-default.jpg")!important;background:#1b292a!important}
+.pace-cover{--cover-image:url("./homepage-default.jpg");background:#1b292a!important}
 .pace-cover:before{background-image:var(--cover-image)!important;background-position:center center!important;filter:saturate(.82) contrast(1.03) brightness(.83)!important}
 .pace-cover:after{background:linear-gradient(180deg,rgba(7,14,17,.22),rgba(7,14,17,.04) 34%,rgba(7,14,17,.10) 64%,rgba(5,11,14,.44)),radial-gradient(ellipse at 50% 40%,transparent 0 25%,rgba(5,11,14,.18) 72%,rgba(5,11,14,.31) 100%)!important}
+.cover-music-button{
+  position:absolute!important;z-index:5!important;inset:auto 22px 22px auto!important;display:inline-flex!important;
+  align-items:center!important;gap:8px!important;min-height:38px!important;padding:0 13px!important;border:1px solid rgba(255,255,255,.30)!important;
+  border-radius:999px!important;background:rgba(7,15,18,.34)!important;color:#fff!important;box-shadow:0 12px 30px rgba(0,0,0,.18)!important;
+  font:600 10px/1 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif!important;backdrop-filter:blur(16px) saturate(1.08)!important
+}
+.cover-music-button:hover,.cover-music-button:focus-visible{background:rgba(7,15,18,.54)!important;border-color:rgba(255,255,255,.48)!important}
+html[data-cover="on"] #sound-bar[data-music-open="false"]{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+@media(max-width:760px){.cover-music-button{inset:auto 10px max(10px,env(safe-area-inset-bottom)) auto!important;min-height:36px!important;padding-inline:11px!important}}
 .cover-hero{filter:drop-shadow(0 18px 44px rgba(0,0,0,.18))}
 .paper-grain{opacity:.16!important;mix-blend-mode:soft-light!important}
 .app-bar{

@@ -1,2 +1,2 @@
-export const RELEASE='29.2.0';
-export const REVISION='homepage-atmosphere-r1';
+export const RELEASE='29.2.1';
+export const REVISION='homepage-atmosphere-r2';
