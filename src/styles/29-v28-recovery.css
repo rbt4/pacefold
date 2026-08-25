@@ -1,0 +1,478 @@
+/* Pacefold 28 Recovery — screenshot-driven visual stabilization.
+   One late layer intentionally reconciles the accumulated V26/V27/V28 surfaces. */
+
+html[data-recovery="v28"]{
+  --recovery-bar:60px;
+  --recovery-page:1180px;
+  --recovery-gap:14px;
+}
+
+/* The old view fade made every fold briefly look disabled/washed out. */
+html[data-recovery="v28"] .view{animation:none!important}
+
+/* Opening Clock must reveal Clock, not a translucent copy of the cover. */
+html[data-recovery="v28"][data-cover="peeled"] .pace-cover{
+  transform:translateY(-18px)!important;
+  opacity:0!important;
+  filter:none!important;
+  visibility:hidden!important;
+  transition:opacity .16s ease,transform .16s ease,visibility 0s linear .16s!important;
+}
+html[data-recovery="v28"][data-cover="on"] .pace-cover{
+  transform:none!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+
+/* The app frame should feel like one product, not floating layers over content. */
+html[data-recovery="v28"] .app-bar{
+  height:var(--recovery-bar)!important;
+  padding-inline:18px!important;
+  background:rgba(248,247,243,.98)!important;
+  box-shadow:0 1px 0 rgba(23,32,29,.04)!important;
+}
+html[data-recovery="v28"] .stage{
+  max-width:none!important;
+  padding:104px 44px 150px!important;
+}
+html[data-recovery="v28"] .view{
+  width:min(100%,var(--recovery-page))!important;
+  max-width:var(--recovery-page)!important;
+}
+html[data-recovery="v28"] .view[data-view="home"]{max-width:var(--recovery-page)!important}
+
+/* Four directional folds remain, but become edge affordances instead of giant pills. */
+@media(min-width:761px){
+  html[data-recovery="v28"] .edge-nav .edge{
+    z-index:72!important;
+    opacity:.58!important;
+    border:1px solid rgba(23,32,29,.10)!important;
+    background:rgba(250,249,246,.96)!important;
+    color:#66716b!important;
+    box-shadow:0 3px 12px rgba(27,34,30,.045)!important;
+    backdrop-filter:blur(10px)!important;
+    overflow:visible!important;
+    transition:opacity .14s ease,border-color .14s ease,background .14s ease,box-shadow .14s ease!important;
+  }
+  html[data-recovery="v28"] .edge-nav .edge:hover,
+  html[data-recovery="v28"] .edge-nav .edge:focus-visible,
+  html[data-recovery="v28"] .edge-nav .edge.v28-hover-commit{
+    opacity:1!important;
+    background:#fff!important;
+    border-color:rgba(62,106,88,.24)!important;
+    box-shadow:0 7px 20px rgba(27,34,30,.08)!important;
+  }
+  html[data-recovery="v28"] .edge-preview{display:none!important}
+  html[data-recovery="v28"] .edge-rail{display:none!important}
+  html[data-recovery="v28"] .edge-icon{font-size:12px!important;line-height:1!important}
+  html[data-recovery="v28"] .edge-label{font-size:8px!important;font-weight:720!important;letter-spacing:.055em!important}
+  html[data-recovery="v28"] .edge-up,
+  html[data-recovery="v28"] .edge-down{
+    width:72px!important;height:27px!important;min-height:27px!important;padding:3px 9px!important;gap:6px!important;
+    left:50%!important;transform:translateX(-50%)!important;flex-direction:row!important;
+  }
+  html[data-recovery="v28"] .edge-up{top:67px!important}
+  html[data-recovery="v28"] .edge-down{bottom:64px!important}
+  html[data-recovery="v28"] .edge-left,
+  html[data-recovery="v28"] .edge-right{
+    width:29px!important;height:66px!important;min-height:66px!important;padding:5px 2px!important;gap:4px!important;
+    top:50%!important;transform:translateY(-50%)!important;flex-direction:column!important;writing-mode:horizontal-tb!important;
+  }
+  html[data-recovery="v28"] .edge-left{left:8px!important}
+  html[data-recovery="v28"] .edge-right{right:8px!important}
+  html[data-recovery="v28"] .edge-left .edge-label,
+  html[data-recovery="v28"] .edge-right .edge-label{
+    writing-mode:vertical-rl!important;font-size:7px!important;letter-spacing:.07em!important;
+  }
+  html[data-recovery="v28"] .edge-left .edge-label{transform:rotate(180deg)!important}
+  html[data-recovery="v28"] .edge-nav .edge::after{left:6px!important;right:6px!important;bottom:2px!important;height:1px!important}
+}
+
+/* Toasts belong to chrome, never on top of the notebook/settings/player. */
+html[data-recovery="v28"] .toast{
+  left:auto!important;right:18px!important;top:72px!important;bottom:auto!important;
+  max-width:min(360px,calc(100vw - 36px))!important;
+  transform:translateY(-8px)!important;
+  border-radius:13px!important;
+  padding:9px 12px!important;
+  white-space:normal!important;
+  box-shadow:0 12px 30px rgba(23,32,29,.16)!important;
+}
+html[data-recovery="v28"] .toast.on{transform:none!important}
+
+/* Clock: use the width instead of leaving a dead right-hand column. */
+html[data-recovery="v28"] .home-grid{
+  grid-template-columns:1fr!important;
+  gap:12px!important;
+}
+html[data-recovery="v28"] .clock-card{
+  padding:24px 28px 23px!important;
+  border-radius:24px!important;
+}
+html[data-recovery="v28"] .clock-instrument{
+  grid-template-columns:205px minmax(0,1fr)!important;
+  gap:28px!important;
+  min-height:226px!important;
+}
+html[data-recovery="v28"] .analog{width:196px!important}
+html[data-recovery="v28"] .clock-ticks i{transform-origin:50% 89px!important}
+html[data-recovery="v28"] .digital>span{font-size:clamp(64px,7vw,94px)!important}
+html[data-recovery="v28"] .digital>i{font-size:clamp(50px,5.7vw,76px)!important}
+html[data-recovery="v28"] .day-sky{height:58px!important}
+
+html[data-recovery="v28"] .rhythm-card{
+  min-height:0!important;
+  padding:15px 17px!important;
+  border-radius:18px!important;
+}
+html[data-recovery="v28"] .rhythm-card>header{
+  align-items:center!important;
+  padding-bottom:10px!important;
+}
+html[data-recovery="v28"] .rhythm-card header strong{font-size:15px!important}
+html[data-recovery="v28"] .rhythm-list{
+  display:grid!important;
+  grid-template-columns:repeat(6,minmax(0,1fr))!important;
+  gap:6px!important;
+  margin-top:9px!important;
+}
+html[data-recovery="v28"] .rhythm-row{
+  grid-template-columns:8px minmax(0,1fr)!important;
+  gap:6px!important;
+  min-height:48px!important;
+  padding:8px 9px!important;
+  border:1px solid rgba(23,32,29,.07)!important;
+  border-radius:11px!important;
+  background:#fbfbf8!important;
+}
+html[data-recovery="v28"] .rhythm-row strong{grid-column:2!important;font-size:12px!important}
+html[data-recovery="v28"] .rhythm-row span{font-size:10px!important}
+html[data-recovery="v28"] .rhythm-card>p:empty{display:none!important}
+html[data-recovery="v28"] .rhythm-card>p{margin:8px 0 0!important;padding:0!important;font-size:9px!important}
+
+html[data-recovery="v28"] .v28-guide{
+  margin-top:11px!important;
+  min-height:68px!important;
+  border-radius:17px!important;
+  box-shadow:0 4px 16px rgba(38,47,42,.045)!important;
+}
+html[data-recovery="v28"] .action-dock,
+html[data-recovery="v28"] .daybook-fold{margin-top:11px!important;border-radius:20px!important}
+html[data-recovery="v28"] .quick-action{min-height:66px!important}
+
+/* Inner pages: reduce poster-scale headers and use a stable reading column. */
+html[data-recovery="v28"] .view-head{
+  min-height:0!important;
+  margin-bottom:16px!important;
+  padding-bottom:12px!important;
+  align-items:start!important;
+}
+html[data-recovery="v28"] .view-head h1{font-size:clamp(34px,3.5vw,46px)!important}
+html[data-recovery="v28"] .view-head p{font-size:12px!important}
+html[data-recovery="v28"] .notes-layout,
+html[data-recovery="v28"] .log-layout{gap:12px!important}
+html[data-recovery="v28"] .calendar-card,
+html[data-recovery="v28"] .notebook-card,
+html[data-recovery="v28"] .timeline-card,
+html[data-recovery="v28"] .log-tools,
+html[data-recovery="v28"] .now-grid>section{border-radius:20px!important}
+
+/* Now should read as a decision surface, not a billboard. */
+html[data-recovery="v28"] .now-grid{gap:10px!important}
+html[data-recovery="v28"] .now-primary{min-height:260px!important;padding:24px!important}
+html[data-recovery="v28"] .now-primary h2{font-size:clamp(34px,4vw,48px)!important;line-height:1!important}
+
+/* Settings: three compact decisions, no forced 500px card and no giant mobile summary. */
+html[data-recovery="v28"] .settings-layout{
+  grid-template-columns:190px minmax(0,1fr)!important;
+  gap:12px!important;
+}
+html[data-recovery="v28"] .settings-nav{padding:7px!important;border-radius:17px!important}
+html[data-recovery="v28"] .settings-nav button{min-height:58px!important;padding:9px 10px!important;border-radius:11px!important}
+html[data-recovery="v28"] .settings-nav button.active{background:#eef3ef!important;color:#17201d!important}
+html[data-recovery="v28"] .settings-panels{
+  min-height:0!important;
+  padding:20px 22px!important;
+  border-radius:19px!important;
+}
+html[data-recovery="v28"] .settings-summary{gap:6px!important;margin-bottom:10px!important}
+html[data-recovery="v28"] .settings-chip{min-width:0!important;padding:9px 10px!important}
+html[data-recovery="v28"] .settings-chip strong{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+
+/* Music Recovery: full-width stage; pickers are side sheets instead of a permanent squeeze. */
+html[data-recovery="v28"] .sound-bar[data-streaming="player"][data-music-open="true"]{
+  padding:14px!important;
+  background:rgba(10,15,16,.56)!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
+  position:relative!important;
+  width:min(1040px,calc(100vw - 28px))!important;
+  min-height:min(690px,calc(100dvh - 28px))!important;
+  max-height:calc(100dvh - 28px)!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr) auto!important;
+  gap:12px!important;
+  padding:15px!important;
+  border-radius:24px!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-head{
+  grid-column:1!important;grid-row:1!important;
+  min-height:50px!important;padding:0 1px 9px!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-identity strong{font-size:20px!important}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
+html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
+  grid-column:1!important;grid-row:2!important;
+  display:grid!important;
+  grid-template-columns:210px minmax(0,1fr)!important;
+  grid-template-rows:auto auto!important;
+  place-items:center stretch!important;
+  align-content:center!important;
+  gap:24px 28px!important;
+  min-height:390px!important;
+  padding:30px 34px!important;
+  border-radius:21px!important;
+  overflow:auto!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-art,
+html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage .music-room-art{
+  grid-column:1!important;grid-row:1!important;
+  width:200px!important;height:200px!important;min-width:200px!important;min-height:200px!important;
+  border-radius:24px!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy{
+  grid-column:2!important;grid-row:1!important;
+  max-width:none!important;
+  min-width:0!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy>strong,
+html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy>strong{
+  max-width:18ch!important;
+  font-size:clamp(28px,3.2vw,40px)!important;
+  line-height:1.04!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy>p{font-size:11px!important}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-magic-eq{margin-top:14px!important}
+
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"]{
+  grid-column:1/-1!important;grid-row:2!important;
+  width:100%!important;
+  margin:0!important;
+  padding:10px 12px!important;
+  display:grid!important;
+  grid-template-columns:minmax(190px,.75fr) minmax(360px,1.25fr)!important;
+  align-items:center!important;
+  gap:9px 14px!important;
+  border-radius:14px!important;
+}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-top{gap:9px!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-top p{display:none!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-top strong{font-size:11px!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-connect{min-height:30px!important;padding-inline:9px!important;font-size:8px!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-controls{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:5px!important;margin:0!important;
+}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-toggle{padding:7px 8px!important;gap:6px!important;border-radius:10px!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-toggle strong{font-size:8px!important;line-height:1.15!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-toggle small{display:none!important}
+html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-foot{
+  grid-column:1/-1!important;
+  margin:0!important;padding-top:7px!important;
+}
+
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-dock{
+  grid-column:1!important;grid-row:3!important;
+  min-height:62px!important;
+  border-radius:16px!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-chooser,
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue{
+  position:absolute!important;
+  z-index:9!important;
+  top:72px!important;right:15px!important;bottom:88px!important;left:auto!important;
+  width:min(360px,calc(100% - 30px))!important;
+  max-height:none!important;
+  padding:13px!important;
+  border-radius:18px!important;
+  box-shadow:0 22px 60px rgba(0,0,0,.34)!important;
+  overflow:auto!important;
+}
+html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]){
+  grid-column:1!important;grid-row:2!important;
+  justify-self:stretch!important;align-self:stretch!important;
+  width:100%!important;height:auto!important;min-height:360px!important;
+  margin:0!important;border-radius:21px!important;
+}
+html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{display:none!important}
+
+/* Tablet */
+@media(max-width:900px){
+  html[data-recovery="v28"] .stage{padding:88px 18px 110px!important}
+  html[data-recovery="v28"] .rhythm-list{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  html[data-recovery="v28"] .settings-layout{grid-template-columns:1fr!important}
+  html[data-recovery="v28"] .settings-nav{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;position:static!important;top:auto!important}
+  html[data-recovery="v28"] .settings-nav button{min-height:48px!important}
+}
+
+/* Phone: navigation is in normal document flow; nothing cuts through editor/settings. */
+@media(max-width:760px){
+  html[data-recovery="v28"]{--recovery-bar:58px}
+  html[data-recovery="v28"] .stage{padding:72px 10px 88px!important}
+  html[data-recovery="v28"] .mobile-nav{
+    position:static!important;
+    z-index:auto!important;
+    left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;
+    width:100%!important;height:42px!important;
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    margin:0 0 10px!important;
+    border:1px solid rgba(23,32,29,.10)!important;
+    border-radius:13px!important;
+    background:#fff!important;
+    box-shadow:0 3px 12px rgba(27,34,30,.045)!important;
+    overflow:hidden!important;
+    backdrop-filter:none!important;
+  }
+  html[data-recovery="v28"] .mobile-nav button{min-width:0!important;padding:3px 4px!important;border-right:1px solid rgba(23,32,29,.07)!important;background:transparent!important;color:#68736d!important}
+  html[data-recovery="v28"] .mobile-nav button:last-child{border-right:0!important}
+  html[data-recovery="v28"] .mobile-nav button span{font-size:11px!important}
+  html[data-recovery="v28"] .mobile-nav button small{font-size:7px!important;letter-spacing:.07em!important}
+  html[data-recovery="v28"] .mobile-nav button.active{background:#eef3ef!important;color:#315b4b!important}
+  html[data-recovery="v28"] .edge-nav{display:none!important}
+
+  html[data-recovery="v28"] .view-head{
+    grid-template-columns:auto minmax(0,1fr)!important;
+    gap:9px!important;margin-bottom:12px!important;padding-bottom:8px!important;
+  }
+  html[data-recovery="v28"] .view-head>button:first-child{padding:7px 8px!important;font-size:9px!important}
+  html[data-recovery="v28"] .view-head h1{font-size:30px!important}
+  html[data-recovery="v28"] .view-head p{display:block!important;font-size:10px!important;line-height:1.35!important}
+  html[data-recovery="v28"] .view-head>b,
+  html[data-recovery="v28"] .head-action{grid-column:2!important;margin-top:2px!important}
+
+  html[data-recovery="v28"] .clock-card{padding:17px 14px!important}
+  html[data-recovery="v28"] .clock-instrument{grid-template-columns:112px minmax(0,1fr)!important;gap:13px!important;min-height:150px!important;padding:12px 0!important}
+  html[data-recovery="v28"] .analog{width:108px!important}
+  html[data-recovery="v28"] .clock-ticks i{transform-origin:50% 47px!important}
+  html[data-recovery="v28"] .digital-wrap{text-align:left!important}
+  html[data-recovery="v28"] .digital{justify-content:flex-start!important}
+  html[data-recovery="v28"] .digital>span{font-size:42px!important}
+  html[data-recovery="v28"] .digital>i{font-size:35px!important}
+  html[data-recovery="v28"] .digital>small{font-size:10px!important;margin-left:5px!important}
+  html[data-recovery="v28"] .clock-date{font-size:10px!important;margin-top:5px!important}
+  html[data-recovery="v28"] .next-moment{margin-top:10px!important;padding:9px 10px!important;grid-template-columns:auto 1fr!important}
+  html[data-recovery="v28"] .next-moment small{grid-column:2!important}
+  html[data-recovery="v28"] .rhythm-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  html[data-recovery="v28"] .action-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+  html[data-recovery="v28"] .v28-guide{grid-template-columns:9px minmax(0,1fr)!important;padding:10px 11px!important}
+  html[data-recovery="v28"] .v28-guide-actions{grid-column:2!important;padding-left:0!important}
+
+  /* Notes: compact calendar so the editor appears in the first screenful. */
+  html[data-recovery="v28"] .notes-layout{grid-template-columns:1fr!important;gap:9px!important}
+  html[data-recovery="v28"] .calendar-card,
+  html[data-recovery="v28"] .notebook-card{padding:12px!important;border-radius:16px!important}
+  html[data-recovery="v28"] .calendar-week{margin:7px 0 2px!important}
+  html[data-recovery="v28"] .calendar-grid{gap:2px!important}
+  html[data-recovery="v28"] .calendar-grid button{height:25px!important;min-height:25px!important}
+  html[data-recovery="v28"] .calendar-summary{display:none!important}
+  html[data-recovery="v28"] .today-button{margin-top:6px!important;padding:6px!important;font-size:8px!important}
+  html[data-recovery="v28"] .notebook-card>header{gap:8px!important}
+  html[data-recovery="v28"] .note-find{grid-template-columns:90px minmax(0,1fr)!important;gap:6px!important}
+  html[data-recovery="v28"] .note-compose textarea{min-height:118px!important}
+  html[data-recovery="v28"] .note-compose>div{gap:5px!important}
+
+  html[data-recovery="v28"] .now-primary{min-height:210px!important;padding:17px!important}
+  html[data-recovery="v28"] .now-primary h2{font-size:32px!important}
+  html[data-recovery="v28"] .now-grid>section{padding:15px!important;border-radius:16px!important}
+
+  html[data-recovery="v28"] .settings-summary{display:none!important}
+  html[data-recovery="v28"] .settings-layout{grid-template-columns:1fr!important;gap:8px!important}
+  html[data-recovery="v28"] .settings-nav{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:3px!important;padding:4px!important;margin:0!important;border-radius:13px!important}
+  html[data-recovery="v28"] .settings-nav button{min-height:42px!important;padding:6px!important;border-radius:9px!important}
+  html[data-recovery="v28"] .settings-nav button strong{font-size:9px!important}
+  html[data-recovery="v28"] .settings-nav button small{display:none!important}
+  html[data-recovery="v28"] .settings-panels{padding:14px 12px!important;border-radius:15px!important}
+  html[data-recovery="v28"] .settings-panels h2{font-size:19px!important}
+  html[data-recovery="v28"] .toggle-grid,
+  html[data-recovery="v28"] .settings-form.two-col,
+  html[data-recovery="v28"] .settings-form.three-col,
+  html[data-recovery="v28"] .data-actions{grid-template-columns:1fr!important}
+  html[data-recovery="v28"] .setting-toggle{min-height:54px!important;padding:9px 10px!important}
+  html[data-recovery="v28"] .v28-settings-disclosure{margin-top:10px!important}
+
+  /* Mobile Music: compact hero + compact engine strip; no giant black panel. */
+  html[data-recovery="v28"] .sound-bar[data-streaming="player"][data-music-open="true"]{padding:0!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
+    width:100vw!important;min-height:100dvh!important;max-height:100dvh!important;
+    padding:10px!important;gap:8px!important;border-radius:0!important;overflow:auto!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-head{position:static!important;padding:5px 1px 8px!important;gap:8px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-identity strong{font-size:16px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-identity p{display:none!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-links{gap:4px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-link,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-intermission-toggle,
+  html[data-recovery="v28"] .music-morphe-badge{min-height:30px!important;padding-inline:8px!important;font-size:7px!important}
+
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
+  html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
+    grid-template-columns:88px minmax(0,1fr)!important;
+    grid-template-rows:auto auto!important;
+    gap:12px 13px!important;
+    min-height:0!important;
+    padding:14px!important;
+    place-items:center stretch!important;
+    border-radius:16px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-art,
+  html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage .music-room-art{
+    width:88px!important;height:88px!important;min-width:88px!important;min-height:88px!important;border-radius:15px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy>strong,
+  html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage-copy>strong{font-size:20px!important;max-width:15ch!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy>p{display:none!important}
+  html[data-recovery="v28"] .music-magic-eq{display:none!important}
+  html[data-recovery="v28"] .music-magic-status{margin-top:7px!important;padding:5px 7px!important;font-size:7px!important}
+
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"]{
+    grid-template-columns:1fr!important;
+    gap:7px!important;padding:8px!important;border-radius:12px!important;
+  }
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-top{grid-column:1!important}
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-controls{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-toggle{display:flex!important;align-items:center!important;padding:6px!important}
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-toggle strong{font-size:7px!important;white-space:nowrap!important}
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-foot{padding-top:5px!important}
+
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]){min-height:190px!important;max-height:210px!important;border-radius:16px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{height:100%!important;min-height:190px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-dock{grid-template-columns:auto minmax(0,1fr) auto!important;gap:6px!important;min-height:58px!important;padding:7px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-timeline{grid-column:1/-1!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-volume,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-save,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video-toggle{display:none!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-chooser,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue{
+    position:relative!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+    grid-column:1!important;grid-row:auto!important;width:100%!important;max-height:none!important;
+    padding:10px!important;border-radius:14px!important;box-shadow:none!important;
+  }
+
+  html[data-recovery="v28"] .toast{right:10px!important;top:66px!important;max-width:calc(100vw - 20px)!important}
+  html[data-recovery="v28"] .cover-omnibox{padding-left:12px!important;grid-template-columns:24px minmax(0,1fr) auto!important}
+  html[data-recovery="v28"] .cover-omnibox input{font-size:14px!important}
+}
+
+@media(max-width:430px){
+  html[data-recovery="v28"] .rhythm-list{grid-template-columns:1fr 1fr!important}
+  html[data-recovery="v28"] .quick-action{min-height:62px!important}
+  html[data-recovery="v28"] .note-find{grid-template-columns:82px minmax(0,1fr)!important}
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-state{font-size:7px!important}
+  html[data-recovery="v28"] .music-morphe-panel[data-recovery-layout="stage"] .music-morphe-detail{font-size:7px!important}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html[data-recovery="v28"][data-cover="peeled"] .pace-cover{transition:none!important}
+}
