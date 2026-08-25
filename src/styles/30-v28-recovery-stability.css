@@ -148,3 +148,12 @@ html[data-recovery="v28"][data-cover="peeled"] .pace-cover{
     grid-column:1!important;grid-row:4!important;
   }
 }
+/* Closed Music is a compact dock only. Hidden room controls must never block folds. */
+html[data-recovery="v28"] .sound-bar[data-music-open="false"] .music-room-head,
+html[data-recovery="v28"] .sound-bar[data-music-open="false"] .music-room-stage,
+html[data-recovery="v28"] .sound-bar[data-music-open="false"] .stream-chooser,
+html[data-recovery="v28"] .sound-bar[data-music-open="false"] .stream-queue,
+html[data-recovery="v28"] .sound-bar[data-music-open="false"] .stream-video{
+  display:none!important;
+  pointer-events:none!important;
+}
