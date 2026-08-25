@@ -7,7 +7,8 @@ export function installRecoveryV28(ctx){
   ctx.recoveryVersion=EXPERIENCE;
 
   const repairMusicLayout=()=>{
-    const stage=id('music-room-stage'),panel=id('music-morphe-panel');
+    const stage=id('music-room-stage'),panel=id('music-morphe-panel'),player=id('stream-player');
+    if(player&&!player.style.getPropertyValue('--music-hue'))player.style.setProperty('--music-hue','184');
     if(stage&&panel&&panel.parentElement!==stage){
       stage.append(panel);
       panel.dataset.recoveryLayout='stage';
