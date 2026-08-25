@@ -4,6 +4,15 @@ html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music
   display:grid!important;
 }
 
+/* Opening the app is a state change, not a second-long visual after-image. */
+html[data-recovery="v28"][data-cover="peeled"] .pace-cover{
+  transform:none!important;
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+  transition:none!important;
+}
+
 @media(min-width:901px){
   /* Preserve the proven r7 Clock proportions while using the wider Recovery composition. */
   html[data-recovery="v28"] .clock-instrument{
@@ -67,6 +76,16 @@ html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
     grid-template-rows:auto auto auto auto!important;
   }
+  /* The Music header is part of the dark room; never leave a pale legacy slab above it. */
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-head{
+    min-height:56px!important;
+    padding:8px 10px!important;
+    border:1px solid rgba(255,255,255,.08)!important;
+    border-radius:14px!important;
+    background:rgba(16,23,24,.98)!important;
+    color:#f7faf9!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-identity strong{color:#fff!important}
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
     grid-row:2!important;
