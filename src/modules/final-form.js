@@ -1,6 +1,7 @@
 import{$,$$,id,el,button}from'./state.js';
+import{RELEASE}from'./release-meta.js';
 
-export const FINAL_RELEASE='27.1.0';
+export const FINAL_RELEASE=RELEASE;
 export const FINAL_REVISION='final-form-r1';
 const STREAM_STORE='pacefold.stream.v1';
 

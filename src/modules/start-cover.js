@@ -6,7 +6,7 @@ export function installStartCover(ctx){
   const appBar=document.querySelector('.app-bar');
   if(!appBar||id('pace-cover'))return;
 
-  const requested=new URLSearchParams(location.search).get('mode');
+  const params=new URLSearchParams(location.search),requested=params.get('mode');
   const directView=['notes','worklog','now','settings'].includes(requested);
   const cover=el('section','pace-cover');cover.id='pace-cover';cover.setAttribute('aria-label','Simple clock surface');
   const backdrop=el('div','cover-backdrop');backdrop.setAttribute('aria-hidden','true');
@@ -43,5 +43,7 @@ export function installStartCover(ctx){
   noteInput.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();setNote(false)}else if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();noteForm.requestSubmit()}});
   document.addEventListener('keydown',event=>{if(document.documentElement.dataset.cover!=='on')return;if(event.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName||'')){event.preventDefault();searchInput.focus()}});
   peel.addEventListener('click',()=>ctx.setStartCover(false));restore.addEventListener('click',()=>ctx.setStartCover(true));let startY=0;peel.addEventListener('pointerdown',event=>{startY=event.clientY;peel.setPointerCapture?.(event.pointerId)});peel.addEventListener('pointerup',event=>{if(startY&&event.clientY-startY<-24)ctx.setStartCover(false);startY=0});
-  ctx.setStartCover(!directView);
+  const explicitlyRequested=params.get('surface')==='1';
+  const returning=localStorage.getItem('pacefoldOnboardedV15')==='1'||localStorage.getItem('pacefoldSetupDismissedV15')==='1';
+  ctx.setStartCover(explicitlyRequested||(!returning&&!directView));
 }

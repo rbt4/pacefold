@@ -1,7 +1,8 @@
 import{$,$$,id}from'./state.js';
+import{RELEASE}from'./release-meta.js';
 
 const EXPERIENCE='v28-recovery-r1';
-const DISPLAY_RELEASE='28.0.1';
+const DISPLAY_RELEASE=RELEASE;
 
 export function installRecoveryV28(ctx){
   document.documentElement.dataset.recovery='v28';

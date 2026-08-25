@@ -28,7 +28,7 @@ export function installApp(ctx){
     history.replaceState(null,'',ctx.mode==='home'?location.pathname:`${location.pathname}?mode=${ctx.mode}`);
     ctx.idleDeadline=ctx.mode==='home'?0:Date.now()+50000;
     id('return-cue').hidden=true;
-    window.scrollTo({top:0,behavior:'smooth'});
+    window.scrollTo({top:0,behavior:'auto'});
     if(ctx.mode==='notes')requestAnimationFrame(()=>id('note-input')?.focus({preventScroll:true}));
     ctx.render(ctx.mode);
     if(ctx.mode==='now')void ctx.fetchWeather(false);

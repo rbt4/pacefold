@@ -1,5 +1,5 @@
-export const VERSION='25.1.0';
-export const REVISION='polish-r2';
+export const VERSION='29.0.0';
+export const REVISION='unified-recovery-r1';
 export const KEYS={
   prefs:'pacefoldPrefsV15',
   notes:'pacefold.notebook.entries.v2',

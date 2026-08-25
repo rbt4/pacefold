@@ -1,7 +1,8 @@
 import{$,$$,id,el,button}from'./state.js';
+import{RELEASE}from'./release-meta.js';
 
 const EXPERIENCE='v28-guided-fold-r1';
-const DISPLAY_RELEASE='28.0.0';
+const DISPLAY_RELEASE=RELEASE;
 const HOVER_DWELL=640;
 const ACTIONABLE=new Set(['water','prep','away','meal','eyes','move']);
 const OPEN_SOURCES=['focus','field','prep','away','meal'];
