@@ -1,9 +1,9 @@
-# Pacefold 29.1.0 unified recovery release
+# Pacefold 29.1.1 unified recovery release
 
 ## Identity
 
-- Public release: **29.1.0**
-- Experience revision: **atelier-r1**
+- Public release: **29.1.1**
+- Experience revision: **atelier-r2**
 - Product: **Pacefold — Your day, quietly kept**
 - Public site: **https://rbt4.github.io/pacefold/**
 

@@ -13,7 +13,7 @@
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" id="app-favicon" href="./icons/fold-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./pacefold.css?v=29.1.0">
+  <link rel="stylesheet" href="./pacefold.css?v=29.1.1">
   <title>Pacefold — Your day, quietly kept</title>
 </head>
 <body>
@@ -138,7 +138,7 @@
     </section>
 
     <section class="view view-settings" data-view="settings" aria-label="Settings">
-      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 29.1.0</b></header>
+      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 29.1.1</b></header>
       <section class="settings-summary" id="settings-summary" aria-label="Current setup"></section>
       <div class="settings-layout">
         <nav class="settings-nav" id="settings-nav"><button class="active" type="button" data-settings-tab="essentials"><strong>Essentials</strong><small>Daily behaviour</small></button><button type="button" data-settings-tab="rhythm"><strong>Rhythm</strong><small>Prayer and moments</small></button><button type="button" data-settings-tab="care"><strong>Care</strong><small>Water and resets</small></button><button type="button" data-settings-tab="data"><strong>Data</strong><small>Backup and OneNote</small></button><button type="button" data-settings-tab="advanced"><strong>Advanced</strong><small>Recovery tools</small></button></nav>
@@ -175,7 +175,7 @@
           <section data-settings-panel="advanced" hidden>
             <header><small>Advanced</small><h2>Recovery and diagnostics</h2></header>
             <div class="data-actions"><button type="button" id="self-check"><strong>Run self-check</strong><small>Storage, schedule, offline worker and interface</small></button><button type="button" id="reset-today"><strong>Reset today’s counters</strong><small>Water and active timers only; notes stay</small></button><button class="danger" type="button" id="reset-app"><strong>Reset Pacefold</strong><small>Delete local Pacefold settings, notes and logs</small></button></div>
-            <pre id="diagnostic-output">Pacefold 29.1.0 · atelier-r1</pre>
+            <pre id="diagnostic-output">Pacefold 29.1.1 · atelier-r2</pre>
           </section>
         </div>
       </div>
@@ -207,6 +207,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script defer src="./vendor/msal-browser-5.17.1.min.js"></script>
-  <script type="module" src="./pacefold.mjs?v=29.1.0"></script>
+  <script type="module" src="./pacefold.mjs?v=29.1.1"></script>
 </body>
 </html>

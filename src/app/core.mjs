@@ -1,5 +1,5 @@
-export const VERSION='29.1.0';
-export const REVISION='atelier-r1';
+export const VERSION='29.1.1';
+export const REVISION='atelier-r2';
 export const KEYS={
   prefs:'pacefoldPrefsV15',
   notes:'pacefold.notebook.entries.v2',
