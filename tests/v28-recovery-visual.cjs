@@ -16,7 +16,7 @@ async function main(){const{server,origin}=await serve();let browser;try{
   assert(immediate.transition==='0s','Recovery reintroduced a lingering cover transition');
   if(out)await page.screenshot({path:path.join(out,'v28-recovery-mobile-clock-immediate.png'),fullPage:false});
   await page.evaluate(()=>window.__PACEFOLD__.go('settings'));await page.waitForFunction(()=>document.documentElement.dataset.mode==='settings');
-  const release=await page.locator('.view-settings .view-head>b').textContent();assert(/28\.0\.1/.test(release||''),'Visible Settings release identity is stale');
+  const release=await page.locator('.view-settings .view-head>b').textContent();assert(/29\.0\.0/.test(release||''),'Visible Settings release identity is stale');
   await page.evaluate(()=>window.__PACEFOLD__.go('home'));await page.waitForFunction(()=>document.documentElement.dataset.mode==='home');await page.evaluate(()=>document.getElementById('stream-source')?.click());await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='true');await page.evaluate(()=>{const chooser=document.getElementById('stream-chooser');if(chooser)chooser.hidden=true});
   const music=await page.evaluate(()=>{const head=document.querySelector('.music-room-head'),style=getComputedStyle(head),box=head.getBoundingClientRect();return{background:style.backgroundColor,color:style.color,height:box.height,top:box.top,bottom:box.bottom}});
   assert(music.background==='rgba(16, 23, 24, 0.98)'||music.background==='rgb(16, 23, 24)','Mobile Music header returned to a pale legacy slab');
