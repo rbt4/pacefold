@@ -1,6 +1,7 @@
-import{$$,id}from'./state.js';
+import{$,$$,id}from'./state.js';
 
 const EXPERIENCE='v28-recovery-r1';
+const DISPLAY_RELEASE='28.0.1';
 
 export function installRecoveryV28(ctx){
   document.documentElement.dataset.recovery='v28';
@@ -31,7 +32,12 @@ export function installRecoveryV28(ctx){
     }
   };
 
-  const repair=()=>{repairMusicLayout();syncMobileNav();settleEdges()};
+  const syncReleaseLabel=()=>{
+    const version=$('.view-settings .view-head>b');
+    if(version)version.textContent=`Pacefold ${DISPLAY_RELEASE}`;
+  };
+
+  const repair=()=>{repairMusicLayout();syncMobileNav();settleEdges();syncReleaseLabel()};
 
   const baseRender=ctx.render;
   ctx.render=(...args)=>{
@@ -46,12 +52,15 @@ export function installRecoveryV28(ctx){
     await baseInitialize?.();
     repair();
     document.documentElement.dataset.recovery='v28';
-    if(window.__PACEFOLD__)window.__PACEFOLD__.recovery=EXPERIENCE;
+    if(window.__PACEFOLD__){
+      window.__PACEFOLD__.recovery=EXPERIENCE;
+      window.__PACEFOLD__.recoveryRelease=DISPLAY_RELEASE;
+    }
   };
 
   const observer=new MutationObserver(repairMusicLayout);
   observer.observe(document.body,{childList:true,subtree:true});
   setTimeout(()=>observer.disconnect(),8000);
 
-  ctx.recoveryV28={version:EXPERIENCE,repair};
+  ctx.recoveryV28={version:EXPERIENCE,release:DISPLAY_RELEASE,repair};
 }
