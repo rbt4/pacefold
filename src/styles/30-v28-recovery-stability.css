@@ -1,0 +1,26 @@
+/* Pacefold 28 Recovery — interaction stability follow-up.
+   Keep Music drawers in the room flow so their hit boxes never cover their own controls. */
+@media(min-width:901px){
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
+    grid-template-rows:auto minmax(300px,1fr) auto auto!important;
+    overflow:auto!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-chooser,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue{
+    position:relative!important;
+    z-index:4!important;
+    top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+    grid-column:1!important;grid-row:3!important;
+    width:100%!important;
+    max-height:245px!important;
+    overflow:auto!important;
+    padding:12px!important;
+    border-radius:16px!important;
+    box-shadow:none!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-dock{
+    grid-column:1!important;grid-row:4!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-library-list{max-height:145px!important}
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue-grid{max-height:150px!important;overflow:auto!important}
+}
