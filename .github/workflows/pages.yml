@@ -60,6 +60,8 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/guided-fold-v28-browser.cjs _site /tmp/pacefold-27-audit
       - name: V28 Recovery geometry contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v28-recovery-browser.cjs _site /tmp/pacefold-27-audit
+      - name: V28 Recovery visual contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v28-recovery-visual.cjs _site /tmp/pacefold-27-audit
       - name: Current-product browser audit
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/browser-audit-current.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
