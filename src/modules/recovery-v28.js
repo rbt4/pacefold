@@ -1,0 +1,56 @@
+import{$$,id}from'./state.js';
+
+const EXPERIENCE='v28-recovery-r1';
+
+export function installRecoveryV28(ctx){
+  document.documentElement.dataset.recovery='v28';
+  ctx.recoveryVersion=EXPERIENCE;
+
+  const repairMusicLayout=()=>{
+    const stage=id('music-room-stage'),panel=id('music-morphe-panel');
+    if(stage&&panel&&panel.parentElement!==stage){
+      stage.append(panel);
+      panel.dataset.recoveryLayout='stage';
+    }
+  };
+
+  const syncMobileNav=()=>{
+    const nav=id('mobile-nav');if(!nav)return;
+    for(const control of nav.querySelectorAll('[data-go]')){
+      const active=control.dataset.go===ctx.mode;
+      control.classList.toggle('active',active);
+      if(active)control.setAttribute('aria-current','page');else control.removeAttribute('aria-current');
+    }
+  };
+
+  const settleEdges=()=>{
+    for(const edge of $$('.edge-nav .edge')){
+      edge.classList.remove('is-expanded');
+      if(edge.dataset.go===ctx.mode)edge.setAttribute('aria-current','page');else edge.removeAttribute('aria-current');
+    }
+  };
+
+  const repair=()=>{repairMusicLayout();syncMobileNav();settleEdges()};
+
+  const baseRender=ctx.render;
+  ctx.render=(...args)=>{
+    const result=baseRender?.(...args);
+    repair();
+    return result;
+  };
+  ctx.renderAll=()=>ctx.render?.(ctx.mode);
+
+  const baseInitialize=ctx.initialize;
+  ctx.initialize=async()=>{
+    await baseInitialize?.();
+    repair();
+    document.documentElement.dataset.recovery='v28';
+    if(window.__PACEFOLD__)window.__PACEFOLD__.recovery=EXPERIENCE;
+  };
+
+  const observer=new MutationObserver(repairMusicLayout);
+  observer.observe(document.body,{childList:true,subtree:true});
+  setTimeout(()=>observer.disconnect(),8000);
+
+  ctx.recoveryV28={version:EXPERIENCE,repair};
+}
