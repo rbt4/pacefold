@@ -43,7 +43,7 @@ html[data-recovery="v28"] .edge-nav .edge:hover,html[data-recovery="v28"] .edge-
 html[data-recovery="v28"] .edge-up{top:68px!important}
 html[data-recovery="v28"] .edge-down{bottom:64px!important}
 html[data-recovery="v28"] .edge-left,html[data-recovery="v28"] .edge-right{
-  min-width:30px!important;width:30px!important;height:76px!important;padding:7px 0!important
+  min-width:30px!important;width:30px!important;height:70px!important;padding:7px 0!important
 }
 
 /* Home: a single instrument, not a dashboard pile. */
