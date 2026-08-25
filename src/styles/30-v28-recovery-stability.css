@@ -1,5 +1,9 @@
 /* Pacefold 28 Recovery — interaction stability follow-up.
-   Keep Music drawers in the room flow so their hit boxes never cover their own controls. */
+   Keep the album room primary; video/pickers are secondary and never replace it. */
+html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
+  display:grid!important;
+}
+
 @media(min-width:901px){
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
     grid-template-rows:auto minmax(300px,1fr) auto auto!important;
@@ -9,6 +13,7 @@
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
     grid-template-columns:240px minmax(0,1fr)!important;
+    padding-right:330px!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-art,
   html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage .music-room-art{
@@ -16,6 +21,19 @@
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage-copy>strong{
     font-size:40px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]){
+    position:absolute!important;
+    z-index:7!important;
+    right:30px!important;left:auto!important;top:50%!important;bottom:auto!important;
+    transform:translateY(-45%)!important;
+    grid-column:auto!important;grid-row:auto!important;
+    width:280px!important;height:158px!important;min-height:158px!important;max-height:158px!important;
+    margin:0!important;border-radius:16px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{
+    width:280px!important;height:158px!important;min-height:158px!important;
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-chooser,
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue{
@@ -35,4 +53,27 @@
   }
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-library-list{max-height:145px!important}
   html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-queue-grid{max-height:150px!important;overflow:auto!important}
+}
+
+@media(max-width:900px){
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-player{
+    grid-template-rows:auto auto auto auto!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .music-room-stage,
+  html[data-recovery="v28"] .stream-player:has(.stream-video:not([hidden])) .music-room-stage{
+    grid-row:2!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]){
+    position:relative!important;
+    grid-column:1!important;grid-row:3!important;
+    width:100%!important;height:190px!important;min-height:190px!important;max-height:210px!important;
+    margin:0!important;transform:none!important;border-radius:16px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) .stream-video-mount,
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-video:not([hidden]) iframe{
+    width:100%!important;height:190px!important;min-height:190px!important;
+  }
+  html[data-recovery="v28"] .sound-bar[data-music-open="true"] .stream-dock{
+    grid-column:1!important;grid-row:4!important;
+  }
 }
