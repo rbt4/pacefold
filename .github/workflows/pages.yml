@@ -30,6 +30,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build Clock bundle
         run: npm run build
+        env:
+          PACEFOLD_REFRESH_DAILY_IMAGE: '1'
       - name: Static and core verification
         run: npm run verify
       - name: Install browser audit runtime
@@ -78,6 +80,8 @@ jobs:
         run: |
           npm run build
           npm run verify
+        env:
+          PACEFOLD_REFRESH_DAILY_IMAGE: '1'
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact

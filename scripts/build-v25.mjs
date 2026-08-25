@@ -5,8 +5,8 @@ import{build}from'esbuild';
 const root=process.cwd();
 const source=path.join(root,'src');
 const target=path.resolve(process.argv[2]||path.join(root,'_site'));
-const RELEASE='29.1.1';
-const REVISION='atelier-r2';
+const RELEASE='29.2.0';
+const REVISION='homepage-atmosphere-r1';
 if(target===root||target===path.parse(target).root)throw new Error(`Unsafe build target: ${target}`);
 
 await fs.rm(target,{recursive:true,force:true});
@@ -19,17 +19,17 @@ const PUBLIC_CSP="default-src 'none'; style-src 'self'; img-src 'self' data:; fo
 const REFERRER='<meta name="referrer" content="strict-origin-when-cross-origin">';
 
 async function writeDailyImage(){
-  const metadata={date:'',url:'',credit:'',creditUrl:'',source:'Bing image of the day'};
+  const metadata={date:'',url:'./homepage-default.jpg',credit:'',creditUrl:'',source:'Built-in homepage background'};
   if(process.env.PACEFOLD_REFRESH_DAILY_IMAGE!=='1'){
     await fs.writeFile(path.join(target,'app','daily-image.json'),JSON.stringify(metadata));
     console.log('Daily image refresh skipped; using the built-in visual fallback');
     return;
   }
   try{
-    const response=await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-CA',{headers:{'user-agent':`Clock/${RELEASE}`}});if(!response.ok)throw new Error(`metadata ${response.status}`);
+    const response=await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-CA',{headers:{'user-agent':`Clock/${RELEASE}`},signal:AbortSignal.timeout(8000)});if(!response.ok)throw new Error(`metadata ${response.status}`);
     const item=(await response.json())?.images?.[0];if(!item?.url)throw new Error('missing image URL');
     const imageUrl=new URL(item.url,'https://www.bing.com');
-    const imageResponse=await fetch(imageUrl,{headers:{'user-agent':`Clock/${RELEASE}`}});if(!imageResponse.ok)throw new Error(`image ${imageResponse.status}`);
+    const imageResponse=await fetch(imageUrl,{headers:{'user-agent':`Clock/${RELEASE}`},signal:AbortSignal.timeout(12000)});if(!imageResponse.ok)throw new Error(`image ${imageResponse.status}`);
     await fs.writeFile(path.join(target,'app','daily-image.jpg'),Buffer.from(await imageResponse.arrayBuffer()));
     metadata.date=String(item.startdate||'');metadata.url='./daily-image.jpg';metadata.credit=String(item.copyright||'Bing image of the day');metadata.creditUrl=String(item.copyrightlink||'https://www.bing.com/').replace(/^http:/,'https:');
     console.log(`Packed Bing image of the day ${metadata.date||'today'}`);

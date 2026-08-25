@@ -1,10 +1,10 @@
 'use strict';
-const VERSION='29.1.1';
-const CACHE_NAME=`pacefold-v${VERSION}-atelier-r2`;
+const VERSION='29.2.0';
+const CACHE_NAME=`pacefold-v${VERSION}-homepage-atmosphere-r1`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
-  './','./index.html','./site.css','./privacy.html','./manifest.webmanifest','./app/','./app/index.html','./app/pacefold.css','./app/pacefold.mjs','./app/fonts/pacefold-ma.woff2','./app/icons/fold-mark.svg','./app/icons/icon-192.png','./app/icons/icon-512.png','./app/icons/badge-96.png','./app/icons/notify-water-128.png','./app/icons/notify-prayer-128.png','./app/icons/notify-prepare-128.png','./app/icons/notify-away-128.png','./app/icons/notify-meal-128.png','./app/icons/notify-eyes-128.png','./app/icons/notify-move-128.png','./app/vendor/msal-browser-5.17.1.min.js','./app/vendor/msal-redirect-bridge-5.17.1.min.js'
+  './','./index.html','./site.css','./privacy.html','./manifest.webmanifest','./app/','./app/index.html','./app/pacefold.css','./app/pacefold.mjs','./app/homepage-default.jpg','./app/fonts/pacefold-ma.woff2','./app/icons/fold-mark.svg','./app/icons/icon-192.png','./app/icons/icon-512.png','./app/icons/badge-96.png','./app/icons/notify-water-128.png','./app/icons/notify-prayer-128.png','./app/icons/notify-prepare-128.png','./app/icons/notify-away-128.png','./app/icons/notify-meal-128.png','./app/icons/notify-eyes-128.png','./app/icons/notify-move-128.png','./app/vendor/msal-browser-5.17.1.min.js','./app/vendor/msal-redirect-bridge-5.17.1.min.js'
 ].map(path);
 const SHELL_SET=new Set(SHELL);
 const AUTH_PATHS=new Set(['/app/auth.html','/app/auth.js']);

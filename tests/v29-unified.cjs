@@ -7,12 +7,13 @@ const assert=(value,message)=>{if(!value)throw new Error(message)};
 
 const app=read('app/index.html'),runtime=read('app/pacefold.mjs'),worker=read('service-worker.js'),css=read('app/pacefold.css');
 const release=source('src/modules/release-meta.js');
-assert(release.includes("RELEASE='29.1.1'")&&release.includes("REVISION='atelier-r2'"),'Canonical release metadata is wrong');
-assert(app.includes('pacefold.css?v=29.1.1')&&app.includes('pacefold.mjs?v=29.1.1'),'App cache-busting identity is stale');
-assert(worker.includes("VERSION='29.1.1'")&&worker.includes('atelier-r2'),'Worker cache identity is stale');
+assert(release.includes("RELEASE='29.2.0'")&&release.includes("REVISION='homepage-atmosphere-r1'"),'Canonical release metadata is wrong');
+assert(app.includes('pacefold.css?v=29.2.0')&&app.includes('pacefold.mjs?v=29.2.0'),'App cache-busting identity is stale');
+assert(worker.includes("VERSION='29.2.0'")&&worker.includes('homepage-atmosphere-r1'),'Worker cache identity is stale');
 assert(!/Pacefold (?:25\.1\.0|27\.0\.0|27\.1\.0|28\.0\.0|28\.0\.1)/.test(app+runtime),'Built app exposes a stale release');
 assert(css.includes('data-recovery="v28"')&&css.includes('.v28-guide'),'Unified visual bundle lost the recovery or Guided Fold shell');
 assert(css.length<430000,`Visual bundle is unexpectedly large (${css.length} bytes)`);
-assert(source('src/modules/start-cover.js').includes("returning&&!directView"),'Returning users no longer bypass the decorative start surface');
+assert(source('src/modules/start-cover.js').includes("ctx.setStartCover(!bypassed&&!directView)"),'The homepage no longer opens on the atmospheric clock surface');
+assert(worker.includes("'./app/homepage-default.jpg'"),'The offline homepage background is not cached');
 assert(source('scripts/build-v25.mjs').includes('const styleFiles=['),'Build returned to an accidental alphabetical CSS cascade');
-console.log(JSON.stringify({release:'29.1.1',revision:'atelier-r2',cssBytes:css.length,startup:'returning users open on Clock',visualCascade:'explicit manifest'},null,2));
+console.log(JSON.stringify({release:'29.2.0',revision:'homepage-atmosphere-r1',cssBytes:css.length,startup:'homepage surface by default',visualCascade:'explicit manifest'},null,2));
