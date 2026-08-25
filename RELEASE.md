@@ -1,9 +1,9 @@
-# Pacefold 25.1.0 refinement release
+# Pacefold 29.0.0 unified recovery release
 
 ## Identity
 
-- Public release: **25.1.0**
-- Experience revision: **polish-r2**
+- Public release: **29.0.0**
+- Experience revision: **unified-recovery-r1**
 - Product: **Pacefold — Your day, quietly kept**
 - Public site: **https://rbt4.github.io/pacefold/**
 
@@ -24,7 +24,7 @@ Pacefold 24 loaded eleven application runtimes and twelve style sheets from six 
 9. The mini focus-sound bar remains visible without opening another workspace.
 10. Optional OneNote copying is local-first and no longer presented as active unless configured.
 
-## What 25.1 refines
+## What 29.0 refines
 
 1. Notes has monthly activity context, category filters, word and entry summaries, and inline editing instead of browser prompts.
 2. Day Log explains the day through a balance strip, narrative summary, clearer session states and a richer timeline.
