@@ -49,7 +49,7 @@ jobs:
       - name: Setup and full-player repair contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/repair-player.cjs _site /tmp/pacefold-27-audit
       - name: Music Magic r8 contract
-        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/music-magic-r8.cjs _site /tmp/pacefold-27-audit
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/music-magic-r8-current.cjs _site /tmp/pacefold-27-audit
       - name: WOW and security contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/security-current.cjs _site /tmp/pacefold-27-audit
       - name: Notification delivery contract
