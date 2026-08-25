@@ -1,6 +1,6 @@
 'use strict';
-const VERSION='29.0.0';
-const CACHE_NAME=`pacefold-v${VERSION}-unified-recovery-r1`;
+const VERSION='29.1.0';
+const CACHE_NAME=`pacefold-v${VERSION}-atelier-r1`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[
