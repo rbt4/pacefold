@@ -9,7 +9,7 @@ const seed=()=>{const now=Date.now();localStorage.setItem('pacefoldOnboardedV15'
 async function main(){const{server,origin}=await serve();let browser;try{
   browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,timezoneId:'America/Toronto',serviceWorkers:'block'}),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{const text=message.text();if(message.type()==='error'&&!/Failed to load resource|Service Worker registration blocked by Playwright/i.test(text))errors.push(text)});
-  await page.addInitScript(seed);await page.goto(`${origin}/app/`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.recovery==='v28-recovery-r1');
+  await page.addInitScript(seed);await page.goto(`${origin}/app/?surface=0`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.recovery==='v28-recovery-r1');
   if(await page.evaluate(()=>document.documentElement.dataset.cover==='on'))await page.click('#cover-enter');await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
   const immediate=await page.evaluate(()=>{const cover=document.getElementById('pace-cover'),style=getComputedStyle(cover);return{visibility:style.visibility,opacity:Number(style.opacity),pointer:style.pointerEvents,transition:style.transitionDuration}});
   assert(immediate.visibility==='hidden'&&immediate.opacity===0&&immediate.pointer==='none','Mobile cover remains visible for a frame after opening Clock');
