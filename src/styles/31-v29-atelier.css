@@ -42,7 +42,7 @@ html[data-recovery="v28"] .edge-nav .edge:hover,html[data-recovery="v28"] .edge-
 }
 html[data-recovery="v28"] .edge-up{top:68px!important}
 html[data-recovery="v28"] .edge-down{bottom:64px!important}
-html[data-recovery="v28"] .edge-left,html[data-recovery="v28"] .edge-right{
+html[data-recovery="v28"] .edge-nav .edge.edge-left,html[data-recovery="v28"] .edge-nav .edge.edge-right{
   box-sizing:border-box!important;min-width:30px!important;width:30px!important;height:70px!important;padding:7px 0!important
 }
 
