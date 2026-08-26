@@ -60,3 +60,13 @@
 ## Earlier releases
 
 V15–V24 remain in Git history. Their durable product ideas are summarized in `docs/ORIGIN_TO_FINAL.md`; their archive/injector implementation is intentionally not part of the current runtime.
+# 30.0.0 — Quiet Clock
+
+- merged the daily-image homepage and functional Clock into one atmospheric working surface
+- removed the normal-launch cover barrier and the old startup flash path
+- preserved Google/address search and quick note inside the working Clock
+- rebuilt Clock hierarchy around one glass instrument, a compact rhythm rail, one guidance lane and six small actions
+- standardized Notes, Day Log, Now and Settings on a warm-paper, high-contrast system even when the OS requests dark mode
+- kept Notes above, Day Log left, Now right and Settings below with non-overlapping desktop and mobile folds
+- retained all established local storage keys, backups, cue behaviour, prayer timing, Music and OneNote integration
+- added first-screen density, dark-system contrast and mobile geometry browser gates

@@ -6,10 +6,11 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 
 ## Current release
 
-**Pacefold 27.1.0 — Final Form**
+**Pacefold 30.0.0 — Quiet Clock**
 
-- a full-screen daily-image start surface with a giant live clock, seconds, date, Google/address omnibox and quick note
-- the original Clock underneath: analog + digital time, Day Unfold, moving sun, current-time hairline and scheduled markers
+- the daily image and the working Clock are now one homepage—there is no duplicate cover or second entrance
+- analog + digital time, visible seconds, Day Unfold, moving sun, current-time hairline and scheduled markers live directly over the atmosphere
+- Google/address search and quick note remain available beneath the Clock without competing with it
 - prayer rhythm with Hanafi Asr and deliberate privacy modes, plus everyday, mindful and up-to-eight custom moments
 - coloured quiet cues for prayer/moments, water, noodles/prep, away, meal, eyes and movement
 - a live clock favicon/taskbar identity that can carry several waiting cue colours at once
@@ -18,7 +19,7 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 - calendar Daybook with quick capture, categories, pin/carry-forward, editing, search and note context
 - Day Log with work/focus/break balance, timeline and same-point-yesterday comparison
 - Now with discreet schedule context, waiting cues, active timers and an across-midnight weather horizon
-- one integrated Music dock: YouTube/YouTube Music links and playlists, track picker, seek, volume, previous/next, shuffle, loop and local **My Music**
+- one compact Music dock: YouTube/YouTube Music links and playlists, track picker, seek, volume, previous/next, shuffle, loop and local **My Music**
 - the earlier local focus sounds preserved inside Music: Brown hush, Rain glass, Soft fan and a local audio file
 - JSON backup/restore now includes My Music state, plus optional live backup file support in compatible Chromium browsers
 - optional local-first OneNote copy through Microsoft Graph
@@ -50,7 +51,7 @@ Those historical names are compatibility anchors, not stale code to rename. Exis
 
 ## Direct-source architecture
 
-The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack.
+The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 30 keeps a single final Quiet Clock visual layer instead of extending the discarded Atelier cascade.
 
 ```bash
 npm run build
@@ -62,4 +63,4 @@ CI also runs the Chromium release contract and a full desktop/mobile browser aud
 
 ## Product lineage
 
-The durable ideas from the project’s conception through 27.1 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.
+The durable ideas from the project’s conception through 30.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.

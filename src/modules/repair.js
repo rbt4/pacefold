@@ -43,9 +43,10 @@ export function installRepair(ctx){
   const stageCopy=el('div','music-room-stage-copy');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Paste a song or playlist once, then keep playback, saved music and focus sound in one quiet room.'));
   stage.append(art,stageCopy);player.insertBefore(stage,id('stream-video'));
 
-  // Music lives on the start surface, not in the permanent window chrome.
+  // Music lives on the atmospheric Clock, not inside the compatibility cover.
   let coverOpen=null;
-  if(cover){coverOpen=button('cover-music-button','Open music');coverOpen.id='cover-music-open';coverOpen.append(el('i'),el('span','','Music'));cover.append(coverOpen)}
+  const home=document.querySelector('.view-home');
+  if(home||cover){coverOpen=button('cover-music-button home-music-button','Open music');coverOpen.id='cover-music-open';coverOpen.append(el('i'),el('span','','Music'));(home||cover).append(coverOpen)}
 
   const updateCurrent=()=>{
     const saved=readStream(),url=String(saved.url||'');

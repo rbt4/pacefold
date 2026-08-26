@@ -17,7 +17,7 @@ The durable interaction model is therefore:
 
 The clock keeps visible seconds and an analog instrument, not only a timestamp. Day Unfold turns the workday into a visual arc with a moving sun/current marker and scheduled points, carrying forward the early idea of seeing the day physically unfold.
 
-The simple start surface extends that idea rather than replacing it: a giant live clock over a crisp daily image, then one deliberate peel into the full Clock.
+The daily-image surface now belongs to the working Clock itself. Release 30 removed the duplicate cover/peel step so the analog instrument, digital time, Day Unfold, quiet cues, search and quick note all live in one atmospheric homepage.
 
 ## Quiet cues, not notification noise
 
