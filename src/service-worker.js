@@ -1,6 +1,6 @@
 'use strict';
-const VERSION='29.2.1';
-const CACHE_NAME=`pacefold-v${VERSION}-homepage-atmosphere-r2`;
+const VERSION='30.0.0';
+const CACHE_NAME=`pacefold-v${VERSION}-quiet-clock-r1`;
 const ROOT=new URL('./',self.location.href);
 const path=value=>new URL(value,ROOT).href;
 const SHELL=[

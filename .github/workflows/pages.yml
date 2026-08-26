@@ -1,4 +1,4 @@
-name: Build, verify and publish Clock 29
+name: Build, verify and publish Clock 30
 
 on:
   push:
@@ -46,11 +46,13 @@ jobs:
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v28-recovery-browser.cjs _site /tmp/pacefold-27-audit
       - name: V28 Recovery visual contract
         run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v28-recovery-visual.cjs _site /tmp/pacefold-27-audit
+      - name: Quiet Clock 30 visual contract
+        run: NODE_PATH=/tmp/pacefold-browser-audit/node_modules timeout 300s node tests/v30-quiet-clock-browser.cjs _site /tmp/pacefold-27-audit
       - name: Upload visual audit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: clock-29-audit-${{ github.run_id }}
+          name: clock-30-audit-${{ github.run_id }}
           path: /tmp/pacefold-27-audit/
           if-no-files-found: warn
           retention-days: 7
