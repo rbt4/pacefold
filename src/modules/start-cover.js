@@ -6,7 +6,7 @@ export function installStartCover(ctx){
   const appBar=document.querySelector('.app-bar');
   if(!appBar||id('pace-cover'))return;
 
-  const params=new URLSearchParams(location.search),requested=params.get('mode'),legacySurface=params.get('surface')==='1';
+  const params=new URLSearchParams(location.search),requested=params.get('mode');
   const directView=['notes','worklog','now','settings'].includes(requested);
   const cover=el('section','pace-cover');cover.id='pace-cover';cover.dataset.photo='loaded';cover.setAttribute('aria-label','Homepage clock');
   const backdrop=el('div','cover-backdrop');backdrop.setAttribute('aria-hidden','true');
@@ -28,10 +28,8 @@ export function installStartCover(ctx){
   const noteActions=el('div','cover-note-actions');const noteCancel=button('','Close quick note','Cancel');const noteKeep=button('primary','Keep note','Keep');noteKeep.type='submit';noteActions.append(noteCancel,noteKeep);noteForm.append(noteInput,noteActions);utility.append(searchForm,noteForm);
   const peel=button('cover-peel','Open clock');peel.id='cover-peel';peel.append(el('i'),el('span','','Open clock'),el('b','','⌃'));
   const credit=el('a','cover-photo-credit home-photo-credit','');credit.id='cover-photo-credit';credit.target='_blank';credit.rel='noopener noreferrer';credit.referrerPolicy='no-referrer';credit.hidden=true;
-  hero.append(clock);cover.append(backdrop,hero,peel);document.body.append(cover);
-  const home=document.querySelector('.view-home');
-  if(home)home.append(utility,credit);else cover.append(utility,credit);
-  const restore=button('cover-return','Return to the simple surface');restore.id='cover-return';restore.append(el('i'),el('span','','Surface'));restore.hidden=!legacySurface;appBar.append(restore);
+  hero.append(clock,utility);cover.append(backdrop,hero,peel,credit);document.body.append(cover);
+  const restore=button('cover-return','Return to homepage');restore.id='cover-return';restore.append(el('i'),el('span','','Home'));appBar.append(restore);
 
   const updateInert=covered=>{const stage=id('stage'),edges=document.querySelector('.edge-nav');if(stage)stage.inert=covered;if(edges)edges.inert=covered};
   ctx.setStartCover=covered=>{document.documentElement.dataset.cover=covered?'on':'peeled';cover.setAttribute('aria-hidden',String(!covered));restore.setAttribute('aria-hidden',String(covered));updateInert(covered);if(covered)requestAnimationFrame(()=>searchInput.focus())};
@@ -45,8 +43,7 @@ export function installStartCover(ctx){
   noteInput.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();setNote(false)}else if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();noteForm.requestSubmit()}});
   document.addEventListener('keydown',event=>{if(document.documentElement.dataset.cover!=='on')return;if(event.key==='/'&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName||'')){event.preventDefault();searchInput.focus()}});
   peel.addEventListener('click',()=>ctx.setStartCover(false));restore.addEventListener('click',()=>ctx.setStartCover(true));let startY=0;peel.addEventListener('pointerdown',event=>{startY=event.clientY;peel.setPointerCapture?.(event.pointerId)});peel.addEventListener('pointerup',event=>{if(startY&&event.clientY-startY<-24)ctx.setStartCover(false);startY=0});
-  // V30 makes the atmospheric Clock itself the homepage. The former cover is
-  // retained only as compatibility plumbing for old tests/links; it never
-  // flashes over the working Clock during a normal launch.
-  ctx.setStartCover(legacySurface&&!directView);
+  // The scenic surface is the browser homepage. Direct view links may bypass it,
+  // but an ordinary visit always lands here before opening the working Clock.
+  ctx.setStartCover(!directView);
 }

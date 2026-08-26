@@ -60,6 +60,14 @@
 ## Earlier releases
 
 V15–V24 remain in Git history. Their durable product ideas are summarized in `docs/ORIGIN_TO_FINAL.md`; their archive/injector implementation is intentionally not part of the current runtime.
+# 30.0.1 — Homepage Restored
+
+- restored the full-screen scenic surface as the default Pacefold homepage
+- returned the large time/date, search, quick note, Music and Open Clock controls to that surface
+- retained the Pacefold 30 atmospheric working Clock and warm-paper supporting views behind it
+- added explicit desktop/mobile browser gates for homepage ownership, containment and first-load behavior
+- bumped the service-worker cache and asset identity so installed copies receive the correction
+
 # 30.0.0 — Quiet Clock
 
 - merged the daily-image homepage and functional Clock into one atmospheric working surface

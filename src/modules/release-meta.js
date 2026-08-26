@@ -1,2 +1,2 @@
-export const RELEASE='30.0.0';
-export const REVISION='quiet-clock-r1';
+export const RELEASE='30.0.1';
+export const REVISION='homepage-restored-r2';

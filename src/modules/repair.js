@@ -43,10 +43,11 @@ export function installRepair(ctx){
   const stageCopy=el('div','music-room-stage-copy');stageCopy.append(el('small','','READY WHEN YOU ARE'),el('strong','','Your music, without another dashboard'),el('p','','Paste a song or playlist once, then keep playback, saved music and focus sound in one quiet room.'));
   stage.append(art,stageCopy);player.insertBefore(stage,id('stream-video'));
 
-  // Music lives on the atmospheric Clock, not inside the compatibility cover.
+  // Music belongs to the scenic homepage. The working Clock keeps the player
+  // reachable through the Settings/Sound fold without adding another overlay.
   let coverOpen=null;
   const home=document.querySelector('.view-home');
-  if(home||cover){coverOpen=button('cover-music-button home-music-button','Open music');coverOpen.id='cover-music-open';coverOpen.append(el('i'),el('span','','Music'));(home||cover).append(coverOpen)}
+  if(cover||home){coverOpen=button('cover-music-button home-music-button','Open music');coverOpen.id='cover-music-open';coverOpen.append(el('i'),el('span','','Music'));(cover||home).append(coverOpen)}
 
   const updateCurrent=()=>{
     const saved=readStream(),url=String(saved.url||'');

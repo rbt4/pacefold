@@ -6,9 +6,10 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 
 ## Current release
 
-**Pacefold 30.0.0 — Quiet Clock**
+**Pacefold 30.0.1 — Homepage Restored**
 
-- the daily image and the working Clock are now one homepage—there is no duplicate cover or second entrance
+- normal visits open the full-screen scenic homepage first, with the large clock, date, search, quick note, Music and an explicit Clock entrance
+- opening Clock reveals the atmospheric working surface; direct Notes, Day, Now and Settings links may bypass the homepage
 - analog + digital time, visible seconds, Day Unfold, moving sun, current-time hairline and scheduled markers live directly over the atmosphere
 - Google/address search and quick note remain available beneath the Clock without competing with it
 - prayer rhythm with Hanafi Asr and deliberate privacy modes, plus everyday, mindful and up-to-eight custom moments
@@ -51,7 +52,7 @@ Those historical names are compatibility anchors, not stale code to rename. Exis
 
 ## Direct-source architecture
 
-The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 30 keeps a single final Quiet Clock visual layer instead of extending the discarded Atelier cascade.
+The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 30.0.1 keeps the restored homepage and one final Quiet Clock visual layer instead of extending the discarded Atelier cascade.
 
 ```bash
 npm run build

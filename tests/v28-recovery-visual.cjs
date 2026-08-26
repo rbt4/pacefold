@@ -10,13 +10,13 @@ async function main(){const{server,origin}=await serve();let browser;try{
   browser=await chromium.launch({headless:true});const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,timezoneId:'America/Toronto',serviceWorkers:'block'}),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));page.on('console',message=>{const text=message.text();if(message.type()==='error'&&!/Failed to load resource|Service Worker registration blocked by Playwright/i.test(text))errors.push(text)});
   await page.addInitScript(seed);await page.goto(`${origin}/app/?surface=0`,{waitUntil:'networkidle'});await page.waitForFunction(()=>window.__PACEFOLD__?.recovery==='v28-recovery-r1');
-  if(await page.evaluate(()=>document.documentElement.dataset.cover==='on'))await page.click('#cover-enter');await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
+  if(await page.evaluate(()=>document.documentElement.dataset.cover==='on'))await page.click('#cover-peel');await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
   const immediate=await page.evaluate(()=>{const cover=document.getElementById('pace-cover'),style=getComputedStyle(cover);return{visibility:style.visibility,opacity:Number(style.opacity),pointer:style.pointerEvents,transition:style.transitionDuration}});
   assert(immediate.visibility==='hidden'&&immediate.opacity===0&&immediate.pointer==='none','Mobile cover remains visible for a frame after opening Clock');
   assert(immediate.transition==='0s','Recovery reintroduced a lingering cover transition');
   if(out)await page.screenshot({path:path.join(out,'v28-recovery-mobile-clock-immediate.png'),fullPage:false});
   await page.evaluate(()=>window.__PACEFOLD__.go('settings'));await page.waitForFunction(()=>document.documentElement.dataset.mode==='settings');
-  const release=await page.locator('.view-settings .view-head>b').textContent();assert(/30\.0\.0/.test(release||''),'Visible Settings release identity is stale');
+  const release=await page.locator('.view-settings .view-head>b').textContent();assert(/30\.0\.1/.test(release||''),'Visible Settings release identity is stale');
   await page.evaluate(()=>window.__PACEFOLD__.go('home'));await page.waitForFunction(()=>document.documentElement.dataset.mode==='home');await page.evaluate(()=>document.getElementById('stream-source')?.click());await page.waitForFunction(()=>document.getElementById('sound-bar')?.dataset.musicOpen==='true');await page.evaluate(()=>{const chooser=document.getElementById('stream-chooser');if(chooser)chooser.hidden=true});
   const music=await page.evaluate(()=>{const head=document.querySelector('.music-room-head'),style=getComputedStyle(head),box=head.getBoundingClientRect();return{background:style.backgroundColor,color:style.color,height:box.height,top:box.top,bottom:box.bottom}});
   assert(music.background==='rgba(16, 23, 24, 0.98)'||music.background==='rgb(16, 23, 24)','Mobile Music header returned to a pale legacy slab');
