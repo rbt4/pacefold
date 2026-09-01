@@ -27,6 +27,7 @@ assert(main.includes("document.documentElement.dataset.origin='v31'"),'The V31 v
 assert(style.includes('Pacefold 31 — Origin'),'Origin stylesheet banner is missing');
 assert(style.includes('html[data-origin="v31"] .daybook-fold{')&&style.includes('display:grid!important'),'The persistent lower Daybook is not restored');
 assert(style.includes('Scenic front cover')&&style.includes('The working Clock — the object left open all day'),'Cover and working Clock are not deliberately separated');
+assert(style.includes('html[data-origin="v31"] .privacy-curtain{display:none!important')&&style.includes('[data-privacy-screen="on"] .privacy-curtain{display:grid!important'),'Privacy-screen styling is not self-contained in the production bundle');
 assert(style.length<300000,'Origin stylesheet exceeds the release size ceiling');
 
 assert(cover.includes("ctx.setStartCover=(covered,{focus=false}={})"),'Cover focus must remain opt-in');

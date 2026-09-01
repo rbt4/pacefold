@@ -19,6 +19,13 @@ html[data-origin="v31"] body:before,html[data-origin="v31"] body:after{content:n
 html[data-origin="v31"] .paper-grain{position:fixed!important;z-index:1!important;opacity:.16!important;mix-blend-mode:multiply!important;pointer-events:none!important}
 html[data-origin="v31"] .boot-cover{background:#ebe7dc!important}
 html[data-origin="v31"].ready .boot-cover{visibility:hidden!important;display:none!important}
+html[data-origin="v31"] .privacy-curtain{display:none!important;position:fixed!important;z-index:2147483646!important;inset:0!important;place-items:center!important;background:radial-gradient(circle at 50% 38%,#f7f4eb 0,#ece8dc 46%,#ddd8cb 100%)!important;color:var(--v31-forest)!important;pointer-events:none!important}
+html[data-origin="v31"] .privacy-curtain>i{position:absolute!important;width:72px!important;height:72px!important;border:1px solid rgba(21,61,53,.18)!important;border-radius:50%!important;box-shadow:0 20px 60px rgba(21,61,53,.12),inset 0 0 0 12px rgba(255,255,255,.28)!important}
+html[data-origin="v31"] .privacy-curtain>i:before,html[data-origin="v31"] .privacy-curtain>i:after{content:""!important;position:absolute!important;left:50%!important;top:50%!important;width:3px!important;height:20px!important;border-radius:999px!important;background:var(--v31-forest)!important;transform-origin:50% 100%!important}
+html[data-origin="v31"] .privacy-curtain>i:before{transform:translate(-50%,-100%) rotate(32deg)!important}
+html[data-origin="v31"] .privacy-curtain>i:after{height:27px!important;transform:translate(-50%,-100%) rotate(125deg)!important}
+html[data-origin="v31"] .privacy-curtain>span{margin-top:118px!important;font-size:10px!important;font-weight:650!important;letter-spacing:.18em!important;text-transform:uppercase!important;opacity:.48!important}
+html[data-origin="v31"][data-privacy-screen="on"] .privacy-curtain{display:grid!important}
 
 /* Scenic front cover */
 html[data-origin="v31"][data-cover="on"],html[data-origin="v31"][data-cover="on"] body{overflow:hidden!important}
@@ -355,7 +362,7 @@ html[data-origin="v31"] .setup-dialog{display:none!important}
   html[data-origin="v31"] .pace-cover .cover-note-toggle span{display:none!important}
   html[data-origin="v31"] .pace-cover .cover-submit{display:none!important}
   html[data-origin="v31"] .pace-cover>.home-music-button{top:max(12px,env(safe-area-inset-top))!important;right:12px!important;min-height:38px!important;padding-inline:11px!important}
-  html[data-origin="v31"] .pace-cover>.home-music-button span{display:none!important}
+  html[data-origin="v31"] .pace-cover>.home-music-button span{display:inline!important}
   html[data-origin="v31"] .pace-cover .home-photo-credit{left:9px!important;bottom:max(8px,env(safe-area-inset-bottom))!important;max-width:42vw!important;font-size:7px!important}
   html[data-origin="v31"] .cover-peel{bottom:max(24px,env(safe-area-inset-bottom))!important;min-height:44px!important}
 

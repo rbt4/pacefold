@@ -58,6 +58,7 @@ async function inspect(page){
       coverBox:rect('#pace-cover'),hero:rect('.pace-cover .cover-hero'),search:rect('.pace-cover .cover-omnibox'),
       music:rect('#cover-music-open'),peel:rect('#cover-peel'),stage:rect('#stage'),clock:rect('.clock-card'),
       rhythm:rect('.rhythm-card'),daybook:rect('.daybook-fold'),composer:rect('#clock-note-input'),mobileNav:rect('.mobile-nav'),
+      privacyCurtain:rect('.privacy-curtain'),
       seconds:rect('#clock-seconds'),secondHand:rect('.hand-second'),setupOpen:Boolean(document.getElementById('setup-dialog')?.open),
       stageInert:document.getElementById('stage')?.inert===true,
       coverBackground:getComputedStyle(document.getElementById('pace-cover'),'::before').backgroundImage,
@@ -103,6 +104,7 @@ async function main(){
     requireState(!/daily-image|homepage-default/.test(`${state.bodyBackground} ${state.clockBackground}`),'The scenic photograph leaked into the working Clock',state);
     requireState(state.clock.width>=700&&state.rhythm.width>=260&&state.rhythm.width<=330,'Desktop Clock proportions no longer match the calm folio',state);
     requireState(state.scrollWidth<=state.viewport.width+1,'Working Clock has horizontal overflow',state);
+    requireState(state.privacyCurtain?.display==='none','The inactive privacy screen leaked into the working page',state);
     await page.screenshot({path:path.join(output,'v31-desktop-clock.png'),fullPage:false});
     await page.screenshot({path:path.join(output,'v31-desktop-clock-full.png'),fullPage:true});
 
@@ -139,6 +141,7 @@ async function main(){
     state=await inspect(phone);
     requireState(state.cover==='on'&&inside(state.hero,state.viewport)&&inside(state.search,state.viewport)&&inside(state.peel,state.viewport),'Mobile homepage is clipped',state);
     requireState(state.search.height>=48&&state.peel.height>=44&&(!state.music||state.music.right<=state.viewport.width+1),'Mobile homepage controls fail touch geometry',state);
+    requireState(!state.music||state.music.width>=52,'Mobile Music control lost its visible label',state);
     requireState(state.scrollWidth<=state.viewport.width+1&&!state.setupOpen,'Mobile homepage overflows or reopens setup',state);
     await phone.screenshot({path:path.join(output,'v31-mobile-homepage.png'),fullPage:false});
 
@@ -146,6 +149,7 @@ async function main(){
     state=await inspect(phone);
     requireState(visible(state.clock)&&visible(state.daybook)&&visible(state.composer)&&visible(state.mobileNav),'Mobile Clock lost the instrument, navigation or Daybook',state);
     requireState(state.clock.right<=state.viewport.width+1&&state.daybook.right<=state.viewport.width+1&&state.scrollWidth<=state.viewport.width+1,'Mobile working surface is horizontally clipped',state);
+    requireState(state.privacyCurtain?.display==='none','The inactive privacy screen leaked into the mobile page',state);
     requireState(visible(state.seconds)&&visible(state.secondHand),'Mobile Clock hides seconds',state);
     await phone.screenshot({path:path.join(output,'v31-mobile-clock.png'),fullPage:false});
     await phone.screenshot({path:path.join(output,'v31-mobile-clock-full.png'),fullPage:true});
