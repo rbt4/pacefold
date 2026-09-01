@@ -443,6 +443,12 @@ html[data-origin="v31"] .settings-chip strong{color:var(--v31-ink)!important}
   html[data-origin="v31"] .clock-recent-notes{grid-template-columns:1fr!important}
   html[data-origin="v31"] .clock-note-compose-meta>small{display:none!important}
   html[data-origin="v31"] .day-compare-grid{grid-template-columns:1fr 1fr!important}
+  html[data-origin="v31"] .notebook-card>header{display:grid!important;gap:11px!important}
+  html[data-origin="v31"] .note-find{display:grid!important;grid-template-columns:1fr!important;width:100%!important;gap:10px!important}
+  html[data-origin="v31"] .note-find .filter,html[data-origin="v31"] .note-find .search{width:100%!important;min-width:0!important}
+  html[data-origin="v31"] .note-filter-chips{display:flex!important;width:100%!important;flex-wrap:wrap!important;gap:6px!important}
+  html[data-origin="v31"] .note-filter-chips button{flex:0 0 auto!important}
+  html[data-origin="v31"] .note-find .search input{width:100%!important}
   html[data-origin="v31"]:not([data-mode="home"]) .stage{padding-top:68px!important;padding-inline:10px!important;padding-bottom:44px!important}
 }
 

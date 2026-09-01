@@ -29,6 +29,7 @@ assert(style.includes('html[data-origin="v31"] .daybook-fold{')&&style.includes(
 assert(style.includes('Scenic front cover')&&style.includes('The working Clock — the object left open all day'),'Cover and working Clock are not deliberately separated');
 assert(style.includes('html[data-origin="v31"] .privacy-curtain{display:none!important')&&style.includes('[data-privacy-screen="on"] .privacy-curtain{display:grid!important'),'Privacy-screen styling is not self-contained in the production bundle');
 assert(style.includes('Supporting folds must not inherit the V30 photograph-era contrast rules')&&style.includes('.day-compare>header{display:flex!important')&&style.includes('.now-schedule .rhythm-row strong{color:var(--v31-ink)!important')&&style.includes('.settings-chip>span{display:grid!important'),'Supporting-fold contrast and layout recovery is incomplete');
+assert(style.includes('.note-find{display:grid!important;grid-template-columns:1fr!important;width:100%!important')&&style.includes('.note-filter-chips{display:flex!important;width:100%!important'),'Mobile Notes still inherits the narrow recovery-era filter rail');
 assert(style.length<300000,'Origin stylesheet exceeds the release size ceiling');
 
 assert(cover.includes("ctx.setStartCover=(covered,{focus=false}={})"),'Cover focus must remain opt-in');

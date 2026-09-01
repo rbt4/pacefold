@@ -166,6 +166,8 @@ async function main(){
     await phone.screenshot({path:path.join(output,'v31-mobile-clock.png'),fullPage:false});
     await phone.screenshot({path:path.join(output,'v31-mobile-clock-full.png'),fullPage:true});
     await phone.evaluate(()=>window.__PACEFOLD__.go('notes'));await phone.waitForTimeout(180);
+    const mobileNotes=await phone.evaluate(()=>{const box=node=>node?.getBoundingClientRect().toJSON(),chips=[...document.querySelectorAll('#note-filter-chips button')].map(box);return{find:box(document.querySelector('.note-find')),search:box(document.querySelector('.note-find .search input')),chips}});
+    requireState(mobileNotes.find?.width>=330&&mobileNotes.search?.width>=320&&mobileNotes.chips.length>=2&&Math.abs(mobileNotes.chips[0].y-mobileNotes.chips[1].y)<3,'Mobile Notes filters collapsed into a narrow vertical rail',mobileNotes);
     await phone.screenshot({path:path.join(output,'v31-mobile-notes.png'),fullPage:false});
     await phone.evaluate(()=>window.__PACEFOLD__.go('settings'));await phone.waitForTimeout(180);
     await phone.screenshot({path:path.join(output,'v31-mobile-settings.png'),fullPage:false});
