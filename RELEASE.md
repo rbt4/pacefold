@@ -4,7 +4,7 @@
 
 - Public release: **31.0.0**
 - Experience revision: **origin-r1**
-- Product name: **Pacefold**
+- Product name: **Pacefold**; discreet installed-app chrome remains **Clock**
 
 ## What changed
 

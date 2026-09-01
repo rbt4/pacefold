@@ -69,7 +69,7 @@ async function prepareAuthShell(){
 async function preparePublicPages(){
   for(const relative of['index.html','privacy.html']){
     const file=path.join(target,relative);let html=await fs.readFile(file,'utf8');
-    html=neutralizeVisibleName(html).replace(/25\.1\.0|25\.1/g,RELEASE);
+    html=html.replace(/25\.1\.0|25\.1/g,RELEASE);
     html=addReferrer(html);
     if(html.includes('http-equiv="Content-Security-Policy"'))html=replaceCsp(html,PUBLIC_CSP);
     else html=html.replace('</head>',`  <meta http-equiv="Content-Security-Policy" content="${PUBLIC_CSP}">\n</head>`);

@@ -16,6 +16,7 @@ const build=read('scripts/build-v25.mjs');
 const worker=read('src/service-worker.js');
 const shell=read('src/app/index.html');
 const built=read(path.join(process.argv[2]||'_site','app','index.html'));
+const builtPublic=read(path.join(process.argv[2]||'_site','index.html'));
 const builtRuntime=read(path.join(process.argv[2]||'_site','app','pacefold.mjs'));
 
 assert(pkg.version==='31.0.0','Package release is not Pacefold 31');
@@ -50,6 +51,7 @@ for(const token of [
 
 assert(builtRuntime.includes('clock-note-input'),'Built Clock is missing its persistent note composer');
 assert(builtRuntime.includes('cover-peel')&&builtRuntime.includes('cover-return'),'Built shell is missing cover controls');
+assert(builtPublic.includes('PACEFOLD 31 · ORIGIN')&&builtPublic.includes('Pacefold 31.0.0 · origin-r1'),'The public site lost the Pacefold release identity');
 assert(built.length<180000,'Built app shell exceeds the size ceiling');
 
 console.log('Pacefold 31 Origin static contract passed.');
