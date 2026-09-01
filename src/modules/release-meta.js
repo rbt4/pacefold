@@ -1,2 +1,2 @@
-export const RELEASE='30.0.1';
-export const REVISION='homepage-restored-r2';
+export const RELEASE='31.0.0';
+export const REVISION='origin-r1';

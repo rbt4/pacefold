@@ -6,12 +6,12 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 
 ## Current release
 
-**Pacefold 30.0.1 — Homepage Restored**
+**Pacefold 31.0.0 — Origin**
 
 - normal visits open the full-screen scenic homepage first, with the large clock, date, search, quick note, Music and an explicit Clock entrance
-- opening Clock reveals the atmospheric working surface; direct Notes, Day, Now and Settings links may bypass the homepage
-- analog + digital time, visible seconds, Day Unfold, moving sun, current-time hairline and scheduled markers live directly over the atmosphere
-- Google/address search and quick note remain available beneath the Clock without competing with it
+- opening it reveals a distinct warm-folio workspace: a deep-forest analog + digital Clock, visible seconds, Day Unfold and rhythm; direct fold links may bypass the cover
+- the persistent lower Daybook is again part of Clock, with immediate capture, recent notes and carry-forward work instead of a substitute summary
+- Google/address search and scenic photography stay on the front cover so the working Clock can remain calm all day
 - prayer rhythm with Hanafi Asr and deliberate privacy modes, plus everyday, mindful and up-to-eight custom moments
 - coloured quiet cues for prayer/moments, water, noodles/prep, away, meal, eyes and movement
 - a live clock favicon/taskbar identity that can carry several waiting cue colours at once
@@ -52,7 +52,7 @@ Those historical names are compatibility anchors, not stale code to rename. Exis
 
 ## Direct-source architecture
 
-The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 30.0.1 keeps the restored homepage and one final Quiet Clock visual layer instead of extending the discarded Atelier cascade.
+The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 31 consolidates the scenic entrance, working Clock and persistent Daybook into one explicit Origin contract.
 
 ```bash
 npm run build
@@ -64,4 +64,4 @@ CI also runs the Chromium release contract and a full desktop/mobile browser aud
 
 ## Product lineage
 
-The durable ideas from the project’s conception through 30.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.
+The durable ideas from the project’s conception through 31.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.

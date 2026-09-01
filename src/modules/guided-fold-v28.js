@@ -164,6 +164,7 @@ export function installGuidedFoldV28(ctx){
     if(!guide.isConnected)return;
     guideActions.replaceChildren();
     const cue=ctx.currentCues?.[0];
+    guide.dataset.state=cue?'cue':'clear';
     guide.classList.toggle('has-cue',Boolean(cue));
     guide.style.setProperty('--guide',cue?cueColor(cue):'#426b5b');
     for(const control of $$('.quick-action'))control.classList.remove('is-suggested');
@@ -180,6 +181,7 @@ export function installGuidedFoldV28(ctx){
     }
     const active=activeSession();
     if(active){
+      guide.dataset.state='active';
       guideKicker.textContent='IN PROGRESS';
       guideTitle.textContent=active.open.label||'Session running';
       guideDetail.textContent=`${ctx.durationText?.(Date.now()-active.open.start)||'Active'} · Pacefold is keeping the time.`;
@@ -187,6 +189,7 @@ export function installGuidedFoldV28(ctx){
       guideActions.append(openDay);return;
     }
     const next=ctx.getSchedule?.(new Date())?.next;
+    guide.dataset.state=next?'next':'clear';
     guideKicker.textContent=next?'UP NEXT':'ALL CLEAR';
     guideTitle.textContent=next?(ctx.clockMomentLabel?.(next)||next.label):'Nothing needs you';
     guideDetail.textContent=next?`${ctx.relativeUntil?.(next.date,new Date())||''} · Keep doing what you are doing.`:'Pacefold will surface the next useful cue here.';

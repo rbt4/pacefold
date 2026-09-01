@@ -17,7 +17,7 @@ The durable interaction model is therefore:
 
 The clock keeps visible seconds and an analog instrument, not only a timestamp. Day Unfold turns the workday into a visual arc with a moving sun/current marker and scheduled points, carrying forward the early idea of seeing the day physically unfold.
 
-The daily-image surface now belongs to the working Clock itself. Release 30 removed the duplicate cover/peel step so the analog instrument, digital time, Day Unfold, quiet cues, search and quick note all live in one atmospheric homepage.
+The daily image belongs to the scenic front cover, with search and quick note kept there as lightweight browser-home utilities. Release 31 deliberately separates that entrance from the object left open all day: a quiet folio with analog and digital time, visible seconds, Day Unfold, rhythm and cues. This is not duplication; the two surfaces have different jobs.
 
 ## Quiet cues, not notification noise
 
@@ -59,7 +59,7 @@ Neutral names can be deliberately revealed on Clock by a press-and-hold; passive
 
 ## Daybook is a notebook, not a form
 
-Notes evolved toward a Japanese-notebook-inspired Daybook: fast capture first, organization second. It includes calendar activity, categories, search, editing, pin/carry-forward and contextual links to the day. It must remain useful even with no cloud connection.
+Notes evolved toward a paper-notebook Daybook: fast capture first, organization second. Its composer, recent entries and carry-forward work stay persistently in the lower half of Clock; the full upward fold adds calendar activity, categories, search, editing and contextual links to the day. It must remain useful even with no cloud connection and must not be replaced by a static summary.
 
 Optional OneNote copy is additive. Pacefold local data remains the source of truth.
 

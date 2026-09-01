@@ -1,5 +1,15 @@
 # Changelog
 
+## 31.0.0 — Origin
+
+- Restored the scenic homepage as a true front cover and separated it from the working Clock.
+- Rebuilt Clock as a quiet warm-paper folio with a deep-forest time instrument, analog and digital seconds, Day Unfold and a compact rhythm rail.
+- Restored the original persistent lower Daybook with immediate capture, recent notes and carried work.
+- Kept the six water, Noodles/Prep, Away, Meal, eyes and movement actions compact and one tap away.
+- Preserved Notes up, Day Log left, Now right and Settings down, including direct links that bypass the cover.
+- Prevented first-load focus theft and repeated setup while retaining every established local store and backup path.
+- Replaced inherited recovery-era visual gates with a single desktop/mobile Origin contract covering layout, overflow, persistence and fold navigation.
+
 ## 27.1.0 — Final Form
 
 - Consolidated the conception-to-current product invariants into `docs/ORIGIN_TO_FINAL.md` so future cleanup cannot silently erase original behavior.

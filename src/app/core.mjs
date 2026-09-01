@@ -1,5 +1,5 @@
-export const VERSION='30.0.1';
-export const REVISION='homepage-restored-r2';
+export const VERSION='31.0.0';
+export const REVISION='origin-r1';
 export const KEYS={
   prefs:'pacefoldPrefsV15',
   notes:'pacefold.notebook.entries.v2',
