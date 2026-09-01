@@ -336,6 +336,40 @@ html[data-origin="v31"] .view-head>b{background:rgba(255,255,255,.66)!important;
 html[data-origin="v31"] .settings-panels,html[data-origin="v31"] .notebook-card,html[data-origin="v31"] .calendar-card,html[data-origin="v31"] .timeline-card,html[data-origin="v31"] .now-grid>section{color:var(--v31-ink)!important}
 html[data-origin="v31"] .setup-dialog{display:none!important}
 
+/* Supporting folds must not inherit the V30 photograph-era contrast rules. */
+html[data-origin="v31"] .day-story{background:linear-gradient(120deg,var(--v31-forest-deep),#315b4c)!important;color:#fff!important}
+html[data-origin="v31"] .day-story strong{color:#fff!important}
+html[data-origin="v31"] .day-story small,html[data-origin="v31"] .day-story p,html[data-origin="v31"] .day-story .balance-key{color:rgba(255,255,255,.72)!important}
+html[data-origin="v31"] .day-compare{display:block!important;margin-top:14px!important;padding:18px 20px!important;border:1px solid var(--v31-line)!important;border-radius:20px!important;background:rgba(250,249,245,.82)!important;color:var(--v31-ink)!important;box-shadow:var(--v31-shadow)!important}
+html[data-origin="v31"] .day-compare>header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:18px!important;padding-bottom:11px!important;border-bottom:1px solid var(--v31-line)!important}
+html[data-origin="v31"] .day-compare>header span{display:grid!important;gap:3px!important}
+html[data-origin="v31"] .day-compare>header small{font-size:8px!important;letter-spacing:.13em!important;text-transform:uppercase!important;color:var(--v31-forest)!important}
+html[data-origin="v31"] .day-compare>header strong{font-size:15px!important;color:var(--v31-ink)!important}
+html[data-origin="v31"] .day-compare>header b{font-size:9px!important;font-weight:560!important;color:var(--v31-muted)!important}
+html[data-origin="v31"] .day-compare-empty{margin:12px 0 0!important;color:var(--v31-muted)!important;font-size:10px!important;line-height:1.5!important}
+html[data-origin="v31"] .day-compare-grid{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin-top:11px!important}
+html[data-origin="v31"] .day-compare-card{display:grid!important;padding:11px 12px!important;border:1px solid var(--v31-line)!important;border-radius:13px!important;background:rgba(255,255,255,.68)!important;color:var(--v31-ink)!important}
+html[data-origin="v31"] .day-compare-card>span{font-size:8px!important;text-transform:uppercase!important;letter-spacing:.09em!important;color:var(--v31-muted)!important}
+html[data-origin="v31"] .day-compare-card>strong{margin-top:3px!important;font-size:18px!important;color:var(--v31-ink)!important}
+html[data-origin="v31"] .day-compare-card>small{margin-top:3px!important;font-size:8px!important;color:var(--v31-muted)!important}
+
+html[data-origin="v31"] .now-grid>section{background:rgba(250,249,245,.84)!important;border-color:var(--v31-line)!important}
+html[data-origin="v31"] .now-primary{background:linear-gradient(145deg,var(--v31-forest-deep),#315b4c)!important;color:#fff!important;border:0!important}
+html[data-origin="v31"] .now-primary>small,html[data-origin="v31"] .now-primary>p{color:rgba(255,255,255,.70)!important}
+html[data-origin="v31"] .now-primary h2{color:#fff!important}
+html[data-origin="v31"] .now-primary>strong{color:#bce4d2!important}
+html[data-origin="v31"] .now-guidance{background:rgba(255,255,255,.09)!important;border-left-color:#9fd1bd!important;color:rgba(255,255,255,.84)!important}
+html[data-origin="v31"] .now-schedule>header,html[data-origin="v31"] .now-cues>header,html[data-origin="v31"] .now-weather>header,html[data-origin="v31"] .now-active>header{color:var(--v31-ink)!important;border-bottom-color:var(--v31-line)!important}
+html[data-origin="v31"] .now-schedule .rhythm-row{color:var(--v31-ink)!important;border-bottom-color:var(--v31-line)!important;background:transparent!important}
+html[data-origin="v31"] .now-schedule .rhythm-row span{color:var(--v31-muted)!important}
+html[data-origin="v31"] .now-schedule .rhythm-row strong{color:var(--v31-ink)!important}
+html[data-origin="v31"] .now-schedule .rhythm-row[data-state="next"]{background:var(--v31-forest-soft)!important;border-color:rgba(21,61,53,.14)!important}
+html[data-origin="v31"] .now-cues,html[data-origin="v31"] .now-active,html[data-origin="v31"] .now-weather{color:var(--v31-ink)!important}
+
+html[data-origin="v31"] .settings-chip>span{display:grid!important;min-width:0!important}
+html[data-origin="v31"] .settings-chip small{color:var(--v31-muted)!important}
+html[data-origin="v31"] .settings-chip strong{color:var(--v31-ink)!important}
+
 @media(max-width:1040px){
   html[data-origin="v31"][data-cover="peeled"][data-mode="home"] .stage{padding-inline:34px!important}
   html[data-origin="v31"] .home-grid{grid-template-columns:minmax(0,1fr) 270px!important}
@@ -408,6 +442,7 @@ html[data-origin="v31"] .setup-dialog{display:none!important}
   html[data-origin="v31"] .clock-note-compose,html[data-origin="v31"] .clock-carry,html[data-origin="v31"] .clock-recent,html[data-origin="v31"] .clock-daybook-footer{margin-left:0!important;padding-left:0!important}
   html[data-origin="v31"] .clock-recent-notes{grid-template-columns:1fr!important}
   html[data-origin="v31"] .clock-note-compose-meta>small{display:none!important}
+  html[data-origin="v31"] .day-compare-grid{grid-template-columns:1fr 1fr!important}
   html[data-origin="v31"]:not([data-mode="home"]) .stage{padding-top:68px!important;padding-inline:10px!important;padding-bottom:44px!important}
 }
 
