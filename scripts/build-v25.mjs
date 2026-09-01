@@ -5,8 +5,8 @@ import{build}from'esbuild';
 const root=process.cwd();
 const source=path.join(root,'src');
 const target=path.resolve(process.argv[2]||path.join(root,'_site'));
-const RELEASE='30.0.0';
-const REVISION='quiet-clock-r1';
+const RELEASE='31.0.0';
+const REVISION='origin-r1';
 if(target===root||target===path.parse(target).root)throw new Error(`Unsafe build target: ${target}`);
 
 await fs.rm(target,{recursive:true,force:true});
@@ -69,7 +69,7 @@ async function prepareAuthShell(){
 async function preparePublicPages(){
   for(const relative of['index.html','privacy.html']){
     const file=path.join(target,relative);let html=await fs.readFile(file,'utf8');
-    html=neutralizeVisibleName(html).replace(/25\.1\.0|25\.1/g,RELEASE);
+    html=html.replace(/25\.1\.0|25\.1/g,RELEASE);
     html=addReferrer(html);
     if(html.includes('http-equiv="Content-Security-Policy"'))html=replaceCsp(html,PUBLIC_CSP);
     else html=html.replace('</head>',`  <meta http-equiv="Content-Security-Policy" content="${PUBLIC_CSP}">\n</head>`);
@@ -97,7 +97,7 @@ const styleFiles=[
   '27-zzzzzzzzzzzzzzzzzz-homepage-r7.css','27-zzzzzzzzzzzzzzzzzzz-homepage-r7-finish.css',
   '27-zzzzzzzzzzzzzzzzzzzz-music-magic-r8.css','27-zzzzzzzzzzzzzzzzzzzzz-music-magic-r8-mobile-fix.css',
   '27-zzzzzzzzzzzzzzzzzzzzzz-music-magic-r8-source-fit.css','27-zzzzzzzzzzzzzzzzzzzzzzzz-morphe-bridge-r9.css',
-  '28-guided-fold-v28.css','29-v28-recovery.css','30-v28-recovery-stability.css','31-v30-quiet-clock.css'
+  '28-guided-fold-v28.css','29-v28-recovery.css','30-v28-recovery-stability.css','31-v30-quiet-clock.css','32-v31-origin.css'
 ];
 const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
 await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));

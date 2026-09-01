@@ -1,11 +1,11 @@
 {
   "name":"pacefold",
-  "version":"30.0.0",
+  "version":"31.0.0",
   "private":true,
   "type":"module",
   "scripts":{
     "build":"node scripts/build-v25.mjs _site && node scripts/cache-music-r8.mjs _site",
-    "verify":"node tests/core.mjs && node tests/music-morphe-r9.cjs && node tests/guided-fold-v28.cjs && node tests/v28-recovery.cjs && node tests/v30-quiet-clock.cjs _site",
+    "verify":"node tests/core.mjs && node tests/music-morphe-r9.cjs && node tests/guided-fold-v28.cjs && node tests/v31-origin.cjs _site",
     "preview":"node scripts/preview.mjs _site 4173"
   },
   "devDependencies":{"esbuild":"0.25.11"}

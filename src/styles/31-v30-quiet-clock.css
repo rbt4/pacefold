@@ -24,10 +24,28 @@ html[data-mode="home"] body:before,html[data-mode="home"] body:after{display:non
 .paper-grain{z-index:2!important;opacity:.12!important;mix-blend-mode:soft-light}
 .boot-cover{background:#ece8dd!important}.ready .boot-cover{pointer-events:none}
 
-/* The duplicate start surface is compatibility-only. No startup flash. */
+/* The scenic surface is the homepage; the working Clock is the next fold. */
 html[data-cover="peeled"] .pace-cover{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
 .cover-return[hidden]{display:none!important}
-html:not([data-cover="on"]) .cover-return{display:none!important}
+html[data-cover="peeled"] .cover-return{display:flex!important}
+
+/* Restore the deliberately simple homepage composition after the V30 Clock
+   layer moved its utility controls into the dashboard. */
+html[data-cover="on"] body{overflow:hidden!important}
+html[data-cover="on"] .pace-cover{display:grid!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+.pace-cover .cover-hero{width:min(700px,calc(100vw - 48px))!important;margin-top:-2vh!important;padding:30px 30px 26px!important}
+.pace-cover .home-utility{width:min(640px,100%)!important;margin:28px 0 0!important;position:relative!important;z-index:3!important}
+.pace-cover .cover-omnibox{min-height:58px!important;height:auto!important;padding:6px 7px 6px 15px!important;border:1px solid rgba(255,255,255,.72)!important;border-radius:999px!important;background:rgba(255,255,255,.96)!important;box-shadow:0 15px 42px rgba(0,0,0,.22)!important;backdrop-filter:blur(18px)!important}
+.pace-cover .cover-omnibox input{height:auto!important;color:#202522!important;background:transparent!important;font-size:15px!important}
+.pace-cover .cover-omnibox input::placeholder{color:#717874!important}
+.pace-cover .cover-search-icon{filter:none!important;opacity:.72!important}
+.pace-cover .cover-note-toggle{height:40px!important;color:#4f575d!important}
+.pace-cover .cover-submit{width:auto!important;min-width:40px!important;height:40px!important;background:#2863c7!important;color:#fff!important}
+.pace-cover .cover-note-panel{margin-top:0!important;padding:11px!important;border:1px solid rgba(255,255,255,.5)!important;border-radius:18px!important;background:rgba(250,250,248,.97)!important;box-shadow:0 20px 52px rgba(0,0,0,.2)!important}
+.pace-cover .cover-note-panel textarea{color:#1e2521!important;background:#fff!important}
+.pace-cover .home-photo-credit{position:absolute!important;left:14px!important;bottom:max(12px,env(safe-area-inset-bottom))!important;z-index:4!important;max-width:min(42vw,460px)!important}
+.pace-cover>.home-music-button{position:absolute!important;z-index:5!important;top:70px!important;right:20px!important;bottom:auto!important;left:auto!important;display:inline-flex!important;min-height:38px!important;padding:0 13px!important;border:1px solid rgba(255,255,255,.34)!important;border-radius:999px!important;background:rgba(8,17,19,.36)!important;color:#fff!important;box-shadow:0 8px 24px rgba(0,0,0,.14)!important;backdrop-filter:blur(16px)!important}
+html[data-cover="on"] .sound-bar[data-music-open="false"]{display:none!important}
 
 /* One compact piece of permanent chrome. */
 .app-bar{height:60px!important;padding:0 22px!important;background:rgba(250,248,242,.82)!important;border-color:rgba(24,35,31,.09)!important;backdrop-filter:blur(24px) saturate(1.16)!important;box-shadow:0 1px 0 rgba(255,255,255,.42)}
@@ -133,6 +151,13 @@ html:not([data-mode="home"])[data-cover="peeled"][data-recovery="v28"] .sound-ba
   html:not([data-mode="home"])[data-cover="peeled"][data-recovery="v28"] .sound-bar[data-streaming="player"][data-music-open="false"]:has(.stream-player[data-state="empty"]) .stream-dock,
   html:not([data-mode="home"])[data-cover="peeled"][data-recovery="v28"] .sound-bar[data-streaming="player"][data-music-open="false"]:has(.stream-player[data-state="empty"]) .stream-source{width:76px!important;min-width:76px!important;height:34px!important;min-height:34px!important}
   html:not([data-mode="home"])[data-cover="peeled"][data-recovery="v28"] .sound-bar[data-streaming="player"][data-music-open="false"]:has(.stream-player[data-state="empty"]) .stream-dock{grid-template-columns:76px!important}
+  .pace-cover .cover-hero{width:calc(100vw - 24px)!important;margin-top:-4vh!important;padding:22px 16px 20px!important}
+  .pace-cover .home-utility{width:100%!important;margin-top:22px!important}
+  .pace-cover .cover-omnibox{min-height:52px!important;padding-left:13px!important;grid-template-columns:28px minmax(0,1fr) auto!important}
+  .pace-cover .cover-submit{display:none!important}
+  .pace-cover>.home-music-button{top:62px!important;right:12px!important;min-height:36px!important;padding-inline:11px!important}
+  .pace-cover>.home-music-button span{display:none!important}
+  .pace-cover .home-photo-credit{left:9px!important;bottom:max(8px,env(safe-area-inset-bottom))!important;max-width:42vw!important}
 }
 
 @media(max-width:390px){.clock-instrument{grid-template-columns:102px minmax(0,1fr)!important}.analog{--tick-radius:44px;width:100px!important}.hand-hour{height:30px!important}.hand-minute{height:40px!important}.hand-second{height:44px!important}.digital>span{font-size:47px!important}.rhythm-row{grid-template-columns:8px 1fr auto!important}.rhythm-row span{display:none!important}.quick-action small{font-size:6.5px!important}.settings-nav small{display:none!important}}

@@ -26,6 +26,7 @@ import{installMusicMorpheR9}from'./music-morphe-r9.js';
 import{installGuidedFoldV28}from'./guided-fold-v28.js';
 import{installRecoveryV28}from'./recovery-v28.js';
 
+document.documentElement.dataset.origin='v31';
 const ctx=createContext();
 prepareFinalForm(ctx);
 ctx.prefs.rhythmDiscretion=['names','neutral','hidden'].includes(ctx.prefs.rhythmDiscretion)?ctx.prefs.rhythmDiscretion:'neutral';
