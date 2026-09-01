@@ -128,8 +128,8 @@ async function main(){
         requireState(fold.compare==='block'&&fold.compareHeader==='flex'&&/255/.test(fold.storyTitle),'Day fold lost its comparison layout or story contrast',fold);
       }
       if(mode==='now'){
-        const fold=await page.evaluate(()=>({title:getComputedStyle(document.querySelector('.now-primary h2')).color,scheduleTime:getComputedStyle(document.querySelector('.now-schedule .rhythm-row strong')).color,primaryBackground:getComputedStyle(document.querySelector('.now-primary')).backgroundImage}));
-        requireState(/255/.test(fold.title)&&!/255, 255, 255/.test(fold.scheduleTime)&&fold.primaryBackground!=='none','Now fold has unreadable inherited contrast',fold);
+        const fold=await page.evaluate(()=>({title:getComputedStyle(document.querySelector('.now-primary h2')).color,scheduleTime:getComputedStyle(document.querySelector('.now-schedule .rhythm-row strong')).color,primaryBackground:getComputedStyle(document.querySelector('.now-primary')).backgroundImage,primaryColor:getComputedStyle(document.querySelector('.now-primary')).backgroundColor}));
+        requireState(/255/.test(fold.title)&&!/255, 255, 255/.test(fold.scheduleTime)&&fold.primaryBackground!=='none'&&!/247, 250, 248/.test(fold.primaryColor),'Now fold has unreadable inherited contrast',fold);
       }
       if(mode==='settings'){
         const fold=await page.evaluate(()=>({chipCopy:getComputedStyle(document.querySelector('.settings-chip>span')).display}));
