@@ -41,7 +41,7 @@ export function installDaylog(ctx){
     }
     if(action==='eyes'){ctx.storePrefs({gazeLastCompleted:now},'eyes');ctx.addMoment('eyes','Distance look','20-second eye reset',now,'eyes');ctx.toast('Distance look logged')}
     if(action==='move'){ctx.storePrefs({bodyLastCompleted:now},'move');ctx.addMoment('move','Movement reset','Changed position and moved',now,'move');ctx.toast('Movement reset logged')}
-    if(action==='ack'){const cue=ctx.currentCues[0];if(cue){ctx.acknowledgeCue(cue);ctx.toast(`${ctx.clockCueCopy?.(cue)?.label||cue.label} cleared`)}else ctx.toast('No waiting cue')}
+    if(action==='ack'){const cue=ctx.currentCues[0];if(cue)ctx.resolveCue(cue);else ctx.toast('No waiting cue')}
     if(action==='snooze')ctx.snoozeCues(10);
     ctx.refreshCues();ctx.renderAll?.();
   };

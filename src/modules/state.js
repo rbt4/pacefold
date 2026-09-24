@@ -17,7 +17,8 @@ import{
   normalizeLog,
   eventsForDay,
   metricsForDay,
-  backupPayload
+  backupPayload,
+  sunHours
 }from'../app/core.mjs';
 import{RELEASE,REVISION}from'./release-meta.js';
 
@@ -110,7 +111,7 @@ export function createContext(){
   const ctx={
     RELEASE,REVISION,CORE_VERSION,CORE_REVISION,KEYS,DEFAULT_PREFS,ALERT_PRAYERS,
     parseJson,clamp,cleanText,migratePrefs,zoneParts,dateKey,zonedDate,scheduleState,
-    workRange,normalizeNotes:normalizeV26Notes,normalizeNoteCategories,normalizeLog,eventsForDay,metricsForDay,backupPayload,
+    workRange,normalizeNotes:normalizeV26Notes,normalizeNoteCategories,normalizeLog,eventsForDay,metricsForDay,backupPayload,sunHours,
     CUE_COLORS,$,$$,id,el,button,rawPrefs,prefs,notes,log,
     mode:'home',
     selectedDate:dateKey(new Date(),prefs.timeZone),

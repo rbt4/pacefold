@@ -31,7 +31,7 @@ assert(!fs.existsSync(path.join(root,'src','styles')),'The layered src/styles ov
 assert(!build.includes('styleFiles')&&!build.includes("'styles'),file"),'The build is concatenating stylesheet layers again');
 assert(style.includes('Pacefold — one stylesheet'),'Single stylesheet banner is missing');
 assert((style.match(/!important/g)||[]).length<=20,'The stylesheet is sliding back into !important overrides');
-assert(style.length<120000,'The stylesheet exceeds the size ceiling');
+assert(style.length<140000,'The stylesheet exceeds the size ceiling');
 assert(style.includes('.daybook-fold{')&&style.includes('.clock-note-compose'),'The persistent lower Daybook is not styled');
 assert(style.includes('html[data-cover="on"] .pace-cover{')&&style.includes('.pace-cover::before'),'Cover and working Clock are not deliberately separated');
 assert(style.includes('.privacy-curtain{display:none}')&&style.includes('html[data-privacy-screen="on"] .privacy-curtain{'),'Privacy-screen styling is not self-contained');

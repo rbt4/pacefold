@@ -127,6 +127,7 @@ export function installWeatherWeek(ctx){
       const query=new URLSearchParams({
         latitude:String(ctx.prefs.lat),longitude:String(ctx.prefs.lng),timezone:ctx.prefs.timeZone,forecast_days:'7',models:'best_match',
         current:'temperature_2m,apparent_temperature,weather_code,is_day',
+        hourly:'temperature_2m,weather_code,precipitation_probability',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max'
       });
       const response=await fetch(`${API}?${query}`,{credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store'});
@@ -135,7 +136,7 @@ export function installWeatherWeek(ctx){
       if(!Array.isArray(data?.daily?.time))throw new Error('Forecast missing days');
       write({savedAt:Date.now(),lat:ctx.prefs.lat,lng:ctx.prefs.lng,timeZone:ctx.prefs.timeZone,data});
     }catch(error){console.warn('[Clock] weekly forecast unavailable',error?.message||error)}
-    finally{busy=false;render()}
+    finally{busy=false;render();window.dispatchEvent(new CustomEvent('pacefold:week'))}
   }
 
   const baseInitialize=ctx.initialize;
@@ -148,4 +149,6 @@ export function installWeatherWeek(ctx){
     return result;
   };
   ctx.refreshWeek=refresh;
+  // Other surfaces (the dial's hourly ring, the sky) read the same cached forecast.
+  ctx.weekForecast=()=>{const cached=read();return ctx.prefs.weatherEnabled&&sameSpot(cached)?cached.data:null};
 }

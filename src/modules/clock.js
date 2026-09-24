@@ -121,8 +121,9 @@ export function installClock(ctx){
     const primary=document.querySelector('.now-primary');if(primary)primary.style.setProperty('--now-progress',ringProgress.toFixed(4));
     const minutesLeft=next?Math.max(0,Math.round((next.date-now)/60000)):0,ringLabel=id('now-ring-value');
     if(ringLabel)ringLabel.textContent=next?(minutesLeft>=60?`${Math.floor(minutesLeft/60)}h ${String(minutesLeft%60).padStart(2,'0')}m`:`${minutesLeft}m`):'Done';
-    const waiting=ctx.currentCues.length;if(guidance)guidance.textContent=waiting?`${waiting===1?`“${ctx.clockCueCopy(ctx.currentCues[0]).label}” is waiting.`:`${waiting} cues are waiting, starting with “${ctx.clockCueCopy(ctx.currentCues[0]).label}”.`} Clear it when done, or snooze cues for ten minutes.`:next?'Nothing is waiting. Keep your current pace.':'No scheduled moments remain today.';
+    const waiting=ctx.currentCues.length;if(guidance)guidance.textContent=waiting?`${waiting===1?`“${ctx.clockCueCopy(ctx.currentCues[0]).label}” is waiting.`:`${waiting} cues are waiting, starting with “${ctx.clockCueCopy(ctx.currentCues[0]).label}”.`} Log it when done and it reschedules itself, or snooze cues for ten minutes.`:next?'Nothing is waiting. Keep your current pace.':'No scheduled moments remain today.';
     for(const control of[id('now-clear-cue'),id('now-snooze')])if(control)control.disabled=!waiting;
+    const resolve=id('now-clear-cue');if(resolve)resolve.textContent=waiting?ctx.cueActionLabel(ctx.currentCues[0]):'Done';
   };
 
   ctx.renderClock=(now=new Date())=>{

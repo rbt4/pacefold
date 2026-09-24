@@ -134,7 +134,7 @@ export function installGuidedFoldV28(ctx){
     for(const cue of ctx.currentCues.slice(0,4)){
       const copy=ctx.clockCueCopy?.(cue)||cue,row=el('article','v28-peek-row');row.style.setProperty('--cue',cueColor(cue));
       const text=el('span');text.append(el('strong','',copy.label),el('small','',copy.detail));
-      const clear=button('','Clear cue','Clear');clear.addEventListener('click',()=>{ctx.acknowledgeCue?.(cue);renderCuePeek()});
+      const clear=button('',`${ctx.cueActionLabel?.(cue)||'Done'}: ${copy.label}`,ctx.cueActionLabel?.(cue)||'Done');clear.addEventListener('click',()=>{ctx.resolveCue?.(cue);renderCuePeek()});
       row.append(el('i'),text,clear);list.append(row);
     }
     cuePeek.append(list);
@@ -143,6 +143,7 @@ export function installGuidedFoldV28(ctx){
 
   const performCue=cue=>{
     if(!cue)return;
+    if(ctx.resolveCue){ctx.resolveCue(cue);return}
     if(cue.source==='prayer'){ctx.go?.('now');return}
     if(ACTIONABLE.has(cue.source)){
       ctx.performAction?.(cue.source);
@@ -170,11 +171,12 @@ export function installGuidedFoldV28(ctx){
     for(const control of $$('.quick-action'))control.classList.remove('is-suggested');
     if(cue){
       const copy=ctx.clockCueCopy?.(cue)||cue;
-      guideKicker.textContent='NEEDS YOU';
+      const more=(ctx.currentCues?.length||1)-1;
+      guideKicker.textContent=more?`NEEDS YOU · +${more} more`:'NEEDS YOU';
       guideTitle.textContent=copy.label;
       guideDetail.textContent=copy.detail;
       $('.quick-action[data-action="'+cue.source+'"]')?.classList.add('is-suggested');
-      const primaryLabel=cue.source==='prayer'?'Open Now':cue.source==='water'?'Log water':['eyes','move'].includes(cue.source)?'Done':'Clear';
+      const primaryLabel=ctx.cueActionLabel?.(cue)||'Done';
       const primary=button('v28-guide-primary',primaryLabel,primaryLabel);primary.addEventListener('click',()=>performCue(cue));
       const later=button('v28-guide-secondary','Snooze all cues for 10 minutes','Later');later.addEventListener('click',()=>ctx.snoozeCues?.(10));
       guideActions.append(primary,later);return;

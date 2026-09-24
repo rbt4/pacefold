@@ -30,6 +30,25 @@ export function installCues(ctx){
     ctx.cueState.snoozeUntil=Date.now()+10*60*1000;ctx.persistCueState?.();launchUrl.searchParams.delete('cueAction');history.replaceState(null,'',`${launchUrl.pathname}${launchUrl.search}${launchUrl.hash}`);
   }
 
+  // A cue is resolved by doing the thing, not dismissing it: logging water, a
+  // distance look or movement writes the day log and restarts that cadence from
+  // now; a finished timer closes; a scheduled moment is marked kept.
+  const LOGGABLE=new Set(['water','eyes','move','prep','away','meal']);
+  ctx.cueActionLabel=cue=>({water:'Log water',eyes:'Log look',move:'Log movement',prep:'Done',away:'I’m back',meal:'Done'})[cue?.source]||'Done';
+  ctx.resolveCue=(cue=ctx.currentCues[0])=>{
+    if(!cue)return false;
+    const timer={prep:'prepMinutes',away:'awayMinutes',meal:'mealMinutes'}[cue.source];
+    if(timer){if(ctx.timerState(cue.source,ctx.prefs[timer]).done)ctx.performAction?.(cue.source)}
+    else if(LOGGABLE.has(cue.source))ctx.performAction?.(cue.source);
+    else{
+      const copy=ctx.clockCueCopy(cue);
+      ctx.addMoment?.('moment',copy.label==='Scheduled moment'?'Moment kept':`${copy.label} kept`,`Due ${ctx.formatTime(new Date(Number(cue.dueAt)||Date.now()))}`,Date.now(),'moment');
+      ctx.toast?.(`${copy.label} kept`);
+    }
+    ctx.cueState.ack[cue.key]=Date.now();ctx.saveCueState();
+    ctx.refreshCues();ctx.renderAll?.();
+    return true;
+  };
   ctx.saveCueState=()=>ctx.persistCueState?ctx.persistCueState():localStorage.setItem(ctx.KEYS.cueState,JSON.stringify(normalizeCueState(ctx.cueState)));
   ctx.clockCueCopy=cue=>cue.source==='prayer'&&!ctx.clockNamesVisible?.()?{label:'Scheduled moment',detail:`Due · ${ctx.formatTime(new Date(cue.dueAt||Date.now()))}`}:{label:cue.label,detail:cue.detail};
   ctx.cueAngle=cue=>{const part=ctx.zoneParts(new Date(Number(cue.dueAt)||Date.now()),ctx.prefs.timeZone);return((part.hour%12)*30)+(part.minute*.5)+(part.second/120)};
@@ -37,7 +56,7 @@ export function installCues(ctx){
     let timer=0,longPressed=false;const cancel=()=>{clearTimeout(timer);timer=0};
     node.addEventListener('pointerdown',()=>{cancel();longPressed=false;timer=setTimeout(()=>{longPressed=true;ctx.snoozeCues(10)},600)});
     node.addEventListener('pointerup',cancel);node.addEventListener('pointercancel',cancel);node.addEventListener('pointerleave',cancel);
-    node.addEventListener('click',event=>{if(stop)event.stopPropagation();if(longPressed){event.preventDefault();longPressed=false;return}ctx.acknowledgeCue(cue);ctx.toast(`${ctx.clockCueCopy(cue).label} cleared`)});
+    node.addEventListener('click',event=>{if(stop)event.stopPropagation();if(longPressed){event.preventDefault();longPressed=false;return}ctx.resolveCue(cue)});
     node.addEventListener('contextmenu',event=>{event.preventDefault();if(stop)event.stopPropagation();ctx.snoozeCues(10)});
   };
 
@@ -97,7 +116,7 @@ export function installCues(ctx){
   ctx.renderCuePanel=()=>{
     const list=id('now-cue-list'),count=id('now-cue-count');if(!list)return;list.replaceChildren();count.textContent=ctx.currentCues.length?`${ctx.currentCues.length} waiting`:'Nothing waiting';
     if(!ctx.currentCues.length){const empty=el('div','cue-empty');empty.append(el('strong','','All clear'),el('span','','The next quiet dot will appear here.'));list.append(empty);return}
-    for(const cue of ctx.currentCues){const copy=ctx.clockCueCopy(cue),row=el('article','cue-row'),dot=el('i'),text=el('span'),remove=button('',`Clear ${copy.label}`,'Clear');row.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);text.append(el('strong','',copy.label),el('small','',copy.detail));remove.addEventListener('click',()=>{ctx.acknowledgeCue(cue);ctx.toast(`${copy.label} cleared`)});row.append(dot,text,remove);list.append(row)}
+    for(const cue of ctx.currentCues){const copy=ctx.clockCueCopy(cue),row=el('article','cue-row'),dot=el('i'),text=el('span'),remove=button('',`${ctx.cueActionLabel(cue)}: ${copy.label}`,ctx.cueActionLabel(cue));row.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);text.append(el('strong','',copy.label),el('small','',copy.detail));remove.addEventListener('click',()=>ctx.resolveCue(cue));row.append(dot,text,remove);list.append(row)}
   };
 
   ctx.deliverNotification=async cue=>{

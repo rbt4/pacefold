@@ -27,6 +27,9 @@ import{installGuidedFoldV28}from'./guided-fold-v28.js';
 import{installRecoveryV28}from'./recovery-v28.js';
 import{installAppearance}from'./appearance.js';
 import{installWeatherWeek}from'./weather-week.js';
+import{installSky}from'./sky.js';
+import{installHorizonDial}from'./horizon-dial.js';
+import{installMagic}from'./magic.js';
 
 document.documentElement.dataset.origin='v31';
 const ctx=createContext();
@@ -60,6 +63,9 @@ installGuidedFoldV28(ctx);
 installRecoveryV28(ctx);
 installAppearance(ctx);
 installWeatherWeek(ctx);
+installSky(ctx);
+installHorizonDial(ctx);
+installMagic(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

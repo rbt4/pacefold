@@ -17,7 +17,7 @@ The durable interaction model is therefore:
 
 The clock keeps visible seconds and an analog instrument, not only a timestamp. Day Unfold turns the workday into a visual arc with a moving sun/current marker and scheduled points, carrying forward the early idea of seeing the day physically unfold.
 
-The daily image belongs to the scenic front cover, with search and quick note kept there as lightweight browser-home utilities. Release 31 deliberately separates that entrance from the object left open all day: a quiet folio with analog and digital time, visible seconds, Day Unfold, rhythm and cues. This is not duplication; the two surfaces have different jobs.
+The daily image opens on the scenic front cover, with search and quick note kept there as lightweight browser-home utilities. Since the Horizon release it also stays behind the working Clock, colour-graded by the live sky so the photograph follows the real sun through the day. Clock itself is a 24-hour dial with solar noon at the top: sunrise and sunset sit on a level horizon, the sun (or moon) travels the day band, and the digital time with visible seconds sits at its centre.
 
 ## Quiet cues, not notification noise
 
@@ -31,7 +31,7 @@ Pacefold’s cues were conceived as subtle coloured marks that could be understo
 - cool blue: eyes
 - olive: movement
 
-The live clock favicon/taskbar identity and in-window cue beads are the browser/PWA expression of that idea. Several waiting cue colours may coexist. Clicking clears; holding/right-clicking snoozes. System notifications are silent and secondary.
+The live clock favicon/taskbar identity and in-window cue beads are the browser/PWA expression of that idea. Several waiting cue colours may coexist, but only one is presented at a time with a quiet count of the rest. A cue is resolved by doing the thing: tapping it logs water, a distance look or movement (or closes a finished timer, or marks a moment kept), which writes the day log and restarts that cadence from now. Holding/right-clicking snoozes. System notifications are silent, secondary and share one slot so they replace rather than stack; their Log button records the activity even when Clock is closed.
 
 ## The personal defaults remain personal
 

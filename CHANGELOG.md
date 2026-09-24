@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — Horizon
+
+- **The Horizon Dial.** Clock is now a 24-hour instrument with solar noon at the top, so sunrise and sunset sit on a level horizon. Rings, from the outside in: hourly temperature (with rain marks), the workday, a daylight band where the sun (or moon at night) travels and your moments sit, quarter-hour ticks, and a sweeping seconds track around the digital time. Press and hold the dial to reveal moment names briefly in neutral privacy mode.
+- **A living sky, on your daily photo.** The daily image now stays behind every screen, colour-graded by the real sun (sunrise/sunset from the forecast, or solar maths from your coordinates): night, blue hour, golden hour and noon blend continuously. A horizon glow follows the sun, stars and faint aurora appear after dusk, sun rays at golden hour, and the dial's horizon line continues across the screen.
+- **The sky mirrors the weather.** Rain streaks, snow drifts, fog rolls and storms flicker when that is the current weather.
+- **Design magic.** An iridescent aura breathes around the dial and quickens when something needs you; glass catches light under the cursor with an iridescent edge; the Daybook dock wears an animated rainbow edge while you write; rings draw in and panels rise out of a blur when Clock opens.
+- **Glass everywhere.** Notes, Day log, Now and Settings sit on the same sky in frosted glass (white in light, smoked in dark).
+- **Cues resolve by logging, and stop stacking.** Tapping a cue logs the activity and restarts its timer from now (water, distance look, movement; finished timers close; scheduled moments are marked kept in the day log). Only one cue shows at a time with "+N more". System notifications share one slot and offer Log / Later; Log works even when Clock is closed.
+- Retired the old analog card, Day Unfold strip and rhythm card styles (95 rules), now replaced by the dial.
+
 ## Unreleased — Signature
 
 - **Week ahead.** A seven-day forecast on Clock (the lower edge of the sky band) and on the scenic start page (a glass strip under search), from Open-Meteo: no key or account, best-match blending of national weather models, and already inside the app's security policy. Drawn, gently animated icons; temperature range bars coloured on a real temperature scale; precipitation chances; today's current temperature. Location names never appear on these surfaces. When weather is off, Clock offers a one-tap way to turn it on.

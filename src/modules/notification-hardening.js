@@ -60,7 +60,7 @@ export function installNotificationHardening(ctx){
     if(!cue||!ctx.prefs.notifications||(ctx.prefs.quietMode&&['water','eyes','move'].includes(cue.source)))return false;
     if(!document.hidden&&document.hasFocus())return false;
     if(!('Notification'in window)||Notification.permission!=='granted'||ctx.cueState.notified[cue.key])return false;
-    const iconName=ICON_NAMES[cue.source],copy=ctx.clockCueCopy(cue),options={body:copy.detail,tag:`clock-${cue.source}`,silent:true,renotify:false,requireInteraction:false,icon:iconName?`./icons/notify-${iconName}-128.png`:'./icons/icon-192.png',badge:'./icons/badge-96.png',data:{source:cue.source,key:cue.key},actions:[{action:'ack',title:'Clear'},{action:'snooze',title:'Snooze 10m'}]};
+    const iconName=ICON_NAMES[cue.source],copy=ctx.clockCueCopy(cue),more=Math.max(0,(ctx.currentCues?.length||1)-1),options={body:`${copy.detail}${more?` · +${more} more`:''}`,tag:'clock-cue',silent:true,renotify:false,requireInteraction:false,icon:iconName?`./icons/notify-${iconName}-128.png`:'./icons/icon-192.png',badge:'./icons/badge-96.png',data:{source:cue.source,key:cue.key},actions:[{action:'log',title:ctx.cueActionLabel?.(cue)||'Done'},{action:'snooze',title:'Later'}]};
     let delivered=false;
     try{
       if(navigator.serviceWorker){const registration=await Promise.race([navigator.serviceWorker.ready,wait(READY_TIMEOUT_MS)]);if(registration?.showNotification){await registration.showNotification(copy.label,options);delivered=true}}
@@ -102,5 +102,27 @@ export function installNotificationHardening(ctx){
     await baseInitialize();ctx.notificationHeartbeat();clearInterval(ctx.notificationHeartbeatTimer);ctx.notificationHeartbeatTimer=setInterval(ctx.notificationHeartbeat,HEARTBEAT_MS);
     const immediate=()=>ctx.notificationHeartbeat();window.addEventListener('pageshow',immediate);window.addEventListener('online',immediate);document.addEventListener('visibilitychange',immediate);
     if(window.__PACEFOLD__){window.__PACEFOLD__.notificationDiagnostics=ctx.notificationDiagnostics;window.__PACEFOLD__.notificationHeartbeat=ctx.notificationHeartbeat}
+  };
+
+  // "Log" from a notification: the service worker forwards it to an open window,
+  // or launches Clock with ?cueAction=log&cueSource=… when none is open.
+  const logFromNotification=(source,key)=>{
+    const cue=(ctx.currentCues||[]).find(item=>item.key===key)||(ctx.currentCues||[]).find(item=>item.source===source);
+    if(cue){ctx.resolveCue?.(cue);return}
+    // The worker already acknowledged it, so it is no longer current: resolve by source.
+    const id=source==='prayer'?key.split(':').pop():'',moment=id?ctx.getSchedule(new Date()).today.find(item=>item.id===id):null;
+    if(source)ctx.resolveCue?.({source,key:key||`${source}:${Date.now()}`,label:moment?.label||'Scheduled moment',detail:'',dueAt:moment?.date?.getTime?.()||Date.now()});
+  };
+  navigator.serviceWorker?.addEventListener('message',event=>{if(event.data?.type==='PACEFOLD_LOG')logFromNotification(String(event.data.source||''),String(event.data.key||''))});
+  const launchInitialize=ctx.initialize;
+  ctx.initialize=async()=>{
+    const result=await launchInitialize?.();
+    const url=new URL(location.href);
+    if(url.searchParams.get('cueAction')==='log'){
+      logFromNotification(url.searchParams.get('cueSource')||'',url.searchParams.get('cueKey')||'');
+      for(const name of['cueAction','cueSource','cueKey'])url.searchParams.delete(name);
+      history.replaceState(null,'',`${url.pathname}${url.search}${url.hash}`);
+    }
+    return result;
   };
 }

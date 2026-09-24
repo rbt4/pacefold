@@ -2,34 +2,63 @@
 
 **Your day, quietly kept.**
 
-Pacefold is a private, local-first workday clock that keeps time, rhythm, notes, care cues and focus close without turning the day into a dashboard.
+Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, care cues and focus close by, and it doesn't turn your day into a dashboard.
 
-## Current release
+**Open it: https://rbt4.github.io/pacefold/** (installable, works offline, no account)
 
-**Pacefold 31.0.0 — Origin**
+![Clock: the Horizon Dial over the daily photo, the week ahead on the left and cues and one-tap keys on the right](docs/screenshots/clock.jpg)
 
-- normal visits open the full-screen scenic homepage first, with the large clock, date, search, quick note, Music and an explicit Clock entrance
-- opening it reveals a distinct warm-folio workspace: a deep-forest analog + digital Clock, visible seconds, Day Unfold and rhythm; direct fold links may bypass the cover
-- the persistent lower Daybook is again part of Clock, with immediate capture, recent notes and carry-forward work instead of a substitute summary
-- Google/address search and scenic photography stay on the front cover so the working Clock can remain calm all day
-- prayer rhythm with Hanafi Asr and deliberate privacy modes, plus everyday, mindful and up-to-eight custom moments
-- coloured quiet cues for prayer/moments, water, noodles/prep, away, meal, eyes and movement
-- a live clock favicon/taskbar identity that can carry several waiting cue colours at once
-- original-profile **Noodles** timer, with generic **Prep** retained for other profiles
-- one-tap hydration, meal, away, eye and movement logging plus focus and field sessions
-- calendar Daybook with quick capture, categories, pin/carry-forward, editing, search and note context
-- Day Log with work/focus/break balance, timeline and same-point-yesterday comparison
-- Now with discreet schedule context, waiting cues, active timers and an across-midnight weather horizon
-- one compact Music dock: YouTube/YouTube Music links and playlists, track picker, seek, volume, previous/next, shuffle, loop and local **My Music**
-- the earlier local focus sounds preserved inside Music: Brown hush, Rain glass, Soft fan and a local audio file
-- JSON backup/restore now includes My Music state, plus optional live backup file support in compatible Chromium browsers
-- optional local-first OneNote copy through Microsoft Graph
-- installable offline PWA with quiet notifications, no Pacefold account, analytics or advertising
-- System, Light or Dark appearance (Settings → Daily), so an all-day clock stays calm in the evening
-- a seven-day forecast on Clock and the start page (Open-Meteo, no key), with drawn animated icons and temperature range bars
-- a Signature look: Outfit + Geist type, a crafted dial, time-of-day light (dawn, day, dusk, night), and folds that slide in from their direction
+<table>
+<tr>
+<td width="68%"><img src="docs/screenshots/cover.jpg" alt="Start page: large time, search, and the week ahead on the daily photo"></td>
+<td width="32%"><img src="docs/screenshots/mobile.jpg" alt="Clock on a phone"></td>
+</tr>
+<tr>
+<td align="center"><sub>The start page: time, search, a quick note and the week ahead</sub></td>
+<td align="center"><sub>The same Clock on a phone</sub></td>
+</tr>
+</table>
 
-Public site: **https://rbt4.github.io/pacefold/**
+## What's inside
+
+### The Horizon Dial
+- **A 24-hour dial.** Clock shows the whole day on one dial, with solar noon at the top. Sunrise and sunset sit on a level horizon that continues across the screen.
+- **The rings.** From the outside in, the dial shows:
+  - hourly temperature, with rain marks
+  - your workday
+  - a daylight band where the sun (or the moon at night) travels and your moments sit
+  - quarter-hour ticks
+  - a sweeping seconds track around the digital time
+- **The panels.** The week ahead sits on the left. The waiting cue and one-tap keys sit on the right. The Daybook composer docks on the horizon.
+
+### A living sky
+- **Your daily photo, graded by the sun.** Your daily photo stays behind every screen. It is colour-graded by the real position of the sun, so night, blue hour, golden hour and noon blend continuously.
+- **Light that moves.** A horizon glow follows the sun. Stars and faint aurora come out after dusk.
+- **The current weather.** Rain, snow, fog and storms show in the sky when they are happening.
+- **A seven-day forecast** from Open-Meteo, with no key or account. It shows drawn, animated icons and temperature range bars. Location names never appear.
+
+### Design details
+- An iridescent aura breathes around the dial and quickens when something needs you.
+- Glass panels catch light under the cursor.
+- The Daybook dock gets a rainbow edge while you write.
+- When Clock opens, the rings draw in.
+- Notes, Day log, Now and Settings are frosted glass on the same sky, white in light mode and smoked in dark mode. Appearance can be System, Light or Dark.
+
+### Cues you log instead of dismissing
+- **Coloured, quiet cues** for moments, water, prep/noodles, time away, meals, distance looks and movement.
+- **Logging resolves a cue.** When you log it, the timer restarts from now. Finished timers close, and scheduled moments are marked kept in the Day log.
+- **No stacking.** One cue shows at a time, with "+N more". System notifications share a single slot with **Log / Later** buttons, and Log works even when Pacefold is closed.
+- **A live favicon** carries the colours of waiting cues.
+
+### Your day
+- **Rhythm.** Prayer times with Hanafi Asr, or everyday, mindful or up to eight custom moments. Privacy modes can keep them discreet (neutral) or hidden.
+- **Daybook.** A calendar with quick capture, categories, pin and carry-forward, search and editing.
+- **Day log.** Work, focus and break balance, a timeline, and a comparison with the same point yesterday.
+- **Now.** Schedule context, waiting cues, active timers and the weather across midnight.
+- **Music.** A compact dock for YouTube and YouTube Music links and playlists, plus local **My Music** and focus sounds (Brown hush, Rain glass, Soft fan).
+- **Your data stays yours.** JSON backup and restore, an optional live backup file, and an optional OneNote copy. No Pacefold account, analytics or advertising.
+
+Release line: **Pacefold 31.0.0 — Origin**, with the Horizon redesign on top ([CHANGELOG](CHANGELOG.md)).
 
 ## Spatial model
 
@@ -77,7 +106,7 @@ Six files, all run by CI (`.github/workflows/pages.yml`) before Pages deployment
 | `tests/guided-fold-v28.cjs` | static (`npm run verify`) | Guided Fold wiring, Settings collapsed to Daily / Rhythm / Data |
 | `tests/v31-origin.cjs` | static (`npm run verify`) | release identity, continuity stores, single stylesheet (no `src/styles` layers, `!important` ceiling), official-player ad policy |
 | `tests/v28-startup-smoke.cjs` | Chromium | cold start, cover → Clock hand-off |
-| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Music above the cover, one return edge per fold, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar, appearance persistence, Settings pill placement; writes screenshots |
+| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Horizon Dial layout and daily-photo sky, cues that log (one at a time, cold-launch Log, Hidden mode on the dial), Music above the cover, one return edge per fold, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar, appearance persistence, Settings pill placement; writes screenshots |
 
 The browser tests need Playwright with Chromium:
 
