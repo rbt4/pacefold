@@ -41,6 +41,9 @@ export function installHorizonDial(ctx){
   if(composer)shelf.append(composer);
   stage.append(left,center,right,shelf);
   view.prepend(stage);
+  // The legacy card stays in the DOM because clock.js still writes into it by id;
+  // it is retired visually here rather than removed.
+  $('.view-home>.home-grid')?.classList.add('legacy-retired');
 
   // Seconds: 60 quiet dots and one bright bead that sweeps with --second-angle.
   for(let s=0;s<60;s+=1){const a=-Math.PI/2+s/60*2*Math.PI;seconds.append(svg('circle',{cx:(Math.cos(a)*R.seconds).toFixed(1),cy:(Math.sin(a)*R.seconds).toFixed(1),r:s%5?1.3:2.2,class:'dial-second-dot'}))}
@@ -96,8 +99,8 @@ export function installHorizonDial(ctx){
     }else temp.append(svg('circle',{r:R.temp,class:'temp-empty'}));
 
     moments.replaceChildren();
-    const state=ctx.getSchedule(date),named=ctx.clockNamesVisible?.();
-    for(const item of state.today){
+    const state=ctx.getSchedule(date),named=ctx.clockNamesVisible?.(),hidden=ctx.rhythmMode?.()==='hidden';
+    for(const item of hidden?[]:state.today){
       if(!Number.isFinite(item.hours))continue;
       const isNext=state.next&&state.next.id===item.id&&ctx.todayKey(state.next.date)===today,past=item.date<date;
       const[x,y]=pt(item.hours,R.band),[lx,ly]=pt(item.hours,R.moment);

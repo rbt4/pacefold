@@ -1591,6 +1591,8 @@ html:not([data-mode="home"]) .edge{background:rgba(159,224,194,.22);border-color
 
 /* The Clock stage: week · dial · cue & keys, with the Daybook dock on the horizon */
 
+/* The pre-Horizon card is kept for its live ids but never shown. */
+.legacy-retired{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
 html[data-mode="home"] .view-home{gap:28px;max-width:min(1360px,100%)}
 .horizon{
   position:relative;display:grid;grid-template-columns:minmax(230px,262px) minmax(0,1fr) minmax(240px,272px);

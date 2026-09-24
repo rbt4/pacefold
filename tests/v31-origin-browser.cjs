@@ -127,6 +127,8 @@ async function main(){
     requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
     requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
 
+    const legacy=await page.evaluate(()=>{const box=document.querySelector('.view-home>.home-grid').getBoundingClientRect();return{width:box.width,height:box.height}});
+    requireState(legacy.width<=1&&legacy.height<=1,'The retired pre-Horizon Clock card is visible under the dial',legacy);
     const flank=await page.evaluate(()=>{const box=selector=>document.querySelector(selector).getBoundingClientRect();return{left:box('.edge-left').right,right:box('.edge-right').left,week:box('.horizon-left .week-sky').left,keys:box('.horizon-right').right}});
     requireState(flank.left<=flank.week+2&&flank.right>=flank.keys-2,'Edge tabs overlap the Clock panels',flank);
 
@@ -242,6 +244,16 @@ async function main(){
     await cuePage.locator('.dial-cue').first().click();
     const afterEyes=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),gaze:window.__PACEFOLD__.prefs.gazeLastCompleted,events:Object.values(window.__PACEFOLD__.log.days||{}).flatMap(day=>day.events||[]).map(event=>event.source)}));
     requireState(afterEyes.cues.length===0&&Date.now()-afterEyes.gaze<60000&&afterEyes.events.includes('eyes'),'Tapping a cue on the dial must log it, not merely dismiss it',afterEyes);
+    // Hidden privacy mode removes the rhythm from the dial entirely.
+    await cuePage.evaluate(()=>{window.__PACEFOLD__.prefs.rhythmDiscretion='hidden';window.__PACEFOLD__.render('home')});
+    const hiddenMoments=await cuePage.evaluate(()=>document.querySelectorAll('.dial-moments .moment').length);
+    requireState(hiddenMoments===0,'Hidden privacy mode must remove moments from the dial',{hiddenMoments});
+    // Log from a notification after a cold launch: the worker already acknowledged it.
+    const moment=await cuePage.evaluate(()=>window.__PACEFOLD__.schedule().today.find(item=>item.alert));
+    await ready(cuePage,`${origin}/app/?mode=worklog&cueAction=log&cueSource=prayer&cueKey=prayer:today:${moment.id}`);
+    await ready(cuePage,`${origin}/app/?mode=worklog&cueAction=log&cueSource=prep&cueKey=prep:1`);
+    const cold=await cuePage.evaluate(()=>({moments:Object.values(window.__PACEFOLD__.log.days||{}).flatMap(day=>day.events||[]).filter(event=>event.source==='moment').length,noodle:Number(window.__PACEFOLD__.prefs.noodleStart)||0,url:location.search}));
+    requireState(cold.moments>=1&&cold.noodle===0&&!/cueAction/.test(cold.url),'Notification Log after a cold launch must record a kept moment and never start a stopped timer',cold);
     await cueContext.close();
 
     // Midnight: the sweeping second hand must keep moving forward, and the Now ring

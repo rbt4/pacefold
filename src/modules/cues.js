@@ -37,7 +37,9 @@ export function installCues(ctx){
   ctx.cueActionLabel=cue=>({water:'Log water',eyes:'Log look',move:'Log movement',prep:'Done',away:'I’m back',meal:'Done'})[cue?.source]||'Done';
   ctx.resolveCue=(cue=ctx.currentCues[0])=>{
     if(!cue)return false;
-    if(LOGGABLE.has(cue.source))ctx.performAction?.(cue.source);
+    const timer={prep:'prepMinutes',away:'awayMinutes',meal:'mealMinutes'}[cue.source];
+    if(timer){if(ctx.timerState(cue.source,ctx.prefs[timer]).done)ctx.performAction?.(cue.source)}
+    else if(LOGGABLE.has(cue.source))ctx.performAction?.(cue.source);
     else{
       const copy=ctx.clockCueCopy(cue);
       ctx.addMoment?.('moment',copy.label==='Scheduled moment'?'Moment kept':`${copy.label} kept`,`Due ${ctx.formatTime(new Date(Number(cue.dueAt)||Date.now()))}`,Date.now(),'moment');

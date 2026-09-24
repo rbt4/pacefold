@@ -109,7 +109,9 @@ export function installNotificationHardening(ctx){
   const logFromNotification=(source,key)=>{
     const cue=(ctx.currentCues||[]).find(item=>item.key===key)||(ctx.currentCues||[]).find(item=>item.source===source);
     if(cue){ctx.resolveCue?.(cue);return}
-    if(['water','eyes','move'].includes(source)){ctx.performAction?.(source);ctx.refreshCues?.();ctx.renderAll?.()}
+    // The worker already acknowledged it, so it is no longer current: resolve by source.
+    const id=source==='prayer'?key.split(':').pop():'',moment=id?ctx.getSchedule(new Date()).today.find(item=>item.id===id):null;
+    if(source)ctx.resolveCue?.({source,key:key||`${source}:${Date.now()}`,label:moment?.label||'Scheduled moment',detail:'',dueAt:moment?.date?.getTime?.()||Date.now()});
   };
   navigator.serviceWorker?.addEventListener('message',event=>{if(event.data?.type==='PACEFOLD_LOG')logFromNotification(String(event.data.source||''),String(event.data.key||''))});
   const launchInitialize=ctx.initialize;
