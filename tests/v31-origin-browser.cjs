@@ -209,6 +209,20 @@ async function main(){
     requireState(await page.locator('.note-item', {hasText:marker}).count()===1,'The persisted Clock note did not survive navigation and reload',state);
     await context.close();
 
+    // Midnight: the sweeping second hand must keep moving forward, and the Now ring
+    // must show progress before the first moment of the day.
+    const night=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'America/Toronto',serviceWorkers:'block'}),late=await night.newPage();
+    late.on('pageerror',error=>errors.push(`midnight pageerror: ${error.stack||error.message}`));
+    await late.clock.install({time:new Date('2026-09-25T03:59:57Z')});
+    await late.addInitScript(seed);
+    await ready(late,`${origin}/app/`);
+    const angles=[];for(let tick=0;tick<5;tick+=1){angles.push(await late.evaluate(()=>parseFloat(document.documentElement.style.getPropertyValue('--second-angle'))));await late.clock.runFor(1000)}
+    requireState(angles.every((angle,index)=>!index||angle>angles[index-1]),'The second hand runs backwards across midnight',{angles});
+    await late.evaluate(()=>window.__PACEFOLD__.go('now'));await late.waitForTimeout(100);
+    const dawnRing=await late.evaluate(()=>Number(getComputedStyle(document.querySelector('.now-primary')).getPropertyValue('--now-progress')));
+    requireState(dawnRing>0&&dawnRing<1,'The Now ring is stuck before the first moment of the day',{dawnRing});
+    await night.close();
+
     const firstRun=await browser.newContext({viewport:{width:900,height:760},timezoneId:'America/Toronto',serviceWorkers:'block'}),fresh=await firstRun.newPage();
     fresh.on('pageerror',error=>errors.push(`first-run pageerror: ${error.stack||error.message}`));
     await ready(fresh,`${origin}/app/`);await fresh.waitForTimeout(500);
