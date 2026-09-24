@@ -287,6 +287,7 @@ async function main(){
     const sheet=await sky.evaluate(()=>({open:!document.getElementById('weather-sheet').hidden,frames:document.querySelectorAll('.radar-frame').length,showing:document.querySelectorAll('.radar-frame.is-on').length,map:document.querySelectorAll('.radar-map img').length,air:document.getElementById('wx-air')?.innerText||'',tabs:document.querySelectorAll('.wx-tab').length,chart:Boolean(document.querySelector('.wx-plot .wx-chart .wx-hit')),cast:document.querySelector('.wx-cast strong')?.textContent,text:document.getElementById('weather-sheet').innerText}));
     requireState(sheet.open&&sheet.frames===10&&sheet.showing===1&&sheet.map===9&&/38 · Good/.test(sheet.air)&&sheet.tabs===8&&sheet.chart&&/Rain starting/.test(sheet.cast),'The weather sheet is incomplete',sheet);
     requireState(!privateTerms.test(sheet.text),'The weather sheet leaked the location',{text:sheet.text});
+    for(let wait=0;wait<30&&!tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/'));wait+=1)await sky.waitForTimeout(100);
     requireState(tiles.some(url=>url.includes('/7/'))&&tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/')),'Radar tiles were not requested at the scope zoom',{tiles:tiles.slice(0,4)});
     await sky.screenshot({path:path.join(output,'v31-desktop-weather-sheet.png'),fullPage:false});
     await sky.keyboard.press('ArrowRight');await sky.waitForTimeout(150);
@@ -296,7 +297,9 @@ async function main(){
     // Closing before the radar index arrives cancels the radar: no tiles, no timer.
     await sky.unroute('https://api.rainviewer.com/**');
     await sky.route('https://api.rainviewer.com/**',async route=>{await new Promise(resolve=>setTimeout(resolve,500));await route.fulfill({contentType:'application/json',body:JSON.stringify({host:'https://tilecache.rainviewer.com',radar:{past:[{time:frameTime,path:'/v2/radar/late'}],nowcast:[]}})}).catch(()=>{})});
-    await sky.click('.wx-open');await sky.waitForTimeout(80);await sky.keyboard.press('Escape');
+    await sky.click('.wx-open');await sky.waitForTimeout(80);
+    // Esc must close the sheet even when focus is not inside it.
+    await sky.evaluate(()=>document.activeElement?.blur());await sky.keyboard.press('Escape');
     const tilesAtClose=tiles.filter(url=>url.includes('/radar/late/')).length;await sky.waitForTimeout(900);
     requireState(tilesAtClose===0&&tiles.filter(url=>url.includes('/radar/late/')).length===0,'A closed weather sheet still started its radar',{late:tiles.filter(url=>url.includes('/radar/late/')).length});
     requireState(skyErrors.length===0,'The forecast produced browser errors (CSP or runtime)',{skyErrors});

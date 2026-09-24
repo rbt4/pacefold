@@ -264,7 +264,7 @@ export function installWeatherLens(ctx){
   const open=(key='next')=>{
     selected=key;lastFocus=document.activeElement;hide();
     renderSheet();sheet.hidden=false;document.documentElement.dataset.weatherSheet='open';
-    requestAnimationFrame(()=>{sheet.classList.add('is-on');close.focus({preventScroll:true})});
+    close.focus({preventScroll:true});requestAnimationFrame(()=>sheet.classList.add('is-on'));
   };
   const shut=()=>{
     if(sheet.hidden)return;clearInterval(radarTimer);radarGeneration+=1;sheet.classList.remove('is-on');delete document.documentElement.dataset.weatherSheet;
@@ -277,6 +277,8 @@ export function installWeatherLens(ctx){
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();shut();return}
     if(event.key==='Tab'){const f=[...panel.querySelectorAll('button,input,[tabindex="0"]')].filter(n=>!n.disabled&&n.offsetParent);if(!f.length)return;if(event.shiftKey&&document.activeElement===f[0]){event.preventDefault();f.at(-1).focus()}else if(!event.shiftKey&&document.activeElement===f.at(-1)){event.preventDefault();f[0].focus()}}
   });
+  // Esc closes the sheet wherever focus happens to be (capture, before the fold keys).
+  window.addEventListener('keydown',event=>{if(event.key==='Escape'&&!sheet.hidden&&document.documentElement.dataset.palette!=='open'){event.preventDefault();event.stopImmediatePropagation();shut()}},true);
   // Arrow keys fold the app; inside the sheet they belong to the sheet.
   sheet.addEventListener('keydown',event=>{if(event.key.startsWith('Arrow'))event.stopPropagation()});
 
