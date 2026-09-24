@@ -84,7 +84,7 @@ export function installNotificationHardening(ctx){
   ctx.renderSettings=()=>{
     baseRenderSettings?.();const copy=document.querySelector('[data-setting="notifications"] small');if(!copy)return;
     const permission='Notification'in window?Notification.permission:'unsupported',badge=typeof navigator.setAppBadge==='function';
-    copy.textContent=permission==='denied'?'Blocked in Edge permissions · taskbar badge may also be blocked':permission==='granted'?`System alerts allowed · ${badge?(installedMode()?'taskbar badge ready':'install Clock for taskbar badge'):'taskbar badge unavailable'}`:'Turn on once to allow silent system alerts';
+    copy.textContent=permission==='denied'?'Blocked in this browser’s site settings · taskbar badge may also be blocked':permission==='granted'?`System alerts allowed · ${badge?(installedMode()?'taskbar badge ready':'install Clock for taskbar badge'):'taskbar badge unavailable'}`:'Turn on once to allow silent system alerts';
   };
 
   ctx.notificationHeartbeat=()=>{

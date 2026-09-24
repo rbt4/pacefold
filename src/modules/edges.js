@@ -95,8 +95,8 @@ export function installEdges(ctx){
 
     if(!id('mobile-nav')){
       const nav=el('nav','mobile-nav');nav.id='mobile-nav';nav.setAttribute('aria-label','Pacefold views');
-      for(const target of['notes','worklog','now','settings']){
-        const meta=EDGE_META[target],control=button('',`Open ${meta.label}`);
+      for(const target of['home','notes','worklog','now','settings']){
+        const meta=target==='home'?{icon:'◷',label:'Clock'}:EDGE_META[target],control=button('',`Open ${meta.label}`);
         control.dataset.go=target;
         control.append(el('span','',meta.icon),el('small','',meta.label));
         nav.append(control);
@@ -107,4 +107,15 @@ export function installEdges(ctx){
   };
 
   ctx.buildEdges();
+
+  // The downward edge only appears once Clock has been read to its end, so the
+  // floating Settings pill never sits on top of the quick actions or Daybook.
+  const trackPageEnd=()=>{
+    const scroller=document.scrollingElement||document.documentElement;
+    document.documentElement.dataset.pageEnd=String(scroller.scrollTop+innerHeight>=scroller.scrollHeight-96);
+  };
+  addEventListener('scroll',trackPageEnd,{passive:true});
+  addEventListener('resize',trackPageEnd);
+  new ResizeObserver(trackPageEnd).observe(document.body);
+  trackPageEnd();
 }

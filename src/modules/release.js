@@ -4,7 +4,7 @@ export function installRelease(ctx){
   const appName=document.querySelector('meta[name="application-name"]');if(appName)appName.content='Clock';
   const brand=document.querySelector('.brand');
   if(brand){brand.setAttribute('aria-label','Return to Clock');const title=brand.querySelector('strong'),tagline=brand.querySelector('small');if(title)title.textContent='Clock';if(tagline){tagline.textContent='';tagline.hidden=true}}
-  const restore=document.getElementById('cover-return');if(restore){restore.setAttribute('aria-label','Return to start surface');const label=restore.querySelector('span');if(label)label.textContent='Start'}
+  const restore=document.getElementById('cover-return');if(restore){restore.setAttribute('aria-label','Return to the scenic homepage');const label=restore.querySelector('span');if(label)label.textContent='Homepage'}
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),replacements=[];
   while(walker.nextNode()){
     const node=walker.currentNode;

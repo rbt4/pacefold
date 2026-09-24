@@ -25,6 +25,7 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 - JSON backup/restore now includes My Music state, plus optional live backup file support in compatible Chromium browsers
 - optional local-first OneNote copy through Microsoft Graph
 - installable offline PWA with quiet notifications, no Pacefold account, analytics or advertising
+- System, Light or Dark appearance (Settings → Daily), so an all-day clock stays calm in the evening
 
 Public site: **https://rbt4.github.io/pacefold/**
 
@@ -54,13 +55,36 @@ Those historical names are compatibility anchors, not stale code to rename. Exis
 
 The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 31 consolidates the scenic entrance, working Clock and persistent Daybook into one explicit Origin contract.
 
+All styling lives in **one authored stylesheet**, `src/app/pacefold.css`, built from a small set of tokens (paper, ink, forest, cue colours, one type scale, one radius/shadow scale). The historical `src/styles/27-zzzz…` override layers are gone; change the relevant section of that file instead of adding a layer on top. `tests/v31-origin.cjs` fails if the layer directory returns or if `!important` starts creeping back.
+
 ```bash
-npm run build
-npm run verify
-node tests/core.mjs
+npm install
+npm run build        # bundles _site/
+npm run verify       # static contracts, no browser needed
+npm run preview      # serves _site on :4173
 ```
 
-CI also runs the Chromium release contract and a full desktop/mobile browser audit before Pages deployment.
+### Tests
+
+Six files, all run by CI (`.github/workflows/pages.yml`) before Pages deployment:
+
+| File | Kind | Guards |
+| --- | --- | --- |
+| `tests/core.mjs` | unit (`npm run verify`) | DST, ordered rhythm, preference/note migration, backup format |
+| `tests/music-morphe-r9.cjs` | static (`npm run verify`) | Morphe bridge commands and companion-extension manifest |
+| `tests/guided-fold-v28.cjs` | static (`npm run verify`) | Guided Fold wiring, Settings collapsed to Daily / Rhythm / Data |
+| `tests/v31-origin.cjs` | static (`npm run verify`) | release identity, continuity stores, single stylesheet (no `src/styles` layers, `!important` ceiling), official-player ad policy |
+| `tests/v28-startup-smoke.cjs` | Chromium | cold start, cover → Clock hand-off |
+| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Music above the cover, one return edge per fold, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar, appearance persistence, Settings pill placement; writes screenshots |
+
+The browser tests need Playwright with Chromium:
+
+```bash
+NODE_PATH=/path/to/node_modules node tests/v28-startup-smoke.cjs _site
+NODE_PATH=/path/to/node_modules node tests/v31-origin-browser.cjs _site /tmp/pacefold-31-audit
+```
+
+Earlier per-release test scripts (V25–V30) were retired in favour of these contracts; they live in Git history.
 
 ## Product lineage
 

@@ -236,15 +236,17 @@ export function installGuidedFoldV28(ctx){
     if(hoverTarget===edge&&hoverTimer)return;
     cancelHover();hoverTarget=edge;edge.classList.add('v28-hover-commit');edge.style.setProperty('--v28-dwell',`${HOVER_DWELL}ms`);
     hoverTimer=setTimeout(()=>{
-      const destination=edge.dataset.go;cancelHover();hoverCooldownUntil=Date.now()+900;ctx.go?.(destination);
+      const destination=edge.dataset.go;cancelHover();hoverCooldownUntil=Date.now()+900;ctx.go?.(destination,{directional:true});
     },HOVER_DWELL);
   };
   const leaveHover=edge=>{
     requestAnimationFrame(()=>{if(!edge.matches(':hover'))cancelHover()});
   };
   for(const edge of $$('.edge-nav .edge[data-go]')){
-    edge.addEventListener('pointerenter',event=>startHover(edge,event));
-    edge.addEventListener('mouseenter',event=>startHover(edge,event));
+    // Arm the dwell only on real pointer movement. Browsers also send enter events when
+    // an edge appears under a resting cursor (e.g. right after Open clock), and that
+    // must never carry the person into another fold on its own.
+    edge.addEventListener('pointermove',event=>{if(event.movementX||event.movementY)startHover(edge,event)});
     edge.addEventListener('pointerleave',()=>leaveHover(edge));
     edge.addEventListener('mouseleave',()=>leaveHover(edge));
     edge.addEventListener('pointerdown',cancelHover);

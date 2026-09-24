@@ -25,6 +25,7 @@ import{installMusicMagicR8Queue}from'./music-magic-r8-queue.js';
 import{installMusicMorpheR9}from'./music-morphe-r9.js';
 import{installGuidedFoldV28}from'./guided-fold-v28.js';
 import{installRecoveryV28}from'./recovery-v28.js';
+import{installAppearance}from'./appearance.js';
 
 document.documentElement.dataset.origin='v31';
 const ctx=createContext();
@@ -56,6 +57,7 @@ installNotificationHardening(ctx);
 installHomepageR7(ctx);
 installGuidedFoldV28(ctx);
 installRecoveryV28(ctx);
+installAppearance(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

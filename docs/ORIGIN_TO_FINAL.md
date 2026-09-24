@@ -101,6 +101,8 @@ The injection era accumulated layers over a frozen archive. It preserved feature
 
 Future work should preserve the **behavioral lineage**, not the old layering technique.
 
+The same lesson was relearned in CSS: V26–V31 stacked 22 override stylesheets (≈270 KB, 3,000+ `!important`) until surfaces fought each other. They were replaced by a single token-based stylesheet. Fix a surface where it is defined.
+
 ## Final-form test
 
 A change belongs in Pacefold when it makes the day quieter, clearer or more useful while keeping Clock central. If it adds another place to check, duplicates state, exposes private context passively, breaks local continuity, or replaces an older useful feature instead of integrating it, it is probably moving away from the product.

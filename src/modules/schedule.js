@@ -60,7 +60,7 @@ export function installSchedule(ctx){
       const label=named?`${item.label} at ${ctx.formatTime(item.date)}`:`Scheduled moment at ${ctx.formatTime(item.date)}`;
       const node=button('day-marker-button',label);
       node.style.setProperty('--marker-x',`${point.x/600*100}%`);
-      node.style.setProperty('--marker-y',`${point.y/130*100}%`);
+      node.style.setProperty('--marker-y',`${(point.y-34)/94*100}%`);
       node.dataset.nearSun=String(Math.abs(markerProgress-currentProgress)<.03);
       if(named)node.title=label;
       node.addEventListener('click',()=>ctx.go?.('now'));
@@ -106,7 +106,7 @@ export function installSchedule(ctx){
       if(title){
         title.textContent=named
           ?(state.next?`Next · ${state.next.label}`:'Today complete')
-          :(state.next?`Next · ${ctx.clockCountdown(state.next.date,now)}`:'Today complete');
+          :(state.next?`Next ${ctx.relativeUntil(state.next.date,now).replace(/^(?!in )/,'in ')}`:'Today complete');
       }
       if(header)header.dataset.discreet=String(!named);
       ctx.rhythmRows(id('rhythm-list'),state,now,{compact:true,discreet:true});

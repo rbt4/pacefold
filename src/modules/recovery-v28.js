@@ -3,6 +3,7 @@ import{RELEASE}from'./release-meta.js';
 
 const EXPERIENCE='v28-recovery-r1';
 const DISPLAY_RELEASE=RELEASE;
+const EDGE_LABELS={notes:'Notes',worklog:'Day',now:'Now',settings:'Settings'};
 
 export function installRecoveryV28(ctx){
   document.documentElement.dataset.recovery='v28';
@@ -11,9 +12,11 @@ export function installRecoveryV28(ctx){
   const repairMusicLayout=()=>{
     const stage=id('music-room-stage'),panel=id('music-morphe-panel'),player=id('stream-player');
     if(player&&!player.style.getPropertyValue('--music-hue'))player.style.setProperty('--music-hue','184');
-    if(stage&&panel&&panel.parentElement!==stage){
-      stage.append(panel);
-      panel.dataset.recoveryLayout='stage';
+    // The optional Morphe bridge is an advanced engine choice, so it sits after the
+    // everyday controls (paste a link, My music, focus sounds) instead of above them.
+    if(player&&panel&&player.lastElementChild!==panel){
+      player.append(panel);
+      panel.dataset.recoveryLayout='end';
     }
   };
 
@@ -30,6 +33,10 @@ export function installRecoveryV28(ctx){
     for(const edge of $$('.edge-nav .edge')){
       edge.classList.remove('is-expanded');
       if(edge.dataset.go===ctx.mode)edge.setAttribute('aria-current','page');else edge.removeAttribute('aria-current');
+      // Inside a fold only the way back is shown, so it must say where it goes.
+      const label=edge.querySelector('.edge-label'),home=ctx.mode==='home';
+      if(label)label.textContent=home?EDGE_LABELS[edge.dataset.go]||label.textContent:'Clock';
+      edge.setAttribute('aria-label',home?`Open ${EDGE_LABELS[edge.dataset.go]||''}`:'Return to Clock');
     }
   };
 
