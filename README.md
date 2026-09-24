@@ -54,6 +54,8 @@ Those historical names are compatibility anchors, not stale code to rename. Exis
 
 The public product lives in `src/`. Production bundles one runtime and one stylesheet; it does **not** reconstruct the old V15–V24 archive/injector stack. Release 31 consolidates the scenic entrance, working Clock and persistent Daybook into one explicit Origin contract.
 
+All styling lives in **one authored stylesheet**, `src/app/pacefold.css`, built from a small set of tokens (paper, ink, forest, cue colours, one type scale, one radius/shadow scale). The historical `src/styles/27-zzzz…` override layers are gone; change the relevant section of that file instead of adding a layer on top. `tests/v31-origin.cjs` fails if the layer directory returns or if `!important` starts creeping back.
+
 ```bash
 npm run build
 npm run verify

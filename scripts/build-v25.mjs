@@ -90,17 +90,6 @@ await preparePublicPages();
 await build({entryPoints:[path.join(source,'modules','main.mjs')],outfile:path.join(target,'app','pacefold.mjs'),bundle:true,minify:true,format:'esm',platform:'browser',target:['es2022'],legalComments:'none',sourcemap:false,charset:'utf8'});
 await neutralizeRuntime();
 
-const styleRoot=path.join(source,'styles');
-const styleFiles=[
-  '26-cues.css','26-daybook.css','26-discretion.css','26-edges.css','26-sun.css','26-window-chrome.css',
-  '27-window-cues.css','27-z-start-cover.css','27-zz-stream-player.css','27-zzzzzz-final-form.css',
-  '27-zzzzzzzzzzzzzzzzzz-homepage-r7.css','27-zzzzzzzzzzzzzzzzzzz-homepage-r7-finish.css',
-  '27-zzzzzzzzzzzzzzzzzzzz-music-magic-r8.css','27-zzzzzzzzzzzzzzzzzzzzz-music-magic-r8-mobile-fix.css',
-  '27-zzzzzzzzzzzzzzzzzzzzzz-music-magic-r8-source-fit.css','27-zzzzzzzzzzzzzzzzzzzzzzzz-morphe-bridge-r9.css',
-  '28-guided-fold-v28.css','29-v28-recovery.css','30-v28-recovery-stability.css','31-v30-quiet-clock.css','32-v31-origin.css'
-];
-const baseCss=await fs.readFile(path.join(source,'app','pacefold.css'),'utf8'),additions=[];for(const file of styleFiles)additions.push(await fs.readFile(path.join(styleRoot,file),'utf8'));
-await fs.writeFile(path.join(target,'app','pacefold.css'),[baseCss,...additions].join('\n\n'));
 await fs.rm(path.join(target,'modules'),{recursive:true,force:true});await fs.rm(path.join(target,'styles'),{recursive:true,force:true});await fs.rm(path.join(target,'app','core.mjs'),{force:true});
 await fs.writeFile(path.join(target,'pacefold-experience.txt'),`${RELEASE} ${REVISION}\n`);
 console.log(`Built Clock ${RELEASE} ${REVISION} bundle and hardened shell at ${target}`);

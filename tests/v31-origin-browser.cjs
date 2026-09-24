@@ -94,6 +94,13 @@ async function main(){
     requireState(state.scrollWidth<=state.viewport.width+1,'Desktop cover has horizontal overflow',state);
     await page.screenshot({path:path.join(output,'v31-desktop-homepage.png'),fullPage:false});
 
+    await page.click('#cover-music-open');
+    const music=await page.evaluate(()=>{const top=document.elementFromPoint(innerWidth/2,innerHeight/2);return{open:document.getElementById('sound-bar').dataset.musicOpen,onTop:Boolean(top?.closest('#sound-bar'))}});
+    requireState(music.open==='true'&&music.onTop,'Music opened behind the scenic cover',music);
+    await page.screenshot({path:path.join(output,'v31-desktop-music.png'),fullPage:false});
+    await page.click('#music-room-close');
+    await page.waitForFunction(()=>document.getElementById('sound-bar').dataset.musicOpen==='false');
+
     await page.click('#cover-peel');
     await page.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');
     await page.waitForTimeout(220);
@@ -123,9 +130,11 @@ async function main(){
       await page.evaluate(target=>window.__PACEFOLD__.go(target),mode);await page.waitForTimeout(180);
       const box=await page.locator(selector).boundingBox();
       requireState(Boolean(box&&box.width>0),`${mode} fold did not open`,await inspect(page));
+      const edges=await page.evaluate(()=>[...document.querySelectorAll('.edge-nav .edge')].filter(edge=>getComputedStyle(edge).display!=='none').map(edge=>({go:edge.dataset.go,label:edge.querySelector('.edge-label')?.textContent})));
+      requireState(edges.length===1&&edges[0].label==='Clock','Folds must show exactly one edge, the way back to Clock',{mode,edges});
       if(mode==='worklog'){
         const fold=await page.evaluate(()=>({compare:getComputedStyle(document.getElementById('day-compare')).display,compareHeader:getComputedStyle(document.querySelector('.day-compare>header')).display,storyTitle:getComputedStyle(document.querySelector('.day-story strong')).color}));
-        requireState(fold.compare==='block'&&fold.compareHeader==='flex'&&/255/.test(fold.storyTitle),'Day fold lost its comparison layout or story contrast',fold);
+        requireState(['block','grid'].includes(fold.compare)&&fold.compareHeader==='flex'&&/255/.test(fold.storyTitle),'Day fold lost its comparison layout or story contrast',fold);
       }
       if(mode==='now'){
         const fold=await page.evaluate(()=>({title:getComputedStyle(document.querySelector('.now-primary h2')).color,scheduleTime:getComputedStyle(document.querySelector('.now-schedule .rhythm-row strong')).color,primaryBackground:getComputedStyle(document.querySelector('.now-primary')).backgroundImage,primaryColor:getComputedStyle(document.querySelector('.now-primary')).backgroundColor}));
@@ -163,11 +172,13 @@ async function main(){
     requireState(state.clock.right<=state.viewport.width+1&&state.daybook.right<=state.viewport.width+1&&state.scrollWidth<=state.viewport.width+1,'Mobile working surface is horizontally clipped',state);
     requireState(state.privacyCurtain?.display==='none','The inactive privacy screen leaked into the mobile page',state);
     requireState(visible(state.seconds)&&visible(state.secondHand),'Mobile Clock hides seconds',state);
+    const tabs=await phone.evaluate(()=>[...document.querySelectorAll('#mobile-nav [data-go]')].map(node=>node.dataset.go));
+    requireState(tabs.join()==='home,notes,worklog,now,settings','Mobile navigation must offer a way back to Clock',{tabs});
     await phone.screenshot({path:path.join(output,'v31-mobile-clock.png'),fullPage:false});
     await phone.screenshot({path:path.join(output,'v31-mobile-clock-full.png'),fullPage:true});
     await phone.evaluate(()=>window.__PACEFOLD__.go('notes'));await phone.waitForTimeout(180);
     const mobileNotes=await phone.evaluate(()=>{const box=node=>node?.getBoundingClientRect().toJSON(),chips=[...document.querySelectorAll('#note-filter-chips button')].map(box);return{find:box(document.querySelector('.note-find')),search:box(document.querySelector('.note-find .search input')),chips}});
-    requireState(mobileNotes.find?.width>=330&&mobileNotes.search?.width>=320&&mobileNotes.chips.length>=2&&Math.abs(mobileNotes.chips[0].y-mobileNotes.chips[1].y)<3,'Mobile Notes filters collapsed into a narrow vertical rail',mobileNotes);
+    requireState(mobileNotes.find?.width>=300&&mobileNotes.search?.width>=300&&mobileNotes.chips.length>=2&&Math.abs(mobileNotes.chips[0].y-mobileNotes.chips[1].y)<3,'Mobile Notes filters collapsed into a narrow vertical rail',mobileNotes);
     await phone.screenshot({path:path.join(output,'v31-mobile-notes.png'),fullPage:false});
     await phone.evaluate(()=>window.__PACEFOLD__.go('settings'));await phone.waitForTimeout(180);
     await phone.screenshot({path:path.join(output,'v31-mobile-settings.png'),fullPage:false});

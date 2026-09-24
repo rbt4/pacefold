@@ -95,7 +95,7 @@
     </section>
 
     <section class="view view-notes" data-view="notes" aria-label="Notes">
-      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Up from Clock</small><h1>Notes</h1><p>A calm local notebook, organized by the day it belongs to.</p></span><b id="notes-total">0 notes</b></header>
+      <header class="view-head"><button type="button" data-go="home">↓ Clock</button><span><small>Up from Clock</small><h1>Notes</h1><p>A calm local notebook, organized by the day it belongs to.</p></span><b id="notes-total">0 notes</b></header>
       <div class="notes-layout">
         <aside class="calendar-card">
           <header><button type="button" id="calendar-prev" aria-label="Previous month">←</button><strong id="calendar-title">Month</strong><button type="button" id="calendar-next" aria-label="Next month">→</button></header>
@@ -117,7 +117,7 @@
     </section>
 
     <section class="view view-worklog" data-view="worklog" aria-label="Worklog">
-      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Left from Clock</small><h1>Day log</h1><p>Transitions and breaks, recorded without turning your day into surveillance.</p></span><button class="head-action" type="button" id="export-day">Export day</button></header>
+      <header class="view-head"><button type="button" data-go="home">→ Clock</button><span><small>Left from Clock</small><h1>Day log</h1><p>Transitions and breaks, recorded without turning your day into surveillance.</p></span><button class="head-action" type="button" id="export-day">Export day</button></header>
       <section class="day-story" aria-label="Today at a glance"><span><small>Today at a glance</small><strong id="day-story-title">A quiet start</strong><p id="day-story-copy">Your day will explain itself as you use Pacefold.</p></span><div class="day-balance"><div id="day-balance-bar"></div><footer id="day-balance-legend"></footer></div></section>
       <div class="metric-grid" id="metric-grid"></div>
       <div class="log-layout">
@@ -138,7 +138,7 @@
     </section>
 
     <section class="view view-settings" data-view="settings" aria-label="Settings">
-      <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 31.0.0</b></header>
+      <header class="view-head"><button type="button" data-go="home">↑ Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 31.0.0</b></header>
       <section class="settings-summary" id="settings-summary" aria-label="Current setup"></section>
       <div class="settings-layout">
         <nav class="settings-nav" id="settings-nav"><button class="active" type="button" data-settings-tab="essentials"><strong>Essentials</strong><small>Daily behaviour</small></button><button type="button" data-settings-tab="rhythm"><strong>Rhythm</strong><small>Prayer and moments</small></button><button type="button" data-settings-tab="care"><strong>Care</strong><small>Water and resets</small></button><button type="button" data-settings-tab="data"><strong>Data</strong><small>Backup and OneNote</small></button><button type="button" data-settings-tab="advanced"><strong>Advanced</strong><small>Recovery tools</small></button></nav>
@@ -168,7 +168,7 @@
           </section>
           <section data-settings-panel="data" hidden>
             <header><small>Data</small><h2>Your local record, under your control</h2></header>
-            <div class="data-actions"><button type="button" id="backup-download"><strong>Download backup</strong><small>Notes, settings and day log in one JSON file</small></button><button type="button" id="backup-restore"><strong>Restore backup</strong><small>Review before replacing current local data</small></button><button type="button" id="backup-file"><strong>Choose live backup file</strong><small>Edge can update the same file after each change</small></button></div>
+            <div class="data-actions"><button type="button" id="backup-download"><strong>Download backup</strong><small>Notes, settings and day log in one JSON file</small></button><button type="button" id="backup-restore"><strong>Restore backup</strong><small>Review before replacing current local data</small></button><button type="button" id="backup-file"><strong>Choose live backup file</strong><small>Supported browsers can update the same file after each change</small></button></div>
             <div class="data-health" id="data-health"></div><p class="setting-status" id="backup-status">Local browser storage is active.</p>
             <details class="onenote-settings"><summary>Optional Microsoft OneNote copy</summary><p>Pacefold always saves locally first. If your organization permits Microsoft Graph, new notes can also copy to one OneNote section.</p><div class="settings-form"><label>Entra application (client) ID<input id="onenote-client-input" type="text" spellcheck="false"></label><label>Tenant<input id="onenote-tenant-input" type="text" spellcheck="false"></label></div><div class="inline-actions"><button type="button" id="onenote-connect">Connect and choose notebook</button><button type="button" id="onenote-sync">Sync unsynced notes</button><button type="button" id="onenote-disconnect">Disconnect</button></div><div id="onenote-picker"></div><p class="setting-status" id="onenote-status">Not configured.</p></details>
           </section>

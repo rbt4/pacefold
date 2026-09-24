@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased — One stylesheet, fixed folds
+
+Design
+- Replaced the 22 concatenated override stylesheets (≈270 KB, 3,189 `!important`) with one authored, token-based `src/app/pacefold.css` (≈90 KB, 10 `!important`).
+- One palette, one type scale with an 11–12px floor (no more 6–9px labels), one card/button/chip system across Clock, Notes, Day log, Now, Settings, Music and dialogs.
+- The scenic cover now uses the product typeface, stacks seconds/AM–PM beside the time, and keeps its controls legible over any photograph.
+- Day Unfold no longer stretches the sun into an oval, and the progress arc now reaches the sun.
+- Settings work days are real toggle chips; the Daily tab subtitle is visible; the rhythm privacy choices read as options, not shouted labels.
+
+UX fixes
+- Music opened *behind* the scenic cover, so the homepage Music button looked broken. It now opens above everything.
+- Inside a fold, all four edge tabs used to show "Notes / Day / Now / Settings" but every one of them actually returned to Clock. Now only the way back shows, labelled "Clock", with the arrow pointing the right way.
+- Hover-to-navigate could jump to another fold (and from Notes straight to Settings) when an edge appeared under a resting cursor, e.g. right after "Open clock". The dwell now only arms on real pointer movement and always travels through Clock.
+- Phones and tablets get a bottom tab bar that includes Clock (it previously had no way home except the logo).
+- Removed duplicate cue surfaces (window tray, title strip, in-card list, pop-up bloom) that repeated the "Needs you" guide; the stray blue dot under the header clock is gone.
+- Clearer copy: "1 cue waiting" instead of "Quiet cues ready" while something is waiting, "Next in 14 min" instead of "Next · 0:14", Now names the waiting cue and disables Clear/Snooze when nothing waits, and browser-neutral permission/backup copy instead of "Edge".
+- The header clock hides on Clock (the big clock is right there) and the Music dock stays in the header on every fold.
+
 ## 31.0.0 — Origin
 
 - Restored the scenic homepage as a true front cover and separated it from the working Clock.

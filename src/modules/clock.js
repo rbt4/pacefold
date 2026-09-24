@@ -15,7 +15,7 @@ export function installClock(ctx){
     const sky=$('.day-sky');
     if(!sky||id('day-arc-path'))return;
     sky.replaceChildren();
-    const graphic=svg('svg',{class:'day-sky-svg',viewBox:'0 0 600 130','aria-hidden':'true',preserveAspectRatio:'none'});
+    const graphic=svg('svg',{class:'day-sky-svg',viewBox:'0 34 600 94','aria-hidden':'true',preserveAspectRatio:'none'});
     const defs=svg('defs');
     const filter=svg('filter',{id:'day-glow-filter',x:'-100%',y:'-100%',width:'300%',height:'300%'});
     filter.append(svg('feGaussianBlur',{stdDeviation:'8'}));defs.append(filter);
@@ -98,7 +98,7 @@ export function installClock(ctx){
     id('day-percent').textContent=range.activeDay?`${Math.round(progress*100)}% of workday`:'Off day';
     id('day-copy').textContent=dayState;id('day-phase').textContent=range.activeDay?'Workday':'Off day';
     id('work-start').textContent=ctx.formatTime(ctx.zonedForToday(range.start,now));id('work-end').textContent=ctx.formatTime(ctx.zonedForToday(range.end,now));
-    id('clock-status').textContent=ctx.prefs.quietMode?'Quiet mode':ctx.currentCues.length?'Quiet cues ready':'Quietly keeping pace';
+    id('clock-status').textContent=ctx.prefs.quietMode?'Quiet mode':ctx.currentCues.length?`${ctx.currentCues.length} cue${ctx.currentCues.length===1?'':'s'} waiting`:'Keeping pace';
     ctx.renderDaySky(now,state,range,part);
   };
 
@@ -108,7 +108,8 @@ export function installClock(ctx){
     id('now-next-time').textContent=next?ctx.formatTime(next.date):'—';
     id('now-countdown').textContent=next?ctx.relativeUntil(next.date,now):'The next day will begin quietly.';
     const guidance=id('now-guidance');
-    if(guidance)guidance.textContent=next?`${label} is the next scheduled point in the day.`:'No scheduled moments remain today.';
+    const waiting=ctx.currentCues.length;if(guidance)guidance.textContent=waiting?`${waiting===1?`“${ctx.clockCueCopy(ctx.currentCues[0]).label}” is waiting.`:`${waiting} cues are waiting, starting with “${ctx.clockCueCopy(ctx.currentCues[0]).label}”.`} Clear it when done, or snooze cues for ten minutes.`:next?'Nothing is waiting. Keep your current pace.':'No scheduled moments remain today.';
+    for(const control of[id('now-clear-cue'),id('now-snooze')])if(control)control.disabled=!waiting;
   };
 
   ctx.renderClock=(now=new Date())=>{
