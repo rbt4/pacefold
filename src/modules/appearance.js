@@ -27,6 +27,22 @@ export function installAppearance(ctx){
     row.append(copy,group);panel.after(row);
   }
 
+  // Living light: the page, the forest band and the Day Unfold sky follow the hour.
+  const phaseOf=hour=>hour>=5&&hour<9?'dawn':hour>=9&&hour<17?'day':hour>=17&&hour<21?'dusk':'night';
+  const paintPhase=()=>{
+    const hour=Number(new Intl.DateTimeFormat('en-CA',{timeZone:ctx.prefs.timeZone,hour:'2-digit',hourCycle:'h23'}).format(new Date()));
+    root.dataset.phase=phaseOf(hour);
+  };
+  paintPhase();setInterval(paintPhase,60000);
+
+  // Folds enter from their own direction so the spatial model is felt, not just read.
+  const baseGo=ctx.go;
+  if(typeof baseGo==='function')ctx.go=(target,options)=>{
+    const from=ctx.mode;
+    root.dataset.from=from;
+    return baseGo(target,options);
+  };
+
   media.addEventListener?.('change',apply);
   window.addEventListener('storage',event=>{if(event.key===ctx.KEYS.prefs)apply()});
   apply();

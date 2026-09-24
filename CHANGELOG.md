@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased — Signature
+
+- **Editorial type.** A soft display serif (Fraunces, OFL, self-hosted) now sets the time, dates and headings, paired with Inter for interface text. The brand, the cover time and Clock's digits get a warm, printed voice.
+- **A crafted dial.** Serif numerals at 12/3/6/9, a brass-edged bezel, tapered hour and minute hands and a sweeping second hand with a small mechanical settle. The sweep never runs backwards at the minute.
+- **Living light.** The page glow, the forest band and the Day Unfold sky follow the hour: dawn peach, daylight forest, dusk amber, and night moonlight with stars and a moon in place of the sun.
+- **Folds you can feel.** Notes arrives from above, Day log from the left, Now from the right, Settings from below, and Clock returns from the opposite side.
+- **Now countdown ring.** The empty half of the Now hero is a ring that fills from the previous moment to the next, with the time remaining at its centre.
+- **Icon keys and a rhythm timeline.** The six quick keys have drawn icons (water, noodles, step away, meal, look far, move), and the rhythm list is a connected timeline.
+- **Paper grain.** A faint grain across the page and the forest surfaces.
+
 ## Unreleased — One stylesheet, fixed folds
 
 Design

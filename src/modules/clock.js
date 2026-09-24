@@ -79,7 +79,7 @@ export function installClock(ctx){
     const root=document.documentElement;
     root.style.setProperty('--hour-angle',`${hours*30}deg`);
     root.style.setProperty('--minute-angle',`${minutes*6}deg`);
-    root.style.setProperty('--second-angle',`${part.second*6}deg`);
+    root.style.setProperty('--second-angle',`${(part.hour*3600+part.minute*60+part.second)*6}deg`);
     root.classList.toggle('seconds-off',!ctx.prefs.showSeconds);
     id('clock-hour').textContent=String(ctx.prefs.timeFormat==='24'?part.hour:(part.hour%12||12)).padStart(ctx.prefs.timeFormat==='24'?2:1,'0');
     id('clock-minute').textContent=String(part.minute).padStart(2,'0');
@@ -108,6 +108,11 @@ export function installClock(ctx){
     id('now-next-time').textContent=next?ctx.formatTime(next.date):'—';
     id('now-countdown').textContent=next?ctx.relativeUntil(next.date,now):'The next day will begin quietly.';
     const guidance=id('now-guidance');
+    const previous=[...state.today].reverse().find(item=>item.date<=now),from=previous?.date||ctx.zonedForToday(ctx.workRange(ctx.prefs,now).start,now);
+    const span=next?Math.max(60000,next.date-from):1,ringProgress=next?ctx.clamp((now-from)/span,0,1,0):1;
+    const primary=document.querySelector('.now-primary');if(primary)primary.style.setProperty('--now-progress',ringProgress.toFixed(4));
+    const minutesLeft=next?Math.max(0,Math.round((next.date-now)/60000)):0,ringLabel=id('now-ring-value');
+    if(ringLabel)ringLabel.textContent=next?(minutesLeft>=60?`${Math.floor(minutesLeft/60)}h ${String(minutesLeft%60).padStart(2,'0')}m`:`${minutesLeft}m`):'Done';
     const waiting=ctx.currentCues.length;if(guidance)guidance.textContent=waiting?`${waiting===1?`“${ctx.clockCueCopy(ctx.currentCues[0]).label}” is waiting.`:`${waiting} cues are waiting, starting with “${ctx.clockCueCopy(ctx.currentCues[0]).label}”.`} Clear it when done, or snooze cues for ten minutes.`:next?'Nothing is waiting. Keep your current pace.':'No scheduled moments remain today.';
     for(const control of[id('now-clear-cue'),id('now-snooze')])if(control)control.disabled=!waiting;
   };

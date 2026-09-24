@@ -130,6 +130,9 @@ async function main(){
     requireState(folio.gaps.every(gap=>Math.abs(gap)<=1)&&folio.inset.every(value=>value<=2),'Desktop Clock must read as one folio, not separate floating cards',folio);
     requireState(folio.left<=folio.viewLeft-8&&folio.right>=folio.viewRight+8,'Edge tabs overlap the Clock folio',folio);
 
+    const signature=await page.evaluate(async()=>{await document.fonts.ready;return{phase:document.documentElement.dataset.phase,serif:document.fonts.check('300 100px "Pacefold Serif"'),digital:getComputedStyle(document.querySelector('.digital')).fontFamily,numerals:document.querySelectorAll('.dial-numerals b').length,icons:[...document.querySelectorAll('.quick-action>i')].every(node=>getComputedStyle(node,'::after').maskImage.includes('data:image/svg'))}});
+    requireState(['dawn','day','dusk','night'].includes(signature.phase)&&signature.serif&&/Pacefold Serif/.test(signature.digital)&&signature.numerals===4&&signature.icons,'The signature Clock (phase light, serif time, dial numerals, key icons) is incomplete',signature);
+
     const pill=await page.evaluate(()=>{const edge=document.querySelector('.edge-down');const before={end:document.documentElement.dataset.pageEnd,opacity:getComputedStyle(edge).opacity};return before});
     requireState(pill.end==='false'&&Number(pill.opacity)<.05,'The Settings pill must stay out of the way until Clock has been read to its end',pill);
     await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
@@ -163,6 +166,8 @@ async function main(){
         requireState(['block','grid'].includes(fold.compare)&&fold.compareHeader==='flex'&&/255/.test(fold.storyTitle),'Day fold lost its comparison layout or story contrast',fold);
       }
       if(mode==='now'){
+        const ring=await page.evaluate(()=>({progress:Number(getComputedStyle(document.querySelector('.now-primary')).getPropertyValue('--now-progress')),label:document.getElementById('now-ring-value').textContent,from:document.documentElement.dataset.from,animation:getComputedStyle(document.querySelector('.view-now')).animationName}));
+        requireState(ring.progress>=0&&ring.progress<=1&&/\d|Done/.test(ring.label)&&ring.animation==='fold-from-right','Now countdown ring or directional fold is missing',ring);
         const fold=await page.evaluate(()=>({title:getComputedStyle(document.querySelector('.now-primary h2')).color,scheduleTime:getComputedStyle(document.querySelector('.now-schedule .rhythm-row strong')).color,primaryBackground:getComputedStyle(document.querySelector('.now-primary')).backgroundImage,primaryColor:getComputedStyle(document.querySelector('.now-primary')).backgroundColor}));
         requireState(/255/.test(fold.title)&&!/255, 255, 255/.test(fold.scheduleTime)&&fold.primaryBackground!=='none'&&!/247, 250, 248/.test(fold.primaryColor),'Now fold has unreadable inherited contrast',fold);
       }

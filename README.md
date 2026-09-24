@@ -26,6 +26,7 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 - optional local-first OneNote copy through Microsoft Graph
 - installable offline PWA with quiet notifications, no Pacefold account, analytics or advertising
 - System, Light or Dark appearance (Settings → Daily), so an all-day clock stays calm in the evening
+- a Signature look: serif time and dial, time-of-day light (dawn, day, dusk, night), and folds that slide in from their direction
 
 Public site: **https://rbt4.github.io/pacefold/**
 
