@@ -133,6 +133,9 @@ async function main(){
     const switcher=await page.evaluate(()=>{const box=node=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};const nav=document.querySelector('.fold-nav');return{nav:box(nav),items:[...nav.querySelectorAll('[data-go]')].map(node=>({go:node.dataset.go,current:node.getAttribute('aria-current')})),index:getComputedStyle(nav).getPropertyValue('--fold-index').trim(),music:box(document.querySelector('.sound-bar')),status:box(document.querySelector('.bar-status')),edges:document.querySelectorAll('.edge-nav,.edge').length,viewport:innerWidth}});
     requireState(switcher.edges===0&&switcher.items.map(item=>item.go).join()==='notes,worklog,home,now,settings'&&switcher.items.find(item=>item.current==='page')?.go==='home'&&switcher.index==='2','The fold switcher must replace the edge pills and mark Clock',switcher);
     requireState(Math.abs((switcher.nav.left+switcher.nav.right)/2-switcher.viewport/2)<=2&&switcher.nav.top<=14&&switcher.nav.left>switcher.music.right&&switcher.nav.right<switcher.status.left,'The fold switcher is not centred in the top bar or collides with its controls',switcher);
+    // A populated music dock stops short of the switcher.
+    const dockRoom=await page.evaluate(()=>{const player=document.querySelector('.sound-bar .stream-player');const before=player.dataset.state;player.dataset.state='ready';const title=document.querySelector('.sound-bar .stream-title');const text=title.textContent;title.textContent='A very long track title that would run right under the fold switcher';const dock=document.querySelector('.sound-bar .stream-dock').getBoundingClientRect(),nav=document.querySelector('.fold-nav').getBoundingClientRect(),controls=[...document.querySelectorAll('.sound-bar .stream-controls button')].filter(node=>node.offsetParent).map(node=>node.getBoundingClientRect().right);player.dataset.state=before;title.textContent=text;return{dockRight:dock.right,navLeft:nav.left,controlsRight:Math.max(0,...controls)}});
+    requireState(dockRoom.dockRight<=dockRoom.navLeft-4&&dockRoom.controlsRight<=dockRoom.dockRight+1,'The populated music dock runs under the fold switcher',dockRoom);
     // Resting the pointer at a screen edge never moves the person to another fold.
     await page.mouse.move(6,450);await page.mouse.move(10,452);await page.mouse.move(1434,450);await page.mouse.move(1430,452);await page.waitForTimeout(900);
     requireState((await page.evaluate(()=>document.documentElement.dataset.mode))==='home','Hovering at a screen edge navigated away from Clock');
@@ -140,6 +143,35 @@ async function main(){
     const signature=await page.evaluate(async()=>{await document.fonts.ready;return{phase:document.documentElement.dataset.phase,serif:document.fonts.check('300 100px "Pacefold Display"'),digital:getComputedStyle(document.querySelector('.digital')).fontFamily,numerals:document.querySelectorAll('.dial-cardinal').length,icons:[...document.querySelectorAll('.quick-action>i')].every(node=>getComputedStyle(node,'::after').maskImage.includes('data:image/svg'))}});
     requireState(['dawn','day','dusk','night'].includes(signature.phase)&&signature.serif&&/Pacefold Display/.test(signature.digital)&&signature.numerals===4&&signature.icons,'The Horizon Clock (sky phase, display type, dial cardinals, key icons) is incomplete',signature);
 
+
+    // The dial explains itself on hover: sun or moon, and moments without their names.
+    await page.hover('.dial .lens-hit');await page.waitForTimeout(200);
+    const skyCard=await page.evaluate(()=>{const pop=document.getElementById('wx-pop');return{on:pop.classList.contains('is-on'),text:pop.innerText}});
+    requireState(skyCard.on&&/^(SUN|MOON|Sun|Moon)/.test(skyCard.text.trim())&&/(Sets|Golden|illuminated|Sunrise)/.test(skyCard.text),'Hovering the sun or moon must explain it',skyCard);
+    await page.hover('.dial-moments .moment .moment-dot');await page.waitForTimeout(200);
+    const momentCard=await page.evaluate(()=>document.getElementById('wx-pop').innerText);
+    requireState(/Scheduled moment/.test(momentCard)&&!privateTerms.test(momentCard),'Hovering a moment must stay neutral',{momentCard});
+    await page.mouse.move(720,860);await page.waitForTimeout(250);
+
+    // Focus view: Z grows the dial and clears the panels; Esc returns without leaving Clock.
+    await page.keyboard.press('z');await page.waitForTimeout(700);
+    const zen=await page.evaluate(()=>({zen:document.documentElement.dataset.zen,left:getComputedStyle(document.querySelector('.horizon-left')).opacity,dock:getComputedStyle(document.querySelector('.horizon-dock')).pointerEvents}));
+    requireState(zen.zen==='on'&&Number(zen.left)<.05&&zen.dock==='none','Focus view did not clear the panels',zen);
+    await page.keyboard.press('Escape');await page.waitForTimeout(150);
+    requireState(await page.evaluate(()=>!document.documentElement.dataset.zen&&document.documentElement.dataset.mode==='home'),'Esc must leave focus view and stay on Clock');
+
+    // Command bar: Ctrl+K, type, Enter runs; a phrase can be kept as a note.
+    const paletteWater=await page.evaluate(()=>Number(window.__PACEFOLD__.prefs.waterOz)||0);
+    await page.keyboard.press('Control+k');await page.waitForTimeout(150);
+    requireState(await page.evaluate(()=>!document.getElementById('palette').hidden&&document.activeElement?.id==='palette-input'),'Ctrl+K must open the command bar with the input focused');
+    await page.keyboard.type('water');await page.waitForTimeout(80);
+    requireState((await page.evaluate(()=>document.querySelector('.palette-row[aria-selected="true"]')?.textContent||'')).startsWith('Log water'),'The command bar did not rank Log water first');
+    await page.keyboard.press('Enter');await page.waitForTimeout(250);
+    const afterPalette=await page.evaluate(()=>({oz:Number(window.__PACEFOLD__.prefs.waterOz)||0,step:Number(window.__PACEFOLD__.prefs.waterStep)||0,hidden:document.getElementById('palette').hidden,mode:document.documentElement.dataset.mode}));
+    requireState(afterPalette.oz===paletteWater+afterPalette.step&&afterPalette.hidden&&afterPalette.mode==='home','Running Log water from the command bar failed',{paletteWater,...afterPalette});
+    await page.keyboard.press('Control+k');await page.keyboard.type('Call the supplier back');await page.waitForTimeout(80);
+    await page.locator('.palette-row',{hasText:'as a note'}).click();
+    await page.waitForFunction(()=>window.__PACEFOLD__.notes.some(note=>note.body==='Call the supplier back'));
 
     const waterBefore=await page.evaluate(()=>Number(window.__PACEFOLD__.prefs.waterOz)||0);
     await page.click('[data-action="water"]');
@@ -150,7 +182,7 @@ async function main(){
     await page.locator('#clock-note-input').fill(marker);
     await page.locator('#clock-note-input').press('Enter');
     await page.waitForFunction(value=>window.__PACEFOLD__.notes.some(note=>note.body===value),marker);
-    requireState((await page.evaluate(()=>JSON.parse(localStorage.getItem('pacefold.notebook.entries.v2')||'{"items":[]}').items?.length||0))===1,'Clock note was not persisted locally',await inspect(page));
+    requireState((await page.evaluate(()=>JSON.parse(localStorage.getItem('pacefold.notebook.entries.v2')||'{"items":[]}').items?.length||0))===2,'Clock note was not persisted locally (one from the command bar, one from Clock)',await inspect(page));
 
     for(const [mode,file,selector]of [
       ['notes','v31-desktop-notes.png','.view-notes'],
@@ -163,6 +195,14 @@ async function main(){
       requireState(Boolean(box&&box.width>0),`${mode} fold did not open`,await inspect(page));
       const current=await page.evaluate(()=>[...document.querySelectorAll('.fold-nav [aria-current="page"]')].map(node=>node.dataset.go));
       requireState(current.length===1&&current[0]===mode,'The fold switcher must mark the open fold',{mode,current});
+      const tab=await page.evaluate(()=>({index:getComputedStyle(document.querySelector('.fold-nav')).getPropertyValue('--fold-index').trim(),clock:document.querySelector('.fold-nav [data-go="home"] small').textContent}));
+      requireState(tab.index===String(['notes','worklog','home','now','settings'].indexOf(mode))&&/\d:\d\d/.test(tab.clock),'The switcher thumb must follow the fold and the Clock tab must show the time',{mode,...tab});
+      // A tap goes exactly where it says, even from inside another fold.
+      const other=mode==='settings'?'notes':'settings';
+      await page.click(`.fold-nav [data-go="${other}"]`);await page.waitForTimeout(120);
+      requireState((await page.evaluate(()=>document.documentElement.dataset.mode))===other,'A switcher tab inside a fold opened the wrong fold',{from:mode,to:other});
+      await page.click(`.fold-nav [data-go="${mode}"]`);await page.waitForTimeout(120);
+      requireState((await page.evaluate(()=>document.documentElement.dataset.mode))===mode,'A switcher tab did not return to its fold',{mode});
       if(mode==='worklog'){
         const fold=await page.evaluate(()=>({compare:getComputedStyle(document.getElementById('day-compare')).display,compareHeader:getComputedStyle(document.querySelector('.day-compare>header')).display,storyTitle:getComputedStyle(document.querySelector('.day-story strong')).color}));
         requireState(['block','grid'].includes(fold.compare)&&fold.compareHeader==='flex'&&/255/.test(fold.storyTitle),'Day fold lost its comparison layout or story contrast',fold);
@@ -253,6 +293,12 @@ async function main(){
     requireState((await sky.evaluate(()=>document.documentElement.dataset.mode))==='home','Arrow keys inside the weather sheet must not fold the app');
     await sky.keyboard.press('Escape');await sky.waitForTimeout(350);
     requireState(await sky.evaluate(()=>document.getElementById('weather-sheet').hidden),'Escape must close the weather sheet');
+    // Closing before the radar index arrives cancels the radar: no tiles, no timer.
+    await sky.unroute('https://api.rainviewer.com/**');
+    await sky.route('https://api.rainviewer.com/**',async route=>{await new Promise(resolve=>setTimeout(resolve,500));await route.fulfill({contentType:'application/json',body:JSON.stringify({host:'https://tilecache.rainviewer.com',radar:{past:[{time:frameTime,path:'/v2/radar/late'}],nowcast:[]}})}).catch(()=>{})});
+    await sky.click('.wx-open');await sky.waitForTimeout(80);await sky.keyboard.press('Escape');
+    const tilesAtClose=tiles.filter(url=>url.includes('/radar/late/')).length;await sky.waitForTimeout(900);
+    requireState(tilesAtClose===0&&tiles.filter(url=>url.includes('/radar/late/')).length===0,'A closed weather sheet still started its radar',{late:tiles.filter(url=>url.includes('/radar/late/')).length});
     requireState(skyErrors.length===0,'The forecast produced browser errors (CSP or runtime)',{skyErrors});
     await sky.screenshot({path:path.join(output,'v31-desktop-clock-week.png'),fullPage:true});
     await weather.close();

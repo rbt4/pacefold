@@ -124,7 +124,22 @@ export function installWeatherLens(ctx){
     return frag;
   };
   const hourCard=(d,i)=>{const x=hourDetail(d,i),head=el('header','wx-pop-head wx-pop-hour'),title=el('span');title.append(el('small','',x.title),el('strong','',x.parts[0]));const t=el('span','wx-pop-temps');t.append(el('strong','',`${x.temp}°`));head.append(kit().weatherIcon(x.kind),title,t);return[head,el('p','wx-pop-line',x.parts.slice(1).join(' · '))]};
+  // Other surfaces (the dial's sun, moments and workday) register their own cards.
+  ctx.lensProviders=ctx.lensProviders||{};
+  ctx.lensCard=({icon=null,kicker='',title='',value='',lines=[]})=>{
+    const head=el('header','wx-pop-head wx-pop-hour'),copy=el('span');copy.append(el('small','',kicker),el('strong','',title));
+    const tail=el('span','wx-pop-temps');if(value)tail.append(el('strong','',value));
+    head.append(icon||el('i','lens-dot'),copy,tail);
+    return[head,...lines.filter(Boolean).map(line=>el('p','wx-pop-line',line))];
+  };
   const showFor=(target,event)=>{
+    if(target.dataset.lens){
+      const nodes=ctx.lensProviders[target.dataset.lens]?.(target);if(!nodes)return;
+      clearTimeout(hideTimer);
+      const key=`l${target.dataset.lens}${target.dataset.key||''}`;
+      if(popFor!==key){pop.replaceChildren(...nodes);pop.dataset.kind='hour';popFor=key}
+      place(target,event&&event.type!=='focusin'?{x:event.clientX,y:event.clientY}:null);return;
+    }
     const d=data();if(!d?.daily?.time?.length||!kit())return;
     clearTimeout(hideTimer);
     const hour=target.dataset.hourIndex!==undefined;
@@ -133,18 +148,18 @@ export function installWeatherLens(ctx){
     place(target,hour&&event?{x:event.clientX,y:event.clientY}:null);
   };
   const fine=matchMedia('(hover: hover) and (pointer: fine)');
-  const LENS='.week-day[data-index],.cw-day[data-index],.temp-seg[data-hour-index]';
+  const LENS='.week-day[data-index],.cw-day[data-index],.temp-seg[data-hour-index],[data-lens]';
   document.addEventListener('pointerover',event=>{if(!fine.matches)return;const t=event.target instanceof Element?event.target.closest(LENS):null;if(t)showFor(t,event)});
   document.addEventListener('pointermove',event=>{if(!fine.matches||pop.hidden)return;const t=event.target instanceof Element?event.target.closest('.temp-seg[data-hour-index]'):null;if(t)showFor(t,event)},{passive:true});
   document.addEventListener('pointerout',event=>{const t=event.target instanceof Element?event.target.closest(LENS):null;if(t&&!t.contains(event.relatedTarget))hide()});
-  document.addEventListener('focusin',event=>{const t=event.target instanceof Element?event.target.closest('.week-day[data-index],.cw-day[data-index]'):null;if(t)showFor(t)});
+  document.addEventListener('focusin',event=>{const t=event.target instanceof Element?event.target.closest('.week-day[data-index],.cw-day[data-index],[data-lens]'):null;if(t)showFor(t,event)});
   document.addEventListener('focusout',event=>{if(event.target instanceof Element&&event.target.closest(LENS))hide()});
 
   // ---- Sheet -------------------------------------------------------------------
   const sheet=el('div','wx-sheet');sheet.id='weather-sheet';sheet.hidden=true;sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','true');sheet.setAttribute('aria-label','Weather');
   const scrim=el('div','wx-scrim'),panel=el('div','wx-panel'),close=button('wx-close','Close weather','×');
   sheet.append(scrim,panel);document.body.append(sheet);
-  let lastFocus=null,selected='next',radarTimer=0;
+  let lastFocus=null,selected='next',radarTimer=0,radarGeneration=0;
 
   function renderSheet(){
     const d=data(),K=kit();panel.replaceChildren(close);
@@ -188,6 +203,7 @@ export function installWeatherLens(ctx){
   // ---- Radar scope -------------------------------------------------------------
   function buildRadar(host){
     clearInterval(radarTimer);
+    const generation=radarGeneration+=1,stale=()=>generation!==radarGeneration||!host.isConnected;
     const lat=Number(ctx.prefs.lat),lng=Number(ctx.prefs.lng);
     const scope=el('div','radar-scope'),map=el('div','radar-map'),frames=el('div','radar-frames');
     const n=2**ZOOM,fx=(lng+180)/360*n,rad=lat*Math.PI/180,fy=(1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*n,tx=Math.floor(fx),ty=Math.floor(fy);
@@ -208,8 +224,12 @@ export function installWeatherLens(ctx){
     void(async()=>{
       try{
         const response=await fetch(RADAR_INDEX,{credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store'});
+        if(stale())return;
         if(!response.ok)throw new Error(`Radar ${response.status}`);
-        const index=await response.json(),list=[...(index?.radar?.past||[]).slice(-10),...(index?.radar?.nowcast||[])];
+        const index=await response.json();
+        // The sheet may have closed (or re-rendered) while the index was loading.
+        if(stale())return;
+        const list=[...(index?.radar?.past||[]).slice(-10),...(index?.radar?.nowcast||[])];
         if(!list.length||!index.host)throw new Error('Radar empty');
         const past=Math.min(10,(index.radar.past||[]).length),layers=list.map(frame=>{const layer=el('div','radar-frame');tiles(layer,(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`);frames.append(layer);return layer});
         let at=past-1,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -224,7 +244,7 @@ export function installWeatherLens(ctx){
         play.addEventListener('click',()=>{playing=!playing;sync()});
         scrub.addEventListener('input',()=>{playing=false;sync();show(Number(scrub.value))});
         scope.dataset.state='live';
-      }catch(error){scope.dataset.state='offline';when.textContent=navigator.onLine?'Radar unavailable':'Offline';console.warn('[Clock] radar unavailable',error?.message||error)}
+      }catch(error){if(stale())return;scope.dataset.state='offline';when.textContent=navigator.onLine?'Radar unavailable':'Offline';console.warn('[Clock] radar unavailable',error?.message||error)}
     })();
   }
 
@@ -247,7 +267,7 @@ export function installWeatherLens(ctx){
     requestAnimationFrame(()=>{sheet.classList.add('is-on');close.focus({preventScroll:true})});
   };
   const shut=()=>{
-    if(sheet.hidden)return;clearInterval(radarTimer);sheet.classList.remove('is-on');delete document.documentElement.dataset.weatherSheet;
+    if(sheet.hidden)return;clearInterval(radarTimer);radarGeneration+=1;sheet.classList.remove('is-on');delete document.documentElement.dataset.weatherSheet;
     setTimeout(()=>{if(!sheet.classList.contains('is-on')){sheet.hidden=true;panel.replaceChildren()}},260);
     if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true});
   };

@@ -21,15 +21,20 @@ export function installEdges(ctx){
     const thumb=el('i','fold-thumb');thumb.setAttribute('aria-hidden','true');nav.append(thumb);
     for(const fold of FOLDS){
       const control=button('',fold.go==='home'?'Open Clock':`Open ${fold.label}`);
-      control.dataset.go=fold.go;control.title=`${fold.label} (${fold.key})`;
-      control.append(icon(fold.icon),el('small','',fold.label),el('kbd','',fold.key));
+      control.dataset.go=fold.go;
+      control.append(icon(fold.icon),el('small','',fold.label),el('kbd','',`${fold.label} ${fold.key}`));
       nav.append(control);
     }
     document.body.append(nav);
-    const sync=()=>{const index=Math.max(0,FOLDS.findIndex(fold=>fold.go===(ctx.mode||'home')));nav.style.setProperty('--fold-index',String(index));nav.dataset.mode=ctx.mode||'home';for(const control of nav.querySelectorAll('[data-go]')){if(control.dataset.go===(ctx.mode||'home'))control.setAttribute('aria-current','page');else control.removeAttribute('aria-current')}};
-    const baseRender=ctx.render;
-    ctx.render=(...args)=>{const result=baseRender?.(...args);sync();return result};
-    sync();
+    const current=()=>document.documentElement.dataset.mode||ctx.mode||'home';
+    const sync=()=>{const index=Math.max(0,FOLDS.findIndex(fold=>fold.go===current()));nav.style.setProperty('--fold-index',String(index));nav.dataset.mode=current();for(const control of nav.querySelectorAll('[data-go]')){if(control.dataset.go===current())control.setAttribute('aria-current','page');else control.removeAttribute('aria-current')}};
+    // Away from Clock, the Clock tab carries the time, so the way back also tells it.
+    const clockLabel=nav.querySelector('[data-go="home"] small');
+    const tick=()=>{clockLabel.textContent=current()==='home'?'Clock':ctx.formatTime(new Date())};
+    // Folds are entered through several paths; the root's data-mode is the one truth.
+    const refresh=()=>{sync();tick()};
+    new MutationObserver(refresh).observe(document.documentElement,{attributes:true,attributeFilter:['data-mode']});
+    refresh();setInterval(tick,15000);
   };
 
   ctx.buildEdges();

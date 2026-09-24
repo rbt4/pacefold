@@ -44,6 +44,9 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 - **The full sheet** also has humidity, wind, UV, air quality, sunrise and sunset, and an hourly chart for any of the seven days. Move across the chart to read each hour.
 
 ### Getting around
+- **Command bar:** ⌘K / Ctrl+K anywhere (or / on Clock) to jump, log, start a session, toggle quiet mode, open the radar or keep a note, without the mouse.
+- **Focus view:** press Z or double-click the dial. The panels fall away and the dial fills the sky. Esc returns.
+- **The dial explains itself:** hover the sun (or the moon's phase at night), your moments or the workday arc.
 - **One switcher**, centred at the top: Notes · Day · **Clock** · Now · Settings, with a thumb that slides to where you are. On a phone it's the tab bar.
 - **Keys still fold the app:** ↑ Notes, ← Day, → Now, ↓ Settings, Esc back to Clock. Hovering near an edge never moves you.
 - **From the start page**, open Clock with the live mini-dial button, by scrolling down, or by swiping up.
