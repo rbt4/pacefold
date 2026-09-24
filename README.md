@@ -6,7 +6,7 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 
 **Open it: https://rbt4.github.io/pacefold/** (installable, works offline, no account)
 
-![Clock: the Horizon Dial over the daily photo, the week ahead on the left and cues and one-tap keys on the right](docs/screenshots/clock.jpg)
+![Clock: the Horizon Dial over the daily photo, the fold switcher at the top, the week ahead with a day's weather card open on the left, and cues and one-tap keys on the right](docs/screenshots/clock.jpg)
 
 <table>
 <tr>
@@ -36,6 +36,20 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 - **Light that moves.** A horizon glow follows the sun. Stars and faint aurora come out after dusk.
 - **The current weather.** Rain, snow, fog and storms show in the sky when they are happening.
 - **A seven-day forecast** from Open-Meteo, with no key or account. It shows drawn, animated icons and temperature range bars. Location names never appear.
+
+### Weather you can look into
+- **Hover any day** for a card with its hourly temperature curve, chance of rain, wind, UV and daylight. Hover an hour on the dial's temperature ring for that hour.
+- **Radar.** A live radar scope (RainViewer) animates the past two hours of precipitation around you, with a sweeping beam, play/pause and a time scrubber. The map has no labels.
+- **The next two hours.** A 15-minute nowcast says when rain or snow starts or stops. When rain is coming, the week panel says so.
+- **The full sheet** also has humidity, wind, UV, air quality, sunrise and sunset, and an hourly chart for any of the seven days. Move across the chart to read each hour.
+
+### Getting around
+- **Command bar:** ⌘K / Ctrl+K anywhere (or / on Clock) to jump, log, start a session, toggle quiet mode, open the radar or keep a note, without the mouse.
+- **Focus view:** press Z or double-click the dial. The panels fall away and the dial fills the sky. Esc returns.
+- **The dial explains itself:** hover the sun (or the moon's phase at night), your moments or the workday arc.
+- **One switcher**, centred at the top: Notes · Day · **Clock** · Now · Settings, with a thumb that slides to where you are. On a phone it's the tab bar.
+- **Keys still fold the app:** ↑ Notes, ← Day, → Now, ↓ Settings, Esc back to Clock. Hovering near an edge never moves you.
+- **From the start page**, open Clock with the live mini-dial button, by scrolling down, or by swiping up.
 
 ### Design details
 - An iridescent aura breathes around the dial and quickens when something needs you.
@@ -106,7 +120,7 @@ Six files, all run by CI (`.github/workflows/pages.yml`) before Pages deployment
 | `tests/guided-fold-v28.cjs` | static (`npm run verify`) | Guided Fold wiring, Settings collapsed to Daily / Rhythm / Data |
 | `tests/v31-origin.cjs` | static (`npm run verify`) | release identity, continuity stores, single stylesheet (no `src/styles` layers, `!important` ceiling), official-player ad policy |
 | `tests/v28-startup-smoke.cjs` | Chromium | cold start, cover → Clock hand-off |
-| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Horizon Dial layout and daily-photo sky, cues that log (one at a time, cold-launch Log, Hidden mode on the dial), Music above the cover, one return edge per fold, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar, appearance persistence, Settings pill placement; writes screenshots |
+| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Horizon Dial layout and daily-photo sky, cues that log (one at a time, cold-launch Log, Hidden mode on the dial), weather card on hover, weather sheet with radar frames, nowcast and air quality (mocked, CSP-checked), fold switcher placement and no hover navigation, Music above the cover, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar, appearance persistence, Settings pill placement; writes screenshots |
 
 The browser tests need Playwright with Chromium:
 

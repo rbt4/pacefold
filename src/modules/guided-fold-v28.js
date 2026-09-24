@@ -3,7 +3,6 @@ import{RELEASE}from'./release-meta.js';
 
 const EXPERIENCE='v28-guided-fold-r1';
 const DISPLAY_RELEASE=RELEASE;
-const HOVER_DWELL=640;
 const ACTIONABLE=new Set(['water','prep','away','meal','eyes','move']);
 const OPEN_SOURCES=['focus','field','prep','away','meal'];
 
@@ -11,7 +10,7 @@ export function installGuidedFoldV28(ctx){
   document.documentElement.dataset.guidedFold='v28';
   ctx.guidedFoldVersion=EXPERIENCE;
 
-  let initialized=false,settingsFolded=false,hoverTimer=0,hoverTarget=null,hoverCooldownUntil=0,bloomTimer=0,peekTimer=0;
+  let initialized=false,settingsFolded=false,bloomTimer=0,peekTimer=0;
   let knownCueKeys=new Set((ctx.currentCues||[]).map(cue=>cue.key));
 
   const cueColor=cue=>ctx.CUE_COLORS?.[cue?.source]||ctx.CUE_COLORS?.focus||'#426b5b';
@@ -226,33 +225,6 @@ export function installGuidedFoldV28(ctx){
     return result;
   };
   ctx.renderAll=()=>ctx.render?.(ctx.mode);
-
-  const cancelHover=()=>{
-    clearTimeout(hoverTimer);hoverTimer=0;
-    if(hoverTarget){hoverTarget.classList.remove('v28-hover-commit');hoverTarget.style.removeProperty('--v28-dwell')}
-    hoverTarget=null;
-  };
-  const startHover=(edge,event)=>{
-    if(!finePointer(event)||Date.now()<hoverCooldownUntil||document.documentElement.dataset.cover!=='peeled')return;
-    const target=edge.dataset.go;if(!target||target===ctx.mode)return;
-    if(hoverTarget===edge&&hoverTimer)return;
-    cancelHover();hoverTarget=edge;edge.classList.add('v28-hover-commit');edge.style.setProperty('--v28-dwell',`${HOVER_DWELL}ms`);
-    hoverTimer=setTimeout(()=>{
-      const destination=edge.dataset.go;cancelHover();hoverCooldownUntil=Date.now()+900;ctx.go?.(destination,{directional:true});
-    },HOVER_DWELL);
-  };
-  const leaveHover=edge=>{
-    requestAnimationFrame(()=>{if(!edge.matches(':hover'))cancelHover()});
-  };
-  for(const edge of $$('.edge-nav .edge[data-go]')){
-    // Arm the dwell only on real pointer movement. Browsers also send enter events when
-    // an edge appears under a resting cursor (e.g. right after Open clock), and that
-    // must never carry the person into another fold on its own.
-    edge.addEventListener('pointermove',event=>{if(event.movementX||event.movementY)startHover(edge,event)});
-    edge.addEventListener('pointerleave',()=>leaveHover(edge));
-    edge.addEventListener('mouseleave',()=>leaveHover(edge));
-    edge.addEventListener('pointerdown',cancelHover);
-  }
 
   const baseInitialize=ctx.initialize;
   ctx.initialize=async()=>{

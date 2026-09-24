@@ -105,8 +105,6 @@ export function installApp(ctx){
   ctx.bind=()=>{
     document.addEventListener('click',event=>{
       const target=event.target instanceof Element?event.target:null;if(!target)return;
-      const edge=target.closest('.edge[data-go]');
-      if(edge){ctx.go(edge.dataset.go,{directional:true});return}
       const destination=target.closest('[data-go]');
       if(destination){if(destination.dataset.settingsTarget)ctx.settingsTab=destination.dataset.settingsTarget;ctx.go(destination.dataset.go);return}
       const action=target.closest('[data-action]');

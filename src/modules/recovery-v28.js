@@ -3,7 +3,6 @@ import{RELEASE}from'./release-meta.js';
 
 const EXPERIENCE='v28-recovery-r1';
 const DISPLAY_RELEASE=RELEASE;
-const EDGE_LABELS={notes:'Notes',worklog:'Day',now:'Now',settings:'Settings'};
 
 export function installRecoveryV28(ctx){
   document.documentElement.dataset.recovery='v28';
@@ -29,23 +28,12 @@ export function installRecoveryV28(ctx){
     }
   };
 
-  const settleEdges=()=>{
-    for(const edge of $$('.edge-nav .edge')){
-      edge.classList.remove('is-expanded');
-      if(edge.dataset.go===ctx.mode)edge.setAttribute('aria-current','page');else edge.removeAttribute('aria-current');
-      // Inside a fold only the way back is shown, so it must say where it goes.
-      const label=edge.querySelector('.edge-label'),home=ctx.mode==='home';
-      if(label)label.textContent=home?EDGE_LABELS[edge.dataset.go]||label.textContent:'Clock';
-      edge.setAttribute('aria-label',home?`Open ${EDGE_LABELS[edge.dataset.go]||''}`:'Return to Clock');
-    }
-  };
-
   const syncReleaseLabel=()=>{
     const version=$('.view-settings .view-head>b');
     if(version)version.textContent=`Pacefold ${DISPLAY_RELEASE}`;
   };
 
-  const repair=()=>{repairMusicLayout();syncMobileNav();settleEdges();syncReleaseLabel()};
+  const repair=()=>{repairMusicLayout();syncMobileNav();syncReleaseLabel()};
 
   const baseRender=ctx.render;
   ctx.render=(...args)=>{

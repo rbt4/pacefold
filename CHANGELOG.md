@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — Weather lens and one switcher
+
+- **Hover any day for its weather.** A glass card shows the day's hourly temperature curve (night shaded, high and low marked), chance of rain as bars, precipitation total, wind with direction, UV and daylight. Hovering an hour on the dial's temperature ring shows that hour.
+- **Radar.** The new Radar button (or clicking any day) opens a full weather sheet with a live radar scope from RainViewer: the past two hours of precipitation around you over an unlabelled dark map, with range rings, a sweeping beam, play/pause and a scrubber.
+- **The next two hours.** A 15-minute Open-Meteo nowcast says when precipitation starts or eases, drawn as a small bar strip. When rain is coming, Clock's week panel says so.
+- **The full sheet** adds humidity, wind, UV, air quality (Open-Meteo, US AQI), sunrise and sunset, and an interactive hourly chart for the next 24 hours or any of the seven days.
+- **One fold switcher replaces the arrow pills.** Notes · Day · Clock · Now · Settings sit in a glass segmented control centred in the top bar, with drawn icons, a sliding thumb and the arrow key for each on hover. Phones get the same switcher as the tab bar. Hover-dwell navigation at the screen edges is gone.
+- **A better way in.** The start page's "Open clock ⌃" is now a button with a live mini-dial (the sun sits where it is on the 24-hour face) and an animated edge. Scrolling down or swiping up on the start page also opens Clock.
+- **The dial explains itself.** Hover the sun for sunset, golden hour and daylight; at night, the moon shows its phase and how much is lit, with the next sunrise. Moments show their time and countdown (still neutral unless names are on), and the workday arc shows progress and time left.
+- **Focus view.** Press Z, double-click the dial or use its corner button: the panels fall away and the dial grows to fill the sky. The top bar fades while you're still. Z or Esc returns.
+- **Command bar.** ⌘K / Ctrl+K anywhere (or / on Clock) to go to any fold, log water, a distance look, movement, a meal, time away or prep, start focus or field work, toggle quiet mode, open the radar, switch appearance, or keep whatever you typed as a note.
+- **The Clock tab tells the time.** Away from Clock, the switcher's Clock tab shows the current time, so the separate top-bar clock is gone.
+- The content security policy allows only the added hosts: RainViewer's API and tiles, the CARTO map tiles and Open-Meteo air quality.
+
 ## Unreleased — Horizon
 
 - **The Horizon Dial.** Clock is now a 24-hour instrument with solar noon at the top, so sunrise and sunset sit on a level horizon. Rings, from the outside in: hourly temperature (with rain marks), the workday, a daylight band where the sun (or moon at night) travels and your moments sit, quarter-hour ticks, and a sweeping seconds track around the digital time. Press and hold the dial to reveal moment names briefly in neutral privacy mode.

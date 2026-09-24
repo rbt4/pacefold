@@ -84,7 +84,7 @@ export function installHorizonDial(ctx){
     if(sky.day)band.append(svg('path',{d:arc(sky.sunrise,hour,R.band),class:'band-elapsed'}));
 
     const range=ctx.workRange(ctx.prefs,date);work.replaceChildren();
-    if(range.activeDay)work.append(svg('path',{d:arc(range.start,range.end,R.work),class:'work-arc'}),svg('path',{d:arc(range.start,Math.min(range.end,Math.max(range.start,hour)),R.work),class:'work-done'}));
+    if(range.activeDay)work.append(svg('path',{d:arc(range.start,range.end,R.work),class:'work-arc','data-lens':'work'}),svg('path',{d:arc(range.start,Math.min(range.end,Math.max(range.start,hour)),R.work),class:'work-done'}));
 
     temp.replaceChildren();
     const forecast=ctx.weekForecast?.(),hourly=forecast?.hourly,today=ctx.todayKey(date);
@@ -92,7 +92,7 @@ export function installHorizonDial(ctx){
       hourly.time.forEach((stamp,index)=>{
         if(String(stamp).slice(0,10)!==today)return;
         const h=Number(String(stamp).slice(11,13)),t=Number(hourly.temperature_2m?.[index]);if(!Number.isFinite(t))return;
-        const seg=svg('path',{d:arc(h+.08,h+.92,R.temp),class:'temp-seg'});seg.style.stroke=colour(t);seg.style.opacity=h<hour-.5?.45:.95;temp.append(seg);
+        const seg=svg('path',{d:arc(h+.08,h+.92,R.temp),class:'temp-seg','data-hour-index':index});seg.style.stroke=colour(t);seg.style.opacity=h<hour-.5?.45:.95;temp.append(seg);
         if(Number(hourly.precipitation_probability?.[index])>=50){const[x,y]=pt(h+.5,R.temp+16);temp.append(svg('circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:2.4,class:'temp-rain'}))}
         if(h%6===3){const[x,y]=pt(h+.5,R.temp-20);const label=svg('text',{x:x.toFixed(1),y:(y+4).toFixed(1),class:'temp-label','text-anchor':'middle'});label.textContent=`${Math.round(t)}°`;temp.append(label)}
       });
@@ -104,7 +104,7 @@ export function installHorizonDial(ctx){
       if(!Number.isFinite(item.hours))continue;
       const isNext=state.next&&state.next.id===item.id&&ctx.todayKey(state.next.date)===today,past=item.date<date;
       const[x,y]=pt(item.hours,R.band),[lx,ly]=pt(item.hours,R.moment);
-      const g=svg('g',{class:`moment${isNext?' is-next':''}${past?' is-past':''}${item.alert?'':' is-quiet'}`,tabindex:0,role:'button','aria-label':`${named?item.label:'Scheduled moment'} at ${ctx.formatTime(item.date)}`});
+      const g=svg('g',{class:`moment${isNext?' is-next':''}${past?' is-past':''}${item.alert?'':' is-quiet'}`,tabindex:0,role:'button','data-lens':'moment','data-key':item.id,'data-at':item.date.getTime(),'data-next':String(Boolean(isNext)),'aria-label':`${named?item.label:'Scheduled moment'} at ${ctx.formatTime(item.date)}`});
       g.append(svg('circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:isNext?9:6,class:'moment-dot'}));
       const anchor=Math.abs(lx)<30?'middle':lx>0?'start':'end',text=svg('text',{x:lx.toFixed(1),y:(ly+5).toFixed(1),'text-anchor':anchor,class:'moment-label'});
       text.textContent=named?`${item.label} ${ctx.formatTime(item.date)}`:ctx.formatTime(item.date);
@@ -117,6 +117,8 @@ export function installHorizonDial(ctx){
     now.append(svg('line',{x1:0,y1:0,x2:hx.toFixed(1),y2:hy.toFixed(1),class:'now-hand'}));
     if(sky.day){now.append(svg('circle',{cx:nx.toFixed(1),cy:ny.toFixed(1),r:34,class:'sun-halo'}),svg('circle',{cx:nx.toFixed(1),cy:ny.toFixed(1),r:15,class:'sun-core'}))}
     else{now.append(svg('circle',{cx:nx.toFixed(1),cy:ny.toFixed(1),r:26,class:'moon-halo'}),svg('circle',{cx:nx.toFixed(1),cy:ny.toFixed(1),r:12,class:'moon-core'}),svg('circle',{cx:(nx+5).toFixed(1),cy:(ny-4).toFixed(1),r:10,class:'moon-shadow'}))}
+
+    now.append(svg('circle',{cx:nx.toFixed(1),cy:ny.toFixed(1),r:44,class:'lens-hit','data-lens':'sky',tabindex:0,role:'img','aria-label':sky.day?'Sun':'Moon'}));
 
     renderCues();
     syncHorizon();
@@ -167,4 +169,32 @@ export function installHorizonDial(ctx){
     return result;
   };
   ctx.renderDial=renderDial;
+
+  // Hover cards for the dial (weather-lens.js shows them). Moments stay neutral
+  // unless names are visible: passive hover never reveals them.
+  const until=ms=>ctx.durationText(Math.max(0,ms));
+  const at=hours=>ctx.zonedForToday(hours,new Date());
+  const SYNODIC=29.530588853,NEW_MOON=Date.UTC(2000,0,6,18,14);
+  const moon=()=>{const phase=(((Date.now()-NEW_MOON)/864e5/SYNODIC)%1+1)%1,lit=Math.round((1-Math.cos(2*Math.PI*phase))/2*100);const name=phase<.03||phase>.97?'New moon':phase<.22?'Waxing crescent':phase<.28?'First quarter':phase<.47?'Waxing gibbous':phase<.53?'Full moon':phase<.72?'Waning gibbous':phase<.78?'Last quarter':'Waning crescent';return{name,lit}};
+  ctx.lensProviders=ctx.lensProviders||{};
+  ctx.lensProviders.sky=()=>{
+    const sky=ctx.skyState?.();if(!sky)return null;
+    const now=Date.now(),rise=at(sky.sunrise),set=at(sky.sunset),length=sky.sunset-sky.sunrise,daylight=`${Math.floor(length)}h ${Math.round(length%1*60)}m of daylight`;
+    if(sky.day){const golden=new Date(set.getTime()-50*60000);return ctx.lensCard({kicker:'Sun',title:`Sets ${ctx.formatTime(set)}`,value:until(set-now),lines:[now<golden?`Golden hour from about ${ctx.formatTime(golden)}`:'Golden hour now',daylight]})}
+    const m=moon(),next=rise.getTime()>now?rise:new Date(rise.getTime()+864e5);
+    return ctx.lensCard({kicker:'Moon',title:m.name,value:`${m.lit}%`,lines:[`${m.lit}% illuminated`,`Sunrise ${ctx.formatTime(next)} · in ${until(next-now)}`]});
+  };
+  ctx.lensProviders.work=()=>{
+    const date=new Date(),range=ctx.workRange(ctx.prefs,date),hour=decimal(date);if(!range.activeDay)return null;
+    const span=`${ctx.formatTime(at(range.start))} – ${ctx.formatTime(at(range.end))}`;
+    if(hour<range.start)return ctx.lensCard({kicker:'Workday',title:span,value:'',lines:[`Starts in ${until((range.start-hour)*3600e3)}`]});
+    if(hour>=range.end)return ctx.lensCard({kicker:'Workday',title:span,value:'Done',lines:['The workday is complete']});
+    const pct=Math.round((hour-range.start)/(range.end-range.start)*100);
+    return ctx.lensCard({kicker:'Workday',title:span,value:`${pct}%`,lines:[`${until((range.end-hour)*3600e3)} left`]});
+  };
+  ctx.lensProviders.moment=target=>{
+    const when=new Date(Number(target.dataset.at));if(!Number.isFinite(when.getTime()))return null;
+    const item=ctx.getSchedule(new Date()).today.find(entry=>String(entry.id)===target.dataset.key),named=ctx.clockNamesVisible?.();
+    return ctx.lensCard({kicker:target.dataset.next==='true'?'Next moment':when<new Date()?'Earlier today':'Later today',title:named&&item?item.label:'Scheduled moment',value:ctx.formatTime(when),lines:[ctx.relativeUntil(when)]});
+  };
 }

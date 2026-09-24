@@ -101,7 +101,7 @@ export function installWeatherWeek(ctx){
     for(let i=0;i<count;i+=1){
       const kind=KIND(d.weather_code[i]),hi=Math.round(highs[i]),lo=Math.round(lows[i]),pop=Math.round(Number(d.precipitation_probability_max?.[i])||0);
       const name=dayName(d.time[i],i),short=dayName(d.time[i],i,'short');
-      const day=el('article','week-day');day.dataset.kind=kind;day.dataset.today=String(i===0);
+      const day=el('article','week-day');day.dataset.kind=kind;day.dataset.index=String(i);day.tabIndex=0;day.dataset.today=String(i===0);
       day.setAttribute('aria-label',`${name}: ${LABEL[kind]}, high ${hi}°, low ${lo}°${pop>=20?`, ${pop}% chance of precipitation`:''}`);
       day.style.setProperty('--lo',((lows[i]-min)/span).toFixed(3));
       day.style.setProperty('--hi',((highs[i]-min)/span).toFixed(3));
@@ -111,7 +111,7 @@ export function installWeatherWeek(ctx){
       day.append(el('b','wd-name',i===0?'Today':short),el('span','wd-label',LABEL[kind]),weatherIcon(kind),popNode,el('small','wd-lo',`${lo}°`),range,el('strong','wd-hi',`${hi}°`));
       days.append(day);
 
-      const chip=el('span','cw-day');chip.dataset.today=String(i===0);chip.setAttribute('title',`${name}: ${LABEL[kind]}, ${hi}° / ${lo}°`);
+      const chip=el('button','cw-day');chip.type='button';chip.dataset.index=String(i);chip.dataset.today=String(i===0);chip.setAttribute('aria-label',`${name}: ${LABEL[kind]}, ${hi}° / ${lo}°. Open weather`);
       chip.append(el('b','',i===0?'Today':short),weatherIcon(kind),el('strong','',`${hi}°`),el('small','',`${lo}°`));
       strip.append(chip);
     }
@@ -126,9 +126,10 @@ export function installWeatherWeek(ctx){
     try{
       const query=new URLSearchParams({
         latitude:String(ctx.prefs.lat),longitude:String(ctx.prefs.lng),timezone:ctx.prefs.timeZone,forecast_days:'7',models:'best_match',
-        current:'temperature_2m,apparent_temperature,weather_code,is_day',
-        hourly:'temperature_2m,weather_code,precipitation_probability',
-        daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max'
+        current:'temperature_2m,apparent_temperature,weather_code,is_day,relative_humidity_2m,wind_speed_10m,wind_direction_10m,precipitation',
+        hourly:'temperature_2m,apparent_temperature,weather_code,precipitation_probability,precipitation,wind_speed_10m,uv_index',
+        daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_direction_10m_dominant',
+        minutely_15:'precipitation',forecast_minutely_15:'8'
       });
       const response=await fetch(`${API}?${query}`,{credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store'});
       if(!response.ok)throw new Error(`Forecast ${response.status}`);
@@ -149,6 +150,7 @@ export function installWeatherWeek(ctx){
     return result;
   };
   ctx.refreshWeek=refresh;
+  ctx.weatherKit={KIND,LABEL,colour,weatherIcon,dayName};
   // Other surfaces (the dial's hourly ring, the sky) read the same cached forecast.
   ctx.weekForecast=()=>{const cached=read();return ctx.prefs.weatherEnabled&&sameSpot(cached)?cached.data:null};
 }
