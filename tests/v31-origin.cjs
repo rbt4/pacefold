@@ -23,6 +23,7 @@ assert(pkg.version==='31.0.0','Package release is not Pacefold 31');
 for(const source of [core,build,worker,shell,built])assert(source.includes('31.0.0'),'A release surface is missing version 31.0.0');
 for(const source of [core,build,worker,shell,built])assert(source.includes('origin-r1'),'A release surface is missing origin-r1');
 assert(worker.includes("const VERSION='31.0.0'")&&worker.includes('`pacefold-v${VERSION}-origin-r1`'),'Service-worker cache identity was not advanced');
+assert(main.includes('installAppearance(ctx)')&&style.includes('html[data-theme="dark"]{'),'Appearance (system / light / dark) is not wired');
 assert(main.includes("document.documentElement.dataset.origin='v31'"),'The V31 visual contract is not installed before startup');
 
 // One authored stylesheet replaces the historical override layers.

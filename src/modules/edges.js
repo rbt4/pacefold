@@ -107,4 +107,15 @@ export function installEdges(ctx){
   };
 
   ctx.buildEdges();
+
+  // The downward edge only appears once Clock has been read to its end, so the
+  // floating Settings pill never sits on top of the quick actions or Daybook.
+  const trackPageEnd=()=>{
+    const scroller=document.scrollingElement||document.documentElement;
+    document.documentElement.dataset.pageEnd=String(scroller.scrollTop+innerHeight>=scroller.scrollHeight-96);
+  };
+  addEventListener('scroll',trackPageEnd,{passive:true});
+  addEventListener('resize',trackPageEnd);
+  new ResizeObserver(trackPageEnd).observe(document.body);
+  trackPageEnd();
 }

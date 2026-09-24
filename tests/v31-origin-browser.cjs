@@ -126,6 +126,12 @@ async function main(){
     requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
     requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
 
+    const pill=await page.evaluate(()=>{const edge=document.querySelector('.edge-down');const before={end:document.documentElement.dataset.pageEnd,opacity:getComputedStyle(edge).opacity};return before});
+    requireState(pill.end==='false'&&Number(pill.opacity)<.05,'The Settings pill must stay out of the way until Clock has been read to its end',pill);
+    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+    await page.waitForFunction(()=>document.documentElement.dataset.pageEnd==='true'&&Number(getComputedStyle(document.querySelector('.edge-down')).opacity)>.95);
+    await page.evaluate(()=>window.scrollTo(0,0));
+
     const waterBefore=await page.evaluate(()=>Number(window.__PACEFOLD__.prefs.waterOz)||0);
     await page.click('[data-action="water"]');
     const water=await page.evaluate(()=>({oz:Number(window.__PACEFOLD__.prefs.waterOz)||0,step:Number(window.__PACEFOLD__.prefs.waterStep)||0,stored:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').waterOz,label:document.getElementById('water-state').textContent}));
@@ -178,6 +184,15 @@ async function main(){
     await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.documentElement.dataset.mode==='now');
     const nowText=await page.locator('[data-view="now"]').innerText();
     requireState(!privateTerms.test(nowText),'Neutral Now view leaked rhythm or location vocabulary',{nowText});
+
+    await page.evaluate(()=>window.__PACEFOLD__.go('settings'));await page.waitForTimeout(120);
+    requireState(await page.evaluate(()=>document.documentElement.dataset.theme==='light'),'Light system preference should resolve to the light theme',{});
+    await page.click('[data-appearance="dark"]');
+    const dark=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,stored:JSON.parse(localStorage.getItem('pacefoldPrefsV15')).appearance,body:getComputedStyle(document.body).backgroundColor,backup:window.__PACEFOLD__.backup().prefs?.appearance}));
+    requireState(dark.theme==='dark'&&dark.stored==='dark'&&dark.backup==='dark'&&dark.body==='rgb(17, 25, 22)','Dark appearance did not apply, persist or reach the backup',dark);
+    await page.screenshot({path:path.join(output,'v31-desktop-settings-dark.png'),fullPage:false});
+    await page.click('[data-appearance="system"]');
+    requireState(await page.evaluate(()=>document.documentElement.dataset.theme==='light'),'System appearance did not return to the device theme',{});
 
     await ready(page,`${origin}/app/?mode=notes`);
     state=await inspect(page);

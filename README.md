@@ -25,6 +25,7 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 - JSON backup/restore now includes My Music state, plus optional live backup file support in compatible Chromium browsers
 - optional local-first OneNote copy through Microsoft Graph
 - installable offline PWA with quiet notifications, no Pacefold account, analytics or advertising
+- System, Light or Dark appearance (Settings → Daily), so an all-day clock stays calm in the evening
 
 Public site: **https://rbt4.github.io/pacefold/**
 
@@ -74,7 +75,7 @@ Six files, all run by CI (`.github/workflows/pages.yml`) before Pages deployment
 | `tests/guided-fold-v28.cjs` | static (`npm run verify`) | Guided Fold wiring, Settings collapsed to Daily / Rhythm / Data |
 | `tests/v31-origin.cjs` | static (`npm run verify`) | release identity, continuity stores, single stylesheet (no `src/styles` layers, `!important` ceiling), official-player ad policy |
 | `tests/v28-startup-smoke.cjs` | Chromium | cold start, cover → Clock hand-off |
-| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Music above the cover, one return edge per fold, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar; writes screenshots |
+| `tests/v31-origin-browser.cjs` | Chromium, desktop + mobile | cover/Clock geometry, Music above the cover, one return edge per fold, neutral-privacy leaks on Clock and Now, water/note/inline-edit persistence, arrow-key folds, first-run setup, mobile tab bar, appearance persistence, Settings pill placement; writes screenshots |
 
 The browser tests need Playwright with Chromium:
 

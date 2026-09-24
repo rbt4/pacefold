@@ -18,6 +18,12 @@ UX fixes
 - Clearer copy: "1 cue waiting" instead of "Quiet cues ready" while something is waiting, "Next in 14 min" instead of "Next · 0:14", Now names the waiting cue and disables Clear/Snooze when nothing waits, and browser-neutral permission/backup copy instead of "Edge".
 - The header clock hides on Clock (the big clock is right there) and the Music dock stays in the header on every fold.
 
+Evening and polish
+- New Appearance setting (Settings → Daily): System, Light or Dark. System follows the device; the choice is stored with preferences and included in backups. The dark folio keeps the forest instrument and a light dial so the hands stay legible.
+- The "↓ Settings" pill now waits until Clock has been scrolled to its end instead of floating over the quick actions.
+- The rhythm card explains the hidden press-and-hold that reveals moment names for a few seconds.
+- Tighter clock colon, no redundant counts on the category chips you pick from when writing a note, no duplicate header time on phones, and the Now orbit no longer collides with the title on mobile.
+
 Tests
 - Retired 25 per-release test/verify scripts (V25–V30). Each was run against the current build and the pre-redesign build; all failed on stale version strings, deleted layer files or old hiding techniques, not real regressions.
 - Carried their still-valuable checks into the V31 contracts: neutral-privacy leaks on Clock and Now, one stylesheet and runtime, water and inline-note persistence, arrow-key folds, first-run setup never blocking, the cover gone in the same frame on mobile, and the official player's ad-policy boundary.
