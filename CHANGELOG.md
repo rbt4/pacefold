@@ -18,6 +18,10 @@ UX fixes
 - Clearer copy: "1 cue waiting" instead of "Quiet cues ready" while something is waiting, "Next in 14 min" instead of "Next · 0:14", Now names the waiting cue and disables Clear/Snooze when nothing waits, and browser-neutral permission/backup copy instead of "Edge".
 - The header clock hides on Clock (the big clock is right there) and the Music dock stays in the header on every fold.
 
+Tests
+- Retired 25 per-release test/verify scripts (V25–V30). Each was run against the current build and the pre-redesign build; all failed on stale version strings, deleted layer files or old hiding techniques, not real regressions.
+- Carried their still-valuable checks into the V31 contracts: neutral-privacy leaks on Clock and Now, one stylesheet and runtime, water and inline-note persistence, arrow-key folds, first-run setup never blocking, the cover gone in the same frame on mobile, and the official player's ad-policy boundary.
+
 ## 31.0.0 — Origin
 
 - Restored the scenic homepage as a true front cover and separated it from the working Clock.

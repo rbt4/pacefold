@@ -68,6 +68,8 @@ async function inspect(page){
   });
 }
 
+const privateTerms=/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i;
+
 function requireState(condition,message,state){if(!condition)throw new Error(`${message}\n${JSON.stringify(state,null,2)}`)}
 const visible=box=>Boolean(box&&box.display!=='none'&&box.visibility!=='hidden'&&box.opacity>.01&&box.width>0&&box.height>0);
 const inside=(box,viewport)=>Boolean(box&&box.x>=-1&&box.right<=viewport.width+1&&box.y>=-1&&box.bottom<=viewport.height+1);
@@ -115,6 +117,20 @@ async function main(){
     await page.screenshot({path:path.join(output,'v31-desktop-clock.png'),fullPage:false});
     await page.screenshot({path:path.join(output,'v31-desktop-clock-full.png'),fullPage:true});
 
+    const shell=await page.evaluate(()=>({
+      styles:[...document.styleSheets].map(sheet=>sheet.href).filter(href=>href&&href.includes('/app/')),
+      runtimes:[...document.scripts].map(script=>script.src).filter(src=>src&&!src.includes('msal-')&&src.includes('/app/')),
+      clockText:document.querySelector('.view-home').innerText,
+      discretion:window.__PACEFOLD__.prefs.rhythmDiscretion
+    }));
+    requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
+    requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
+
+    const waterBefore=await page.evaluate(()=>Number(window.__PACEFOLD__.prefs.waterOz)||0);
+    await page.click('[data-action="water"]');
+    const water=await page.evaluate(()=>({oz:Number(window.__PACEFOLD__.prefs.waterOz)||0,step:Number(window.__PACEFOLD__.prefs.waterStep)||0,stored:JSON.parse(localStorage.getItem('pacefoldPrefsV15')||'{}').waterOz,label:document.getElementById('water-state').textContent}));
+    requireState(water.oz===waterBefore+water.step&&water.stored===water.oz&&water.label.startsWith(`${water.oz} /`),'Water tap did not increment and persist established data',{waterBefore,...water});
+
     const marker=`Origin restoration ${Date.now()}`;
     await page.locator('#clock-note-input').fill(marker);
     await page.locator('#clock-note-input').press('Enter');
@@ -147,11 +163,36 @@ async function main(){
       await page.screenshot({path:path.join(output,file),fullPage:false});
     }
 
+    await page.evaluate(()=>window.__PACEFOLD__.go('notes'));await page.waitForTimeout(120);
+    const savedId=await page.evaluate(value=>window.__PACEFOLD__.notes.find(note=>note.body===value)?.id,marker);
+    await page.locator(`[data-note-id="${savedId}"] [data-note-edit]`).click();
+    const editor=page.locator(`[data-note-id="${savedId}"] .note-inline-input`);
+    requireState(await editor.count()===1,'Inline note editor did not open',{savedId});
+    await editor.fill(`${marker} (edited)`);
+    requireState((await page.locator('#note-save-status').textContent()).includes('Unsaved'),'Inline edit did not expose dirty state',{});
+    await page.locator(`[data-note-id="${savedId}"] button[aria-label="Save note changes"]`).click();
+    requireState(await page.evaluate(value=>window.__PACEFOLD__.notes.some(note=>note.body===value),`${marker} (edited)`),'Inline note edit did not save',{});
+
+    await page.evaluate(()=>document.activeElement?.blur());
+    await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.documentElement.dataset.mode==='home');
+    await page.keyboard.press('ArrowRight');await page.waitForFunction(()=>document.documentElement.dataset.mode==='now');
+    const nowText=await page.locator('[data-view="now"]').innerText();
+    requireState(!privateTerms.test(nowText),'Neutral Now view leaked rhythm or location vocabulary',{nowText});
+
     await ready(page,`${origin}/app/?mode=notes`);
     state=await inspect(page);
     requireState(state.cover==='peeled'&&state.mode==='notes'&&!state.stageInert,'Direct fold links must bypass the cover',state);
     requireState(await page.locator('.note-item', {hasText:marker}).count()===1,'The persisted Clock note did not survive navigation and reload',state);
     await context.close();
+
+    const firstRun=await browser.newContext({viewport:{width:900,height:760},timezoneId:'America/Toronto',serviceWorkers:'block'}),fresh=await firstRun.newPage();
+    fresh.on('pageerror',error=>errors.push(`first-run pageerror: ${error.stack||error.message}`));
+    await ready(fresh,`${origin}/app/`);await fresh.waitForTimeout(500);
+    requireState(await fresh.locator('#setup-dialog[open]').count()===0,'Setup must not block a fresh launch',{});
+    requireState(await fresh.evaluate(()=>localStorage.getItem('pacefoldOnboardedV15')==='1'&&localStorage.getItem('pacefoldSetupDismissedV15')==='1'),'Fresh launch did not persist the setup-complete markers',{});
+    await ready(fresh,`${origin}/app/`);await fresh.waitForTimeout(500);
+    requireState(await fresh.locator('#setup-dialog[open]').count()===0,'Setup returned after reload',{});
+    await firstRun.close();
 
     const mobile=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Toronto',colorScheme:'light',serviceWorkers:'block'});
     const phone=await mobile.newPage();
@@ -166,7 +207,9 @@ async function main(){
     requireState(state.scrollWidth<=state.viewport.width+1&&!state.setupOpen,'Mobile homepage overflows or reopens setup',state);
     await phone.screenshot({path:path.join(output,'v31-mobile-homepage.png'),fullPage:false});
 
-    await phone.click('#cover-peel');await phone.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');await phone.waitForTimeout(220);
+    const immediate=await phone.evaluate(()=>{const cover=document.getElementById('pace-cover');document.getElementById('cover-peel').click();const box=cover.getBoundingClientRect(),top=document.elementFromPoint(innerWidth/2,innerHeight/2);return{display:getComputedStyle(cover).display,width:box.width,height:box.height,coverOnTop:Boolean(top?.closest('#pace-cover'))}});
+    requireState(immediate.display==='none'&&!immediate.width&&!immediate.height&&!immediate.coverOnTop,'Mobile cover remains visible for a frame after opening Clock',immediate);
+    await phone.waitForFunction(()=>document.documentElement.dataset.cover==='peeled');await phone.waitForTimeout(220);
     state=await inspect(phone);
     requireState(visible(state.clock)&&visible(state.daybook)&&visible(state.composer)&&visible(state.mobileNav),'Mobile Clock lost the instrument, navigation or Daybook',state);
     requireState(state.clock.right<=state.viewport.width+1&&state.daybook.right<=state.viewport.width+1&&state.scrollWidth<=state.viewport.width+1,'Mobile working surface is horizontally clipped',state);

@@ -38,6 +38,11 @@ assert(style.includes('.sound-bar[data-music-open="true"]{z-index:120'),'Music m
 assert(style.includes('html:not([data-mode="home"]) .edge{display:none}'),'Folds must only show the way back to Clock');
 assert(style.includes('.note-filter-chips')&&style.includes('.settings-chip>span{display:grid'),'Notes filters or settings summary lost their layout');
 
+// The official YouTube player never inspects, skips, mutes or covers advertising.
+const musicPolicy=read('src/modules/music-magic-r8.js');
+assert(musicPolicy.includes('do not inspect, skip, mute or cover advertising'),'Music official-playback policy boundary is missing');
+for(const token of['skipAd','skipAds','getAdState','adState','muteAd'])assert(!new RegExp(`\\b${token}\\b`).test(musicPolicy),`Disallowed ad-control hook in the official player: ${token}`);
+
 assert(cover.includes("ctx.setStartCover=(covered,{focus=false}={})"),'Cover focus must remain opt-in');
 assert(cover.includes('ctx.setStartCover(!directView)'),'Ordinary visits must open on the scenic cover');
 assert(!cover.includes('surface==='),'Legacy surface switches still control the product entrance');
