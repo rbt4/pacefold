@@ -18,6 +18,11 @@ UX fixes
 - Clearer copy: "1 cue waiting" instead of "Quiet cues ready" while something is waiting, "Next in 14 min" instead of "Next · 0:14", Now names the waiting cue and disables Clear/Snooze when nothing waits, and browser-neutral permission/backup copy instead of "Edge".
 - The header clock hides on Clock (the big clock is right there) and the Music dock stays in the header on every fold.
 
+Desktop folio
+- On wide screens Clock is now one object instead of five floating cards: a single sheet whose forest band holds the clock, Day Unfold and the rhythm rail, with the status line, a segmented strip of quick keys and the Daybook below, divided by hairlines.
+- The app bar, Music dock and edge tabs align to the same column as the content; edge tabs sit in the margin instead of on top of cards.
+- Day log's metrics form the lower half of the dark story band; Settings' summary is one strip.
+
 Evening and polish
 - New Appearance setting (Settings → Daily): System, Light or Dark. System follows the device; the choice is stored with preferences and included in backups. The dark folio keeps the forest instrument and a light dial so the hands stay legible.
 - The "↓ Settings" pill now waits until Clock has been scrolled to its end instead of floating over the quick actions.

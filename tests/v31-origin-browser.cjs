@@ -126,6 +126,10 @@ async function main(){
     requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
     requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
 
+    const folio=await page.evaluate(()=>{const box=selector=>document.querySelector(selector).getBoundingClientRect();const view=box('.view-home'),parts=['.home-grid','.v28-guide','.action-dock','.daybook-fold'].map(box);return{gaps:parts.slice(1).map((part,index)=>Math.round(part.top-parts[index].bottom)),inset:parts.map(part=>Math.round(Math.abs(part.left-view.left)+Math.abs(part.right-view.right))),left:box('.edge-left').right,right:box('.edge-right').left,viewLeft:view.left,viewRight:view.right}});
+    requireState(folio.gaps.every(gap=>Math.abs(gap)<=1)&&folio.inset.every(value=>value<=2),'Desktop Clock must read as one folio, not separate floating cards',folio);
+    requireState(folio.left<=folio.viewLeft-8&&folio.right>=folio.viewRight+8,'Edge tabs overlap the Clock folio',folio);
+
     const pill=await page.evaluate(()=>{const edge=document.querySelector('.edge-down');const before={end:document.documentElement.dataset.pageEnd,opacity:getComputedStyle(edge).opacity};return before});
     requireState(pill.end==='false'&&Number(pill.opacity)<.05,'The Settings pill must stay out of the way until Clock has been read to its end',pill);
     await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));

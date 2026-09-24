@@ -1166,6 +1166,83 @@ html.ready .boot-cover{opacity:0;visibility:hidden;pointer-events:none}
 html[data-wco="on"] .app-bar{left:env(titlebar-area-x,0);width:env(titlebar-area-width,100%);height:env(titlebar-area-height,var(--bar-h));-webkit-app-region:drag;app-region:drag}
 html[data-wco="on"] .app-bar button,html[data-wco="on"] .sound-bar,html[data-wco="on"] .edge-up{-webkit-app-region:no-drag;app-region:no-drag}
 
+/* 14a. Desktop folio ---------------------------------------------------------
+   On wide screens Clock is one object: a single sheet whose top is the forest
+   instrument band (clock, Day Unfold, rhythm rail) and whose body holds the
+   status line, the six quick keys and the Daybook, divided by hairlines rather
+   than floating as separate cards. Chrome aligns to the same column. */
+@media (min-width:1041px){
+  :root{--column:max(calc(var(--gutter) + var(--edge-room)),calc((100vw - var(--content)) / 2))}
+  .app-bar{padding-left:var(--column);padding-right:var(--column)}
+  .sound-bar{left:calc(var(--column) + 104px)}
+  .v28-cue-peek{right:var(--column)}
+
+  html[data-mode="home"] .view-home{
+    gap:0;overflow:hidden;
+    background:var(--paper-raised);border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow-2);
+  }
+  .view-home>.home-grid{
+    gap:0;grid-template-columns:minmax(0,1fr) 300px;color:var(--on-forest);
+    background:
+      radial-gradient(90% 120% at 100% 0%,rgba(159,211,189,.13),transparent 60%),
+      linear-gradient(160deg,var(--forest-2),var(--forest) 62%,#12302a);
+  }
+  .view-home .clock-card{background:none;box-shadow:none;border-radius:0;padding:34px 38px 30px}
+  .view-home .rhythm-card{
+    background:rgba(4,14,11,.16);border:0;border-left:1px solid var(--on-forest-line);border-radius:0;box-shadow:none;
+    padding:34px 24px 26px;color:var(--on-forest);
+  }
+  .view-home .rhythm-card>header small{color:var(--on-forest-3)}
+  .view-home .rhythm-card>header strong{color:#fff}
+  .view-home .rhythm-card>header button{color:#9fd3bd}
+  .view-home .rhythm-card>header button:hover{background:rgba(255,255,255,.08)}
+  .view-home .rhythm-row{color:var(--on-forest-2)}
+  .view-home .rhythm-row strong{color:var(--on-forest)}
+  .view-home button.rhythm-row:hover{background:rgba(255,255,255,.06)}
+  .view-home .rhythm-row i{background:#9fd3bd}
+  .view-home .rhythm-row[data-state="past"],.view-home .rhythm-row[data-state="past"] strong{color:var(--on-forest-3)}
+  .view-home .rhythm-row[data-state="past"] i{background:var(--on-forest-3)}
+  .view-home .rhythm-row[data-state="next"]{background:rgba(159,211,189,.14);color:#dff3ea}
+  .view-home .rhythm-row[data-state="next"] strong{color:#fff}
+  .view-home .rhythm-row[data-state="next"] i{box-shadow:0 0 0 3px rgba(159,211,189,.25)}
+  .view-home .rhythm-card:has(>header[data-discreet="true"])::after{color:var(--on-forest-3);border-top-color:var(--on-forest-line)}
+  .home-grid[data-rhythm-hidden="true"]{grid-template-columns:minmax(0,1fr)}
+
+  .view-home>.v28-guide{border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--line);padding:16px 38px 16px 42px}
+  .view-home>.action-dock{border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--line);padding:20px 38px 24px}
+  .view-home .action-grid{gap:0;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+  .view-home .quick-action{border:0;border-radius:0;background:transparent;min-height:72px;padding:14px 16px}
+  .view-home .quick-action+.quick-action{border-left:1px solid var(--line)}
+  .view-home .quick-action:hover{background:var(--paper-sunk);box-shadow:none}
+  .view-home .quick-action.is-suggested,.view-home .quick-action[data-due="true"]{background:color-mix(in srgb,var(--tone) 10%,var(--surface));box-shadow:inset 0 -3px 0 var(--tone)}
+  .view-home .quick-action[data-active="true"]{background:color-mix(in srgb,var(--tone) 12%,var(--surface))}
+  .view-home>.daybook-fold{border:0;border-radius:0;box-shadow:none;background:linear-gradient(90deg,transparent 57px,rgba(193,86,63,.18) 57px 58px,transparent 58px),var(--paper-raised)}
+  .view-home>.daybook-fold>*{padding-left:80px;padding-right:38px}
+  html[data-theme="dark"] .view-home>.daybook-fold{background:linear-gradient(90deg,transparent 57px,rgba(227,137,123,.22) 57px 58px,transparent 58px),var(--paper-raised)}
+
+  /* Edges hug the folio instead of the window frame. */
+  .edge-left{left:max(12px,calc(var(--column) - 116px))}
+  .edge-right{right:max(12px,calc(var(--column) - 116px))}
+
+  /* Day log: the metrics are the lower half of the dark story band. */
+  .view-worklog>.day-story{border-radius:var(--r-xl) var(--r-xl) 0 0;box-shadow:none}
+  .view-worklog>.metric-grid{
+    margin-top:-16px;gap:0;overflow:hidden;border-radius:0 0 var(--r-xl) var(--r-xl);
+    background:#12302a;box-shadow:var(--shadow-2);
+  }
+  .view-worklog .metric-card{background:transparent;border:0;border-radius:0;box-shadow:none;border-top:1px solid var(--on-forest-line);padding:16px 22px}
+  .view-worklog .metric-card+.metric-card{border-left:1px solid var(--on-forest-line)}
+  .view-worklog .metric-card span{color:var(--on-forest-3)}
+  .view-worklog .metric-card strong{color:#fff}
+  .view-worklog .metric-card[data-zero="true"] strong{color:var(--on-forest-3)}
+  .view-worklog .metric-card::after{height:2px}
+
+  /* Settings: one summary strip. */
+  .settings-summary{gap:0;overflow:hidden;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-1)}
+  .settings-summary .settings-chip{border:0;border-radius:0;box-shadow:none}
+  .settings-summary .settings-chip:not([hidden])~.settings-chip{border-left:1px solid var(--line)}
+}
+
 /* 14. Responsive ----------------------------------------------------------- */
 @media (min-width:1180px){
   :root{--edge-room:84px}
