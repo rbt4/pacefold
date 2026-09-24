@@ -82,7 +82,7 @@ export function installPalette(ctx){
   const select=index=>{active=(index+rows.length)%Math.max(1,rows.length);for(const row of list.querySelectorAll('.palette-row'))row.setAttribute('aria-selected',String(Number(row.dataset.index)===active));input.setAttribute('aria-activedescendant',`palette-row-${active}`);list.querySelector('[aria-selected="true"]')?.scrollIntoView({block:'nearest'})};
 
   let lastFocus=null;
-  const open=()=>{if(!shell.hidden)return;lastFocus=document.activeElement;input.value='';active=0;render();shell.hidden=false;root.dataset.palette='open';input.focus();requestAnimationFrame(()=>shell.classList.add('is-on'))};
+  const open=()=>{if(!shell.hidden)return;lastFocus=document.activeElement;input.value='';active=0;render();shell.hidden=false;root.dataset.palette='open';input.focus();requestAnimationFrame(()=>{if(root.dataset.palette==='open')shell.classList.add('is-on')})};
   const close=({restore=true}={})=>{if(shell.hidden)return;shell.classList.remove('is-on');delete root.dataset.palette;setTimeout(()=>{if(!shell.classList.contains('is-on'))shell.hidden=true},180);if(restore&&lastFocus?.isConnected)lastFocus.focus({preventScroll:true})};
   const run=index=>{const item=rows[index];if(!item)return;close({restore:false});setTimeout(()=>item.run(),10)};
   ctx.openPalette=open;ctx.closePalette=close;

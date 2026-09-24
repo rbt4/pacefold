@@ -4,10 +4,12 @@ import{$,id,el,button}from'./state.js';
 // card with its hourly curve and details; click for the full sheet with a live
 // radar scope, the next two hours of precipitation, air quality and an
 // interactive hourly chart. Everything reads the forecast weather-week.js keeps;
-// the radar (RainViewer) and air quality (Open-Meteo) are fetched only when the
+// the radar (Environment Canada GeoMet in Canada, as SkyMap Ontario uses; RainViewer elsewhere) and air quality (Open-Meteo) are fetched only when the
 // sheet opens. The map has no labels and the location is never named.
 const SVG='http://www.w3.org/2000/svg';
 const RADAR_INDEX='https://api.rainviewer.com/public/weather-maps.json';
+const GEOMET='https://geo.weather.gc.ca/geomet';
+const SKYMAP='https://rbt4.github.io/skymapontario/app/';
 const AIR_API='https://air-quality-api.open-meteo.com/v1/air-quality';
 const AIR_STORE='pacefold.air.v1';
 const ZOOM=7,TILE=256;
@@ -196,50 +198,109 @@ export function installWeatherLens(ctx){
     tab('next','Next 24 h');
     D.time.slice(0,7).forEach((day,i)=>{const sub=el('span','wx-tab-sub');sub.append(K.weatherIcon(K.KIND(D.weather_code[i])),el('small','',`${Math.round(D.temperature_2m_max[i])}° ${Math.round(D.temperature_2m_min[i])}°`));tab(String(i),i===0?'Today':K.dayName(day,i,'short'),sub)});
     hourly.append(tabs,plot,readout);
-    panel.append(now,radar,hourly,el('p','wx-credit','Forecast Open-Meteo · Radar RainViewer · Map © OpenStreetMap, © CARTO'));
+    panel.append(now,radar,hourly,el('p','wx-credit',`Forecast Open-Meteo · Radar ${inCanada(Number(ctx.prefs.lat),Number(ctx.prefs.lng))?'Environment and Climate Change Canada (GeoMet)':'RainViewer'} · Map © OpenStreetMap, © CARTO`));
     draw();buildRadar(radar);void loadAir();
+  }
+
+  // ---- Radar scope -------------------------------------------------------------
+  // ---- Radar sources ----------------------------------------------------------
+  // In Canada the scope uses the same official feed as SkyMap Ontario: Environment
+  // and Climate Change Canada's GeoMet radar (measured RADAR_1KM_RRAI, then the
+  // official short-range extrapolation), drawn as one WMS image per frame in Web
+  // Mercator over exactly the 3×3 map block. Elsewhere it falls back to RainViewer.
+  const inCanada=(lat,lng)=>lat>41.5&&lat<70&&lng>-141&&lng<-52;
+  const inOntario=(lat,lng)=>lat>41.6&&lat<57&&lng>-95.2&&lng<-74.3;
+  const withTimeout=(url,ms=10000)=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),ms);return fetch(url,{credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store',signal:controller.signal}).finally(()=>clearTimeout(timer))};
+  const isoTime=value=>{const d=new Date(value);return Number.isFinite(d.getTime())?d.toISOString().replace(/\.\d{3}Z$/,'Z'):''};
+  const minutesOf=period=>{const m=/^PT(?:(\d+)H)?(?:(\d+)M)?$/i.exec(String(period||''));return m?(Number(m[1]||0)*60+Number(m[2]||0)):0};
+  const expand=value=>{
+    const text=String(value||'').trim();if(!text)return[];
+    if(text.includes(','))return text.split(',').map(isoTime).filter(Boolean);
+    if(!text.includes('/'))return[isoTime(text)].filter(Boolean);
+    const[start,end,period]=text.split('/'),a=new Date(start).getTime(),b=new Date(end).getTime(),step=minutesOf(period)*60000,out=[];
+    if(!Number.isFinite(a)||!Number.isFinite(b)||!step)return[];
+    for(let t=a;t<=b&&out.length<1400;t+=step)out.push(isoTime(t));
+    return out;
+  };
+  const layerTimes=async layer=>{
+    const query=new URLSearchParams({SERVICE:'WMS',VERSION:'1.3.0',REQUEST:'GetCapabilities',layer,lang:'en'});
+    const response=await withTimeout(`${GEOMET}?${query}`);if(!response.ok)throw new Error(`GeoMet ${response.status}`);
+    const xml=new DOMParser().parseFromString(await response.text(),'application/xml');
+    const node=[...xml.getElementsByTagNameNS('*','Layer')].find(item=>[...item.children].some(child=>child.localName==='Name'&&child.textContent.trim()===layer));
+    if(!node)throw new Error(`GeoMet ${layer} missing`);
+    const dims=[...node.getElementsByTagNameNS('*','Dimension'),...node.getElementsByTagNameNS('*','Extent')],dim=name=>dims.find(item=>(item.getAttribute('name')||'').toLowerCase()===name);
+    return{times:expand(dim('time')?.textContent),reference:dim('reference_time')?.getAttribute('default')||expand(dim('reference_time')?.textContent).at(-1)||''};
+  };
+  const every=(list,count)=>{if(list.length<=count)return list;const step=(list.length-1)/(count-1);return Array.from({length:count},(_,i)=>list[Math.round(i*step)])};
+  async function ecccFrames(bbox){
+    const[observed,forecast]=await Promise.allSettled([layerTimes('RADAR_1KM_RRAI'),layerTimes('Radar_1km_RainPrecipRate-Extrapolation')]);
+    const now=Date.now(),frames=[];
+    if(observed.status==='fulfilled'){
+      const past=observed.value.times.filter(t=>{const v=new Date(t).getTime();return v<=now+5*60000&&v>=now-70*60000});
+      for(const time of every(past,8))frames.push({time:new Date(time).getTime(),kind:'observed',layer:'RADAR_1KM_RRAI',style:'RADARURPPRECIPR14-LINEAR',wmsTime:time});
+    }
+    if(forecast.status==='fulfilled'){
+      const ahead=forecast.value.times.filter(t=>{const v=new Date(t).getTime();return v>now+2*60000&&v<=now+125*60000});
+      for(const time of every(ahead,6))frames.push({time:new Date(time).getTime(),kind:'forecast',layer:'Radar_1km_RainPrecipRate-Extrapolation',style:'',wmsTime:time,reference:forecast.value.reference});
+    }
+    if(!frames.some(frame=>frame.kind==='observed'))throw new Error('GeoMet has no recent radar');
+    return frames.map(frame=>{
+      const query=new URLSearchParams({SERVICE:'WMS',VERSION:'1.3.0',REQUEST:'GetMap',LAYERS:frame.layer,STYLES:frame.style,CRS:'EPSG:3857',BBOX:bbox.join(','),WIDTH:'768',HEIGHT:'768',FORMAT:'image/png',TRANSPARENT:'TRUE',TIME:frame.wmsTime});
+      if(frame.reference)query.set('DIM_REFERENCE_TIME',frame.reference);
+      return{time:frame.time,future:frame.kind==='forecast',image:`${GEOMET}?${query}`};
+    });
+  }
+  async function rainviewerFrames(){
+    const response=await withTimeout(RADAR_INDEX);if(!response.ok)throw new Error(`Radar ${response.status}`);
+    const index=await response.json(),past=(index?.radar?.past||[]).slice(-10),ahead=index?.radar?.nowcast||[];
+    if(!past.length||!index.host)throw new Error('Radar empty');
+    return[...past.map(frame=>({time:frame.time*1000,future:false,tiles:(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`})),...ahead.map(frame=>({time:frame.time*1000,future:true,tiles:(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`}))];
   }
 
   // ---- Radar scope -------------------------------------------------------------
   function buildRadar(host){
     clearInterval(radarTimer);
     const generation=radarGeneration+=1,stale=()=>generation!==radarGeneration||!host.isConnected;
-    const lat=Number(ctx.prefs.lat),lng=Number(ctx.prefs.lng);
+    const lat=Number(ctx.prefs.lat),lng=Number(ctx.prefs.lng),official=inCanada(lat,lng);
     const scope=el('div','radar-scope'),map=el('div','radar-map'),frames=el('div','radar-frames');
     const n=2**ZOOM,fx=(lng+180)/360*n,rad=lat*Math.PI/180,fy=(1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*n,tx=Math.floor(fx),ty=Math.floor(fy);
     // A 3×3 block of tiles, shifted so the location sits exactly at the centre.
     const shift=layer=>{layer.style.left=`calc(50% - ${Math.round((fx-tx+1)*TILE)}px)`;layer.style.top=`calc(50% - ${Math.round((fy-ty+1)*TILE)}px)`};
-    const tiles=(layer,url)=>{for(let dy=-1;dy<=1;dy+=1)for(let dx=-1;dx<=1;dx+=1){const img=el('img');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';img.draggable=false;img.src=url(tx+dx,ty+dy);img.style.left=`${(dx+1)*TILE}px`;img.style.top=`${(dy+1)*TILE}px`;img.addEventListener('error',()=>img.classList.add('is-missing'));layer.append(img)}};
+    const image=(layer,src,x=0,y=0,size=TILE)=>{const img=el('img');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';img.draggable=false;img.src=src;img.style.left=`${x}px`;img.style.top=`${y}px`;img.style.width=`${size}px`;img.style.height=`${size}px`;img.addEventListener('error',()=>img.classList.add('is-missing'));layer.append(img)};
+    const tiles=(layer,url)=>{for(let dy=-1;dy<=1;dy+=1)for(let dx=-1;dx<=1;dx+=1)image(layer,url(tx+dx,ty+dy),(dx+1)*TILE,(dy+1)*TILE)};
+    // The same block in Web Mercator metres, for one GeoMet image per frame.
+    const world=40075016.685578488,half=world/2,px=n*TILE,mx=p=>p/px*world-half,my=p=>half-p/px*world;
+    const bbox=[mx((tx-1)*TILE),my((ty+2)*TILE),mx((tx+2)*TILE),my((ty-1)*TILE)].map(v=>v.toFixed(1));
     shift(map);shift(frames);
     tiles(map,(x,y)=>`https://a.basemaps.cartocdn.com/dark_nolabels/${ZOOM}/${x}/${y}.png`);
     const rings=el('div','radar-rings'),sweep=el('div','radar-sweep'),you=el('i','radar-you'),north=el('b','radar-north','N');
-    scope.append(map,frames,rings,sweep,you,north);
+    scope.append(map,frames,rings,sweep,you,north);scope.dataset.source=official?'eccc':'rainviewer';
     const bar=el('div','radar-bar'),play=button('radar-play','Pause radar'),when=el('span','radar-when','Radar'),scrub=el('input','radar-scrub');
     scrub.type='range';scrub.min='0';scrub.max='0';scrub.value='0';scrub.setAttribute('aria-label','Radar time');scrub.disabled=true;
-    const legend=el('div','radar-legend');legend.append(el('small','','Light'),el('i'),el('small','','Heavy'));
+    const legend=el('div','radar-legend');legend.dataset.source=scope.dataset.source;legend.append(el('small','','Light'),el('i'),el('small','','Heavy'));
     bar.append(play,scrub,when);
-    const head=el('header','wx-radar-head');head.append(el('strong','','Radar'),el('small','','Past 2 hours · 270 km across'));
+    const head=el('header','wx-radar-head'),title=el('span');title.append(el('strong','','Radar'),el('small','',official?'Environment Canada · last hour, next 2 h':'Past 2 hours · 270 km across'));head.append(title);
+    if(inOntario(lat,lng)){const link=el('a','radar-skymap','SkyMap');link.href=SKYMAP;link.target='_blank';link.rel='noopener noreferrer';link.referrerPolicy='no-referrer';link.setAttribute('aria-label','Open SkyMap Ontario for the full radar, 48-hour futurecast and visit check');head.append(link)}
     host.replaceChildren(head,scope,bar,legend);
     play.dataset.state='play';
     void(async()=>{
       try{
-        const response=await fetch(RADAR_INDEX,{credentials:'omit',referrerPolicy:'no-referrer',cache:'no-store'});
+        let list=null;
+        if(official){try{list=await ecccFrames(bbox)}catch(error){if(stale())return;console.warn('[Clock] GeoMet radar unavailable, using RainViewer',error?.message||error)}}
         if(stale())return;
-        if(!response.ok)throw new Error(`Radar ${response.status}`);
-        const index=await response.json();
-        // The sheet may have closed (or re-rendered) while the index was loading.
+        if(!list){list=await rainviewerFrames();scope.dataset.source='rainviewer';legend.dataset.source='rainviewer'}
+        // The sheet may have closed (or re-rendered) while the frames were loading.
         if(stale())return;
-        const list=[...(index?.radar?.past||[]).slice(-10),...(index?.radar?.nowcast||[])];
-        if(!list.length||!index.host)throw new Error('Radar empty');
-        const past=Math.min(10,(index.radar.past||[]).length),layers=list.map(frame=>{const layer=el('div','radar-frame');tiles(layer,(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`);frames.append(layer);return layer});
+        const past=Math.max(1,list.filter(frame=>!frame.future).length);
+        const layers=list.map(frame=>{const layer=el('div','radar-frame');if(frame.image)image(layer,frame.image,0,0,TILE*3);else tiles(layer,frame.tiles);frames.append(layer);return layer});
         let at=past-1,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches;
         scrub.max=String(list.length-1);scrub.disabled=false;
-        const label=i=>{const mins=Math.round((list[i].time*1000-Date.now())/60000);return Math.abs(mins)<6?'Now':mins<0?`${-mins} min ago`:`in ${mins} min`};
-        const show=i=>{at=i;layers.forEach((layer,k)=>layer.classList.toggle('is-on',k===i));scrub.value=String(i);when.textContent=label(i);scope.dataset.future=String(i>=past)};
+        const label=i=>{const mins=Math.round((list[i].time-Date.now())/60000);return Math.abs(mins)<4?'Now':mins<0?`${-mins} min ago`:`in ${mins} min`};
+        const show=i=>{at=i;layers.forEach((layer,k)=>layer.classList.toggle('is-on',k===i));scrub.value=String(i);when.textContent=label(i);scope.dataset.future=String(Boolean(list[i].future))};
         show(at);
         let hold=0;
         const step=()=>{if(!playing)return;if(hold>0){hold-=1;return}const next=(at+1)%list.length;show(next);if(next===past-1)hold=3};
-        radarTimer=setInterval(step,550);
+        radarTimer=setInterval(step,650);
         const sync=()=>{play.dataset.state=playing?'pause':'play';play.setAttribute('aria-label',playing?'Pause radar':'Play radar')};sync();
         play.addEventListener('click',()=>{playing=!playing;sync()});
         scrub.addEventListener('input',()=>{playing=false;sync();show(Number(scrub.value))});
@@ -264,7 +325,9 @@ export function installWeatherLens(ctx){
   const open=(key='next')=>{
     selected=key;lastFocus=document.activeElement;hide();
     renderSheet();sheet.hidden=false;document.documentElement.dataset.weatherSheet='open';
-    close.focus({preventScroll:true});requestAnimationFrame(()=>sheet.classList.add('is-on'));
+    close.focus({preventScroll:true});
+    // A very quick Esc can close the sheet before this frame; only animate in if it is still open.
+    requestAnimationFrame(()=>{if(document.documentElement.dataset.weatherSheet==='open')sheet.classList.add('is-on')});
   };
   const shut=()=>{
     if(sheet.hidden)return;clearInterval(radarTimer);radarGeneration+=1;sheet.classList.remove('is-on');delete document.documentElement.dataset.weatherSheet;

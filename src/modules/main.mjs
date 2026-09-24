@@ -33,6 +33,7 @@ import{installMagic}from'./magic.js';
 import{installWeatherLens}from'./weather-lens.js';
 import{installZen}from'./zen.js';
 import{installPalette}from'./palette.js';
+import{installCueStack}from'./cue-stack.js';
 
 document.documentElement.dataset.origin='v31';
 const ctx=createContext();
@@ -72,6 +73,7 @@ installMagic(ctx);
 installWeatherLens(ctx);
 installZen(ctx);
 installPalette(ctx);
+installCueStack(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

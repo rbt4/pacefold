@@ -133,6 +133,13 @@ async function main(){
     const switcher=await page.evaluate(()=>{const box=node=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};const nav=document.querySelector('.fold-nav');return{nav:box(nav),items:[...nav.querySelectorAll('[data-go]')].map(node=>({go:node.dataset.go,current:node.getAttribute('aria-current')})),index:getComputedStyle(nav).getPropertyValue('--fold-index').trim(),music:box(document.querySelector('.sound-bar')),status:box(document.querySelector('.bar-status')),edges:document.querySelectorAll('.edge-nav,.edge').length,viewport:innerWidth}});
     requireState(switcher.edges===0&&switcher.items.map(item=>item.go).join()==='notes,worklog,home,now,settings'&&switcher.items.find(item=>item.current==='page')?.go==='home'&&switcher.index==='2','The fold switcher must replace the edge pills and mark Clock',switcher);
     requireState(Math.abs((switcher.nav.left+switcher.nav.right)/2-switcher.viewport/2)<=2&&switcher.nav.top<=14&&switcher.nav.left>switcher.music.right&&switcher.nav.right<switcher.status.left,'The fold switcher is not centred in the top bar or collides with its controls',switcher);
+    // Wide screens: the right-hand controls (command bar, cues, quiet, homepage) never slide under the switcher.
+    for(const[width,height]of[[1920,1080],[1536,864],[1280,800]]){
+      await page.setViewportSize({width,height});await page.waitForTimeout(120);
+      const bar=await page.evaluate(()=>{const nav=document.querySelector('.fold-nav').getBoundingClientRect(),items=[...document.querySelectorAll('.bar-status>*')].filter(node=>node.offsetParent).map(node=>node.getBoundingClientRect().left);return{navRight:nav.right,statusLeft:Math.min(...items)}});
+      requireState(bar.statusLeft>=bar.navRight+6,'The top-bar controls overlap the fold switcher',{width,...bar});
+    }
+    await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(120);
     // A populated music dock stops short of the switcher.
     const dockRoom=await page.evaluate(()=>{const player=document.querySelector('.sound-bar .stream-player');const before=player.dataset.state;player.dataset.state='ready';const title=document.querySelector('.sound-bar .stream-title');const text=title.textContent;title.textContent='A very long track title that would run right under the fold switcher';const dock=document.querySelector('.sound-bar .stream-dock').getBoundingClientRect(),nav=document.querySelector('.fold-nav').getBoundingClientRect(),controls=[...document.querySelectorAll('.sound-bar .stream-controls button')].filter(node=>node.offsetParent).map(node=>node.getBoundingClientRect().right);player.dataset.state=before;title.textContent=text;return{dockRight:dock.right,navLeft:nav.left,controlsRight:Math.max(0,...controls)}});
     requireState(dockRoom.dockRight<=dockRoom.navLeft-4&&dockRoom.controlsRight<=dockRoom.dockRight+1,'The populated music dock runs under the fold switcher',dockRoom);
@@ -266,6 +273,13 @@ async function main(){
     await sky.route('https://api.rainviewer.com/**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({host:'https://tilecache.rainviewer.com',radar:{past:[...Array(13)].map((_,i)=>({time:frameTime-(12-i)*600,path:`/v2/radar/${i}`})),nowcast:[]}})}));
     const pixel=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==','base64'),tiles=[];
     for(const host of['https://tilecache.rainviewer.com/**','https://a.basemaps.cartocdn.com/**'])await sky.route(host,route=>{tiles.push(route.request().url());route.fulfill({contentType:'image/png',body:pixel})});
+    // Environment Canada GeoMet, the feed SkyMap Ontario uses: capabilities XML and one image per frame.
+    const iso=ms=>new Date(ms).toISOString().replace(/\.\d{3}Z$/,'Z'),six=Math.floor(Date.now()/360000)*360000,ten=Math.ceil(Date.now()/600000)*600000,geomet=[];
+    const capabilities=layer=>layer==='RADAR_1KM_RRAI'
+      ?`<WMS_Capabilities><Capability><Layer><Layer><Name>RADAR_1KM_RRAI</Name><Dimension name="time" default="${iso(six)}">${iso(six-90*60000)}/${iso(six)}/PT6M</Dimension></Layer></Layer></Capability></WMS_Capabilities>`
+      :`<WMS_Capabilities><Capability><Layer><Layer><Name>Radar_1km_RainPrecipRate-Extrapolation</Name><Dimension name="time" default="${iso(ten)}">${iso(ten)}/${iso(ten+180*60000)}/PT10M</Dimension><Dimension name="reference_time" default="${iso(six)}">${iso(six)}</Dimension></Layer></Layer></Capability></WMS_Capabilities>`;
+    const geometRoute=({delay=0,fail=false}={})=>async route=>{const url=new URL(route.request().url());if(delay)await new Promise(resolve=>setTimeout(resolve,delay));if(url.searchParams.get('REQUEST')==='GetCapabilities'){if(fail)return route.fulfill({status:503,body:'busy'}).catch(()=>{});return route.fulfill({contentType:'text/xml',body:capabilities(url.searchParams.get('layer'))}).catch(()=>{})}geomet.push(url.href);return route.fulfill({contentType:'image/png',body:pixel}).catch(()=>{})};
+    await sky.route('https://geo.weather.gc.ca/**',geometRoute());
     await sky.addInitScript(seed);
     await sky.addInitScript(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));prefs.weatherEnabled=true;localStorage.setItem('pacefoldPrefsV15',JSON.stringify(prefs))});
     await ready(sky,`${origin}/app/`);
@@ -285,24 +299,37 @@ async function main(){
     await sky.mouse.move(700,860);await sky.click('.wx-open');
     await sky.waitForFunction(()=>document.querySelector('.radar-scope')?.dataset.state==='live');
     const sheet=await sky.evaluate(()=>({open:!document.getElementById('weather-sheet').hidden,frames:document.querySelectorAll('.radar-frame').length,showing:document.querySelectorAll('.radar-frame.is-on').length,map:document.querySelectorAll('.radar-map img').length,air:document.getElementById('wx-air')?.innerText||'',tabs:document.querySelectorAll('.wx-tab').length,chart:Boolean(document.querySelector('.wx-plot .wx-chart .wx-hit')),cast:document.querySelector('.wx-cast strong')?.textContent,text:document.getElementById('weather-sheet').innerText}));
-    requireState(sheet.open&&sheet.frames===10&&sheet.showing===1&&sheet.map===9&&/38 · Good/.test(sheet.air)&&sheet.tabs===8&&sheet.chart&&/Rain starting/.test(sheet.cast),'The weather sheet is incomplete',sheet);
+    requireState(sheet.open&&sheet.frames>=10&&sheet.showing===1&&sheet.map===9&&/38 · Good/.test(sheet.air)&&sheet.tabs===8&&sheet.chart&&/Rain starting/.test(sheet.cast),'The weather sheet is incomplete',sheet);
     requireState(!privateTerms.test(sheet.text),'The weather sheet leaked the location',{text:sheet.text});
-    for(let wait=0;wait<30&&!tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/'));wait+=1)await sky.waitForTimeout(100);
-    requireState(tiles.some(url=>url.includes('/7/'))&&tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/')),'Radar tiles were not requested at the scope zoom',{tiles:tiles.slice(0,4)});
+    // In Canada the scope uses GeoMet: measured radar, then the official extrapolation, aligned in Web Mercator.
+    for(let wait=0;wait<30&&!geomet.some(url=>url.includes('Extrapolation'));wait+=1)await sky.waitForTimeout(100);
+    const eccc=await sky.evaluate(()=>({source:document.querySelector('.radar-scope').dataset.source,frames:document.querySelectorAll('.radar-frame img').length,skymap:document.querySelector('.radar-skymap')?.href||'',credit:document.querySelector('.wx-credit')?.textContent||''}));
+    const observedUrl=new URL(geomet.find(url=>url.includes('RADAR_1KM_RRAI'))||'https://x/'),forecastUrl=new URL(geomet.find(url=>url.includes('Extrapolation'))||'https://x/');
+    requireState(eccc.source==='eccc'&&eccc.frames===sheet.frames&&observedUrl.searchParams.get('CRS')==='EPSG:3857'&&observedUrl.searchParams.get('STYLES')==='RADARURPPRECIPR14-LINEAR'&&observedUrl.searchParams.get('WIDTH')==='768'&&observedUrl.searchParams.get('BBOX')?.split(',').length===4&&forecastUrl.searchParams.get('DIM_REFERENCE_TIME')&&/skymapontario\/app/.test(eccc.skymap)&&/Environment and Climate Change Canada/.test(eccc.credit),'The radar must use the Environment Canada feed SkyMap Ontario uses',{eccc,observed:observedUrl.href,forecast:forecastUrl.href});
+    // Web Mercator box of the scope's 3×3 zoom-7 block around the location (x of tile 34..37 at zoom 7).
+    const box=observedUrl.searchParams.get('BBOX').split(',').map(Number),tileSpan=40075016.685578488/128;
+    requireState(Math.abs(box[2]-box[0]-3*tileSpan)<1&&Math.abs(box[3]-box[1]-3*tileSpan)<1&&box[0]<-79.5132*20037508.34/180&&box[2]>-79.5132*20037508.34/180,'The GeoMet image does not cover the map block around the location',{box});
     await sky.screenshot({path:path.join(output,'v31-desktop-weather-sheet.png'),fullPage:false});
     await sky.keyboard.press('ArrowRight');await sky.waitForTimeout(150);
     requireState((await sky.evaluate(()=>document.documentElement.dataset.mode))==='home','Arrow keys inside the weather sheet must not fold the app');
     await sky.keyboard.press('Escape');await sky.waitForTimeout(350);
     requireState(await sky.evaluate(()=>document.getElementById('weather-sheet').hidden),'Escape must close the weather sheet');
-    // Closing before the radar index arrives cancels the radar: no tiles, no timer.
-    await sky.unroute('https://api.rainviewer.com/**');
-    await sky.route('https://api.rainviewer.com/**',async route=>{await new Promise(resolve=>setTimeout(resolve,500));await route.fulfill({contentType:'application/json',body:JSON.stringify({host:'https://tilecache.rainviewer.com',radar:{past:[{time:frameTime,path:'/v2/radar/late'}],nowcast:[]}})}).catch(()=>{})});
-    await sky.click('.wx-open');await sky.waitForTimeout(80);
-    // Esc must close the sheet even when focus is not inside it.
-    await sky.evaluate(()=>document.activeElement?.blur());await sky.keyboard.press('Escape');
-    const tilesAtClose=tiles.filter(url=>url.includes('/radar/late/')).length;await sky.waitForTimeout(900);
-    requireState(tilesAtClose===0&&tiles.filter(url=>url.includes('/radar/late/')).length===0,'A closed weather sheet still started its radar',{late:tiles.filter(url=>url.includes('/radar/late/')).length});
-    requireState(skyErrors.length===0,'The forecast produced browser errors (CSP or runtime)',{skyErrors});
+    // Closing before the radar metadata arrives cancels the radar: no images, no timer.
+    await sky.unroute('https://geo.weather.gc.ca/**');await sky.route('https://geo.weather.gc.ca/**',geometRoute({delay:500}));
+    const imagesBefore=geomet.length;
+    // Open and press Esc within the same frame, with focus outside the sheet: it must stay closed.
+    await sky.evaluate(()=>{document.querySelector('.wx-open').click();document.activeElement?.blur();window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))});await sky.waitForTimeout(1600);
+    requireState(await sky.evaluate(()=>document.getElementById('weather-sheet').hidden)&&geomet.length===imagesBefore,'A closed weather sheet still started its radar',{late:geomet.length-imagesBefore});
+    // If GeoMet is unavailable, the scope falls back to RainViewer rather than going blank.
+    await sky.unroute('https://geo.weather.gc.ca/**');await sky.route('https://geo.weather.gc.ca/**',geometRoute({fail:true}));
+    await sky.click('.wx-open');await sky.waitForFunction(()=>document.querySelector('.radar-scope')?.dataset.state==='live',null,{timeout:15000});
+    for(let wait=0;wait<30&&!tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/'));wait+=1)await sky.waitForTimeout(100);
+    const fallback=await sky.evaluate(()=>({source:document.querySelector('.radar-scope').dataset.source,frames:document.querySelectorAll('.radar-frame').length}));
+    requireState(fallback.source==='rainviewer'&&fallback.frames===10&&tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/')),'Without GeoMet the radar must fall back to RainViewer',fallback);
+    await sky.keyboard.press('Escape');await sky.waitForTimeout(300);
+    // The fallback check answers GeoMet with 503 on purpose; anything else is a real error.
+    const unexpected=skyErrors.filter(message=>!/status of 503/.test(message));
+    requireState(unexpected.length===0,'The forecast produced browser errors (CSP or runtime)',{skyErrors:unexpected});
     await sky.screenshot({path:path.join(output,'v31-desktop-clock-week.png'),fullPage:true});
     await weather.close();
 
@@ -312,14 +339,29 @@ async function main(){
     await cuePage.addInitScript(seed);
     await cuePage.addInitScript(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));prefs.waterLastAt=Date.now()-60*60000;prefs.gazeLastCompleted=Date.now()-40*60000;prefs.eyeCadence=30;localStorage.setItem('pacefoldPrefsV15',JSON.stringify(prefs))});
     await ready(cuePage,`${origin}/app/`);await cuePage.click('#cover-peel');await cuePage.waitForTimeout(200);
-    const before=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),kicker:document.querySelector('.v28-guide-copy small').textContent,primary:document.querySelector('.v28-guide-primary')?.textContent}));
-    requireState(before.cues[0]==='water'&&before.cues.includes('eyes')&&/\+1 more/.test(before.kicker)&&before.primary==='Log water','Waiting cues should show one at a time with a log action',before);
-    await cuePage.click('.v28-guide-primary');
+    // Waiting cues form a stack: the top card is actionable, the rest peek behind it.
+    const before=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),cards:[...document.querySelectorAll('.cue-stack .cue-card')].map(card=>({source:card.dataset.source,depth:card.dataset.depth,inert:card.inert})),title:document.querySelector('.cue-stack-head strong').textContent,primary:document.querySelector('.cue-card[data-depth="0"] .cue-card-primary')?.textContent,guide:getComputedStyle(document.querySelector('.horizon-right .v28-guide')).display,bloom:document.getElementById('v28-cue-bloom')?.hidden!==false}));
+    requireState(before.cues[0]==='water'&&before.cards.length===2&&before.cards[0].source==='water'&&before.cards[1].depth==='1'&&before.cards[1].inert&&/2 need you/.test(before.title)&&before.primary==='Log water'&&before.guide==='none'&&before.bloom,'Waiting cues should form one actionable stack',before);
+    await cuePage.click('.cue-stack-toggle');await cuePage.waitForTimeout(80);
+    requireState(await cuePage.evaluate(()=>document.querySelector('.cue-stack').dataset.expanded==='true'&&![...document.querySelectorAll('.cue-card')].some(card=>card.inert)),'Show all must fan the stack out with every card usable');
+    await cuePage.click('.cue-stack-toggle');
+    await cuePage.click('.cue-card[data-depth="0"] .cue-card-primary');
+    await cuePage.waitForTimeout(450);
+    const recalc=await cuePage.evaluate(()=>({note:document.querySelector('.cue-stack-note').textContent,cards:[...document.querySelectorAll('.cue-stack .cue-card')].map(card=>card.dataset.source)}));
+    requireState(/Water logged · next sip around \d/.test(recalc.note)&&recalc.cards.join()==='eyes','Logging from the stack must remove the card and say when the next one is due',recalc);
     const afterWater=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),last:window.__PACEFOLD__.prefs.waterLastAt,oz:window.__PACEFOLD__.prefs.waterOz,events:Object.values(window.__PACEFOLD__.log.days||{}).flatMap(day=>day.events||[]).map(event=>event.source)}));
     requireState(!afterWater.cues.includes('water')&&Date.now()-afterWater.last<60000&&afterWater.oz>0&&afterWater.events.includes('water'),'Logging water must record it and restart its cadence',afterWater);
     await cuePage.locator('.dial-cue').first().click();
     const afterEyes=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),gaze:window.__PACEFOLD__.prefs.gazeLastCompleted,events:Object.values(window.__PACEFOLD__.log.days||{}).flatMap(day=>day.events||[]).map(event=>event.source)}));
     requireState(afterEyes.cues.length===0&&Date.now()-afterEyes.gaze<60000&&afterEyes.events.includes('eyes'),'Tapping a cue on the dial must log it, not merely dismiss it',afterEyes);
+    await cuePage.waitForTimeout(400);
+    requireState(await cuePage.evaluate(()=>document.querySelectorAll('.cue-stack .cue-card').length===0),'A cue resolved elsewhere must leave the stack by itself');
+    // Later puts just that kind of cue away (and survives a reload); the others still come.
+    await cuePage.evaluate(()=>{const prefs=window.__PACEFOLD__.prefs;prefs.eyeCadence=7;prefs.gazeLastCompleted=Date.now()-40*60000;prefs.bodyCadence=11;prefs.bodyLastCompleted=Date.now()-90*60000;window.__PACEFOLD__.notificationHeartbeat()});
+    await cuePage.waitForTimeout(120);
+    await cuePage.click('.cue-stack-toggle');await cuePage.waitForTimeout(500);await cuePage.click('.cue-card[data-source="eyes"] .cue-card-later');await cuePage.waitForTimeout(450);
+    const later=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),stored:JSON.parse(localStorage.getItem('pacefold.cues.v1')||'{}').snoozed||{},note:document.querySelector('.cue-stack-note').textContent}));
+    requireState(!later.cues.includes('eyes')&&later.cues.includes('move')&&Number(later.stored.eyes)>Date.now()+10*60000&&/back around/.test(later.note),'Later must put away only that kind of cue, and remember it',later);
     // Hidden privacy mode removes the rhythm from the dial entirely.
     await cuePage.evaluate(()=>{window.__PACEFOLD__.prefs.rhythmDiscretion='hidden';window.__PACEFOLD__.render('home')});
     const hiddenMoments=await cuePage.evaluate(()=>document.querySelectorAll('.dial-moments .moment').length);

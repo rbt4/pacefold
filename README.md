@@ -39,7 +39,7 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 
 ### Weather you can look into
 - **Hover any day** for a card with its hourly temperature curve, chance of rain, wind, UV and daylight. Hover an hour on the dial's temperature ring for that hour.
-- **Radar.** A live radar scope (RainViewer) animates the past two hours of precipitation around you, with a sweeping beam, play/pause and a time scrubber. The map has no labels.
+- **Radar.** In Canada, the same official Environment Canada radar [SkyMap Ontario](https://rbt4.github.io/skymapontario/) uses: the last hour of measured radar, then the official two-hour extrapolation. Elsewhere, RainViewer. In Ontario a **SkyMap** button opens the full 48-hour futurecast. The scope animates with a sweeping beam, play/pause and a time scrubber. The map has no labels.
 - **The next two hours.** A 15-minute nowcast says when rain or snow starts or stops. When rain is coming, the week panel says so.
 - **The full sheet** also has humidity, wind, UV, air quality, sunrise and sunset, and an hourly chart for any of the seven days. Move across the chart to read each hour.
 
@@ -61,7 +61,9 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 ### Cues you log instead of dismissing
 - **Coloured, quiet cues** for moments, water, prep/noodles, time away, meals, distance looks and movement.
 - **Logging resolves a cue.** When you log it, the timer restarts from now. Finished timers close, and scheduled moments are marked kept in the Day log.
-- **No stacking.** One cue shows at a time, with "+N more". System notifications share a single slot with **Log / Later** buttons, and Log works even when Pacefold is closed.
+- **One tidy stack.** Waiting cues stack on Clock: the top card is ready to log, the rest peek behind it, and **Show all** fans them out. Each card has its own **Log** and **Later** (Later hides just that kind for 15 minutes).
+- **It recalculates.** Logging says when the next one is due ("Water logged · next sip around 5:48 PM"). Cards resolved anywhere else, or expired, leave on their own.
+- **One system notification.** It has **Log / Later** buttons, works even when Pacefold is closed, and closes itself when you resolve its cue in the app.
 - **A live favicon** carries the colours of waiting cues.
 
 ### Your day
