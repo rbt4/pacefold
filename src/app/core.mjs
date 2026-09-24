@@ -195,6 +195,12 @@ export function prayerHours(date=new Date(),rawPrefs=DEFAULT_PREFS){
   return times;
 }
 
+// Solar day for any profile: sunrise, solar noon and sunset in local decimal hours.
+export function sunHours(date=new Date(),rawPrefs=DEFAULT_PREFS){
+  const prefs=migratePrefs(rawPrefs),hours=prayerHours(date,{...prefs,offsets:{}});
+  return{sunrise:hours.sunrise,noon:hours.dhuhr-1/60,sunset:hours.maghrib};
+}
+
 export function parseClock(value){
   const match=String(value||'').match(/^(\d{1,2}):(\d{2})$/);
   if(!match)return NaN;

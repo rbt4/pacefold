@@ -56,14 +56,14 @@ async function inspect(page){
       cover:document.documentElement.dataset.cover,
       activeElement:document.activeElement?.id||document.activeElement?.tagName||'',
       coverBox:rect('#pace-cover'),hero:rect('.pace-cover .cover-hero'),search:rect('.pace-cover .cover-omnibox'),
-      music:rect('#cover-music-open'),peel:rect('#cover-peel'),stage:rect('#stage'),clock:rect('.clock-card'),
-      rhythm:rect('.rhythm-card'),daybook:rect('.daybook-fold'),composer:rect('#clock-note-input'),mobileNav:rect('.mobile-nav'),
+      music:rect('#cover-music-open'),peel:rect('#cover-peel'),stage:rect('#stage'),clock:rect('.dial-wrap'),
+      week:rect('.horizon-left .week-sky'),keys:rect('.horizon-right .action-dock'),moments:document.querySelectorAll('.dial-moments .moment').length,daybook:rect('.daybook-fold'),composer:rect('#clock-note-input'),mobileNav:rect('.mobile-nav'),
       privacyCurtain:rect('.privacy-curtain'),
-      seconds:rect('#clock-seconds'),secondHand:rect('.hand-second'),setupOpen:Boolean(document.getElementById('setup-dialog')?.open),
+      seconds:rect('#clock-seconds'),secondHand:rect('.dial-second-bead .bead'),setupOpen:Boolean(document.getElementById('setup-dialog')?.open),
       stageInert:document.getElementById('stage')?.inert===true,
       coverBackground:getComputedStyle(document.getElementById('pace-cover'),'::before').backgroundImage,
       bodyBackground:getComputedStyle(document.body).backgroundImage,
-      clockBackground:getComputedStyle(document.querySelector('.clock-card')).backgroundImage
+      skyPhoto:getComputedStyle(document.querySelector('.sky-photo')).backgroundImage
     };
   });
 }
@@ -109,10 +109,10 @@ async function main(){
     await page.waitForTimeout(220);
     state=await inspect(page);
     requireState(state.mode==='home'&&!state.stageInert&&state.coverBox.display==='none','Open Clock did not reveal the working surface',state);
-    requireState(visible(state.clock)&&visible(state.rhythm)&&visible(state.daybook)&&visible(state.composer),'Clock, rhythm and persistent Daybook must coexist',state);
-    requireState(visible(state.seconds)&&visible(state.secondHand),'Visible seconds and the second hand were lost',state);
-    requireState(!/daily-image|homepage-default/.test(`${state.bodyBackground} ${state.clockBackground}`),'The scenic photograph leaked into the working Clock',state);
-    requireState(state.clock.width>=700&&state.rhythm.width>=260&&state.rhythm.width<=330,'Desktop Clock proportions no longer match the calm folio',state);
+    requireState(visible(state.clock)&&state.moments>=3&&visible(state.daybook)&&visible(state.composer),'The Horizon Dial, its moments and the persistent Daybook must coexist',state);
+    requireState(visible(state.seconds)&&visible(state.secondHand),'Visible seconds and the sweeping seconds bead were lost',state);
+    requireState(/daily-image|homepage-default/.test(state.skyPhoto),'The daily photograph must be the sky behind Clock',state);
+    requireState(state.clock.width>=520&&visible(state.week)&&visible(state.keys)&&state.week.right<=state.clock.x+40&&state.keys.x>=state.clock.right-40,'Desktop Clock must be week · dial · keys around a centrepiece dial',state);
     requireState(state.scrollWidth<=state.viewport.width+1,'Working Clock has horizontal overflow',state);
     requireState(state.privacyCurtain?.display==='none','The inactive privacy screen leaked into the working page',state);
     await page.screenshot({path:path.join(output,'v31-desktop-clock.png'),fullPage:false});
@@ -127,12 +127,11 @@ async function main(){
     requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
     requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
 
-    const folio=await page.evaluate(()=>{const box=selector=>document.querySelector(selector).getBoundingClientRect();const view=box('.view-home'),parts=['.home-grid','.week-sky','.v28-guide','.action-dock','.daybook-fold'].map(box);return{gaps:parts.slice(1).map((part,index)=>Math.round(part.top-parts[index].bottom)),inset:parts.map(part=>Math.round(Math.abs(part.left-view.left)+Math.abs(part.right-view.right))),left:box('.edge-left').right,right:box('.edge-right').left,viewLeft:view.left,viewRight:view.right}});
-    requireState(folio.gaps.every(gap=>Math.abs(gap)<=1)&&folio.inset.every(value=>value<=2),'Desktop Clock must read as one folio, not separate floating cards',folio);
-    requireState(folio.left<=folio.viewLeft-8&&folio.right>=folio.viewRight+8,'Edge tabs overlap the Clock folio',folio);
+    const flank=await page.evaluate(()=>{const box=selector=>document.querySelector(selector).getBoundingClientRect();return{left:box('.edge-left').right,right:box('.edge-right').left,week:box('.horizon-left .week-sky').left,keys:box('.horizon-right').right}});
+    requireState(flank.left<=flank.week+2&&flank.right>=flank.keys-2,'Edge tabs overlap the Clock panels',flank);
 
-    const signature=await page.evaluate(async()=>{await document.fonts.ready;return{phase:document.documentElement.dataset.phase,serif:document.fonts.check('300 100px "Pacefold Display"'),digital:getComputedStyle(document.querySelector('.digital')).fontFamily,numerals:document.querySelectorAll('.dial-numerals b').length,icons:[...document.querySelectorAll('.quick-action>i')].every(node=>getComputedStyle(node,'::after').maskImage.includes('data:image/svg'))}});
-    requireState(['dawn','day','dusk','night'].includes(signature.phase)&&signature.serif&&/Pacefold Display/.test(signature.digital)&&signature.numerals===4&&signature.icons,'The signature Clock (phase light, serif time, dial numerals, key icons) is incomplete',signature);
+    const signature=await page.evaluate(async()=>{await document.fonts.ready;return{phase:document.documentElement.dataset.phase,serif:document.fonts.check('300 100px "Pacefold Display"'),digital:getComputedStyle(document.querySelector('.digital')).fontFamily,numerals:document.querySelectorAll('.dial-cardinal').length,icons:[...document.querySelectorAll('.quick-action>i')].every(node=>getComputedStyle(node,'::after').maskImage.includes('data:image/svg'))}});
+    requireState(['dawn','day','dusk','night'].includes(signature.phase)&&signature.serif&&/Pacefold Display/.test(signature.digital)&&signature.numerals===4&&signature.icons,'The Horizon Clock (sky phase, display type, dial cardinals, key icons) is incomplete',signature);
 
     const pill=await page.evaluate(()=>{const edge=document.querySelector('.edge-down');const before={end:document.documentElement.dataset.pageEnd,opacity:getComputedStyle(edge).opacity};return before});
     requireState(pill.end==='false'&&Number(pill.opacity)<.05,'The Settings pill must stay out of the way until Clock has been read to its end',pill);
@@ -198,8 +197,8 @@ async function main(){
     await page.evaluate(()=>window.__PACEFOLD__.go('settings'));await page.waitForTimeout(120);
     requireState(await page.evaluate(()=>document.documentElement.dataset.theme==='light'),'Light system preference should resolve to the light theme',{});
     await page.click('[data-appearance="dark"]');
-    const dark=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,stored:JSON.parse(localStorage.getItem('pacefoldPrefsV15')).appearance,body:getComputedStyle(document.body).backgroundColor,backup:window.__PACEFOLD__.backup().prefs?.appearance}));
-    requireState(dark.theme==='dark'&&dark.stored==='dark'&&dark.backup==='dark'&&dark.body==='rgb(17, 25, 22)','Dark appearance did not apply, persist or reach the backup',dark);
+    const dark=await page.evaluate(()=>({theme:document.documentElement.dataset.theme,stored:JSON.parse(localStorage.getItem('pacefoldPrefsV15')).appearance,body:getComputedStyle(document.querySelector('.settings-panels>section:not([hidden])')).backgroundColor,backup:window.__PACEFOLD__.backup().prefs?.appearance}));
+    requireState(dark.theme==='dark'&&dark.stored==='dark'&&dark.backup==='dark'&&/rgba\(14, 22, 34/.test(dark.body),'Dark appearance did not apply, persist or reach the backup',dark);
     await page.screenshot({path:path.join(output,'v31-desktop-settings-dark.png'),fullPage:false});
     await page.click('[data-appearance="system"]');
     requireState(await page.evaluate(()=>document.documentElement.dataset.theme==='light'),'System appearance did not return to the device theme',{});
@@ -228,6 +227,22 @@ async function main(){
     requireState(skyErrors.length===0,'The forecast produced browser errors (CSP or runtime)',{skyErrors});
     await sky.screenshot({path:path.join(output,'v31-desktop-clock-week.png'),fullPage:true});
     await weather.close();
+
+    // Cues resolve by logging: the action writes the day log and restarts that cadence.
+    const cueContext=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'America/Toronto',serviceWorkers:'block'}),cuePage=await cueContext.newPage();
+    cuePage.on('pageerror',error=>errors.push(`cue pageerror: ${error.stack||error.message}`));
+    await cuePage.addInitScript(seed);
+    await cuePage.addInitScript(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));prefs.waterLastAt=Date.now()-60*60000;prefs.gazeLastCompleted=Date.now()-40*60000;prefs.eyeCadence=30;localStorage.setItem('pacefoldPrefsV15',JSON.stringify(prefs))});
+    await ready(cuePage,`${origin}/app/`);await cuePage.click('#cover-peel');await cuePage.waitForTimeout(200);
+    const before=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),kicker:document.querySelector('.v28-guide-copy small').textContent,primary:document.querySelector('.v28-guide-primary')?.textContent}));
+    requireState(before.cues[0]==='water'&&before.cues.includes('eyes')&&/\+1 more/.test(before.kicker)&&before.primary==='Log water','Waiting cues should show one at a time with a log action',before);
+    await cuePage.click('.v28-guide-primary');
+    const afterWater=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),last:window.__PACEFOLD__.prefs.waterLastAt,oz:window.__PACEFOLD__.prefs.waterOz,events:Object.values(window.__PACEFOLD__.log.days||{}).flatMap(day=>day.events||[]).map(event=>event.source)}));
+    requireState(!afterWater.cues.includes('water')&&Date.now()-afterWater.last<60000&&afterWater.oz>0&&afterWater.events.includes('water'),'Logging water must record it and restart its cadence',afterWater);
+    await cuePage.locator('.dial-cue').first().click();
+    const afterEyes=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),gaze:window.__PACEFOLD__.prefs.gazeLastCompleted,events:Object.values(window.__PACEFOLD__.log.days||{}).flatMap(day=>day.events||[]).map(event=>event.source)}));
+    requireState(afterEyes.cues.length===0&&Date.now()-afterEyes.gaze<60000&&afterEyes.events.includes('eyes'),'Tapping a cue on the dial must log it, not merely dismiss it',afterEyes);
+    await cueContext.close();
 
     // Midnight: the sweeping second hand must keep moving forward, and the Now ring
     // must show progress before the first moment of the day.

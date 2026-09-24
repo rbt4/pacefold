@@ -8,7 +8,7 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 
 **Pacefold 31.0.0 — Origin**
 
-- normal visits open the full-screen scenic homepage first, with the large clock, date, search, quick note, Music and an explicit Clock entrance
+- normal visits open the full-screen scenic homepage first, with the large clock, date, search, quick note, Music, the week ahead and an explicit Clock entrance
 - opening it reveals a distinct warm-folio workspace: a deep-forest analog + digital Clock, visible seconds, Day Unfold and rhythm; direct fold links may bypass the cover
 - the persistent lower Daybook is again part of Clock, with immediate capture, recent notes and carry-forward work instead of a substitute summary
 - Google/address search and scenic photography stay on the front cover so the working Clock can remain calm all day
@@ -27,7 +27,8 @@ Pacefold is a private, local-first workday clock that keeps time, rhythm, notes,
 - installable offline PWA with quiet notifications, no Pacefold account, analytics or advertising
 - System, Light or Dark appearance (Settings → Daily), so an all-day clock stays calm in the evening
 - a seven-day forecast on Clock and the start page (Open-Meteo, no key), with drawn animated icons and temperature range bars
-- a Signature look: Outfit + Geist type, a crafted dial, time-of-day light (dawn, day, dusk, night), and folds that slide in from their direction
+- the **Horizon Dial**: a 24-hour instrument (solar noon at the top) over your daily photo, graded by the live sky, with weather mirrored in it and glass panels around it
+- cues that resolve by logging (and restart their timers) instead of stacking up
 
 Public site: **https://rbt4.github.io/pacefold/**
 
