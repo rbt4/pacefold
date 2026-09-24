@@ -68,7 +68,8 @@ async function inspect(page){
   });
 }
 
-const privateTerms=/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer)\b|Etobicoke|Toronto|America\/Toronto|15°/i;
+// The calculation-method label ("15° · ISNA style") is private; a 15° forecast is not.
+const privateTerms=/\b(Fajr|Dhuhr|Asr|Maghrib|Isha|Hanafi|prayer|ISNA)\b|Etobicoke|Toronto|America\/Toronto|15° ·/i;
 
 function requireState(condition,message,state){if(!condition)throw new Error(`${message}\n${JSON.stringify(state,null,2)}`)}
 const visible=box=>Boolean(box&&box.display!=='none'&&box.visibility!=='hidden'&&box.opacity>.01&&box.width>0&&box.height>0);
@@ -126,9 +127,12 @@ async function main(){
     requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
     requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
 
-    const folio=await page.evaluate(()=>{const box=selector=>document.querySelector(selector).getBoundingClientRect();const view=box('.view-home'),parts=['.home-grid','.v28-guide','.action-dock','.daybook-fold'].map(box);return{gaps:parts.slice(1).map((part,index)=>Math.round(part.top-parts[index].bottom)),inset:parts.map(part=>Math.round(Math.abs(part.left-view.left)+Math.abs(part.right-view.right))),left:box('.edge-left').right,right:box('.edge-right').left,viewLeft:view.left,viewRight:view.right}});
+    const folio=await page.evaluate(()=>{const box=selector=>document.querySelector(selector).getBoundingClientRect();const view=box('.view-home'),parts=['.home-grid','.week-sky','.v28-guide','.action-dock','.daybook-fold'].map(box);return{gaps:parts.slice(1).map((part,index)=>Math.round(part.top-parts[index].bottom)),inset:parts.map(part=>Math.round(Math.abs(part.left-view.left)+Math.abs(part.right-view.right))),left:box('.edge-left').right,right:box('.edge-right').left,viewLeft:view.left,viewRight:view.right}});
     requireState(folio.gaps.every(gap=>Math.abs(gap)<=1)&&folio.inset.every(value=>value<=2),'Desktop Clock must read as one folio, not separate floating cards',folio);
     requireState(folio.left<=folio.viewLeft-8&&folio.right>=folio.viewRight+8,'Edge tabs overlap the Clock folio',folio);
+
+    const signature=await page.evaluate(async()=>{await document.fonts.ready;return{phase:document.documentElement.dataset.phase,serif:document.fonts.check('300 100px "Pacefold Display"'),digital:getComputedStyle(document.querySelector('.digital')).fontFamily,numerals:document.querySelectorAll('.dial-numerals b').length,icons:[...document.querySelectorAll('.quick-action>i')].every(node=>getComputedStyle(node,'::after').maskImage.includes('data:image/svg'))}});
+    requireState(['dawn','day','dusk','night'].includes(signature.phase)&&signature.serif&&/Pacefold Display/.test(signature.digital)&&signature.numerals===4&&signature.icons,'The signature Clock (phase light, serif time, dial numerals, key icons) is incomplete',signature);
 
     const pill=await page.evaluate(()=>{const edge=document.querySelector('.edge-down');const before={end:document.documentElement.dataset.pageEnd,opacity:getComputedStyle(edge).opacity};return before});
     requireState(pill.end==='false'&&Number(pill.opacity)<.05,'The Settings pill must stay out of the way until Clock has been read to its end',pill);
@@ -163,6 +167,8 @@ async function main(){
         requireState(['block','grid'].includes(fold.compare)&&fold.compareHeader==='flex'&&/255/.test(fold.storyTitle),'Day fold lost its comparison layout or story contrast',fold);
       }
       if(mode==='now'){
+        const ring=await page.evaluate(()=>({progress:Number(getComputedStyle(document.querySelector('.now-primary')).getPropertyValue('--now-progress')),label:document.getElementById('now-ring-value').textContent,from:document.documentElement.dataset.from,animation:getComputedStyle(document.querySelector('.view-now')).animationName}));
+        requireState(ring.progress>=0&&ring.progress<=1&&/\d|Done/.test(ring.label)&&ring.animation==='fold-from-right','Now countdown ring or directional fold is missing',ring);
         const fold=await page.evaluate(()=>({title:getComputedStyle(document.querySelector('.now-primary h2')).color,scheduleTime:getComputedStyle(document.querySelector('.now-schedule .rhythm-row strong')).color,primaryBackground:getComputedStyle(document.querySelector('.now-primary')).backgroundImage,primaryColor:getComputedStyle(document.querySelector('.now-primary')).backgroundColor}));
         requireState(/255/.test(fold.title)&&!/255, 255, 255/.test(fold.scheduleTime)&&fold.primaryBackground!=='none'&&!/247, 250, 248/.test(fold.primaryColor),'Now fold has unreadable inherited contrast',fold);
       }
@@ -203,6 +209,39 @@ async function main(){
     requireState(state.cover==='peeled'&&state.mode==='notes'&&!state.stageInert,'Direct fold links must bypass the cover',state);
     requireState(await page.locator('.note-item', {hasText:marker}).count()===1,'The persisted Clock note did not survive navigation and reload',state);
     await context.close();
+
+    // Week ahead: seven days on Clock and on the cover, from a mocked Open-Meteo reply.
+    const weather=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'America/Toronto',serviceWorkers:'block'}),sky=await weather.newPage(),skyErrors=[];
+    sky.on('pageerror',error=>skyErrors.push(error.message));
+    sky.on('console',message=>{if(message.type()==='error'&&!/Service Worker registration blocked by Playwright/i.test(message.text()))skyErrors.push(message.text())});
+    const days=[0,1,2,3,4,5,6].map(offset=>new Date(Date.now()+offset*864e5).toISOString().slice(0,10));
+    await sky.route('https://api.open-meteo.com/**',route=>route.fulfill({contentType:'application/json',body:JSON.stringify({current:{temperature_2m:14.2,apparent_temperature:12.1,weather_code:2,is_day:1},daily:{time:days,weather_code:[2,61,0,3,80,95,71],temperature_2m_max:[18,15,21,19,17,23,4],temperature_2m_min:[9,11,10,12,13,16,-3],precipitation_probability_max:[10,80,0,20,60,70,55]}})}));
+    await sky.addInitScript(seed);
+    await sky.addInitScript(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));prefs.weatherEnabled=true;localStorage.setItem('pacefoldPrefsV15',JSON.stringify(prefs))});
+    await ready(sky,`${origin}/app/`);
+    await sky.waitForFunction(()=>document.querySelectorAll('#cover-week .cw-day').length===7);
+    await sky.screenshot({path:path.join(output,'v31-desktop-homepage-week.png'),fullPage:false});
+    await sky.click('#cover-peel');await sky.waitForTimeout(200);
+    const week=await sky.evaluate(()=>({days:[...document.querySelectorAll('#week-days .week-day')].map(day=>({label:day.getAttribute('aria-label'),kind:day.dataset.kind,icon:Boolean(day.querySelector('svg.wx'))})),headline:document.getElementById('week-headline').textContent,homeText:document.querySelector('.view-home').innerText}));
+    requireState(week.days.length===7&&week.days.every(day=>day.icon)&&week.days[0].label.startsWith('Today')&&week.days[1].kind==='rain'&&week.days[5].kind==='storm'&&/14° now/.test(week.headline),'Clock is missing the seven-day forecast',week);
+    requireState(!privateTerms.test(week.homeText),'The forecast leaked the location onto Clock',{homeText:week.homeText});
+    requireState(skyErrors.length===0,'The forecast produced browser errors (CSP or runtime)',{skyErrors});
+    await sky.screenshot({path:path.join(output,'v31-desktop-clock-week.png'),fullPage:true});
+    await weather.close();
+
+    // Midnight: the sweeping second hand must keep moving forward, and the Now ring
+    // must show progress before the first moment of the day.
+    const night=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'America/Toronto',serviceWorkers:'block'}),late=await night.newPage();
+    late.on('pageerror',error=>errors.push(`midnight pageerror: ${error.stack||error.message}`));
+    await late.clock.install({time:new Date('2026-09-25T03:59:57Z')});
+    await late.addInitScript(seed);
+    await ready(late,`${origin}/app/`);
+    const angles=[];for(let tick=0;tick<5;tick+=1){angles.push(await late.evaluate(()=>parseFloat(document.documentElement.style.getPropertyValue('--second-angle'))));await late.clock.runFor(1000)}
+    requireState(angles.every((angle,index)=>!index||angle>angles[index-1]),'The second hand runs backwards across midnight',{angles});
+    await late.evaluate(()=>window.__PACEFOLD__.go('now'));await late.waitForTimeout(100);
+    const dawnRing=await late.evaluate(()=>Number(getComputedStyle(document.querySelector('.now-primary')).getPropertyValue('--now-progress')));
+    requireState(dawnRing>0&&dawnRing<1,'The Now ring is stuck before the first moment of the day',{dawnRing});
+    await night.close();
 
     const firstRun=await browser.newContext({viewport:{width:900,height:760},timezoneId:'America/Toronto',serviceWorkers:'block'}),fresh=await firstRun.newPage();
     fresh.on('pageerror',error=>errors.push(`first-run pageerror: ${error.stack||error.message}`));

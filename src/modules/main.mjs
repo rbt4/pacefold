@@ -26,6 +26,7 @@ import{installMusicMorpheR9}from'./music-morphe-r9.js';
 import{installGuidedFoldV28}from'./guided-fold-v28.js';
 import{installRecoveryV28}from'./recovery-v28.js';
 import{installAppearance}from'./appearance.js';
+import{installWeatherWeek}from'./weather-week.js';
 
 document.documentElement.dataset.origin='v31';
 const ctx=createContext();
@@ -58,6 +59,7 @@ installHomepageR7(ctx);
 installGuidedFoldV28(ctx);
 installRecoveryV28(ctx);
 installAppearance(ctx);
+installWeatherWeek(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

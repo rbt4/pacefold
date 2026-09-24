@@ -46,6 +46,7 @@
           <div class="clock-identity"><span id="day-phase">Workday</span><strong id="clock-status">Quietly keeping pace</strong></div>
           <div class="clock-instrument">
             <div class="analog" id="analog" aria-label="Analog clock">
+              <span class="dial-numerals" aria-hidden="true"><b>12</b><b>3</b><b>6</b><b>9</b></span>
               <div class="clock-ticks" id="clock-ticks" aria-hidden="true"></div>
               <i class="hand hand-hour"></i><i class="hand hand-minute"></i><i class="hand hand-second"></i><i class="clock-pin"></i>
             </div>
@@ -129,7 +130,7 @@
     <section class="view view-now" data-view="now" aria-label="Now">
       <header class="view-head"><button type="button" data-go="home">← Clock</button><span><small>Right from Clock</small><h1>Now</h1><p>Only the context that helps with the next decision.</p></span><b id="now-live">Live</b></header>
       <div class="now-grid">
-        <section class="now-primary"><div class="now-orbit" aria-hidden="true"><i></i><span></span></div><small>Next moment</small><h2 id="now-next-name">—</h2><strong id="now-next-time">—</strong><p id="now-countdown">Calculating…</p><div class="now-guidance" id="now-guidance">The day is clear. Keep your current pace.</div><div class="now-actions"><button type="button" data-action="ack" id="now-clear-cue">Clear cue</button><button type="button" data-action="snooze" id="now-snooze">Snooze 10m</button></div></section>
+        <section class="now-primary"><div class="now-orbit" aria-hidden="true"><i></i><span></span></div><div class="now-ring" aria-hidden="true"></div><div class="now-ring-label" aria-hidden="true"><b id="now-ring-value">—</b><small>until next</small></div><small>Next moment</small><h2 id="now-next-name">—</h2><strong id="now-next-time">—</strong><p id="now-countdown">Calculating…</p><div class="now-guidance" id="now-guidance">The day is clear. Keep your current pace.</div><div class="now-actions"><button type="button" data-action="ack" id="now-clear-cue">Clear cue</button><button type="button" data-action="snooze" id="now-snooze">Snooze 10m</button></div></section>
         <section class="now-schedule"><header><small id="now-schedule-kicker">Today’s rhythm</small><strong id="now-schedule-date">Today</strong></header><div id="now-schedule-list"></div></section>
         <section class="now-cues"><header><small>Quiet cues</small><strong id="now-cue-count">Nothing waiting</strong></header><div id="now-cue-list"></div></section>
         <section class="now-weather"><header><small>Outside</small><strong id="weather-place">Weather</strong></header><div id="weather-content"><p>Weather appears when enabled.</p></div><button type="button" id="weather-refresh">Refresh</button></section>
