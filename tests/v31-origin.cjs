@@ -36,7 +36,7 @@ assert(style.includes('.daybook-fold{')&&style.includes('.clock-note-compose'),'
 assert(style.includes('html[data-cover="on"] .pace-cover{')&&style.includes('.pace-cover::before'),'Cover and working Clock are not deliberately separated');
 assert(style.includes('.privacy-curtain{display:none}')&&style.includes('html[data-privacy-screen="on"] .privacy-curtain{'),'Privacy-screen styling is not self-contained');
 assert(style.includes('.sound-bar[data-music-open="true"]{z-index:120'),'Music must open above the scenic cover');
-assert(style.includes('html:not([data-mode="home"]) .edge{display:none}'),'Folds must only show the way back to Clock');
+assert(style.includes('.fold-nav')&&style.includes('.fold-thumb')&&!/\.edge-nav|\.edge-(up|down|left|right)\b/.test(style),'The fold switcher must replace the edge pills');
 assert(style.includes('.note-filter-chips')&&style.includes('.settings-chip>span{display:grid'),'Notes filters or settings summary lost their layout');
 
 // The official YouTube player never inspects, skips, mutes or covers advertising.

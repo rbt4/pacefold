@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="description" content="A private, offline-ready clock for workday rhythm, notes, breaks and focus.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://login.microsoftonline.com https://graph.microsoft.com; frame-src https://login.microsoftonline.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://login.microsoftonline.com">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://tilecache.rainviewer.com https://a.basemaps.cartocdn.com; media-src 'self' data: blob: https:; connect-src 'self' https://api.open-meteo.com https://air-quality-api.open-meteo.com https://api.rainviewer.com https://login.microsoftonline.com https://graph.microsoft.com; frame-src https://login.microsoftonline.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self' https://login.microsoftonline.com">
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" id="app-favicon" href="./icons/fold-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -31,13 +31,6 @@
       <button class="bar-clock" id="bar-clock" type="button" data-go="home">--:--</button>
     </div>
   </header>
-
-  <nav class="edge-nav" aria-label="Pacefold directions">
-    <button class="edge edge-up" type="button" data-go="notes"><span>↑</span><b>Notes</b></button>
-    <button class="edge edge-left" type="button" data-go="worklog"><span>←</span><b>Day</b></button>
-    <button class="edge edge-right" type="button" data-go="now"><b>Now</b><span>→</span></button>
-    <button class="edge edge-down" type="button" data-go="settings"><b>Settings</b><span>↓</span></button>
-  </nav>
 
   <main class="stage" id="stage">
     <section class="view view-home" data-view="home" aria-label="Clock">

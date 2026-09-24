@@ -92,7 +92,7 @@ export function installHorizonDial(ctx){
       hourly.time.forEach((stamp,index)=>{
         if(String(stamp).slice(0,10)!==today)return;
         const h=Number(String(stamp).slice(11,13)),t=Number(hourly.temperature_2m?.[index]);if(!Number.isFinite(t))return;
-        const seg=svg('path',{d:arc(h+.08,h+.92,R.temp),class:'temp-seg'});seg.style.stroke=colour(t);seg.style.opacity=h<hour-.5?.45:.95;temp.append(seg);
+        const seg=svg('path',{d:arc(h+.08,h+.92,R.temp),class:'temp-seg','data-hour-index':index});seg.style.stroke=colour(t);seg.style.opacity=h<hour-.5?.45:.95;temp.append(seg);
         if(Number(hourly.precipitation_probability?.[index])>=50){const[x,y]=pt(h+.5,R.temp+16);temp.append(svg('circle',{cx:x.toFixed(1),cy:y.toFixed(1),r:2.4,class:'temp-rain'}))}
         if(h%6===3){const[x,y]=pt(h+.5,R.temp-20);const label=svg('text',{x:x.toFixed(1),y:(y+4).toFixed(1),class:'temp-label','text-anchor':'middle'});label.textContent=`${Math.round(t)}°`;temp.append(label)}
       });

@@ -13,11 +13,17 @@ The durable interaction model is therefore:
 - Directional movement returns through Clock.
 - Information appears when useful and recedes when it is not.
 
+Since the Horizon release the directions are shown by one fold switcher: a glass segmented control centred in the top bar (a tab bar on phones), with Clock in the middle and the arrow key for each fold on hover. Arrow keys and swipes still fold directionally. Hovering near a screen edge must never move the person to another fold; changing folds is always deliberate.
+
 ## Time must feel alive
 
 The clock keeps visible seconds and an analog instrument, not only a timestamp. Day Unfold turns the workday into a visual arc with a moving sun/current marker and scheduled points, carrying forward the early idea of seeing the day physically unfold.
 
 The daily image opens on the scenic front cover, with search and quick note kept there as lightweight browser-home utilities. Since the Horizon release it also stays behind the working Clock, colour-graded by the live sky so the photograph follows the real sun through the day. Clock itself is a 24-hour dial with solar noon at the top: sunrise and sunset sit on a level horizon, the sun (or moon) travels the day band, and the digital time with visible seconds sits at its centre.
+
+## Weather is a lens, not a dashboard
+
+The week ahead stays compact on Clock and the cover. More appears only when asked for: hovering a day (or an hour on the dial) shows its hourly curve and details, and the radar button opens the full sheet with the radar scope, the two-hour nowcast, air quality and an interactive hourly chart. The radar map carries no labels, and the location is never named on any weather surface.
 
 ## Quiet cues, not notification noise
 

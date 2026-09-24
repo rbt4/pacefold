@@ -1,121 +1,36 @@
-import{$,$$,id,el,button}from'./state.js';
+import{id,el,button}from'./state.js';
 
-const EDGE_META={
-  notes:{icon:'↑',label:'Notes',kicker:'Daybook'},
-  worklog:{icon:'←',label:'Day',kicker:'Day log'},
-  now:{icon:'→',label:'Now',kicker:'Next'},
-  settings:{icon:'↓',label:'Settings',kicker:'Setup'}
-};
+// One fold switcher for every screen size: a glass segmented control centred in
+// the top bar on desktop and a tab bar on phones. A light thumb slides to the
+// active fold. Arrow keys and swipes still move directionally (app.js); the
+// switcher shows which key goes where.
+const SVG='http://www.w3.org/2000/svg';
+const FOLDS=[
+  {go:'notes',label:'Notes',key:'↑',icon:['M5.5 3.5h7l3 3v10h-10z','M12.5 3.5v3h3','M8 10h5','M8 13h3.5']},
+  {go:'worklog',label:'Day',key:'←',icon:['M4 16.5h12','M5.5 16.5v-5','M9 16.5V6','M12.5 16.5v-7','M16 16.5V4']},
+  {go:'home',label:'Clock',key:'Esc',icon:['M10 2.8a7.2 7.2 0 1 1 0 14.4a7.2 7.2 0 1 1 0-14.4z','M10 5.8V10l3 2']},
+  {go:'now',label:'Now',key:'→',icon:['M10 3a7 7 0 1 1 0 14a7 7 0 1 1 0-14z','M10 6.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7z','M10 9.3a.7.7 0 1 1 0 1.4a.7.7 0 1 1 0-1.4z']},
+  {go:'settings',label:'Settings',key:'↓',icon:['M4 6h6','M14 6h2','M12 4v4','M4 14h2','M10 14h6','M8 12v4']}
+];
+const icon=paths=>{const svg=document.createElementNS(SVG,'svg');svg.setAttribute('viewBox','0 0 20 20');svg.setAttribute('aria-hidden','true');for(const d of paths){const p=document.createElementNS(SVG,'path');p.setAttribute('d',d);svg.append(p)}return svg};
 
 export function installEdges(ctx){
-  ctx.edgeTimers=new WeakMap();
-  ctx.edgeRefreshTimers=new WeakMap();
-
-  ctx.edgePreview=target=>{
-    const now=new Date();
-    if(target==='notes'){
-      const recent=[...ctx.notes].sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))[0];
-      const count=ctx.notesForDate?.(ctx.todayKey())?.length??ctx.notes.filter(note=>note.date===ctx.todayKey()).length;
-      return{
-        title:recent?ctx.cleanText(recent.body.split('\n')[0],68):'No notes yet',
-        detail:`${count} note${count===1?'':'s'} today`
-      };
-    }
-    if(target==='worklog'){
-      const open=['focus','field','prep','away','meal'].map(source=>ctx.findOpen(source)).filter(Boolean);
-      if(!open.length)return{title:'Nothing running',detail:'The day is clear'};
-      const lead=open[0];
-      return{title:lead.label||'Session running',detail:`${ctx.durationText(Date.now()-lead.start)} elapsed${open.length>1?` · ${open.length} open`:''}`};
-    }
-    if(target==='now'){
-      const next=ctx.getSchedule(now).next;
-      return{
-        title:next?ctx.clockMomentLabel(next):'Today complete',
-        detail:next?ctx.relativeUntil(next.date,now):'No next moment today'
-      };
-    }
-    const[start,end]=ctx.prefs.workHours.split('-');
-    return{title:`${start}–${end}`,detail:ctx.prefs.quietMode?'Quiet mode on':'Quiet mode off'};
-  };
-
-  ctx.renderEdgePreview=edge=>{
-    const target=edge.dataset.go,preview=edge.querySelector('.edge-preview');
-    if(!preview)return;
-    const copy=ctx.edgePreview(target);
-    preview.querySelector('strong').textContent=copy.title;
-    preview.querySelector('small').textContent=copy.detail;
-    preview.dataset.renderedAt=String(Date.now());
-  };
-
-  ctx.expandEdge=edge=>{
-    clearTimeout(ctx.edgeTimers.get(edge));
-    const timer=setTimeout(()=>{
-      ctx.renderEdgePreview(edge);
-      if(document.documentElement.dataset.guidedFold==='v28'){
-        edge.dataset.previewReady='true';
-        return;
-      }
-      edge.classList.add('is-expanded');
-      const previous=ctx.edgeRefreshTimers.get(edge);if(previous)clearInterval(previous);
-      ctx.edgeRefreshTimers.set(edge,setInterval(()=>{if(edge.classList.contains('is-expanded'))ctx.renderEdgePreview(edge)},60000));
-    },120);
-    ctx.edgeTimers.set(edge,timer);
-  };
-
-  ctx.collapseEdge=edge=>{
-    clearTimeout(ctx.edgeTimers.get(edge));
-    const timer=setTimeout(()=>{
-      edge.classList.remove('is-expanded');
-      delete edge.dataset.previewReady;
-      const refresh=ctx.edgeRefreshTimers.get(edge);if(refresh)clearInterval(refresh);
-      ctx.edgeRefreshTimers.delete(edge);
-    },260);
-    ctx.edgeTimers.set(edge,timer);
-  };
-
   ctx.buildEdges=()=>{
-    const fine=matchMedia('(hover: hover) and (pointer: fine)');
-    for(const edge of $$('.edge-nav .edge[data-go]')){
-      const meta=EDGE_META[edge.dataset.go];if(!meta)continue;
-      edge.replaceChildren();
-      const rail=el('i','edge-rail');rail.setAttribute('aria-hidden','true');
-      const icon=el('span','edge-icon',meta.icon);icon.setAttribute('aria-hidden','true');
-      const label=el('span','edge-label',meta.label);
-      const preview=el('span','edge-preview');
-      const previewCopy=el('span');previewCopy.append(el('b','',meta.kicker),el('strong','',''),el('small','',''));
-      preview.append(previewCopy);edge.append(rail,icon,label,preview);
-      edge.setAttribute('aria-label',`Open ${meta.label}`);
-      if(fine.matches){
-        edge.addEventListener('pointerenter',()=>ctx.expandEdge(edge));
-        edge.addEventListener('pointerleave',()=>ctx.collapseEdge(edge));
-      }
-      edge.addEventListener('focus',()=>ctx.expandEdge(edge));
-      edge.addEventListener('blur',()=>ctx.collapseEdge(edge));
+    if(id('mobile-nav'))return;
+    const nav=el('nav','mobile-nav fold-nav');nav.id='mobile-nav';nav.setAttribute('aria-label','Pacefold views');
+    const thumb=el('i','fold-thumb');thumb.setAttribute('aria-hidden','true');nav.append(thumb);
+    for(const fold of FOLDS){
+      const control=button('',fold.go==='home'?'Open Clock':`Open ${fold.label}`);
+      control.dataset.go=fold.go;control.title=`${fold.label} (${fold.key})`;
+      control.append(icon(fold.icon),el('small','',fold.label),el('kbd','',fold.key));
+      nav.append(control);
     }
-
-    if(!id('mobile-nav')){
-      const nav=el('nav','mobile-nav');nav.id='mobile-nav';nav.setAttribute('aria-label','Pacefold views');
-      for(const target of['home','notes','worklog','now','settings']){
-        const meta=target==='home'?{icon:'◷',label:'Clock'}:EDGE_META[target],control=button('',`Open ${meta.label}`);
-        control.dataset.go=target;
-        control.append(el('span','',meta.icon),el('small','',meta.label));
-        nav.append(control);
-      }
-      const stage=id('stage');
-      if(stage)stage.prepend(nav);else document.body.append(nav);
-    }
+    document.body.append(nav);
+    const sync=()=>{const index=Math.max(0,FOLDS.findIndex(fold=>fold.go===(ctx.mode||'home')));nav.style.setProperty('--fold-index',String(index));nav.dataset.mode=ctx.mode||'home';for(const control of nav.querySelectorAll('[data-go]')){if(control.dataset.go===(ctx.mode||'home'))control.setAttribute('aria-current','page');else control.removeAttribute('aria-current')}};
+    const baseRender=ctx.render;
+    ctx.render=(...args)=>{const result=baseRender?.(...args);sync();return result};
+    sync();
   };
 
   ctx.buildEdges();
-
-  // The downward edge only appears once Clock has been read to its end, so the
-  // floating Settings pill never sits on top of the quick actions or Daybook.
-  const trackPageEnd=()=>{
-    const scroller=document.scrollingElement||document.documentElement;
-    document.documentElement.dataset.pageEnd=String(scroller.scrollTop+innerHeight>=scroller.scrollHeight-96);
-  };
-  addEventListener('scroll',trackPageEnd,{passive:true});
-  addEventListener('resize',trackPageEnd);
-  new ResizeObserver(trackPageEnd).observe(document.body);
-  trackPageEnd();
 }
