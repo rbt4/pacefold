@@ -198,6 +198,8 @@ export function installGuidedFoldV28(ctx){
   }
 
   const showBloom=cue=>{
+    // The cue stack (cue-stack.js) announces new cues itself; no second pop-up.
+    if(ctx.cueStackActive)return;
     if(!initialized||!cue)return;
     clearTimeout(bloomTimer);bloom.replaceChildren();bloom.hidden=false;bloom.style.setProperty('--cue',cueColor(cue));
     const copy=ctx.clockCueCopy?.(cue)||cue,text=el('span');text.append(el('small','','QUIET CUE'),el('strong','',copy.label),el('p','',copy.detail));

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Official radar and the cue stack
+
+- **Radar from Environment Canada.** In Canada the radar scope now uses the same official feed as SkyMap Ontario: ECCC GeoMet's measured 1 km radar for the last hour, then the official short-range extrapolation for the next two hours. Frames are single Web Mercator images laid exactly over the map. RainViewer remains the fallback outside Canada or when GeoMet is down. In Ontario, a **SkyMap** button opens SkyMap Ontario for the 48-hour futurecast and visit check.
+- **The cue stack.** Waiting cues now stack on Clock: the most important card on top, the rest peeking behind, and **Show all** fans them out over the column without moving the dial. Every card has its own **Log** and **Later**. Logging says when that cadence comes round again ("Water logged · next sip around 5:48 PM"). Later puts only that kind of cue away for 15 minutes, and is remembered across reloads and by the service worker. Cards resolved anywhere else (quick keys, the dial, a notification) or expired leave on their own, and the system notification closes once its cue is resolved in the app. The separate pop-up for new cues is retired in favour of the stack.
+- **Top bar fits on wide screens.** The command-bar button and Homepage are icon-only, so the right-hand controls never slide under the fold switcher (checked at 1280, 1536 and 1920 px).
+- **Quick Esc.** Pressing Esc the instant after opening the weather sheet or command bar now reliably keeps it closed.
+
 ## Unreleased — Weather lens and one switcher
 
 - **Hover any day for its weather.** A glass card shows the day's hourly temperature curve (night shaded, high and low marked), chance of rain as bars, precipitation total, wind with direction, UV and daylight. Hovering an hour on the dial's temperature ring shows that hour.

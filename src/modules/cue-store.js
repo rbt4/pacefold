@@ -19,11 +19,11 @@ async function writeValue(key,value){
 }
 function normalizeCueState(value){
   const state=value&&typeof value==='object'?value:{};
-  return{v:1,ack:state.ack&&typeof state.ack==='object'?state.ack:{},notified:state.notified&&typeof state.notified==='object'?state.notified:{},snoozeUntil:Number(state.snoozeUntil)||0};
+  return{v:1,ack:state.ack&&typeof state.ack==='object'?state.ack:{},notified:state.notified&&typeof state.notified==='object'?state.notified:{},snoozeUntil:Number(state.snoozeUntil)||0,snoozed:Object.fromEntries(Object.entries(state.snoozed&&typeof state.snoozed==='object'?state.snoozed:{}).filter(([,until])=>Number(until)>Date.now()))};
 }
 function mergeCueState(local,stored){
   const a=normalizeCueState(local),b=normalizeCueState(stored);
-  return{v:1,ack:{...a.ack,...b.ack},notified:{...a.notified,...b.notified},snoozeUntil:Math.max(a.snoozeUntil,b.snoozeUntil)};
+  return{v:1,ack:{...a.ack,...b.ack},notified:{...a.notified,...b.notified},snoozeUntil:Math.max(a.snoozeUntil,b.snoozeUntil),snoozed:Object.fromEntries([...new Set([...Object.keys(a.snoozed),...Object.keys(b.snoozed)])].map(key=>[key,Math.max(Number(a.snoozed[key])||0,Number(b.snoozed[key])||0)]))};
 }
 
 export function installCueStore(ctx){

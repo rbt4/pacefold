@@ -86,7 +86,7 @@ export function normalizeV26Notes(value){
 
 function normalizeCueState(value){
   const state=value&&typeof value==='object'?value:{};
-  return{v:1,ack:state.ack&&typeof state.ack==='object'?state.ack:{},notified:state.notified&&typeof state.notified==='object'?state.notified:{},snoozeUntil:Number(state.snoozeUntil)||0};
+  return{v:1,ack:state.ack&&typeof state.ack==='object'?state.ack:{},notified:state.notified&&typeof state.notified==='object'?state.notified:{},snoozeUntil:Number(state.snoozeUntil)||0,snoozed:Object.fromEntries(Object.entries(state.snoozed&&typeof state.snoozed==='object'?state.snoozed:{}).filter(([,until])=>Number(until)>Date.now()))};
 }
 
 export function createContext(){
