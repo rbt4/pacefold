@@ -34,6 +34,8 @@ import{installWeatherLens}from'./weather-lens.js';
 import{installZen}from'./zen.js';
 import{installPalette}from'./palette.js';
 import{installCueStack}from'./cue-stack.js';
+import{installAtmosphere}from'./atmosphere.js';
+import{installCinema}from'./cinema.js';
 
 document.documentElement.dataset.origin='v31';
 const ctx=createContext();
@@ -74,6 +76,8 @@ installWeatherLens(ctx);
 installZen(ctx);
 installPalette(ctx);
 installCueStack(ctx);
+installAtmosphere(ctx);
+installCinema(ctx);
 
 ctx.initialize().catch(error=>{
   console.error(error);

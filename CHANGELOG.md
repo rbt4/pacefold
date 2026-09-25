@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — Atmosphere
+
+- **Live weather in the sky.** A canvas paints the current weather over the daily photo on Clock and on the start page:
+  - rain in three depths, slanted by the real wind, with splashes
+  - thunderstorms with lightning
+  - drifting snow
+  - rolling fog and cloud shadows
+  - twinkling stars and the odd shooting star on clear nights
+  - slow motes of light near the sun on clear days
+  Rain and snow part around the cursor. It pauses when the page is hidden and holds a still frame with reduced motion.
+- **Preview any weather.** The command bar can show rain, a thunderstorm, snow, fog or the night sky for 20 seconds.
+- **A cinematic start page.** A greeting, and the day in one line: weather now, rain coming, and the next moment (neutral wording, and left out when the rhythm is hidden). The photographs drift slowly, and minutes roll over instead of blinking, on the start page and on Clock.
+- **Folds move as one space.** The old fold leaves the opposite way on its own layer while the new one arrives from where it lives, with depth and blur. The state changes at once; nothing waits on a snapshot.
+
 ## Unreleased — Official radar and the cue stack
 
 - **Radar from Environment Canada.** In Canada the radar scope now uses the same official feed as SkyMap Ontario: ECCC GeoMet's measured 1 km radar for the last hour, then the official short-range extrapolation for the next two hours. Frames are single Web Mercator images laid exactly over the map. RainViewer remains the fallback outside Canada or when GeoMet is down. In Ontario, a **SkyMap** button opens SkyMap Ontario for the 48-hour futurecast and visit check.

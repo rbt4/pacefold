@@ -336,7 +336,7 @@ html[data-mode="home"] .view-home,
 html[data-mode="notes"] .view-notes,
 html[data-mode="worklog"] .view-worklog,
 html[data-mode="now"] .view-now,
-html[data-mode="settings"] .view-settings{display:grid;gap:16px;animation:fold-rise .42s var(--ease) both}
+html[data-mode="settings"] .view-settings{display:grid;gap:16px;animation:fold-rise .52s cubic-bezier(.2,.85,.25,1) both}
 /* Folds arrive from where they live: Notes above, Day left, Now right, Settings below. */
 html[data-mode="notes"] .view-notes{animation-name:fold-from-top}
 html[data-mode="worklog"] .view-worklog{animation-name:fold-from-left}
@@ -347,10 +347,10 @@ html[data-mode="home"][data-from="settings"] .view-home{animation-name:fold-from
 html[data-mode="home"][data-from="worklog"] .view-home{animation-name:fold-from-right}
 html[data-mode="home"][data-from="now"] .view-home{animation-name:fold-from-left}
 @keyframes fold-rise{from{opacity:0;transform:translateY(8px)}}
-@keyframes fold-from-top{from{opacity:0;transform:translateY(-36px)}}
-@keyframes fold-from-bottom{from{opacity:0;transform:translateY(36px)}}
-@keyframes fold-from-left{from{opacity:0;transform:translateX(-44px)}}
-@keyframes fold-from-right{from{opacity:0;transform:translateX(44px)}}
+@keyframes fold-from-top{from{opacity:0;transform:translateY(-6%) scale(.97);filter:blur(10px)}}
+@keyframes fold-from-bottom{from{opacity:0;transform:translateY(6%) scale(.97);filter:blur(10px)}}
+@keyframes fold-from-left{from{opacity:0;transform:translateX(-8%) scale(.97);filter:blur(10px)}}
+@keyframes fold-from-right{from{opacity:0;transform:translateX(8%) scale(.97);filter:blur(10px)}}
 
 /* Card surface shared by every paper panel */
 .v28-guide,
@@ -1748,20 +1748,7 @@ html[data-sky="golden"] .sky-rays{opacity:1}
     radial-gradient(30% 12% at 80% 28%,rgba(110,220,255,.25),transparent 70%);
   animation:aurora 38s ease-in-out infinite alternate}
 @keyframes aurora{from{transform:translateX(-4%) skewX(-6deg)}to{transform:translateX(5%) skewX(8deg)}}
-.sky-weather{opacity:0;transition:opacity 2s}
-html[data-weather="rain"] .sky-weather,html[data-weather="storm"] .sky-weather{opacity:.85;
-  background-image:repeating-linear-gradient(104deg,transparent 0 22px,rgba(215,232,255,.34) 22px 23.2px,transparent 23.2px 46px),repeating-linear-gradient(98deg,transparent 0 40px,rgba(215,232,255,.22) 40px 41px,transparent 41px 90px);
-  background-size:220px 340px,300px 460px;animation:rain .7s linear infinite}
-@keyframes rain{to{background-position:-60px 340px,-50px 460px}}
-html[data-weather="storm"] .sky-weather{animation:rain .6s linear infinite,flash 9s steps(1) infinite}
-@keyframes flash{0%,92%,96%,100%{filter:none}93%,95%{filter:brightness(2.6)}}
-html[data-weather="snow"] .sky-weather{opacity:.8;
-  background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(1.5px 1.5px at 120px 80px,#fff,transparent),radial-gradient(2.5px 2.5px at 200px 160px,#fff,transparent),radial-gradient(1.5px 1.5px at 60px 210px,#fff,transparent);
-  background-size:240px 260px;animation:snow 14s linear infinite}
-@keyframes snow{to{background-position:60px 260px}}
-html[data-weather="fog"] .sky-weather{opacity:.7;background:linear-gradient(180deg,transparent 30%,rgba(220,228,236,.35) 60%,rgba(220,228,236,.2));animation:mist 30s ease-in-out infinite alternate}
-@keyframes mist{from{transform:translateX(-3%)}to{transform:translateX(3%)}}
-html[data-weather="cloudy"] .sky-weather{opacity:.5;background:radial-gradient(30% 12% at 20% 20%,rgba(0,0,0,.18),transparent 70%),radial-gradient(28% 10% at 70% 30%,rgba(0,0,0,.14),transparent 70%);background-size:200% 100%;animation:mist 60s ease-in-out infinite alternate}
+.sky-weather{display:none}
 
 /* Entrance: rings draw in, panels rise out of a blur */
 html[data-mode="home"] .horizon .dial>g{animation:ring-in .9s var(--ease) both}
@@ -2061,6 +2048,36 @@ html[data-theme="dark"] .cue-stack[data-expanded="true"] .cue-card{background:rg
 .cue-stack-note.is-on{opacity:1;transform:none}
 html[data-theme="dark"] .cue-card-later{background:rgba(255,255,255,.1);color:var(--ink)}
 @media (prefers-reduced-motion:reduce){.cue-card{transition:none}.cue-card[data-depth="0"] .cue-card-dot{animation:none}}
+
+/* 20. Atmosphere and cinema ------------------------------------------------- */
+.sky>canvas.atmosphere,.pace-cover>canvas.atmosphere{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pace-cover>canvas.atmosphere{z-index:-1}
+/* The photographs breathe: a slow camera drift, never distracting. */
+.sky>.sky-photo{animation:drift 90s ease-in-out infinite alternate}
+.pace-cover::before{animation:drift 70s ease-in-out infinite alternate}
+@keyframes drift{from{scale:1;translate:0 0}to{scale:1.07;translate:-1.2% -.8%}}
+/* Folds move as one space (cinema.js): the old fold leaves on its own layer while
+   the new one arrives from where it lives. */
+.view.is-leaving{display:grid;gap:16px;position:absolute;top:calc(var(--bar-h) + 20px);left:calc(var(--gutter) + var(--edge-room));right:calc(var(--gutter) + var(--edge-room));pointer-events:none;z-index:-1;animation:.5s cubic-bezier(.2,.85,.25,1) both}
+.view.is-leaving.leave-left{animation-name:vt-out-left}
+.view.is-leaving.leave-right{animation-name:vt-out-right}
+.view.is-leaving.leave-up{animation-name:vt-out-up}
+.view.is-leaving.leave-down{animation-name:vt-out-down}
+@keyframes vt-out-left{to{opacity:0;transform:translateX(-9%) scale(.96);filter:blur(10px)}}
+@keyframes vt-out-right{to{opacity:0;transform:translateX(9%) scale(.96);filter:blur(10px)}}
+@keyframes vt-out-up{to{opacity:0;transform:translateY(-8%) scale(.96);filter:blur(10px)}}
+@keyframes vt-out-down{to{opacity:0;transform:translateY(8%) scale(.96);filter:blur(10px)}}
+/* The start page greets you and gives the day in one line. */
+.cover-greeting{margin:0 0 4px;font-size:clamp(14px,1.4vw,18px);font-weight:600;letter-spacing:.22em;text-transform:uppercase;opacity:.82;animation:greet 1.4s var(--ease) both}
+.cover-brief{margin:6px 0 0;padding:7px 16px;border-radius:var(--r-pill);background:rgba(10,16,24,.28);border:1px solid rgba(255,255,255,.16);font-size:clamp(13px,1.1vw,15px);font-weight:600;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);animation:greet 1.4s .25s var(--ease) both}
+.cover-brief[hidden]{display:none}
+@keyframes greet{from{opacity:0;transform:translateY(8px);filter:blur(6px)}}
+.cover-time-main{animation:greet 1.6s .1s var(--ease) both}
+/* Minutes turn over rather than blink. */
+.is-turning{animation:turn .7s cubic-bezier(.2,.9,.25,1)}
+@keyframes turn{from{opacity:.2;transform:translateY(.18em);filter:blur(6px)}}
+#clock-minute{display:inline-block}
+@media (prefers-reduced-motion:reduce){.sky>.sky-photo,.pace-cover::before,.cover-greeting,.cover-brief,.cover-time-main{animation:none}}
 
 /* 15. Motion + print ------------------------------------------------------- */
 @media (prefers-reduced-motion:reduce){
