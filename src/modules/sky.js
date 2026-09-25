@@ -39,6 +39,8 @@ export function installSky(ctx){
   };
 
   const paint=()=>{
+    // A night-sky preview (atmosphere.js) holds the sky until it ends.
+    if(root.dataset.skyPreview)return;
     const state=ctx.skyState(),e=state.elevation;
     let i=0;while(i<STOPS.length-2&&e>STOPS[i+1][0])i+=1;
     const[a,b]=[STOPS[i],STOPS[i+1]],k=Math.min(1,Math.max(0,(e-a[0])/(b[0]-a[0])));

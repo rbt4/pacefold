@@ -296,7 +296,17 @@ async function main(){
     requireState(atmosphere.inSky&&atmosphere.width>=1440&&atmosphere.kind==='cloudy','The weather canvas must follow the live forecast',atmosphere);
     await sky.keyboard.press('Control+k');await sky.keyboard.type('preview rain');await sky.keyboard.press('Enter');await sky.waitForTimeout(300);
     requireState((await sky.evaluate(()=>document.documentElement.dataset.atmosphereKind))==='rain','Preview rain must switch the weather canvas',{});
-    // Moving between folds: the old fold leaves on its own layer, then is released.
+    // Night preview switches the whole sky (horizon, glow, data-sky), not just the top.
+    await sky.keyboard.press('Control+k');await sky.keyboard.type('night sky');await sky.keyboard.press('Enter');await sky.waitForTimeout(300);
+    const nightSky=await sky.evaluate(()=>({sky:document.documentElement.dataset.sky,preview:document.documentElement.dataset.skyPreview,low:document.documentElement.style.getPropertyValue('--sky-low')}));
+    requireState(nightSky.sky==='night'&&nightSky.preview==='night'&&nightSky.low==='rgb(26,42,72)','The night preview must switch the complete sky state',nightSky);
+    // Reduced motion still shows fog and cloud weather, as one still frame.
+    await sky.emulateMedia({reducedMotion:'reduce'});
+    await sky.keyboard.press('Control+k');await sky.keyboard.type('preview fog');await sky.keyboard.press('Enter');await sky.waitForTimeout(400);
+    const stillFog=await sky.evaluate(()=>{const c=document.getElementById('atmosphere'),d=c.getContext('2d').getImageData(0,Math.floor(c.height*.5),c.width,Math.floor(c.height*.4)).data;let a=0;for(let i=3;i<d.length;i+=4)a+=d[i];return a});
+    requireState(stillFog>0,'Reduced motion must still draw fog',{stillFog});
+    await sky.emulateMedia({reducedMotion:'no-preference'});
+
     await sky.evaluate(()=>window.__PACEFOLD__.go('now'));
     const leaving=await sky.evaluate(()=>document.querySelector('.view-home').className);
     await sky.waitForTimeout(700);
@@ -351,6 +361,8 @@ async function main(){
     const cueContext=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'America/Toronto',serviceWorkers:'block'}),cuePage=await cueContext.newPage();
     cuePage.on('pageerror',error=>errors.push(`cue pageerror: ${error.stack||error.message}`));
     await cuePage.addInitScript(seed);
+    // Scheduled moments are acknowledged up front so the stack holds only care cues at any hour of the run.
+    await cuePage.addInitScript(()=>{if(localStorage.getItem('pacefold.cues.v1'))return;const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),ack={};for(const id of['fajr','dhuhr','asr','maghrib','isha'])ack[`prayer:${day}:${id}`]=Date.now();localStorage.setItem('pacefold.cues.v1',JSON.stringify({v:1,ack,notified:{},snoozeUntil:0}))});
     await cuePage.addInitScript(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));prefs.waterLastAt=Date.now()-60*60000;prefs.gazeLastCompleted=Date.now()-40*60000;prefs.eyeCadence=30;localStorage.setItem('pacefoldPrefsV15',JSON.stringify(prefs))});
     await ready(cuePage,`${origin}/app/`);await cuePage.click('#cover-peel');await cuePage.waitForTimeout(200);
     // Waiting cues form a stack: the top card is actionable, the rest peek behind it.

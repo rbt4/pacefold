@@ -54,7 +54,7 @@ export function installAtmosphere(ctx){
     sunX=(parseFloat(getComputedStyle(root).getPropertyValue('--sun-x'))||70)/100;
     root.dataset.atmosphereKind=preview||kind;
   };
-  ctx.previewAtmosphere=(what,seconds=20)=>{previewUntil=Date.now()+seconds*1000;if(what==='night'){preview='clear';night=true;for(const[k,v]of[['--sky-shade','.6'],['--sky-stars','1'],['--sky-top','rgb(5,11,26)'],['--sky-mid','rgb(11,26,51)']])root.style.setProperty(k,v)}else preview=what;seed();root.dataset.atmosphereKind=preview;ctx.toast?.(`Previewing ${what} for ${seconds} seconds`)};
+  ctx.previewAtmosphere=(what,seconds=20)=>{previewUntil=Date.now()+seconds*1000;if(what==='night'){preview='clear';night=true;root.dataset.skyPreview='night';root.dataset.sky='night';for(const[k,v]of[['--sky-shade','.62'],['--sky-stars','1'],['--sky-top','rgb(5,11,26)'],['--sky-mid','rgb(11,26,51)'],['--sky-low','rgb(26,42,72)'],['--sky-glow','rgba(120,150,220,.16)']])root.style.setProperty(k,v)}else preview=what;seed();root.dataset.atmosphereKind=preview;ctx.toast?.(`Previewing ${what} for ${seconds} seconds`)};
 
   addEventListener('pointermove',event=>{pointer.x=event.clientX;pointer.y=event.clientY;pointer.active=true},{passive:true});
   document.addEventListener('pointerleave',()=>{pointer.active=false;pointer.x=pointer.y=-999});
@@ -67,14 +67,15 @@ export function installAtmosphere(ctx){
     requestAnimationFrame(frame);
     if(document.hidden)return;
     const dt=Math.min(2.5,(now-last)/16.67);last=now;
-    if(preview&&Date.now()>previewUntil){preview=null;ctx.paintSky?.();read();seed()}
+    if(preview&&Date.now()>previewUntil){preview=null;delete root.dataset.skyPreview;ctx.paintSky?.();night=!ctx.skyState?.()?.day;read();seed()}
     const k=preview||kind;
     g.clearRect(0,0,W,H);
     if(calm.matches){drawStill(k);return}
 
     // Cloud shadows and fog drift first, underneath everything else.
-    for(const c of clouds){c.x+=c.v*dt*(wind>=0?1:-1);if(c.x-c.r>W)c.x=-c.r;if(c.x+c.r<0)c.x=W+c.r;const gr=g.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);gr.addColorStop(0,`rgba(12,18,30,${c.a})`);gr.addColorStop(1,'rgba(12,18,30,0)');g.fillStyle=gr;g.fillRect(c.x-c.r,c.y-c.r,c.r*2,c.r*2)}
-    for(const f of fogs){f.x+=f.v*dt;if(f.x-f.r>W)f.x=-f.r;if(f.x+f.r<0)f.x=W+f.r;const gr=g.createRadialGradient(f.x,f.y,0,f.x,f.y,f.r);gr.addColorStop(0,`rgba(226,232,240,${f.a})`);gr.addColorStop(1,'rgba(226,232,240,0)');g.fillStyle=gr;g.fillRect(f.x-f.r,f.y-f.r,f.r*2,f.r*2)}
+    for(const c of clouds){c.x+=c.v*dt*(wind>=0?1:-1);if(c.x-c.r>W)c.x=-c.r;if(c.x+c.r<0)c.x=W+c.r}
+    for(const f of fogs){f.x+=f.v*dt;if(f.x-f.r>W)f.x=-f.r;if(f.x+f.r<0)f.x=W+f.r}
+    drawBlobs();
 
     if(stars.length){for(const s of stars){s.phase+=.02*s.speed*dt;const a=.35+.45*Math.sin(s.phase);g.fillStyle=`rgba(255,255,255,${a.toFixed(3)})`;g.beginPath();g.arc(s.x,s.y,s.r,0,Math.PI*2);g.fill()}
       if(!meteor&&now>nextMeteor){meteor={x:rand(.2,.9)*W,y:rand(.02,.25)*H,vx:-rand(9,14),vy:rand(3,5),life:1};nextMeteor=now+rand(14000,32000)}
@@ -107,8 +108,14 @@ export function installAtmosphere(ctx){
       if(bolt){g.strokeStyle=`rgba(245,248,255,${Math.max(0,bolt.life).toFixed(3)})`;g.lineWidth=2.4;g.shadowColor='rgba(180,200,255,.9)';g.shadowBlur=18;g.beginPath();bolt.pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();g.shadowBlur=0;bolt.life-=.07*dt;if(bolt.life<=0)bolt=null}
     }
   }
+  // Cloud shadows and fog banks: soft radial blobs, drawn in place.
+  function drawBlobs(){
+    for(const c of clouds){const gr=g.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);gr.addColorStop(0,`rgba(12,18,30,${c.a})`);gr.addColorStop(1,'rgba(12,18,30,0)');g.fillStyle=gr;g.fillRect(c.x-c.r,c.y-c.r,c.r*2,c.r*2)}
+    for(const f of fogs){const gr=g.createRadialGradient(f.x,f.y,0,f.x,f.y,f.r);gr.addColorStop(0,`rgba(226,232,240,${f.a})`);gr.addColorStop(1,'rgba(226,232,240,0)');g.fillStyle=gr;g.fillRect(f.x-f.r,f.y-f.r,f.r*2,f.r*2)}
+  }
   // Reduced motion: a single still impression of the weather, no movement.
   function drawStill(k){
+    drawBlobs();
     if(k==='rain'||k==='storm'||k==='drizzle'){g.strokeStyle='rgba(210,226,255,.22)';g.lineWidth=1;for(const d of drops.slice(0,160)){g.beginPath();g.moveTo(d.x,d.y);g.lineTo(d.x+2,d.y-d.len);g.stroke()}}
     if(k==='snow'){g.fillStyle='rgba(255,255,255,.6)';for(const f of flakes.slice(0,140)){g.beginPath();g.arc(f.x,f.y,f.r,0,Math.PI*2);g.fill()}}
     for(const s of stars){g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.arc(s.x,s.y,s.r,0,Math.PI*2);g.fill()}
