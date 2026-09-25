@@ -23,6 +23,8 @@ The daily image opens on the scenic front cover, with search and quick note kept
 
 ## Weather is a lens, not a dashboard
 
+The sky also shows the current weather (rain, storm, snow, fog, cloud shadows, night stars) on a single canvas behind Clock and the start page. It is ambient: it never carries information that is not also written somewhere, it pauses when hidden, and it is still under reduced motion.
+
 The week ahead stays compact on Clock and the cover. More appears only when asked for: hovering a day (or an hour on the dial) shows its hourly curve and details, and the radar button opens the full sheet with the radar scope, the two-hour nowcast, air quality and an interactive hourly chart. The radar map carries no labels, and the location is never named on any weather surface.
 
 ## Quiet cues, not notification noise

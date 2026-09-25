@@ -285,10 +285,34 @@ async function main(){
     await ready(sky,`${origin}/app/`);
     await sky.waitForFunction(()=>document.querySelectorAll('#cover-week .cw-day').length===7);
     await sky.screenshot({path:path.join(output,'v31-desktop-homepage-week.png'),fullPage:false});
+    const cover=await sky.evaluate(()=>({greeting:document.getElementById('cover-greeting')?.textContent||'',brief:document.getElementById('cover-brief')?.textContent||'',canvas:document.getElementById('atmosphere')?.parentElement?.id}));
+    requireState(/^(Good (morning|afternoon|evening|night)|Still night)$/.test(cover.greeting)&&/14° partly cloudy/.test(cover.brief)&&/rain starting in about 30 min/.test(cover.brief)&&!privateTerms.test(cover.brief)&&cover.canvas==='pace-cover','The start page must greet, brief the day neutrally and carry the weather canvas',cover);
     await sky.click('#cover-peel');await sky.waitForTimeout(200);
     const week=await sky.evaluate(()=>({days:[...document.querySelectorAll('#week-days .week-day')].map(day=>({label:day.getAttribute('aria-label'),kind:day.dataset.kind,icon:Boolean(day.querySelector('svg.wx'))})),headline:document.getElementById('week-headline').textContent,homeText:document.querySelector('.view-home').innerText}));
     requireState(week.days.length===7&&week.days.every(day=>day.icon)&&week.days[0].label.startsWith('Today')&&week.days[1].kind==='rain'&&week.days[5].kind==='storm'&&/14° now/.test(week.headline),'Clock is missing the seven-day forecast',week);
     requireState(!privateTerms.test(week.homeText),'The forecast leaked the location onto Clock',{homeText:week.homeText});
+    // The atmosphere paints the live weather on a canvas; the command bar can preview others.
+    const atmosphere=await sky.evaluate(()=>{const c=document.getElementById('atmosphere');return{inSky:c?.parentElement?.id==='sky',width:c?.width||0,kind:document.documentElement.dataset.atmosphereKind}});
+    requireState(atmosphere.inSky&&atmosphere.width>=1440&&atmosphere.kind==='cloudy','The weather canvas must follow the live forecast',atmosphere);
+    await sky.keyboard.press('Control+k');await sky.keyboard.type('preview rain');await sky.keyboard.press('Enter');await sky.waitForTimeout(300);
+    requireState((await sky.evaluate(()=>document.documentElement.dataset.atmosphereKind))==='rain','Preview rain must switch the weather canvas',{});
+    // Night preview switches the whole sky (horizon, glow, data-sky), not just the top.
+    await sky.keyboard.press('Control+k');await sky.keyboard.type('night sky');await sky.keyboard.press('Enter');await sky.waitForTimeout(300);
+    const nightSky=await sky.evaluate(()=>({sky:document.documentElement.dataset.sky,preview:document.documentElement.dataset.skyPreview,low:document.documentElement.style.getPropertyValue('--sky-low')}));
+    requireState(nightSky.sky==='night'&&nightSky.preview==='night'&&nightSky.low==='rgb(26,42,72)','The night preview must switch the complete sky state',nightSky);
+    // Reduced motion still shows fog and cloud weather, as one still frame.
+    await sky.emulateMedia({reducedMotion:'reduce'});
+    await sky.keyboard.press('Control+k');await sky.keyboard.type('preview fog');await sky.keyboard.press('Enter');await sky.waitForTimeout(400);
+    const stillFog=await sky.evaluate(()=>{const c=document.getElementById('atmosphere'),d=c.getContext('2d').getImageData(0,Math.floor(c.height*.5),c.width,Math.floor(c.height*.4)).data;let a=0;for(let i=3;i<d.length;i+=4)a+=d[i];return a});
+    requireState(stillFog>0,'Reduced motion must still draw fog',{stillFog});
+    await sky.emulateMedia({reducedMotion:'no-preference'});
+
+    await sky.evaluate(()=>window.__PACEFOLD__.go('now'));
+    const leaving=await sky.evaluate(()=>document.querySelector('.view-home').className);
+    await sky.waitForTimeout(700);
+    const released=await sky.evaluate(()=>({home:document.querySelector('.view-home').className,display:getComputedStyle(document.querySelector('.view-home')).display}));
+    requireState(/is-leaving leave-left/.test(leaving)&&!/is-leaving/.test(released.home)&&released.display==='none','The old fold must leave the opposite way and then disappear',{leaving,released});
+    await sky.evaluate(()=>window.__PACEFOLD__.go('home'));await sky.waitForTimeout(650);
     // Hovering a day opens its card: hourly curve and details.
     await sky.hover('.week-day[data-index="1"]');await sky.waitForTimeout(250);
     const card=await sky.evaluate(()=>{const pop=document.getElementById('wx-pop');return{hidden:pop.hidden,on:pop.classList.contains('is-on'),chart:Boolean(pop.querySelector('.wx-chart path.wx-line')),stats:[...pop.querySelectorAll('.wx-stat small')].map(node=>node.textContent),text:pop.innerText}});
@@ -337,6 +361,8 @@ async function main(){
     const cueContext=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'America/Toronto',serviceWorkers:'block'}),cuePage=await cueContext.newPage();
     cuePage.on('pageerror',error=>errors.push(`cue pageerror: ${error.stack||error.message}`));
     await cuePage.addInitScript(seed);
+    // Scheduled moments are acknowledged up front so the stack holds only care cues at any hour of the run.
+    await cuePage.addInitScript(()=>{if(localStorage.getItem('pacefold.cues.v1'))return;const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),ack={};for(const id of['fajr','dhuhr','asr','maghrib','isha'])ack[`prayer:${day}:${id}`]=Date.now();localStorage.setItem('pacefold.cues.v1',JSON.stringify({v:1,ack,notified:{},snoozeUntil:0}))});
     await cuePage.addInitScript(()=>{const prefs=JSON.parse(localStorage.getItem('pacefoldPrefsV15'));prefs.waterLastAt=Date.now()-60*60000;prefs.gazeLastCompleted=Date.now()-40*60000;prefs.eyeCadence=30;localStorage.setItem('pacefoldPrefsV15',JSON.stringify(prefs))});
     await ready(cuePage,`${origin}/app/`);await cuePage.click('#cover-peel');await cuePage.waitForTimeout(200);
     // Waiting cues form a stack: the top card is actionable, the rest peek behind it.
