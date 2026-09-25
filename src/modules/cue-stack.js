@@ -78,7 +78,8 @@ export function installCueStack(ctx){
 
   // The one system notification follows the stack: gone when nothing waits, and
   // closed when the cue it announced has been resolved in the app.
-  let lastKeys='';
+  // null, not '', so the very first render (even with nothing waiting) closes stale notices.
+  let lastKeys=null;
   async function syncSystemNotification(cues){
     const signature=cues.map(cue=>cue.key).join('|');if(signature===lastKeys)return;lastKeys=signature;
     try{

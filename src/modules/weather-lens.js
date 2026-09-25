@@ -279,7 +279,7 @@ export function installWeatherLens(ctx){
     scrub.type='range';scrub.min='0';scrub.max='0';scrub.value='0';scrub.setAttribute('aria-label','Radar time');scrub.disabled=true;
     const legend=el('div','radar-legend');legend.dataset.source=scope.dataset.source;legend.append(el('small','','Light'),el('i'),el('small','','Heavy'));
     bar.append(play,scrub,when);
-    const head=el('header','wx-radar-head'),title=el('span');title.append(el('strong','','Radar'),el('small','',official?'Environment Canada · last hour, next 2 h':'Past 2 hours · 270 km across'));head.append(title);
+    const head=el('header','wx-radar-head'),title=el('span'),subtitle=el('small','',official?'Environment Canada · last hour, next 2 h':'Past 2 hours · 270 km across');title.append(el('strong','','Radar'),subtitle);head.append(title);
     if(inOntario(lat,lng)){const link=el('a','radar-skymap','SkyMap');link.href=SKYMAP;link.target='_blank';link.rel='noopener noreferrer';link.referrerPolicy='no-referrer';link.setAttribute('aria-label','Open SkyMap Ontario for the full radar, 48-hour futurecast and visit check');head.append(link)}
     host.replaceChildren(head,scope,bar,legend);
     play.dataset.state='play';
@@ -288,7 +288,12 @@ export function installWeatherLens(ctx){
         let list=null;
         if(official){try{list=await ecccFrames(bbox)}catch(error){if(stale())return;console.warn('[Clock] GeoMet radar unavailable, using RainViewer',error?.message||error)}}
         if(stale())return;
-        if(!list){list=await rainviewerFrames();scope.dataset.source='rainviewer';legend.dataset.source='rainviewer'}
+        if(!list){
+          list=await rainviewerFrames();scope.dataset.source='rainviewer';legend.dataset.source='rainviewer';
+          // Say what is actually shown: the fallback's source and interval, not GeoMet's.
+          subtitle.textContent='RainViewer · past 2 hours';
+          const credit=panel.querySelector('.wx-credit');if(credit)credit.textContent=credit.textContent.replace('Environment and Climate Change Canada (GeoMet)','RainViewer');
+        }
         // The sheet may have closed (or re-rendered) while the frames were loading.
         if(stale())return;
         const past=Math.max(1,list.filter(frame=>!frame.future).length);

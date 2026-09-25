@@ -324,8 +324,8 @@ async function main(){
     await sky.unroute('https://geo.weather.gc.ca/**');await sky.route('https://geo.weather.gc.ca/**',geometRoute({fail:true}));
     await sky.click('.wx-open');await sky.waitForFunction(()=>document.querySelector('.radar-scope')?.dataset.state==='live',null,{timeout:15000});
     for(let wait=0;wait<30&&!tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/'));wait+=1)await sky.waitForTimeout(100);
-    const fallback=await sky.evaluate(()=>({source:document.querySelector('.radar-scope').dataset.source,frames:document.querySelectorAll('.radar-frame').length}));
-    requireState(fallback.source==='rainviewer'&&fallback.frames===10&&tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/')),'Without GeoMet the radar must fall back to RainViewer',fallback);
+    const fallback=await sky.evaluate(()=>({source:document.querySelector('.radar-scope').dataset.source,frames:document.querySelectorAll('.radar-frame').length,subtitle:document.querySelector('.wx-radar-head small').textContent,credit:document.querySelector('.wx-credit').textContent}));
+    requireState(fallback.source==='rainviewer'&&fallback.frames===10&&/RainViewer/.test(fallback.subtitle)&&/Radar RainViewer/.test(fallback.credit)&&!/Environment/.test(fallback.subtitle+fallback.credit)&&tiles.some(url=>url.includes('tilecache.rainviewer.com/v2/radar/12/256/7/')),'Without GeoMet the radar must fall back to RainViewer',fallback);
     await sky.keyboard.press('Escape');await sky.waitForTimeout(300);
     // The fallback check answers GeoMet with 503 on purpose; anything else is a real error.
     const unexpected=skyErrors.filter(message=>!/status of 503/.test(message));
@@ -362,6 +362,13 @@ async function main(){
     await cuePage.click('.cue-stack-toggle');await cuePage.waitForTimeout(500);await cuePage.click('.cue-card[data-source="eyes"] .cue-card-later');await cuePage.waitForTimeout(450);
     const later=await cuePage.evaluate(()=>({cues:window.__PACEFOLD__.cues.map(cue=>cue.source),stored:JSON.parse(localStorage.getItem('pacefold.cues.v1')||'{}').snoozed||{},note:document.querySelector('.cue-stack-note').textContent}));
     requireState(!later.cues.includes('eyes')&&later.cues.includes('move')&&Number(later.stored.eyes)>Date.now()+10*60000&&/back around/.test(later.note),'Later must put away only that kind of cue, and remember it',later);
+    // Reload with IndexedDB unavailable: startup must keep the per-kind Later from localStorage.
+    const noDb=await cueContext.newPage();
+    await noDb.addInitScript(()=>{Object.defineProperty(window,'indexedDB',{configurable:true,get(){return undefined}})});
+    await ready(noDb,`${origin}/app/?mode=worklog`);await noDb.waitForTimeout(300);
+    const survived=await noDb.evaluate(()=>({stored:JSON.parse(localStorage.getItem('pacefold.cues.v1')||'{}').snoozed||{},cues:window.__PACEFOLD__.cues.map(cue=>cue.source)}));
+    requireState(Number(survived.stored.eyes)>Date.now()+10*60000&&!survived.cues.includes('eyes'),'Later must survive a reload without IndexedDB',survived);
+    await noDb.close();
     // Hidden privacy mode removes the rhythm from the dial entirely.
     await cuePage.evaluate(()=>{window.__PACEFOLD__.prefs.rhythmDiscretion='hidden';window.__PACEFOLD__.render('home')});
     const hiddenMoments=await cuePage.evaluate(()=>document.querySelectorAll('.dial-moments .moment').length);
