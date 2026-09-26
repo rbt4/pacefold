@@ -1,5 +1,5 @@
-export const VERSION='31.0.0';
-export const REVISION='origin-r1';
+export const VERSION='32.0.0';
+export const REVISION='horizon-r1';
 export const KEYS={
   prefs:'pacefoldPrefsV15',
   notes:'pacefold.notebook.entries.v2',

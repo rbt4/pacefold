@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased (since 31.0.0)
+## 32.0.0 — Horizon (horizon-r1)
 
-Everything in this section is on `main` and live at https://rbt4.github.io/pacefold/. It has not been cut as a numbered release; the app still reports 31.0.0 · origin-r1.
+The redesign around the Horizon Dial, the living sky and cues you log. Storage keys, backups and data are unchanged from 31.0.0; the offline cache is renamed so installed copies update cleanly.
+
+### Cleanup
+
+- The pre-Horizon Clock card (analog hands, Day Unfold, rhythm card, clock cue ring) is removed from the page and the code, not just hidden. The dial owns the live readout, and the week and guide attach to Clock directly.
+- After a press-and-hold reveals moment names, the dial now redraws when they hide again (previously the names could linger until the next minute).
+- The public landing and privacy pages, SECURITY.md, RELEASE.md and the runbook describe the current product.
 
 ### Atmosphere
 

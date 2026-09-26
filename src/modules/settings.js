@@ -157,7 +157,7 @@ export function installSettings(ctx){
     const state=ctx.getSchedule(new Date());
     check('Schedule',state.today.length>=3,`${state.today.length} moments`);
     check('Schedule order',state.today.every((item,index,rows)=>!index||item.date>rows[index-1].date));
-    check('Clock surface',Boolean(id('analog')&&id('day-markers')));
+    check('Clock surface',Boolean(id('horizon')&&document.querySelector('.dial-readout .digital')));
     check('Directional views',$$('[data-view]').length===5,`${$$('[data-view]').length} views`);
     check('Quick actions',$$('.quick-action').length===6,`${$$('.quick-action').length} actions`);
     check('Notes',Array.isArray(ctx.notes),`${ctx.notes.length} notes`);

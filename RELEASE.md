@@ -1,8 +1,8 @@
-# Pacefold 31.0.0 — Origin (with the Horizon updates on main)
+# Pacefold 32.0.0 — Horizon
 
 ## Identity
 
-- Public release: **31.0.0**, experience revision **origin-r1**. The work listed under "Unreleased" in `CHANGELOG.md` is live on `main` but has not been given a new version number yet.
+- Public release: **32.0.0**, experience revision **horizon-r1**. See `CHANGELOG.md` for what changed since 31.0.0 · Origin.
 - Product name: **Pacefold**; the installed app's window chrome stays the discreet **Clock**.
 
 ## What Pacefold is now

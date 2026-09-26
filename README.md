@@ -75,7 +75,7 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 - **Music.** A compact dock for YouTube and YouTube Music links and playlists, plus local **My Music** and focus sounds (Brown hush, Rain glass, Soft fan).
 - **Your data stays yours.** JSON backup and restore, an optional live backup file, and an optional OneNote copy. No Pacefold account, analytics or advertising.
 
-Release line: **Pacefold 31.0.0 — Origin**, with the Horizon redesign on top ([CHANGELOG](CHANGELOG.md)).
+Release: **Pacefold 32.0.0 — Horizon** ([CHANGELOG](CHANGELOG.md)).
 
 ## Spatial model
 
@@ -136,4 +136,4 @@ Earlier per-release test scripts (V25–V30) were retired in favour of these con
 
 ## Product lineage
 
-The durable ideas from the project’s conception through 31.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.
+The durable ideas from the project’s conception through 32.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.

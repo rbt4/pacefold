@@ -5,15 +5,6 @@ const ICON_NAMES={water:'water',prayer:'prayer',prep:'prepare',away:'away',meal:
 export function installCues(ctx){
   ctx.cueState=normalizeCueState(ctx.cueState);
 
-  const analog=id('analog');
-  if(analog&&!id('clock-cue-ring')){
-    const ring=el('div','clock-cue-ring');ring.id='clock-cue-ring';ring.setAttribute('aria-label','Waiting cues on the clock');analog.append(ring);
-  }
-  const clockCard=document.querySelector('.clock-card');
-  if(clockCard&&!id('clock-cue-panel')){
-    const panel=el('section','clock-cue-panel');panel.id='clock-cue-panel';panel.hidden=true;panel.setAttribute('aria-live','polite');
-    const list=el('div','clock-cue-list');list.id='clock-cue-list';panel.append(list);clockCard.querySelector('.day-unfold')?.before(panel);
-  }
   const appBar=document.querySelector('.app-bar');
   if(appBar&&!id('title-cue-strip')){
     const strip=el('div','title-cue-strip');strip.id='title-cue-strip';strip.setAttribute('aria-hidden','true');
@@ -85,18 +76,6 @@ export function installCues(ctx){
     return cues.sort((a,b)=>b.priority-a.priority);
   };
 
-  ctx.renderClockCueRing=()=>{
-    const ring=id('clock-cue-ring');if(!ring)return;ring.replaceChildren();
-    for(const cue of ctx.currentCues.slice(0,7)){
-      const spoke=el('span','clock-cue-spoke');spoke.style.setProperty('--cue-angle',`${ctx.cueAngle(cue)}deg`);const copy=ctx.clockCueCopy(cue),notch=button('clock-cue-notch',`Clear ${copy.label}`);notch.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);notch.dataset.source=cue.source;if(cue.source!=='prayer'||ctx.clockNamesVisible?.())notch.title=`${cue.label} · right-click to snooze`;ctx.bindCueGesture(notch,cue);spoke.append(notch);ring.append(spoke);
-    }
-  };
-
-  ctx.renderClockCuePanel=()=>{
-    const panel=id('clock-cue-panel'),list=id('clock-cue-list');if(!panel||!list)return;panel.hidden=!ctx.currentCues.length;list.replaceChildren();
-    for(const cue of ctx.currentCues){const copy=ctx.clockCueCopy(cue),row=el('article','clock-cue-row');row.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);const dot=el('i'),text=el('span');text.append(el('strong','',copy.label),el('small','',copy.detail));const clear=button('',`Clear ${copy.label}`,'Clear');clear.addEventListener('click',()=>{ctx.acknowledgeCue(cue);ctx.toast(`${copy.label} cleared`)});row.append(dot,text,clear);list.append(row)}
-  };
-
   ctx.renderWindowCueChrome=()=>{
     const segments=id('title-cue-segments'),count=id('title-cue-count'),strip=id('title-cue-strip');
     if(segments){segments.replaceChildren();for(const cue of ctx.currentCues.slice(0,7)){const segment=el('i');segment.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);segments.append(segment)}}
@@ -110,7 +89,7 @@ export function installCues(ctx){
       for(const cue of ctx.currentCues.slice(0,7)){const dot=el('i','cue-dot');dot.style.setProperty('--cue',ctx.CUE_COLORS[cue.source]||ctx.CUE_COLORS.focus);dot.dataset.source=cue.source;if(named||cue.source!=='prayer')dot.title=cue.label;ctx.bindCueGesture(dot,cue,{stop:true});cluster.append(dot)}
       const visibleLabels=ctx.currentCues.map(cue=>(named||cue.source!=='prayer')?cue.label:'Scheduled moment');cluster.setAttribute('aria-label',ctx.currentCues.length?`Waiting cues: ${visibleLabels.join(', ')}`:'No waiting cues');
     }
-    ctx.renderClockCueRing();ctx.renderClockCuePanel();ctx.renderCuePanel?.();ctx.renderWindowCueChrome();ctx.updateAppBadge();ctx.syncCueMirror?.();if(notify)void ctx.deliverNotification(ctx.currentCues[0]);
+    ctx.renderCuePanel?.();ctx.renderWindowCueChrome();ctx.updateAppBadge();ctx.syncCueMirror?.();if(notify)void ctx.deliverNotification(ctx.currentCues[0]);
   };
 
   ctx.renderCuePanel=()=>{

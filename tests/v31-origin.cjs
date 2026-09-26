@@ -19,10 +19,10 @@ const built=read(path.join(process.argv[2]||'_site','app','index.html'));
 const builtPublic=read(path.join(process.argv[2]||'_site','index.html'));
 const builtRuntime=read(path.join(process.argv[2]||'_site','app','pacefold.mjs'));
 
-assert(pkg.version==='31.0.0','Package release is not Pacefold 31');
-for(const source of [core,build,worker,shell,built])assert(source.includes('31.0.0'),'A release surface is missing version 31.0.0');
-for(const source of [core,build,worker,shell,built])assert(source.includes('origin-r1'),'A release surface is missing origin-r1');
-assert(worker.includes("const VERSION='31.0.0'")&&worker.includes('`pacefold-v${VERSION}-origin-r1`'),'Service-worker cache identity was not advanced');
+assert(pkg.version==='32.0.0','Package release is not Pacefold 32');
+for(const source of [core,build,worker,shell,built])assert(source.includes('32.0.0'),'A release surface is missing version 32.0.0');
+for(const source of [core,build,worker,shell,built])assert(source.includes('horizon-r1'),'A release surface is missing horizon-r1');
+assert(worker.includes("const VERSION='32.0.0'")&&worker.includes('`pacefold-v${VERSION}-horizon-r1`'),'Service-worker cache identity was not advanced');
 assert(main.includes('installAppearance(ctx)')&&style.includes('html[data-theme="dark"]{'),'Appearance (system / light / dark) is not wired');
 assert(main.includes("document.documentElement.dataset.origin='v31'"),'The V31 visual contract is not installed before startup');
 
@@ -62,7 +62,7 @@ for(const token of [
 
 assert(builtRuntime.includes('clock-note-input'),'Built Clock is missing its persistent note composer');
 assert(builtRuntime.includes('cover-peel')&&builtRuntime.includes('cover-return'),'Built shell is missing cover controls');
-assert(builtPublic.includes('PACEFOLD 31 · ORIGIN')&&builtPublic.includes('Pacefold 31.0.0 · origin-r1'),'The public site lost the Pacefold release identity');
+assert(builtPublic.includes('PACEFOLD 32 · HORIZON')&&builtPublic.includes('Pacefold 32.0.0 · horizon-r1'),'The public site lost the Pacefold release identity');
 assert(built.length<180000,'Built app shell exceeds the size ceiling');
 
 console.log('Pacefold 31 Origin static contract passed.');
