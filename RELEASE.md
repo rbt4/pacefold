@@ -1,20 +1,18 @@
-# Pacefold 31.0.0 — Origin
+# Pacefold 31.0.0 — Origin (with the Horizon updates on main)
 
 ## Identity
 
-- Public release: **31.0.0**
-- Experience revision: **origin-r1**
-- Product name: **Pacefold**; discreet installed-app chrome remains **Clock**
+- Public release: **31.0.0**, experience revision **origin-r1**. The work listed under "Unreleased" in `CHANGELOG.md` is live on `main` but has not been given a new version number yet.
+- Product name: **Pacefold**; the installed app's window chrome stays the discreet **Clock**.
 
-## What changed
+## What Pacefold is now
 
-- The scenic homepage is the front cover again, with its live clock, date, search, quick note, Music and explicit Open Clock action.
-- Opening it reveals a separate working folio, not a second photograph: a deep-forest Clock, live seconds, Day Unfold and a compact rhythm rail.
-- The original persistent lower Daybook is restored with immediate capture, recent notes and carry-forward work.
-- The six small actions keep water, Noodles/Prep, Away, Meal, eyes and movement within one tap without becoming dashboard tiles.
-- Notes remain up, Day Log left, Now right and Settings down; direct fold links still bypass the front cover.
-- Ordinary startup does not autofocus or reopen setup, while existing preferences, notes, logs, cues, timers, backups, OneNote and Music stores remain unchanged.
-- Desktop and mobile gates now verify the full origin contract, including cover ownership, seconds, persistence, fold links and overflow.
+- **Start page.** The daily photo with a greeting, the time, the day in one line (weather, rain coming, next moment), search, a quick note and the week ahead.
+- **Clock.** The Horizon Dial: a 24-hour dial with solar noon at the top, the hourly temperature, the workday, your moments and the sun or moon, over the photo graded by the real sky. The week ahead sits on the left; the cue stack and one-tap keys on the right; the Daybook composer on the horizon.
+- **Weather.** Hover a day or an hour for detail; the Radar sheet has official Environment Canada radar (RainViewer elsewhere), a 15-minute nowcast, air quality and an hourly chart. The sky itself shows the current weather.
+- **Cues.** A stack of quiet cues. Logging one records it and says when the next is due; Later hides just that kind for 15 minutes. One system notification with Log / Later.
+- **Getting around.** One fold switcher (Notes · Day · Clock · Now · Settings), arrow keys, ⌘K command bar and a Z focus view.
+- **Continuity.** Preferences, notes, logs, cue state, timers, backups, OneNote and Music stores are unchanged from earlier releases.
 
 ## Release gate
 
@@ -23,4 +21,4 @@ npm run build
 npm run verify
 ```
 
-CI additionally runs startup and the Pacefold 31 Origin desktop/mobile browser contract before Pages deployment.
+CI also runs the startup smoke test and the desktop and mobile browser contract (`tests/v31-origin-browser.cjs`) before Pages deploys.

@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased — Atmosphere
+## Unreleased (since 31.0.0)
+
+Everything in this section is on `main` and live at https://rbt4.github.io/pacefold/. It has not been cut as a numbered release; the app still reports 31.0.0 · origin-r1.
+
+### Atmosphere
 
 - **Live weather in the sky.** A canvas paints the current weather over the daily photo on Clock and on the start page:
   - rain in three depths, slanted by the real wind, with splashes
@@ -14,14 +18,14 @@
 - **A cinematic start page.** A greeting, and the day in one line: weather now, rain coming, and the next moment (neutral wording, and left out when the rhythm is hidden). The photographs drift slowly, and minutes roll over instead of blinking, on the start page and on Clock.
 - **Folds move as one space.** The old fold leaves the opposite way on its own layer while the new one arrives from where it lives, with depth and blur. The state changes at once; nothing waits on a snapshot.
 
-## Unreleased — Official radar and the cue stack
+### Official radar and the cue stack
 
 - **Radar from Environment Canada.** In Canada the radar scope now uses the same official feed as SkyMap Ontario: ECCC GeoMet's measured 1 km radar for the last hour, then the official short-range extrapolation for the next two hours. Frames are single Web Mercator images laid exactly over the map. RainViewer remains the fallback outside Canada or when GeoMet is down. In Ontario, a **SkyMap** button opens SkyMap Ontario for the 48-hour futurecast and visit check.
 - **The cue stack.** Waiting cues now stack on Clock: the most important card on top, the rest peeking behind, and **Show all** fans them out over the column without moving the dial. Every card has its own **Log** and **Later**. Logging says when that cadence comes round again ("Water logged · next sip around 5:48 PM"). Later puts only that kind of cue away for 15 minutes, and is remembered across reloads and by the service worker. Cards resolved anywhere else (quick keys, the dial, a notification) or expired leave on their own, and the system notification closes once its cue is resolved in the app. The separate pop-up for new cues is retired in favour of the stack.
 - **Top bar fits on wide screens.** The command-bar button and Homepage are icon-only, so the right-hand controls never slide under the fold switcher (checked at 1280, 1536 and 1920 px).
 - **Quick Esc.** Pressing Esc the instant after opening the weather sheet or command bar now reliably keeps it closed.
 
-## Unreleased — Weather lens and one switcher
+### Weather lens and one switcher
 
 - **Hover any day for its weather.** A glass card shows the day's hourly temperature curve (night shaded, high and low marked), chance of rain as bars, precipitation total, wind with direction, UV and daylight. Hovering an hour on the dial's temperature ring shows that hour.
 - **Radar.** The new Radar button (or clicking any day) opens a full weather sheet with a live radar scope from RainViewer: the past two hours of precipitation around you over an unlabelled dark map, with range rings, a sweeping beam, play/pause and a scrubber.
@@ -35,7 +39,7 @@
 - **The Clock tab tells the time.** Away from Clock, the switcher's Clock tab shows the current time, so the separate top-bar clock is gone.
 - The content security policy allows only the added hosts: RainViewer's API and tiles, the CARTO map tiles and Open-Meteo air quality.
 
-## Unreleased — Horizon
+### Horizon
 
 - **The Horizon Dial.** Clock is now a 24-hour instrument with solar noon at the top, so sunrise and sunset sit on a level horizon. Rings, from the outside in: hourly temperature (with rain marks), the workday, a daylight band where the sun (or moon at night) travels and your moments sit, quarter-hour ticks, and a sweeping seconds track around the digital time. Press and hold the dial to reveal moment names briefly in neutral privacy mode.
 - **A living sky, on your daily photo.** The daily image now stays behind every screen, colour-graded by the real sun (sunrise/sunset from the forecast, or solar maths from your coordinates): night, blue hour, golden hour and noon blend continuously. A horizon glow follows the sun, stars and faint aurora appear after dusk, sun rays at golden hour, and the dial's horizon line continues across the screen.
@@ -45,7 +49,7 @@
 - **Cues resolve by logging, and stop stacking.** Tapping a cue logs the activity and restarts its timer from now (water, distance look, movement; finished timers close; scheduled moments are marked kept in the day log). Only one cue shows at a time with "+N more". System notifications share one slot and offer Log / Later; Log works even when Clock is closed.
 - Retired the old analog card, Day Unfold strip and rhythm card styles (95 rules), now replaced by the dial.
 
-## Unreleased — Signature
+### Signature
 
 - **Week ahead.** A seven-day forecast on Clock (the lower edge of the sky band) and on the scenic start page (a glass strip under search), from Open-Meteo: no key or account, best-match blending of national weather models, and already inside the app's security policy. Drawn, gently animated icons; temperature range bars coloured on a real temperature scale; precipitation chances; today's current temperature. Location names never appear on these surfaces. When weather is off, Clock offers a one-tap way to turn it on.
 - **New type.** Outfit (display: time, dates, headings) with Geist (interface text), both OFL and self-hosted. Replaces the earlier serif trial and Inter in the app.
@@ -56,7 +60,7 @@
 - **Icon keys and a rhythm timeline.** The six quick keys have drawn icons (water, noodles, step away, meal, look far, move), and the rhythm list is a connected timeline.
 - **Paper grain.** A faint grain across the page and the forest surfaces.
 
-## Unreleased — One stylesheet, fixed folds
+### One stylesheet, fixed folds
 
 Design
 - Replaced the 22 concatenated override stylesheets (≈270 KB, 3,189 `!important`) with one authored, token-based `src/app/pacefold.css` (≈90 KB, 10 `!important`).

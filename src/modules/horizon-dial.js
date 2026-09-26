@@ -57,7 +57,7 @@ export function installHorizonDial(ctx){
     labels.replaceChildren();
     const twelve=ctx.prefs.timeFormat!=='24';
     for(const[h,text]of[[12,twelve?'Noon':'12:00'],[18,twelve?'6 PM':'18:00'],[0,twelve?'Midnight':'00:00'],[6,twelve?'6 AM':'06:00']]){
-      const[x,y]=pt(h,R.label);const t=svg('text',{x:x.toFixed(1),y:(y+5).toFixed(1),class:'dial-cardinal','text-anchor':'middle'});t.textContent=text;labels.append(t);
+      const[x,y]=pt(h,R.label);const t=svg('text',{x:x.toFixed(1),y:(y+5).toFixed(1),class:h%12?'dial-cardinal is-side':'dial-cardinal','text-anchor':'middle'});t.textContent=text;labels.append(t);
     }
   };
 

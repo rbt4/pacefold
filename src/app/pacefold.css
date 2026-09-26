@@ -1748,7 +1748,6 @@ html[data-sky="golden"] .sky-rays{opacity:1}
     radial-gradient(30% 12% at 80% 28%,rgba(110,220,255,.25),transparent 70%);
   animation:aurora 38s ease-in-out infinite alternate}
 @keyframes aurora{from{transform:translateX(-4%) skewX(-6deg)}to{transform:translateX(5%) skewX(8deg)}}
-.sky-weather{display:none}
 
 /* Entrance: rings draw in, panels rise out of a blur */
 html[data-mode="home"] .horizon .dial>g{animation:ring-in .9s var(--ease) both}
@@ -2078,6 +2077,9 @@ html[data-theme="dark"] .cue-card-later{background:rgba(255,255,255,.1);color:va
 @keyframes turn{from{opacity:.2;transform:translateY(.18em);filter:blur(6px)}}
 #clock-minute{display:inline-block}
 @media (prefers-reduced-motion:reduce){.sky>.sky-photo,.pace-cover::before,.cover-greeting,.cover-brief,.cover-time-main{animation:none}}
+
+/* Small dials keep Noon and Midnight; 6 AM / 6 PM would crowd the seconds. */
+@container (max-width:420px){.dial-cardinal.is-side{display:none}}
 
 /* 15. Motion + print ------------------------------------------------------- */
 @media (prefers-reduced-motion:reduce){
