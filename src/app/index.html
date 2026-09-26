@@ -13,7 +13,7 @@
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="icon" id="app-favicon" href="./icons/fold-mark.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./pacefold.css?v=31.0.0">
+  <link rel="stylesheet" href="./pacefold.css?v=32.0.0">
   <title>Pacefold — Your day, quietly kept</title>
 </head>
 <body>
@@ -34,37 +34,10 @@
 
   <main class="stage" id="stage">
     <section class="view view-home" data-view="home" aria-label="Clock">
-      <div class="home-grid">
-        <section class="clock-card">
-          <div class="clock-identity"><span id="day-phase">Workday</span><strong id="clock-status">Quietly keeping pace</strong></div>
-          <div class="clock-instrument">
-            <div class="analog" id="analog" aria-label="Analog clock">
-              <span class="dial-numerals" aria-hidden="true"><b>12</b><b>3</b><b>6</b><b>9</b></span>
-              <div class="clock-ticks" id="clock-ticks" aria-hidden="true"></div>
-              <i class="hand hand-hour"></i><i class="hand hand-minute"></i><i class="hand hand-second"></i><i class="clock-pin"></i>
-            </div>
-            <div class="digital-wrap">
-              <div class="digital"><span id="clock-hour">--</span><i>:</i><span id="clock-minute">--</span><small id="clock-seconds">--</small></div>
-              <div class="clock-date" id="clock-date">Loading today…</div>
-              <button class="next-moment" id="next-moment" type="button" data-go="now"><span>Next</span><strong>Calculating rhythm…</strong><small></small></button>
-            </div>
-          </div>
-
-          <section class="day-unfold" aria-label="Workday progress">
-            <header><span><small>Day unfold</small><strong id="day-copy">Before work</strong></span><b id="day-percent">0%</b></header>
-            <div class="day-sky">
-              <div class="sky-glow"></div><i class="day-line"></i><b class="day-sun"></b><div class="day-markers" id="day-markers"></div>
-            </div>
-            <footer><span id="work-start">8:30</span><span>Now</span><span id="work-end">4:30</span></footer>
-          </section>
-        </section>
-
-        <aside class="rhythm-card">
-          <header><span><small id="rhythm-kicker">Prayer rhythm</small><strong id="rhythm-title">Today</strong></span><button type="button" data-go="settings" data-settings-target="rhythm">Adjust</button></header>
-          <div class="rhythm-list" id="rhythm-list"></div>
-          <p id="rhythm-meta">Your configured location and calculation method appear here.</p>
-        </aside>
-      </div>
+      <!-- Seeds for the Horizon Dial's readout (horizon-dial.js moves them into the dial). -->
+      <div class="digital"><span id="clock-hour">--</span><i>:</i><span id="clock-minute">--</span><small id="clock-seconds">--</small></div>
+      <div class="clock-date" id="clock-date">Loading today…</div>
+      <button class="next-moment" id="next-moment" type="button" data-go="now"><span>Next</span><strong>Calculating rhythm…</strong><small></small></button>
 
       <section class="action-dock" aria-label="Quick actions">
         <header><span><small>One tap</small><strong>Keep the day honest</strong></span><button type="button" id="clear-cues">Clear dots</button></header>
@@ -132,7 +105,7 @@
     </section>
 
     <section class="view view-settings" data-view="settings" aria-label="Settings">
-      <header class="view-head"><button type="button" data-go="home">↑ Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 31.0.0</b></header>
+      <header class="view-head"><button type="button" data-go="home">↑ Clock</button><span><small>Down from Clock</small><h1>Settings</h1><p>Set the rhythm once. Pacefold keeps it through updates.</p></span><b>Pacefold 32.0.0</b></header>
       <section class="settings-summary" id="settings-summary" aria-label="Current setup"></section>
       <div class="settings-layout">
         <nav class="settings-nav" id="settings-nav"><button class="active" type="button" data-settings-tab="essentials"><strong>Essentials</strong><small>Daily behaviour</small></button><button type="button" data-settings-tab="rhythm"><strong>Rhythm</strong><small>Prayer and moments</small></button><button type="button" data-settings-tab="care"><strong>Care</strong><small>Water and resets</small></button><button type="button" data-settings-tab="data"><strong>Data</strong><small>Backup and OneNote</small></button><button type="button" data-settings-tab="advanced"><strong>Advanced</strong><small>Recovery tools</small></button></nav>
@@ -169,7 +142,7 @@
           <section data-settings-panel="advanced" hidden>
             <header><small>Advanced</small><h2>Recovery and diagnostics</h2></header>
             <div class="data-actions"><button type="button" id="self-check"><strong>Run self-check</strong><small>Storage, schedule, offline worker and interface</small></button><button type="button" id="reset-today"><strong>Reset today’s counters</strong><small>Water and active timers only; notes stay</small></button><button class="danger" type="button" id="reset-app"><strong>Reset Pacefold</strong><small>Delete local Pacefold settings, notes and logs</small></button></div>
-            <pre id="diagnostic-output">Pacefold 31.0.0 · origin-r1</pre>
+            <pre id="diagnostic-output">Pacefold 32.0.0 · horizon-r1</pre>
           </section>
         </div>
       </div>
@@ -201,6 +174,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script defer src="./vendor/msal-browser-5.17.1.min.js"></script>
-  <script type="module" src="./pacefold.mjs?v=31.0.0"></script>
+  <script type="module" src="./pacefold.mjs?v=32.0.0"></script>
 </body>
 </html>

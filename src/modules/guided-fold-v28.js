@@ -101,7 +101,7 @@ export function installGuidedFoldV28(ctx){
   const guideSignal=el('i','v28-guide-signal'),guideCopy=el('span','v28-guide-copy'),guideKicker=el('small','','RIGHT NOW'),guideTitle=el('strong','','All clear'),guideDetail=el('p','','The clock will surface the next thing that matters.');
   guideCopy.append(guideKicker,guideTitle,guideDetail);
   const guideActions=el('div','v28-guide-actions');guide.append(guideSignal,guideCopy,guideActions);
-  $('.view-home .home-grid')?.after(guide);
+  $('.view-home')?.prepend(guide);
 
   const cuePeek=el('section','v28-cue-peek');cuePeek.id='v28-cue-peek';cuePeek.hidden=true;cuePeek.setAttribute('aria-live','polite');document.body.append(cuePeek);
   const bloom=el('section','v28-cue-bloom');bloom.id='v28-cue-bloom';bloom.hidden=true;bloom.setAttribute('role','status');document.body.append(bloom);

@@ -374,45 +374,14 @@ html[data-mode="home"][data-from="now"] .view-home{animation-name:fold-from-left
 
 /* 4. Clock ----------------------------------------------------------------- */
 
-
-
-
 .day-story::before,
 .now-primary::before{
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-radius:inherit;
   background-image:var(--grain);opacity:.09;mix-blend-mode:overlay;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .seconds-off #clock-seconds,
 .seconds-off .cover-time-second{display:none}
-
-
-
-
-
-
 
 .digital{display:flex;align-items:baseline;gap:.02em;font-family:var(--display);font-variant-numeric:tabular-nums;line-height:.9;letter-spacing:-.04em;font-weight:200;font-size:clamp(72px,8vw,124px)}
 .digital>i{font-style:normal;opacity:.45;margin:0 .02em;transform:translateY(-.08em)}
@@ -429,43 +398,6 @@ html[data-mode="home"][data-from="now"] .view-home{animation-name:fold-from-left
 .next-moment strong{flex:1;min-width:0;font-size:var(--t-md);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .next-moment small{font-size:var(--t-sm);color:var(--on-forest-2);white-space:nowrap}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.rhythm-list{display:grid;gap:4px}
 .rhythm-row{
   display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:12px;
   min-height:40px;padding:0 12px;border-radius:var(--r-sm);text-align:left;
@@ -484,12 +416,10 @@ button.rhythm-row:hover{background:var(--paper-sunk)}
 .rhythm-row[data-state="next"] i{opacity:1;box-shadow:0 0 0 3px rgba(76,138,106,.22)}
 .rhythm-row[data-state="next"] strong{color:var(--accent-text)}
 
-#now-schedule-list,.view-home .rhythm-list{position:relative}
+#now-schedule-list{position:relative}
 #now-schedule-list::before{content:"";position:absolute;left:28px;top:22px;bottom:22px;width:1.5px;background:var(--line-strong)}
 #now-schedule-list .rhythm-row i{position:relative;z-index:1;width:10px;height:10px;box-shadow:0 0 0 4px var(--paper-raised)}
 #now-schedule-list .rhythm-row{padding-left:24px}
-
-
 
 .v28-guide{
   --guide:var(--accent);
@@ -505,7 +435,6 @@ button.rhythm-row:hover{background:var(--paper-sunk)}
 .v28-guide-copy p{grid-column:1/-1;font-size:var(--t-sm);color:var(--ink-2)}
 .v28-guide-actions{display:flex;gap:8px;flex:none}
 .v28-guide.has-cue .v28-guide-primary{background:var(--guide);border-color:var(--guide)}
-
 
 /* Week ahead — the sky, continued. Seven days from Open-Meteo (weather-week.js). */
 .week-sky{
@@ -643,7 +572,6 @@ button.rhythm-row:hover{background:var(--paper-sunk)}
 .clock-daybook-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:12px;padding-bottom:14px}
 .clock-daybook-footer>span{font-size:var(--t-xs);color:var(--ink-3)}
 .clock-daybook-footer button{min-height:34px}
-
 
 /* 5. View furniture -------------------------------------------------------- */
 .view-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:end;gap:16px;padding:4px 0 8px}
@@ -1372,7 +1300,7 @@ html[data-wco="on"] .app-bar button,html[data-wco="on"] .sound-bar,html[data-wco
   .now-ring,.now-ring-label,.now-primary:has(.now-ring)::after{right:32px;width:190px}
   .now-ring,.now-primary:has(.now-ring)::after{height:190px;margin-top:-95px}
   
-  .rhythm-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+  
   .notes-layout,.log-layout{grid-template-columns:minmax(0,1fr)}
   .calendar-card,.log-tools,.settings-nav{position:static}
   .calendar-card{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
@@ -1465,7 +1393,7 @@ html[data-wco="on"] .app-bar button,html[data-wco="on"] .sound-bar,html[data-wco
   
   
   
-  .rhythm-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  
   .v28-guide{flex-wrap:wrap;padding:14px 14px 14px 18px}
   .v28-guide-copy{flex-basis:calc(100% - 30px)}
   .v28-guide-actions{width:100%;padding-left:28px}
@@ -1581,7 +1509,7 @@ html[data-mode="home"] .sky::after{content:"";position:absolute;left:0;right:0;t
 /* The Clock stage: week · dial · cue & keys, with the Daybook dock on the horizon */
 
 /* The pre-Horizon card is kept for its live ids but never shown. */
-.legacy-retired{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);opacity:0;pointer-events:none}
+
 html[data-mode="home"] .view-home{gap:28px;max-width:min(1360px,100%)}
 .horizon{
   position:relative;display:grid;grid-template-columns:minmax(230px,262px) minmax(0,1fr) minmax(240px,272px);
@@ -1713,8 +1641,6 @@ html[data-mode="home"] .view-home{gap:28px;max-width:min(1360px,100%)}
 html[data-cue-waiting="true"] .dial-aura{opacity:.62;animation-duration:9s}
 @keyframes aura{to{--aura:360deg}}
 
-
-
 :is(.week-sky,.v28-guide,.action-dock,.notebook-card,.timeline-card,.settings-panels>section).is-lit::before{
   content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;padding:1px;z-index:1;
   background:radial-gradient(180px circle at var(--mx) var(--my),rgba(181,140,255,.9),rgba(124,196,255,.6) 40%,transparent 70%);
@@ -1748,7 +1674,6 @@ html[data-sky="golden"] .sky-rays{opacity:1}
     radial-gradient(30% 12% at 80% 28%,rgba(110,220,255,.25),transparent 70%);
   animation:aurora 38s ease-in-out infinite alternate}
 @keyframes aurora{from{transform:translateX(-4%) skewX(-6deg)}to{transform:translateX(5%) skewX(8deg)}}
-.sky-weather{display:none}
 
 /* Entrance: rings draw in, panels rise out of a blur */
 html[data-mode="home"] .horizon .dial>g{animation:ring-in .9s var(--ease) both}
@@ -2078,6 +2003,9 @@ html[data-theme="dark"] .cue-card-later{background:rgba(255,255,255,.1);color:va
 @keyframes turn{from{opacity:.2;transform:translateY(.18em);filter:blur(6px)}}
 #clock-minute{display:inline-block}
 @media (prefers-reduced-motion:reduce){.sky>.sky-photo,.pace-cover::before,.cover-greeting,.cover-brief,.cover-time-main{animation:none}}
+
+/* Small dials keep Noon and Midnight; 6 AM / 6 PM would crowd the seconds. */
+@container (max-width:420px){.dial-cardinal.is-side{display:none}}
 
 /* 15. Motion + print ------------------------------------------------------- */
 @media (prefers-reduced-motion:reduce){

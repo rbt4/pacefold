@@ -14,7 +14,8 @@ Backup restore is format-validated and capped at 5 MB before parsing. If the use
 
 The production application uses a default-deny Content Security Policy. Network access is limited to the application origin plus the specific services needed for optional features:
 
-- Open-Meteo for weather.
+- Open-Meteo for the forecast, the 15-minute nowcast and air quality (only while weather is on).
+- Environment and Climate Change Canada GeoMet for radar in Canada, with RainViewer as the fallback elsewhere, and CARTO / OpenStreetMap tiles as the unlabelled base map (only while the radar is open).
 - Microsoft identity and Microsoft Graph for optional OneNote copy.
 - YouTube's official IFrame Player API for user-requested music playback.
 - YouTube image CDN for artwork after the user loads a track.

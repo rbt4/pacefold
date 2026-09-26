@@ -6,7 +6,7 @@ Pacefold publishes through `.github/workflows/pages.yml`. There is no scheduled,
 
 1. Build and review the release on a branch.
 2. Merge the approved pull request into `main`.
-3. Confirm **Build, verify and publish Pacefold 25** starts for the merge commit.
+3. Confirm **Build, verify and publish Pacefold 31** starts for the merge commit.
 4. If GitHub did not create a push run, open the workflow and choose **Run workflow → main**.
 5. Wait for `validate` and `deploy` to succeed.
 6. Verify the public website, `/app/`, `pacefold-experience.txt` and the service-worker release marker before calling it live.
@@ -24,14 +24,7 @@ Symptoms include:
 
 This is GitHub infrastructure, not a Pacefold assertion. Retry the exact failed workflow or job. Do not create another product commit merely to make another run.
 
-Useful connector actions:
-
-- `GitHub.fetch` — inspect workflow runs, deployments and the current `main` SHA
-- `GitHub.fetch_workflow_run_jobs` — determine whether a runner reached any steps
-- `GitHub.fetch_workflow_job_steps` — locate the first named failing stage
-- `GitHub.fetch_workflow_job_logs` — read the first genuine assertion
-- `GitHub.rerun_failed_workflow_run_jobs` — retry infrastructure-only failures
-- `GitHub.rerun_workflow_job` — retry one isolated job when appropriate
+Use the Actions tab (or the GitHub API) to see whether the runner reached any steps, find the first failing step, and re-run only infrastructure-only failures.
 
 ### A named Pacefold stage failed
 

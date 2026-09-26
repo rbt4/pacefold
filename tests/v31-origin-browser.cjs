@@ -42,7 +42,7 @@ function seed(){
 
 async function ready(page,url){
   await page.goto(url,{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.__PACEFOLD__?.version==='31.0.0'&&document.documentElement.classList.contains('ready'));
+  await page.waitForFunction(()=>window.__PACEFOLD__?.version==='32.0.0'&&document.documentElement.classList.contains('ready'));
   await page.waitForTimeout(350);
 }
 
@@ -127,8 +127,9 @@ async function main(){
     requireState(shell.styles.length===1&&shell.runtimes.length===1,'Clock must load exactly one app stylesheet and one runtime',shell);
     requireState(shell.discretion==='neutral'&&!privateTerms.test(shell.clockText),'Neutral Clock leaked prayer, method or location vocabulary',{discretion:shell.discretion,clockText:shell.clockText});
 
-    const legacy=await page.evaluate(()=>{const box=document.querySelector('.view-home>.home-grid').getBoundingClientRect();return{width:box.width,height:box.height}});
-    requireState(legacy.width<=1&&legacy.height<=1,'The retired pre-Horizon Clock card is visible under the dial',legacy);
+    // The pre-Horizon card is gone for good: no markup, and the dial owns the live readout.
+    const legacy=await page.evaluate(()=>({card:document.querySelectorAll('.home-grid,.clock-card,#analog,.day-unfold,.rhythm-card,#clock-cue-ring').length,readout:Boolean(document.querySelector('.dial-readout .digital #clock-minute')&&document.querySelector('.dial-readout #next-moment'))}));
+    requireState(legacy.card===0&&legacy.readout,'The retired pre-Horizon Clock card must be removed and the dial must own the readout',legacy);
     // One fold switcher, centred in the top bar, clear of the bar's own controls.
     const switcher=await page.evaluate(()=>{const box=node=>{const r=node.getBoundingClientRect();return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};const nav=document.querySelector('.fold-nav');return{nav:box(nav),items:[...nav.querySelectorAll('[data-go]')].map(node=>({go:node.dataset.go,current:node.getAttribute('aria-current')})),index:getComputedStyle(nav).getPropertyValue('--fold-index').trim(),music:box(document.querySelector('.sound-bar')),status:box(document.querySelector('.bar-status')),edges:document.querySelectorAll('.edge-nav,.edge').length,viewport:innerWidth}});
     requireState(switcher.edges===0&&switcher.items.map(item=>item.go).join()==='notes,worklog,home,now,settings'&&switcher.items.find(item=>item.current==='page')?.go==='home'&&switcher.index==='2','The fold switcher must replace the edge pills and mark Clock',switcher);
@@ -464,7 +465,7 @@ async function main(){
     await mobile.close();
 
     requireState(errors.length===0,'Browser errors were recorded',{errors});
-    console.log(JSON.stringify({release:'31.0.0',revision:'origin-r1',screenshots:fs.readdirSync(output).sort(),errors},null,2));
+    console.log(JSON.stringify({release:'32.0.0',revision:'horizon-r1',screenshots:fs.readdirSync(output).sort(),errors},null,2));
   }finally{
     if(browser)await browser.close();
     server.close();

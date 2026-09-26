@@ -20,52 +20,12 @@ export function installSchedule(ctx){
     if(ctx.rhythmMode()!=='neutral'||ctx.mode!=='home')return;
     ctx.rhythmRevealUntil=Date.now()+6000;
     clearTimeout(ctx.rhythmRevealTimer);
-    ctx.renderRhythm?.(new Date(),{home:true,nowView:false});ctx.renderClock?.(new Date());ctx.refreshCues?.();
+    ctx.renderDial?.();ctx.renderClock?.(new Date());ctx.refreshCues?.();
     ctx.rhythmRevealTimer=setTimeout(()=>{
       ctx.rhythmRevealUntil=0;
-      if(ctx.mode==='home')ctx.renderRhythm?.(new Date(),{home:true,nowView:false});
+      if(ctx.mode==='home')ctx.renderDial?.();
       ctx.renderClock?.(new Date());ctx.refreshCues?.();
     },6050);
-  };
-
-  ctx.bindRhythmReveal=()=>{
-    const card=document.querySelector('.rhythm-card');
-    if(!card||card.dataset.revealBound==='true')return;
-    card.dataset.revealBound='true';
-    let holdTimer=0;
-    const cancel=()=>{clearTimeout(holdTimer);holdTimer=0};
-    const start=()=>{
-      cancel();
-      if(ctx.rhythmMode()!=='neutral'||ctx.mode!=='home')return;
-      holdTimer=setTimeout(ctx.revealRhythm,650);
-    };
-    card.addEventListener('pointerdown',start);
-    card.addEventListener('pointerup',cancel);card.addEventListener('pointercancel',cancel);card.addEventListener('pointerleave',cancel);
-  };
-
-  ctx.renderDayMarkers=(state,range,now,currentProgress=0)=>{
-    const container=id('day-markers'),path=id('day-arc-path');
-    if(!container||!path)return;
-    const named=ctx.clockNamesVisible();
-    const key=`${ctx.todayKey(now)}|${range.start}|${range.end}|${named}|${range.activeDay}|${currentProgress.toFixed(3)}|${state.today.map(item=>`${item.id}:${item.hours.toFixed(3)}`).join('|')}`;
-    if(container.dataset.key===key)return;
-    container.dataset.key=key;
-    container.replaceChildren();
-    if(!range.activeDay)return;
-    const length=path.getTotalLength();
-    for(const item of state.today){
-      if(item.hours<range.start||item.hours>range.end)continue;
-      const markerProgress=ctx.clamp((item.hours-range.start)/(range.end-range.start),0,1,0);
-      const point=path.getPointAtLength(length*markerProgress);
-      const label=named?`${item.label} at ${ctx.formatTime(item.date)}`:`Scheduled moment at ${ctx.formatTime(item.date)}`;
-      const node=button('day-marker-button',label);
-      node.style.setProperty('--marker-x',`${point.x/600*100}%`);
-      node.style.setProperty('--marker-y',`${(point.y-34)/94*100}%`);
-      node.dataset.nearSun=String(Math.abs(markerProgress-currentProgress)<.03);
-      if(named)node.title=label;
-      node.addEventListener('click',()=>ctx.go?.('now'));
-      container.append(node);
-    }
   };
 
   ctx.rhythmRows=(container,state,now,{compact=false,discreet=false}={})=>{
@@ -85,32 +45,10 @@ export function installSchedule(ctx){
     }
   };
 
-  ctx.renderRhythm=(now=new Date(),{home=ctx.mode==='home',nowView=ctx.mode==='now'}={})=>{
+  // Clock shows the rhythm on the Horizon Dial (horizon-dial.js); this renders the Now list.
+  ctx.renderRhythm=(now=new Date(),{nowView=ctx.mode==='now'}={})=>{
     const state=ctx.getSchedule(now);
     const muslim=state.muslim;
-    if(home){
-      const mode=ctx.rhythmMode();
-      const named=ctx.clockNamesVisible();
-      const card=document.querySelector('.rhythm-card');
-      const grid=document.querySelector('.home-grid');
-      const header=card?.querySelector(':scope > header');
-      const adjust=header?.querySelector('button');
-      const kicker=id('rhythm-kicker');
-      const title=id('rhythm-title');
-      const meta=id('rhythm-meta');
-      if(card)card.hidden=mode==='hidden';
-      if(grid)grid.dataset.rhythmHidden=String(mode==='hidden');
-      if(meta){meta.textContent='';meta.hidden=true}
-      if(kicker){kicker.textContent=named?(muslim?'Prayer rhythm':'Personal rhythm'):'Today’s rhythm';kicker.hidden=false}
-      if(adjust)adjust.hidden=!named;
-      if(title){
-        title.textContent=named
-          ?(state.next?`Next · ${state.next.label}`:'Today complete')
-          :(state.next?`Next ${ctx.relativeUntil(state.next.date,now).replace(/^(?!in )/,'in ')}`:'Today complete');
-      }
-      if(header)header.dataset.discreet=String(!named);
-      ctx.rhythmRows(id('rhythm-list'),state,now,{compact:true,discreet:true});
-    }
     if(nowView){
       const discreet=ctx.rhythmMode()!=='names';
       ctx.rhythmRows(id('now-schedule-list'),state,now,{compact:false,discreet});

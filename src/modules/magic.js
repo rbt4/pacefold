@@ -1,7 +1,7 @@
 // Small pieces of ambient "magic": glass that catches light under the cursor, a
 // root flag for waiting cues (the dial's aura responds), and the live weather
 // mirrored into the sky (rain, snow, fog, storm). All presentation only.
-const GLASS='.rhythm-card,.v28-guide,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.metric-card,.timeline-card,.log-tools,.day-compare,.now-schedule,.now-cues,.now-weather,.now-active,.settings-panels>section,.settings-nav,.week-sky,.quick-action,.horizon-dock .clock-note-compose';
+const GLASS='.v28-guide,.action-dock,.daybook-fold,.calendar-card,.notebook-card,.metric-card,.timeline-card,.log-tools,.day-compare,.now-schedule,.now-cues,.now-weather,.now-active,.settings-panels>section,.settings-nav,.week-sky,.quick-action,.horizon-dock .clock-note-compose';
 const KIND=code=>{const c=Number(code);if(!Number.isFinite(c))return'';if(c===0||c===1)return'clear';if(c===2||c===3)return'cloudy';if(c===45||c===48)return'fog';if((c>=51&&c<=67)||(c>=80&&c<=82))return'rain';if((c>=71&&c<=77)||c===85||c===86)return'snow';if(c>=95)return'storm';return'cloudy'};
 
 export function installMagic(ctx){

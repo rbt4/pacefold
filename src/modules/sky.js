@@ -20,7 +20,7 @@ export function installSky(ctx){
   const stars=el('div','sky-stars');
   const field=[];for(let i=0;i<140;i+=1){const x=(Math.sin(i*12.9898)*43758.5453%1+1)%1,y=(Math.sin(i*78.233)*12345.678%1+1)%1,a=.25+((i*37)%70)/100;field.push(`${(x*100).toFixed(2)}vw ${(y*62).toFixed(2)}vh 0 ${i%9===0?1:0}px rgba(255,255,255,${a.toFixed(2)})`)}
   stars.style.boxShadow=field.join(',');
-  sky.append(el('div','sky-photo'),el('div','sky-grade'),el('div','sky-glow'),el('div','sky-rays'),el('div','sky-aurora'),stars,el('div','sky-weather'),el('div','sky-shade'));
+  sky.append(el('div','sky-photo'),el('div','sky-grade'),el('div','sky-glow'),el('div','sky-rays'),el('div','sky-aurora'),stars,el('div','sky-shade'));
   document.body.prepend(sky);
 
   const root=document.documentElement;

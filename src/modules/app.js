@@ -5,14 +5,13 @@ export function installApp(ctx){
     ctx.refreshCues(notify);
     ctx.renderClock(new Date());
     if(view==='home'){
-      ctx.renderRhythm(new Date(),{home:true,nowView:false});
       ctx.renderActions();
       ctx.renderFold();
     }
     if(view==='notes')ctx.renderNotes();
     if(view==='worklog')ctx.renderWorklog();
     if(view==='now'){
-      ctx.renderRhythm(new Date(),{home:false,nowView:true});
+      ctx.renderRhythm(new Date(),{nowView:true});
       ctx.renderActive();
       ctx.renderWeather();
     }
@@ -46,13 +45,6 @@ export function installApp(ctx){
   };
 
   ctx.generateStatic=()=>{
-    const ticks=id('clock-ticks');
-    if(!ticks.children.length){
-      for(let index=0;index<60;index+=1){
-        const tick=el('i',index%5===0?'major':'');
-        tick.style.setProperty('--i',String(index));ticks.append(tick);
-      }
-    }
     const offsets=id('offset-grid');
     if(!offsets.children.length){
       for(const key of ctx.ALERT_PRAYERS){
@@ -205,7 +197,7 @@ export function installApp(ctx){
 
   ctx.initialize=async()=>{
     const hadExisting=Object.keys(ctx.rawPrefs||{}).length>5||localStorage.getItem(ctx.KEYS.onboarding)==='1';
-    ctx.generateStatic();ctx.bind();ctx.bindRhythmReveal?.();ctx.resetDailyIfNeeded();
+    ctx.generateStatic();ctx.bind();ctx.resetDailyIfNeeded();
     await ctx.initCueStore?.();
     ctx.liveBackupHandle=await ctx.readHandle();ctx.renderBackupStatus();ctx.renderSound();
     const requested=new URLSearchParams(location.search).get('mode');
@@ -225,8 +217,8 @@ export function installApp(ctx){
       if(ctx.mode==='now')ctx.renderActive();
       if(minute!==ctx.minuteSeen){
         ctx.minuteSeen=minute;ctx.refreshCues(true);
-        if(ctx.mode==='home'){ctx.renderRhythm(now,{home:true,nowView:false});ctx.renderFold()}
-        if(ctx.mode==='now'){ctx.renderRhythm(now,{home:false,nowView:true});void ctx.fetchWeather(false)}
+        if(ctx.mode==='home')ctx.renderFold();
+        if(ctx.mode==='now'){ctx.renderRhythm(now,{nowView:true});void ctx.fetchWeather(false)}
         if(ctx.mode==='worklog')ctx.renderWorklog();
       }
     },1000);

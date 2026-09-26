@@ -6,15 +6,15 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 
 **Open it: https://rbt4.github.io/pacefold/** (installable, works offline, no account)
 
-![Clock: the Horizon Dial over the daily photo, the fold switcher at the top, the week ahead with a day's weather card open on the left, and cues and one-tap keys on the right](docs/screenshots/clock.jpg)
+![Clock: the Horizon Dial over the daily photo with live rain, the fold switcher at the top, the week ahead on the left and cues and one-tap keys on the right](docs/screenshots/clock.jpg)
 
 <table>
 <tr>
-<td width="68%"><img src="docs/screenshots/cover.jpg" alt="Start page: large time, search, and the week ahead on the daily photo"></td>
+<td width="68%"><img src="docs/screenshots/cover.jpg" alt="Start page: a greeting, the time, the day in one line, search and the week ahead on the daily photo"></td>
 <td width="32%"><img src="docs/screenshots/mobile.jpg" alt="Clock on a phone"></td>
 </tr>
 <tr>
-<td align="center"><sub>The start page: time, search, a quick note and the week ahead</sub></td>
+<td align="center"><sub>The start page: a greeting, the day in one line, search, a quick note and the week ahead</sub></td>
 <td align="center"><sub>The same Clock on a phone</sub></td>
 </tr>
 </table>
@@ -75,7 +75,7 @@ Pacefold is a private, local-first workday clock. It keeps time, rhythm, notes, 
 - **Music.** A compact dock for YouTube and YouTube Music links and playlists, plus local **My Music** and focus sounds (Brown hush, Rain glass, Soft fan).
 - **Your data stays yours.** JSON backup and restore, an optional live backup file, and an optional OneNote copy. No Pacefold account, analytics or advertising.
 
-Release line: **Pacefold 31.0.0 — Origin**, with the Horizon redesign on top ([CHANGELOG](CHANGELOG.md)).
+Release: **Pacefold 32.0.0 — Horizon** ([CHANGELOG](CHANGELOG.md)).
 
 ## Spatial model
 
@@ -136,4 +136,4 @@ Earlier per-release test scripts (V25–V30) were retired in favour of these con
 
 ## Product lineage
 
-The durable ideas from the project’s conception through 31.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.
+The durable ideas from the project’s conception through 32.0 are recorded in [`docs/ORIGIN_TO_FINAL.md`](docs/ORIGIN_TO_FINAL.md). Treat that document as a guardrail when simplifying or redesigning Pacefold.

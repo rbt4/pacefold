@@ -41,9 +41,6 @@ export function installHorizonDial(ctx){
   if(composer)shelf.append(composer);
   stage.append(left,center,right,shelf);
   view.prepend(stage);
-  // The legacy card stays in the DOM because clock.js still writes into it by id;
-  // it is retired visually here rather than removed.
-  $('.view-home>.home-grid')?.classList.add('legacy-retired');
 
   // Seconds: 60 quiet dots and one bright bead that sweeps with --second-angle.
   for(let s=0;s<60;s+=1){const a=-Math.PI/2+s/60*2*Math.PI;seconds.append(svg('circle',{cx:(Math.cos(a)*R.seconds).toFixed(1),cy:(Math.sin(a)*R.seconds).toFixed(1),r:s%5?1.3:2.2,class:'dial-second-dot'}))}
@@ -57,7 +54,7 @@ export function installHorizonDial(ctx){
     labels.replaceChildren();
     const twelve=ctx.prefs.timeFormat!=='24';
     for(const[h,text]of[[12,twelve?'Noon':'12:00'],[18,twelve?'6 PM':'18:00'],[0,twelve?'Midnight':'00:00'],[6,twelve?'6 AM':'06:00']]){
-      const[x,y]=pt(h,R.label);const t=svg('text',{x:x.toFixed(1),y:(y+5).toFixed(1),class:'dial-cardinal','text-anchor':'middle'});t.textContent=text;labels.append(t);
+      const[x,y]=pt(h,R.label);const t=svg('text',{x:x.toFixed(1),y:(y+5).toFixed(1),class:h%12?'dial-cardinal is-side':'dial-cardinal','text-anchor':'middle'});t.textContent=text;labels.append(t);
     }
   };
 

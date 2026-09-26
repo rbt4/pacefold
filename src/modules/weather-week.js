@@ -57,7 +57,7 @@ const colour=t=>{
 };
 
 export function installWeatherWeek(ctx){
-  const home=document.querySelector('.view-home .home-grid'),hero=document.querySelector('.cover-hero');
+  const home=document.querySelector('.view-home'),hero=document.querySelector('.cover-hero');
   if(!home||id('week-sky'))return;
 
   const section=el('section','week-sky');section.id='week-sky';section.setAttribute('aria-label','Seven-day forecast');
@@ -69,7 +69,7 @@ export function installWeatherWeek(ctx){
   const invite=button('week-invite','Turn on the weekly forecast','Show the week’s weather');invite.hidden=true;
   invite.addEventListener('click',async()=>{await ctx.toggleSetting?.('weatherEnabled');void refresh(true)});
   section.append(head,days,invite);
-  home.after(section);
+  home.prepend(section);
 
   const strip=el('div','cover-week');strip.id='cover-week';strip.setAttribute('aria-label','Seven-day forecast');strip.hidden=true;
   hero?.append(strip);
