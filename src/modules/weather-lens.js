@@ -7,7 +7,8 @@ import{$,id,el,button}from'./state.js';
 // the radar (Environment Canada GeoMet in Canada, as SkyMap Ontario uses; RainViewer elsewhere) and air quality (Open-Meteo) are fetched only when the
 // sheet opens. The map has no labels and the location is never named.
 const SVG='http://www.w3.org/2000/svg';
-const RADAR_INDEX='https://api.rainviewer.com/public/weather-maps.json';
+// Key-free, RainViewer-v2-compatible index feeds, tried in order. RainViewer's own free tier was cut back in 2026.
+const RADAR_INDEXES=['https://api.librewxr.net/public/weather-maps.json','https://api.rainviewer.com/public/weather-maps.json'];
 const GEOMET='https://geo.weather.gc.ca/geomet';
 const SKYMAP='https://rbt4.github.io/skymapontario/app/';
 const AIR_API='https://air-quality-api.open-meteo.com/v1/air-quality';
@@ -198,7 +199,7 @@ export function installWeatherLens(ctx){
     tab('next','Next 24 h');
     D.time.slice(0,7).forEach((day,i)=>{const sub=el('span','wx-tab-sub');sub.append(K.weatherIcon(K.KIND(D.weather_code[i])),el('small','',`${Math.round(D.temperature_2m_max[i])}° ${Math.round(D.temperature_2m_min[i])}°`));tab(String(i),i===0?'Today':K.dayName(day,i,'short'),sub)});
     hourly.append(tabs,plot,readout);
-    panel.append(now,radar,hourly,el('p','wx-credit',`Forecast Open-Meteo · Radar ${inCanada(Number(ctx.prefs.lat),Number(ctx.prefs.lng))?'Environment and Climate Change Canada (GeoMet)':'RainViewer'} · Map © OpenStreetMap, © CARTO`));
+    panel.append(now,radar,hourly,el('p','wx-credit',`Forecast Open-Meteo · Radar ${inCanada(Number(ctx.prefs.lat),Number(ctx.prefs.lng))?'Environment and Climate Change Canada (GeoMet)':'LibreWXR / RainViewer'} · Map © OpenStreetMap, © CARTO`));
     draw();buildRadar(radar);void loadAir();
   }
 
@@ -251,10 +252,17 @@ export function installWeatherLens(ctx){
     });
   }
   async function rainviewerFrames(){
-    const response=await withTimeout(RADAR_INDEX);if(!response.ok)throw new Error(`Radar ${response.status}`);
-    const index=await response.json(),past=(index?.radar?.past||[]).slice(-10),ahead=index?.radar?.nowcast||[];
-    if(!past.length||!index.host)throw new Error('Radar empty');
-    return[...past.map(frame=>({time:frame.time*1000,future:false,tiles:(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`})),...ahead.map(frame=>({time:frame.time*1000,future:true,tiles:(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`}))];
+    let index=null,failure=null;
+    for(const url of RADAR_INDEXES){
+      try{
+        const response=await withTimeout(url);if(!response.ok)throw new Error(`Radar ${response.status}`);
+        const candidate=await response.json();if(!candidate?.radar?.past?.length||!/^https:\/\//.test(candidate.host||''))throw new Error('Radar empty');
+        index=candidate;break;
+      }catch(error){failure=error}
+    }
+    if(!index)throw failure||new Error('Radar unavailable');
+    const past=index.radar.past.slice(-10),ahead=index.radar.nowcast||[],url=frame=>(x,y)=>`${index.host}${frame.path}/${TILE}/${ZOOM}/${x}/${y}/2/1_1.png`;
+    return[...past.map(frame=>({time:frame.time*1000,future:false,tiles:url(frame)})),...ahead.map(frame=>({time:frame.time*1000,future:true,tiles:url(frame)}))];
   }
 
   // ---- Radar scope -------------------------------------------------------------
@@ -286,13 +294,13 @@ export function installWeatherLens(ctx){
     void(async()=>{
       try{
         let list=null;
-        if(official){try{list=await ecccFrames(bbox)}catch(error){if(stale())return;console.warn('[Clock] GeoMet radar unavailable, using RainViewer',error?.message||error)}}
+        if(official){try{list=await ecccFrames(bbox)}catch(error){if(stale())return;console.warn('[Clock] GeoMet radar unavailable, using the global feed',error?.message||error)}}
         if(stale())return;
         if(!list){
           list=await rainviewerFrames();scope.dataset.source='rainviewer';legend.dataset.source='rainviewer';
           // Say what is actually shown: the fallback's source and interval, not GeoMet's.
-          subtitle.textContent='RainViewer · past 2 hours';
-          const credit=panel.querySelector('.wx-credit');if(credit)credit.textContent=credit.textContent.replace('Environment and Climate Change Canada (GeoMet)','RainViewer');
+          subtitle.textContent='Past 2 hours';
+          const credit=panel.querySelector('.wx-credit');if(credit)credit.textContent=credit.textContent.replace('Environment and Climate Change Canada (GeoMet)','LibreWXR / RainViewer');
         }
         // The sheet may have closed (or re-rendered) while the frames were loading.
         if(stale())return;
